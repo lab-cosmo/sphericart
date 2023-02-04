@@ -1,6 +1,14 @@
-.PHONY: all
+.PHONY: all clean
 
-all: libsphericart.so
+CFLAGS = -O3 -g
 
-libsphericart.so:
-	gcc --shared -O3 -lm sphericart.c -o libsphericart.so
+all: libsphericart.so example
+
+clean:
+	rm -rf libsphericart.so example
+
+libsphericart.so: sphericart.c sphericart.h
+	gcc --shared $(CFLAGS) -lm sphericart.c -o libsphericart.so
+
+example: libsphericart.so example.c
+	gcc -o example $(CFLAGS) -O3 example.c -lsphericart -lm
