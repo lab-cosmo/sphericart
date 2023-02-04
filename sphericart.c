@@ -16,7 +16,7 @@ void compute_sph_prefactors(unsigned int l_max, double *factors) {
         factors[k] = sqrt(factor);        
         for (int m=1; m<=l; ++m) {
             factor *= 1.0/(l*(l+1)+m*(1-m));
-            factors[k+l-m] = factors[k+l+m] = sqrt(factor);         
+            factors[k-m] = factors[k+m] = sqrt(factor);         
         }
         k += l+1;
         printf("%d %d %e\n", l, k, factor);
