@@ -1,5 +1,10 @@
-#include "math.h"
 #include "stdio.h"
+#include "math.h"
+#if defined(__INTEL_COMPILER)
+    #include "mkl.h"
+#else
+    #include "cblas.h"
+#endif
 
 #define LM_IDX(l, m) l*l+l+m
 
@@ -28,7 +33,11 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, c
     /* 
         Computes the spherical harmonics
     */
-
+    cblas_daxpy(l_max, 1.0, xyz, 1, xyz, 1);
+    #pragma omp parallel for
+    for (int i_sample = 0; i_sample < n_samples; i_sample++) {
+        xyz[i_sample]++;
+    }
 
     //...
     if (dsph != NULL) {
