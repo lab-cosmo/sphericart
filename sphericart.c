@@ -109,10 +109,14 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
             q[m*(m+1)/2+(m-1)] = (2*m-1)*z*q[(m-1)*m/2+(m-1)];
         }
 
+        int k = 3; // initial indexing        
         for (int l=2; l < l_max+1; ++l) {
+            double twolz = (2*l-1)*z;
             for (int m=0; m < l-1; ++m) {
-                q[l*(l+1)/2+m] = ((2*l-1)*z*q[(l-1)*l/2+m]-(l+m-1)*q[(l-2)*(l-1)/2+m]*r_sq)/(l-m);
+                //q[l*(l+1)/2+m] = ((2*l-1)*z*q[(l-1)*l/2+m]-(l+m-1)*q[(l-2)*(l-1)/2+m]*r_sq)/(l-m);
+                q[k+m] = (twolz*q[k-l+m]-(l+m-1)*q[k-(2*l-1)+m]*r_sq)/(l-m);
             }
+            k += l+1;
         }
 /*     MC: it's better to have l as to outer loop because it works on contiguous chungs
        for (int m = 0; m < l_max-1; m++) {
@@ -129,17 +133,19 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
         }
 
         // MC be a bit smarter with pointers
+        k = 0;
         for (int l=0; l<l_max+1; l++) {
             for (int m=-l; m<0; m++) {
-                *sph_i = prefactors[l*l+l+m]*q[l*(l+1)/2+(-m)]*s[-m];
+                *sph_i = prefactors[l*l+l+m]*q[k+(-m)]*s[-m];
                 ++sph_i;                
             }
-            *sph_i = prefactors[l*l+l+0]*q[l*(l+1)/2+0]*sqrt(2.0);
+            *sph_i = prefactors[l*l+l+0]*q[k+0]*M_SQRT2;
             ++sph_i;
             for (int m=1; m<l+1; m++) {
-                *sph_i = prefactors[l*l+l+m]*q[l*(l+1)/2+m]*c[m];
+                *sph_i = prefactors[l*l+l+m]*q[k+m]*c[m];
                 ++sph_i;
             }
+            k += l+1;
         }
 
         if (dsph != NULL) {
