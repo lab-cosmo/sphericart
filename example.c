@@ -8,7 +8,7 @@
 int main(int argc, char *argv[]) {
 
     unsigned int n_samples = 10000;
-    unsigned int n_tries = 10;
+    unsigned int n_tries = 100;
     unsigned int l_max = 10;
     int c;
 
@@ -55,10 +55,7 @@ int main(int argc, char *argv[]) {
         cartesian_spherical_harmonics_naive(n_samples, l_max, prefactors, xyz, sph, NULL); 
     }
     gettimeofday(&end, NULL);
-
-    time_taken = end.tv_sec + end.tv_usec / 1e6 -
-                        start.tv_sec - start.tv_usec / 1e6; // in seconds
-
+    time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
     printf("Naive implementation took %f ms\n", 1000.0*time_taken/n_tries);
 
     gettimeofday(&start, NULL);
@@ -66,11 +63,19 @@ int main(int argc, char *argv[]) {
         cartesian_spherical_harmonics_cache(n_samples, l_max, prefactors, xyz, sph, NULL); 
     } 
     gettimeofday(&end, NULL);
-
-    time_taken = end.tv_sec + end.tv_usec / 1e6 -
-                        start.tv_sec - start.tv_usec / 1e6; // in seconds
-
+    time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
     printf("Cache implementation took %f ms\n", 1000.0*time_taken/n_tries);
 
+    gettimeofday(&start, NULL);
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        cartesian_spherical_harmonics_parallel(n_samples, l_max, prefactors, xyz, sph, NULL); 
+    } 
+    gettimeofday(&end, NULL);
+    time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
+    printf("Parallel implementation took %f ms\n", 1000.0*time_taken/n_tries);
+
+
+    free(xyz);
+    free(sph);
     return 0;
 }

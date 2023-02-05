@@ -84,6 +84,9 @@ void cartesian_spherical_harmonics_naive(unsigned int n_samples, unsigned int l_
         // computes derivatives
     }
 
+    free(q);
+    free(c);
+    free(s);
 }
 
 
@@ -131,6 +134,67 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
             // computes derivatives
         }
 
+    }
+
+    free(q);
+    free(c);
+    free(s);
+}
+
+
+void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int l_max, const double* prefactors, double *xyz, double *sph, double *dsph) {
+
+    #pragma omp parallel
+    {
+
+        double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
+        double* c = (double*) malloc(sizeof(double)*(l_max+1));
+        double* s = (double*) malloc(sizeof(double)*(l_max+1));
+        
+        #pragma omp for
+        for (int i_sample=0; i_sample<n_samples; i_sample++) {
+            double x = xyz[i_sample*3+0];
+            double y = xyz[i_sample*3+1];
+            double z = xyz[i_sample*3+2];
+            double r_sq = x*x+y*y+z*z;
+
+            q[0+0] = 1.0;
+            for (int m = 1; m < l_max+1; m++) {
+                q[m*(m+1)/2+m] = -(2*m+1)*q[(m-1)*m/2+(m-1)];
+                q[m*(m+1)/2+(m-1)] = (2*m-1)*z*q[(m-1)*m/2+(m-1)];
+            }
+            for (int m = 0; m < l_max-1; m++) {
+                for (int l = m+2; l < l_max+1; l++) {
+                    q[l*(l+1)/2+m] = ((2*l-1)*z*q[(l-1)*l/2+m]-(l+m-1)*q[(l-2)*(l-1)/2+m]*r_sq)/(l-m);
+                }
+            }
+
+            c[0] = 1.0;
+            s[0] = 0.0;
+            for (int m = 1; m < l_max+1; m++) {
+                c[m] = c[m-1]*x-s[m-1]*y;
+                s[m] = c[m-1]*y+s[m-1]*x;
+            }
+
+            for (int l=0; l<l_max+1; l++) {
+                for (int m=-l; m<0; m++) {
+                    sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[l*(l+1)/2+(-m)]*s[-m];
+                }
+                sph[i_sample*(l+1)*(l+1)+l*l+l+0] = prefactors[l*l+l+0]*q[l*(l+1)/2+0]*sqrt(2.0);
+                for (int m=1; m<l_max+1; m++) {
+                    sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[l*(l+1)/2+m]*c[m];
+                }
+            }
+
+            if (dsph != NULL) {
+                // computes derivatives
+            }
+
+        }
+
+        free(q);
+        free(c);
+        free(s);
     }
 
 }
