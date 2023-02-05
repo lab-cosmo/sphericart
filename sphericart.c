@@ -74,7 +74,7 @@ void cartesian_spherical_harmonics_naive(unsigned int n_samples, unsigned int l_
                 sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+(-m)]*s[i_sample*(l_max+1)+(-m)];
             }
             sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+0] = prefactors[l*l+l+0]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+0]*sqrt(2.0);
-            for (int m=1; m<l_max+1; m++) {
+            for (int m=1; m<l+1; m++) {
                 sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+m]*c[i_sample*(l_max+1)+m];
             }
         }
@@ -96,11 +96,11 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
     double* c = (double*) malloc(sizeof(double)*(l_max+1));
     double* s = (double*) malloc(sizeof(double)*(l_max+1));
     
+    double *sph_i = sph; // pointer to the segment that should store the i_sample sph
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
         double x = xyz[i_sample*3+0];
         double y = xyz[i_sample*3+1];
         double z = xyz[i_sample*3+2];
-        double *sph_i = sph+i_sample*(l_max+1)*(l_max+1);
         double r_sq = x*x+y*y+z*z;
 
         q[0+0] = 1.0;
@@ -128,20 +128,23 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
             s[m] = c[m-1]*y+s[m-1]*x;
         }
 
+        // MC be a bit smarter with pointers
         for (int l=0; l<l_max+1; l++) {
             for (int m=-l; m<0; m++) {
-                sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[l*(l+1)/2+(-m)]*s[-m];                
+                *sph_i = prefactors[l*l+l+m]*q[l*(l+1)/2+(-m)]*s[-m];
+                ++sph_i;                
             }
-            sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+0] = prefactors[l*l+l+0]*q[l*(l+1)/2+0]*sqrt(2.0);
-            for (int m=1; m<l_max+1; m++) {
-                sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[l*(l+1)/2+m]*c[m];
+            *sph_i = prefactors[l*l+l+0]*q[l*(l+1)/2+0]*sqrt(2.0);
+            ++sph_i;
+            for (int m=1; m<l+1; m++) {
+                *sph_i = prefactors[l*l+l+m]*q[l*(l+1)/2+m]*c[m];
+                ++sph_i;
             }
         }
 
         if (dsph != NULL) {
             // computes derivatives
-        }
-
+        }           
     }
 
     free(q);
