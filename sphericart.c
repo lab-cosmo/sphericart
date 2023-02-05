@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #if defined(__INTEL_COMPILER)
     #include "mkl.h"

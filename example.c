@@ -1,8 +1,9 @@
-#include "sphericart.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <ctype.h>
+#include "sphericart.h"
 
 int main(int argc, char *argv[]) {
 
