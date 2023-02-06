@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from scipy import special
 import ctypes
 
 lib = ctypes.cdll.LoadLibrary("./libsphericart.so")
@@ -8,7 +9,7 @@ c_prefactors = lib.compute_sph_prefactors
 c_prefactors.restype = None
 c_prefactors.argtypes = [
     ctypes.c_uint,
-    np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+    ctypes.POINTER(ctypes.c_double),
 ]
 
 c_spherical_harmonics = lib.cartesian_spherical_harmonics_naive
@@ -16,25 +17,29 @@ c_spherical_harmonics.restype = None
 c_spherical_harmonics.argtypes = [
     ctypes.c_uint,
     ctypes.c_uint,
-    np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
-    np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
-    np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
-    np.ctypeslib.ndpointer(ctypes.c_double, flags="C_CONTIGUOUS"),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
 ]
 
 def get_prefactors(l_max):
     prefactors = np.empty((l_max+1)*(l_max+2)//2)
-    c_prefactors(l_max, prefactors)
+    prefactors_ptr = prefactors.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    c_prefactors(l_max, prefactors_ptr)
     return prefactors
 
 def spherical_harmonics(l_max, xyz, prefactors, gradients=False):
     n_samples = xyz.shape[0]
     sph = np.empty((n_samples, (l_max+1)**2))
+    prefactors_ptr = prefactors.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     if gradients:
-        pass  # allocate gradients
+        pass  # allocate gradients and create pointer to them
     else:
-        dsph = np.empty((0,))  # Need to find a way to create a numpy array that points to null. Not sure if this is correct.
-    c_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph, dsph)
+        dsph_ptr = ctypes.POINTER(ctypes.c_double)()
+    c_spherical_harmonics(n_samples, l_max, prefactors_ptr, xyz_ptr, sph_ptr, dsph_ptr)
     return sph
 
 
