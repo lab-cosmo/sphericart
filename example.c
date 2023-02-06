@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     } 
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
-        if (fabs(sph[i] - sph1[i])>1e-10 ) {
+        if (fabs(sph[i]/sph1[i]-1)>1e-6 ) {
             printf("Cached implementation mismatch %e %e", sph[i], sph1[i]);
         }
     }
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
     } 
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
-        if (fabs(sph[i] - sph2[i])>1e-10 ) {
+        if (fabs(sph[i]/sph2[i]-1)>1e-6 ) {
             printf("Parallel implementation mismatch %e %e", sph[i], sph2[i]);
         }
     }

@@ -93,7 +93,7 @@ void cartesian_spherical_harmonics_naive(unsigned int n_samples, unsigned int l_
 
 
 void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_max, const double* prefactors, double *xyz, double *sph, double *dsph) {
-
+    
     double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
     double* c = (double*) malloc(sizeof(double)*(l_max+1));
     double* s = (double*) malloc(sizeof(double)*(l_max+1));
@@ -121,9 +121,10 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
             double lmrsq = (l-2)*r_sq;
             for (int m=0; m < l-1; ++m) {
                 lmrsq += r_sq; // this computes (l-1+m) r_sq
-                q[k+m] = (twolz*q[k-l+m]-lmrsq*q[k-(2*l-1)+m])/(l-m);
+                q[k] = (twolz*q[k-l]-lmrsq*q[k-(2*l-1)])/(l-m);
+                ++k; 
             }
-            k += l+1;
+            k += 2; // we must skip the 2 that are already precomputed
         }
 
         // pre-multiplies the Qlm with the prefactors because there's no need to do it twice below        
@@ -166,12 +167,13 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
     #pragma omp parallel
     {
 
-        double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
-        double* c = (double*) malloc(sizeof(double)*(l_max+1));
-        double* s = (double*) malloc(sizeof(double)*(l_max+1));
+    double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
+    double* c = (double*) malloc(sizeof(double)*(l_max+1));
+    double* s = (double*) malloc(sizeof(double)*(l_max+1));
+    int k; // utility index
         
-        #pragma omp for
-        for (int i_sample=0; i_sample<n_samples; i_sample++) {
+    #pragma omp for
+    for (int i_sample=0; i_sample<n_samples; i_sample++) {
         double x = xyz[i_sample*3+0];
         double y = xyz[i_sample*3+1];
         double z = xyz[i_sample*3+2];
@@ -180,23 +182,27 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
         double *sph_i = sph+i_sample*(l_max+1)*(l_max+1); 
 
         q[0+0] = 1.0;
+        k = 1;
         for (int m = 1; m < l_max+1; m++) {
-            q[m*(m+1)/2+m] = -(2*m-1)*q[(m-1)*m/2+(m-1)];
-            q[m*(m+1)/2+(m-1)] = (2*m-1)*z*q[(m-1)*m/2+(m-1)];
+            q[k+m] = -(2*m-1)*q[k-1];
+            q[k+(m-1)] = -z*q[k+m]; // (2*m-1)*z*q[k-1];
+            k += m+1; 
         }
 
         /* Compute Qlm */
-        int k = 3; // Base index to traverse the Qlm. Initial index for q[lm] starts at l=2
+        k = 3; // Base index to traverse the Qlm. Initial index for q[lm] starts at l=2
         for (int l=2; l < l_max+1; ++l) {
             double twolz = (2*l-1)*z;
+            double lmrsq = (l-2)*r_sq;
             for (int m=0; m < l-1; ++m) {
-                q[k+m] = (twolz*q[k-l+m]-(l+m-1)*q[k-(2*l-1)+m]*r_sq)/(l-m);
+                lmrsq += r_sq; // this computes (l-1+m) r_sq
+                q[k+m] = (twolz*q[k-l+m]-lmrsq*q[k-(2*l-1)+m])/(l-m);
             }
             k += l+1;
         }
 
-        // pre-multiplies the Qlm with the prefactors because there's no need to do it twice below
-        for (int k=0; k<(l_max+1)*(l_max+2)/2; ++k) {
+        // pre-multiplies the Qlm with the prefactors because there's no need to do it twice below        
+        for (k=0; k<(l_max+1)*(l_max+2)/2; ++k) {
             q[k]*=prefactors[k];
         }
 
@@ -210,17 +216,13 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
         // We fill the (cartesian) sph by combining Qlm and sine/cosine phi-dependent factors
         k = 0;
         for (int l=0; l<l_max+1; l++) {
-            for (int m=-l; m<0; m++) {
-                *sph_i = q[k+(-m)]*s[-m];
-                ++sph_i;                
-            }
-            *sph_i = q[k+0]*M_SQRT1_2;
-            ++sph_i;
+            sph_i[l] = q[k+0]*M_SQRT1_2;
             for (int m=1; m<l+1; m++) {
-                *sph_i = q[k+m]*c[m];
-                ++sph_i;
-            }
+                sph_i[l-m] = q[k+m]*s[m];
+                sph_i[l+m] = q[k+m]*c[m];
+            }             
             k += l+1;
+            sph_i += 2*l+1;
         }
 
         if (dsph != NULL) {
