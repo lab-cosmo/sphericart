@@ -56,6 +56,8 @@ int main(int argc, char *argv[]) {
     struct timeval start, end;
     double time_taken;
 
+    printf("WITHOUT DERIVATIVES\n");
+
     gettimeofday(&start, NULL);
     for (int i_try = 0; i_try < n_tries; i_try++) {
         cartesian_spherical_harmonics_naive(n_samples, l_max, prefactors, xyz, sph, NULL); 
@@ -74,7 +76,6 @@ int main(int argc, char *argv[]) {
             printf("Cached implementation mismatch %e %e", sph[i], sph1[i]);
         }
     }
-
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
     printf("Cache implementation took %f ms\n", 1000.0*time_taken/n_tries);
 
@@ -91,8 +92,26 @@ int main(int argc, char *argv[]) {
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
     printf("Parallel implementation took %f ms\n", 1000.0*time_taken/n_tries);
 
+    printf(" \n");
+    printf("WITH DERIVATIVES\n");
+    double *dsph = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
+    double *dsph1 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
+    double *dsph2 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
+
+    gettimeofday(&start, NULL);
+    for (int i_try = 0; i_try < 100; i_try++) {
+        cartesian_spherical_harmonics_cache(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
+    } 
+    gettimeofday(&end, NULL);
+    time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
+    printf("Cache implementation took %f ms\n", 1000.0*time_taken/n_tries);
 
     free(xyz);
     free(sph);
+    free(sph1);
+    free(sph2);
+    free(dsph);
+    free(dsph1);
+    free(dsph2);
     return 0;
 }
