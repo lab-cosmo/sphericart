@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-CFLAGS = -O3 -g -march=native -Wall
+CFLAGS = -O3 -g -march=native -fopenmp -Wall
 
 all: libsphericart.so example
 

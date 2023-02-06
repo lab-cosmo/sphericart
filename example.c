@@ -17,7 +17,6 @@ int main(int argc, char *argv[]) {
     while ((c = getopt (argc, argv, "l:s:t:")) != -1) {
         switch (c) {
         case 'l':
-            printf("%s ", optarg);
             sscanf(optarg, "%u", &l_max);
             break;
         case 's':
@@ -72,7 +71,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
         if (fabs(sph[i] - sph1[i])>1e-10 ) {
-            printf("Implementation mismatch %e %e", sph[i], sph1[i]);
+            printf("Cached implementation mismatch %e %e", sph[i], sph1[i]);
         }
     }
 
@@ -84,6 +83,11 @@ int main(int argc, char *argv[]) {
         cartesian_spherical_harmonics_parallel(n_samples, l_max, prefactors, xyz, sph2, NULL); 
     } 
     gettimeofday(&end, NULL);
+    for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
+        if (fabs(sph[i] - sph1[i])>1e-10 ) {
+            printf("Parallel implementation mismatch %e %e", sph[i], sph2[i]);
+        }
+    }
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
     printf("Parallel implementation took %f ms\n", 1000.0*time_taken/n_tries);
 
