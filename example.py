@@ -36,11 +36,13 @@ def spherical_harmonics(l_max, xyz, prefactors, gradients=False):
     xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     if gradients:
-        pass  # allocate gradients and create pointer to them
+        dsph = np.empty((n_samples, 3, (l_max+1)**2))
+        dsph_ptr = dsph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     else:
+        dsph = None
         dsph_ptr = ctypes.POINTER(ctypes.c_double)()
     c_spherical_harmonics(n_samples, l_max, prefactors_ptr, xyz_ptr, sph_ptr, dsph_ptr)
-    return sph
+    return sph, dsph
 
 
 def test_against_scipy(xyz: np.ndarray, l: int, m: int):
@@ -64,7 +66,7 @@ def test_against_scipy(xyz: np.ndarray, l: int, m: int):
         sh_scipy_l_m = complex_sh_scipy_l_m.real
 
     prefactors = get_prefactors(l_max)
-    sh_sphericart = spherical_harmonics(l_max, xyz, prefactors, gradients=False)
+    sh_sphericart, _ = spherical_harmonics(l_max, xyz, prefactors, gradients=False)
     sh_sphericart_l_m = sh_sphericart[:, l*l+l+m] / r**l
 
     assert np.allclose(sh_scipy_l_m, sh_sphericart_l_m), f"assertion failed for l={l}, m={m}"
@@ -85,17 +87,33 @@ import time
 prefactors = get_prefactors(l_max)
 start = time.time()
 for _ in range(100):
-    sh_sphericart = spherical_harmonics(l_max, xyz, prefactors, gradients=False)
+    sh_sphericart, _ = spherical_harmonics(l_max, xyz, prefactors, gradients=False)
 finish = time.time()
 print(f"We took {1000*(finish-start)/n_tries} ms")
 
 import torch
 import e3nn
-xyz = torch.tensor(xyz)
-sh = e3nn.o3.spherical_harmonics(l_max, xyz, normalize=False)  # allow compilation (??)
+xyz_tensor = torch.tensor(xyz)
+sh = e3nn.o3.spherical_harmonics(l_max, xyz_tensor, normalize=False)  # allow compilation (??)
 start = time.time()
 for _ in range(100):
-    sh = e3nn.o3.spherical_harmonics(l_max, xyz, normalize=False)
+    sh = e3nn.o3.spherical_harmonics(l_max, xyz_tensor, normalize=False)
 finish = time.time()
 print(f"e3nn took {1000*(finish-start)/n_tries} ms")
+
+# Derivative test:
+delta = 1e-6
+for alpha in range(3):
+    xyzplus = xyz
+    xyzplus[:, alpha] += delta*np.ones_like(xyz[:, alpha])
+    xyzminus = xyz
+    xyzminus[:, alpha] -= delta*np.ones_like(xyz[:, alpha])
+    shplus, _ = spherical_harmonics(l_max, xyzplus, prefactors, gradients=False)
+    shminus, _ = spherical_harmonics(l_max, xyzminus, prefactors, gradients=False)
+    numerical_derivatives = (shplus - shminus)/(2.0*delta)
+    sh, analytical_derivatives_all =  spherical_harmonics(l_max, xyz, prefactors, gradients=True)
+    analytical_derivatives = analytical_derivatives_all[:, alpha, :]
+    np.allclose(numerical_derivatives, analytical_derivatives)
+
+print("Derivative tests passed successfully!")
 

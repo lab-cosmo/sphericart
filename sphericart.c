@@ -1,13 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#if defined(__INTEL_COMPILER)
-    #include "mkl.h"
-#else
-    #include "cblas.h"
-#endif
 
-#define LM_IDX(l, m) l*l+l+m
 
 void compute_sph_prefactors(unsigned int l_max, double *factors) {
     /*
@@ -97,6 +91,25 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
     double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
     double* c = (double*) malloc(sizeof(double)*(l_max+1));
     double* s = (double*) malloc(sizeof(double)*(l_max+1));
+
+    double* dqdx;
+    double* dcdx;
+    double* dsdx;
+    double* dqdy;
+    double* dcdy;
+    double* dsdy;
+    double* dqdz;
+
+    if (dsph != NULL) {
+        dqdx = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
+        dqdy = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
+        dqdz = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
+        dcdx = (double*) malloc(sizeof(double)*(l_max+1));
+        dsdx = (double*) malloc(sizeof(double)*(l_max+1));
+        dcdy = (double*) malloc(sizeof(double)*(l_max+1));
+        dsdy = (double*) malloc(sizeof(double)*(l_max+1));
+    } 
+
     int k; // utility index
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
         double x = xyz[i_sample*3+0];
@@ -127,10 +140,13 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
             k += 2; // we must skip the 2 that are already precomputed
         }
 
-        // pre-multiplies the Qlm with the prefactors because there's no need to do it twice below        
+        // pre-multiplies the Qlm with the prefactors because there's no need to do it twice below   
+        /*     
         for (k=0; k<(l_max+1)*(l_max+2)/2; ++k) {
             q[k]*=prefactors[k];
         }
+        */
+        // Commented. We need an intact q for the derivatives. See workaround below to avoid the double multiplication.
 
         c[0] = 1.0;
         s[0] = 0.0;
@@ -142,18 +158,74 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
         // We fill the (cartesian) sph by combining Qlm and sine/cosine phi-dependent factors
         k = 0;
         for (int l=0; l<l_max+1; l++) {
-            sph_i[l] = q[k+0]*M_SQRT1_2;
+            double pq = q[k]*prefactors[k];
+            sph_i[l] = pq*M_SQRT1_2;
             for (int m=1; m<l+1; m++) {
-                sph_i[l-m] = q[k+m]*s[m];
-                sph_i[l+m] = q[k+m]*c[m];
+                pq = q[k+m]*prefactors[k+m];
+                sph_i[l-m] = pq*s[m];
+                sph_i[l+m] = pq*c[m];
             }             
             k += l+1;
             sph_i += 2*l+1;
         }
 
         if (dsph != NULL) {
-            // computes derivatives
-        }           
+            double *dsph_i = dsph+i_sample*3*(l_max+1)*(l_max+1); 
+
+            // Derivatives of q
+            dqdx[0] = 0.0;  // l = m = 0
+            for (int l = 1; l < l_max+1; l++) {
+                dqdx[l*(l+1)/2+l] = 0.0;
+                dqdy[l*(l+1)/2+l] = 0.0;
+                dqdz[l*(l+1)/2+l] = 0.0;
+                dqdx[l*(l+1)/2+l-1] = 0.0;
+                dqdy[l*(l+1)/2+l-1] = 0.0;
+                for (int m = 0; m < l; m++) {
+                    if (m != l-1) {
+                        dqdx[l*(l+1)/2+m] = x*q[(l-1)*l/2+m+1];
+                        dqdy[l*(l+1)/2+m] = y*q[(l-1)*l/2+m+1];
+                    }
+                    dqdz[l*(l+1)/2+m] = (l+m)*q[(l-1)*l/2+m];
+                }
+            }
+
+            // Derivatives of c, s
+            dsdx[0] = 0.0;
+            dcdx[0] = 0.0;
+            dsdy[0] = 0.0;
+            dcdy[0] = 0.0;
+            for (int m = 1; m < l_max+1; m++) {
+                dsdx[m] = s[m-1];
+                dcdx[m] = c[m-1];
+                dsdy[m] = c[m-1];
+                dcdy[m] = -s[m-1];
+            }
+
+            // Chain rule:
+            for (int l=0; l<l_max+1; l++) {
+                dsph_i[(l_max+1)*(l_max+1)*0+l*l+l] = prefactors[l*(l+1)/2]*dqdx[l*(l+1)/2];
+                dsph_i[(l_max+1)*(l_max+1)*1+l*l+l] = prefactors[l*(l+1)/2]*dqdy[l*(l+1)/2];
+                dsph_i[(l_max+1)*(l_max+1)*2+l*l+l] = prefactors[l*(l+1)/2]*dqdz[l*(l+1)/2];
+                for (int m=1; m<l+1; m++) {
+                    dsph_i[(l_max+1)*(l_max+1)*0+l*l+l-m] = prefactors[l*(l+1)/2+m]*(dqdx[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdx[m]);
+                    dsph_i[(l_max+1)*(l_max+1)*1+l*l+l-m] = prefactors[l*(l+1)/2+m]*(dqdy[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdy[m]);
+                    dsph_i[(l_max+1)*(l_max+1)*2+l*l+l-m] = prefactors[l*(l+1)/2+m]*dqdz[l*(l+1)/2+m]*s[m];
+                    dsph_i[(l_max+1)*(l_max+1)*0+l*l+l+m] = prefactors[l*(l+1)/2+m]*(dqdx[l*(l+1)/2+m]*c[m]+q[l*(l+1)/2+m]*dcdx[m]);
+                    dsph_i[(l_max+1)*(l_max+1)*1+l*l+l+m] = prefactors[l*(l+1)/2+m]*(dqdy[l*(l+1)/2+m]*c[m]+q[l*(l+1)/2+m]*dcdy[m]);
+                    dsph_i[(l_max+1)*(l_max+1)*2+l*l+l+m] = prefactors[l*(l+1)/2+m]*dqdz[l*(l+1)/2+m]*c[m];
+                }
+            }
+        }     
+    }
+
+    if (dsph != NULL) {
+        free(dqdx);
+        free(dcdx);
+        free(dsdx);
+        free(dqdy);
+        free(dcdy);
+        free(dsdy);
+        free(dqdz);
     }
 
     free(q);

@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-CFLAGS = -O3 -g -march=native -Wall
+CFLAGS = -O3 -g -march=native -Wall -fopenmp
 
 all: libsphericart.so example
 
@@ -8,7 +8,7 @@ clean:
 	rm -rf libsphericart.so example
 
 libsphericart.so: sphericart.c sphericart.h
-	clang --shared $(CFLAGS) sphericart.c -o libsphericart.so -lm -fpic -lopenblas -fopenmp
+	clang --shared $(CFLAGS) sphericart.c -o libsphericart.so -lm -fpic
 
 example: libsphericart.so example.c
 	clang -o example $(CFLAGS) -O3 example.c -lsphericart -L .
