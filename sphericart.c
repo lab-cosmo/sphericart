@@ -12,17 +12,16 @@
 void compute_sph_prefactors(unsigned int l_max, double *factors) {
     /*
         Computes the prefactors for the spherical harmonics
-        sqrt((2l+1)/pi (l-|m|)!/(l+m)!)
+        sqrt((2l+1)/pi (l-|m|)!/(l+|m}\|)!)
     */
 
     unsigned int k=0; // quick access index
     for (unsigned int l=0; l<=l_max; ++l) {
         double factor = (2*l+1)/(2*M_PI);
-        k+=l;
         factors[k] = sqrt(factor);        
         for (int m=1; m<=l; ++m) {
             factor *= 1.0/(l*(l+1)+m*(1-m));
-            factors[k-m] = factors[k+m] = sqrt(factor);         
+            factors[k+m] = sqrt(factor);         
         }
         k += l+1;
         printf("%d %d %e\n", l, k, factor);
@@ -71,11 +70,11 @@ void cartesian_spherical_harmonics_naive(unsigned int n_samples, unsigned int l_
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
         for (int l=0; l<l_max+1; l++) {
             for (int m=-l; m<0; m++) {
-                sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+(-m)]*s[i_sample*(l_max+1)+(-m)];
+                sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[(l*l+l)/2+(-m)]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+(-m)]*s[i_sample*(l_max+1)+(-m)];
             }
-            sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+0] = prefactors[l*l+l+0]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+0]*sqrt(2.0);
+            sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+0] = prefactors[(l*l+l)/2+0]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+0]*sqrt(2.0);
             for (int m=1; m<l+1; m++) {
-                sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+m]*c[i_sample*(l_max+1)+m];
+                sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[(l*l+l)/2+m]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+m]*c[i_sample*(l_max+1)+m];
             }
         }
     }
@@ -132,17 +131,23 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
             s[m] = c[m-1]*y+s[m-1]*x;
         }
 
+
+        // pre-multiplies the Qlm with the prefactors because there's no need to do it twice below
+        for (int k=0; k<(l_max+1)*(l_max+2)/2; ++k) {
+            q[k]*=prefactors[k];
+        }
+
         // MC be a bit smarter with pointers
         k = 0;
         for (int l=0; l<l_max+1; l++) {
             for (int m=-l; m<0; m++) {
-                *sph_i = prefactors[l*l+l+m]*q[k+(-m)]*s[-m];
+                *sph_i = q[k+(-m)]*s[-m];
                 ++sph_i;                
             }
-            *sph_i = prefactors[l*l+l+0]*q[k+0]*M_SQRT2;
+            *sph_i = q[k+0]*M_SQRT2;
             ++sph_i;
             for (int m=1; m<l+1; m++) {
-                *sph_i = prefactors[l*l+l+m]*q[k+m]*c[m];
+                *sph_i = q[k+m]*c[m];
                 ++sph_i;
             }
             k += l+1;
@@ -195,11 +200,11 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
 
             for (int l=0; l<l_max+1; l++) {
                 for (int m=-l; m<0; m++) {
-                    sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[l*(l+1)/2+(-m)]*s[-m];
+                    sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*(l+1)/2+(-m)]*q[l*(l+1)/2+(-m)]*s[-m];
                 }
-                sph[i_sample*(l+1)*(l+1)+l*l+l+0] = prefactors[l*l+l+0]*q[l*(l+1)/2+0]*sqrt(2.0);
+                sph[i_sample*(l+1)*(l+1)+l*l+l+0] = prefactors[l*(l+1)/2+0]*q[l*(l+1)/2+0]*sqrt(2.0);
                 for (int m=1; m<l_max+1; m++) {
-                    sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*l+l+m]*q[l*(l+1)/2+m]*c[m];
+                    sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*(l+1)/2+m]*q[l*(l+1)/2+m]*c[m];
                 }
             }
 

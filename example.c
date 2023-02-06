@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    double *prefactors = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+1));
+    double *prefactors = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
 
     compute_sph_prefactors(l_max, prefactors);
 
