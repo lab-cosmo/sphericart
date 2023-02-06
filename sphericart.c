@@ -12,7 +12,7 @@
 void compute_sph_prefactors(unsigned int l_max, double *factors) {
     /*
         Computes the prefactors for the spherical harmonics
-        sqrt((2l+1)/pi (l-|m|)!/(l+|m}\|)!)
+        (-1)^|m| sqrt((2l+1)/(2pi) (l-|m|)!/(l+|m}\|)!)
     */
 
     unsigned int k=0; // quick access index
@@ -21,7 +21,11 @@ void compute_sph_prefactors(unsigned int l_max, double *factors) {
         factors[k] = sqrt(factor);        
         for (int m=1; m<=l; ++m) {
             factor *= 1.0/(l*(l+1)+m*(1-m));
-            factors[k+m] = sqrt(factor);         
+            if (m % 2 == 0) {
+                factors[k+m] = sqrt(factor);    
+            } else {
+                factors[k+m] = - sqrt(factor); 
+            }     
         }
         k += l+1;
     }
@@ -42,7 +46,7 @@ void cartesian_spherical_harmonics_naive(unsigned int n_samples, unsigned int l_
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
         q[i_sample*(l_max+1)*(l_max+2)/2+0+0] = 1.0;
         for (int m = 1; m < l_max+1; m++) {
-            q[i_sample*(l_max+1)*(l_max+2)/2+m*(m+1)/2+m] = -(2*m+1)*q[i_sample*(l_max+1)*(l_max+2)/2+(m-1)*m/2+(m-1)];
+            q[i_sample*(l_max+1)*(l_max+2)/2+m*(m+1)/2+m] = -(2*m-1)*q[i_sample*(l_max+1)*(l_max+2)/2+(m-1)*m/2+(m-1)];
             q[i_sample*(l_max+1)*(l_max+2)/2+m*(m+1)/2+(m-1)] = (2*m-1)*xyz[i_sample*3+2]*q[i_sample*(l_max+1)*(l_max+2)/2+(m-1)*m/2+(m-1)];
         }
         for (int m = 0; m < l_max-1; m++) {
@@ -71,7 +75,7 @@ void cartesian_spherical_harmonics_naive(unsigned int n_samples, unsigned int l_
             for (int m=-l; m<0; m++) {
                 sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[(l*l+l)/2+(-m)]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+(-m)]*s[i_sample*(l_max+1)+(-m)];
             }
-            sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+0] = prefactors[(l*l+l)/2+0]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+0]*sqrt(2.0);
+            sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+0] = prefactors[(l*l+l)/2+0]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+0]*M_SQRT1_2;
             for (int m=1; m<l+1; m++) {
                 sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[(l*l+l)/2+m]*q[i_sample*(l_max+1)*(l_max+2)/2+l*(l+1)/2+m]*c[i_sample*(l_max+1)+m];
             }
@@ -93,7 +97,7 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
     double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
     double* c = (double*) malloc(sizeof(double)*(l_max+1));
     double* s = (double*) malloc(sizeof(double)*(l_max+1));
-        
+
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
         double x = xyz[i_sample*3+0];
         double y = xyz[i_sample*3+1];
@@ -104,7 +108,7 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
 
         q[0+0] = 1.0;
         for (int m = 1; m < l_max+1; m++) {
-            q[m*(m+1)/2+m] = -(2*m+1)*q[(m-1)*m/2+(m-1)];
+            q[m*(m+1)/2+m] = -(2*m-1)*q[(m-1)*m/2+(m-1)];
             q[m*(m+1)/2+(m-1)] = (2*m-1)*z*q[(m-1)*m/2+(m-1)];
         }
 
@@ -113,8 +117,8 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
         for (int l=2; l < l_max+1; ++l) {
             double twolz = (2*l-1)*z;
             for (int m=0; m < l-1; ++m) {
-                q[k+m] = (twolz*q[k-l+m]-(l+m-1)*r_sq*q[k-(2*l-1)+m])/(l-m);
-            }   
+                q[k+m] = (twolz*q[k-l+m]-(l+m-1)*q[k-(2*l-1)+m]*r_sq)/(l-m);
+            }
             k += l+1;
         }
 
@@ -137,7 +141,7 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
                 *sph_i = q[k+(-m)]*s[-m];
                 ++sph_i;                
             }
-            *sph_i = q[k+0]*M_SQRT2;
+            *sph_i = q[k+0]*M_SQRT1_2;
             ++sph_i;
             for (int m=1; m<l+1; m++) {
                 *sph_i = q[k+m]*c[m];
@@ -161,12 +165,13 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
 
     #pragma omp parallel
     {
-    double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
-    double* c = (double*) malloc(sizeof(double)*(l_max+1));
-    double* s = (double*) malloc(sizeof(double)*(l_max+1));
+
+        double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
+        double* c = (double*) malloc(sizeof(double)*(l_max+1));
+        double* s = (double*) malloc(sizeof(double)*(l_max+1));
         
-    #pragma omp for
-    for (int i_sample=0; i_sample<n_samples; i_sample++) {
+        #pragma omp for
+        for (int i_sample=0; i_sample<n_samples; i_sample++) {
         double x = xyz[i_sample*3+0];
         double y = xyz[i_sample*3+1];
         double z = xyz[i_sample*3+2];
@@ -176,7 +181,7 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
 
         q[0+0] = 1.0;
         for (int m = 1; m < l_max+1; m++) {
-            q[m*(m+1)/2+m] = -(2*m+1)*q[(m-1)*m/2+(m-1)];
+            q[m*(m+1)/2+m] = -(2*m-1)*q[(m-1)*m/2+(m-1)];
             q[m*(m+1)/2+(m-1)] = (2*m-1)*z*q[(m-1)*m/2+(m-1)];
         }
 
@@ -185,8 +190,8 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
         for (int l=2; l < l_max+1; ++l) {
             double twolz = (2*l-1)*z;
             for (int m=0; m < l-1; ++m) {
-                q[k+m] = (twolz*q[k-l+m]-(l+m-1)*r_sq*q[k-(2*l-1)+m])/(l-m);
-            }   
+                q[k+m] = (twolz*q[k-l+m]-(l+m-1)*q[k-(2*l-1)+m]*r_sq)/(l-m);
+            }
             k += l+1;
         }
 
@@ -209,7 +214,7 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
                 *sph_i = q[k+(-m)]*s[-m];
                 ++sph_i;                
             }
-            *sph_i = q[k+0]*M_SQRT2;
+            *sph_i = q[k+0]*M_SQRT1_2;
             ++sph_i;
             for (int m=1; m<l+1; m++) {
                 *sph_i = q[k+m]*c[m];
