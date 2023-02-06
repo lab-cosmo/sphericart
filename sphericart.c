@@ -112,7 +112,6 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
         for (int l=2; l < l_max+1; ++l) {
             double twolz = (2*l-1)*z;
             for (int m=0; m < l-1; ++m) {
-                //q[l*(l+1)/2+m] = ((2*l-1)*z*q[(l-1)*l/2+m]-(l+m-1)*q[(l-2)*(l-1)/2+m]*r_sq)/(l-m);
                 q[k+m] = (twolz*q[k-l+m]-(l+m-1)*q[k-(2*l-1)+m]*r_sq)/(l-m);
             }
             k += l+1;
@@ -159,13 +158,14 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
 
     #pragma omp parallel
     {
-
         double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
         double* c = (double*) malloc(sizeof(double)*(l_max+1));
         double* s = (double*) malloc(sizeof(double)*(l_max+1));
-        
+
         #pragma omp for
         for (int i_sample=0; i_sample<n_samples; i_sample++) {
+            double* sph_i = sph + i_sample*(l_max+1)*(l_max+1);
+
             double x = xyz[i_sample*3+0];
             double y = xyz[i_sample*3+1];
             double z = xyz[i_sample*3+2];
@@ -176,10 +176,13 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
                 q[m*(m+1)/2+m] = -(2*m-1)*q[(m-1)*m/2+(m-1)];
                 q[m*(m+1)/2+(m-1)] = (2*m-1)*z*q[(m-1)*m/2+(m-1)];
             }
-            for (int m = 0; m < l_max-1; m++) {
-                for (int l = m+2; l < l_max+1; l++) {
-                    q[l*(l+1)/2+m] = ((2*l-1)*z*q[(l-1)*l/2+m]-(l+m-1)*q[(l-2)*(l-1)/2+m]*r_sq)/(l-m);
+            int k = 3; // initial indexing        
+            for (int l=2; l < l_max+1; ++l) {
+                double twolz = (2*l-1)*z;
+                for (int m=0; m < l-1; ++m) {
+                    q[k+m] = (twolz*q[k-l+m]-(l+m-1)*q[k-(2*l-1)+m]*r_sq)/(l-m);
                 }
+                k += l+1;
             }
 
             c[0] = 1.0;
@@ -189,20 +192,28 @@ void cartesian_spherical_harmonics_parallel(unsigned int n_samples, unsigned int
                 s[m] = c[m-1]*y+s[m-1]*x;
             }
 
+            for (int k=0; k<(l_max+1)*(l_max+2)/2; ++k) {
+                q[k]*=prefactors[k];
+            }
+
+            k = 0;
             for (int l=0; l<l_max+1; l++) {
                 for (int m=-l; m<0; m++) {
-                    sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*(l+1)/2+(-m)]*q[l*(l+1)/2+(-m)]*s[-m];
+                    *sph_i = q[k+(-m)]*s[-m];
+                    ++sph_i;                
                 }
-                sph[i_sample*(l+1)*(l+1)+l*l+l+0] = prefactors[l*(l+1)/2+0]*q[l*(l+1)/2+0]*M_SQRT1_2;
-                for (int m=1; m<l_max+1; m++) {
-                    sph[i_sample*(l_max+1)*(l_max+1)+l*l+l+m] = prefactors[l*(l+1)/2+m]*q[l*(l+1)/2+m]*c[m];
+                *sph_i = q[k+0]*M_SQRT1_2;
+                ++sph_i;
+                for (int m=1; m<l+1; m++) {
+                    *sph_i = q[k+m]*c[m];
+                    ++sph_i;
                 }
+                k += l+1;
             }
 
             if (dsph != NULL) {
                 // computes derivatives
-            }
-
+            }           
         }
 
         free(q);
