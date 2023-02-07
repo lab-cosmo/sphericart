@@ -1,5 +1,5 @@
 import ctypes
-from .wrappers import c_get_prefactors, c_spherical_harmonics
+from .wrappers import c_get_prefactors, c_spherical_harmonics, c_spherical_harmonics_l1
 import os
 
 
@@ -25,17 +25,28 @@ c_spherical_harmonics_fun.argtypes = [
     ctypes.POINTER(ctypes.c_double),
 ]
 
+c_spherical_harmonics_l1_fun = lib.cartesian_spherical_harmonics_l1
+c_spherical_harmonics_l1_fun.restype = None
+c_spherical_harmonics_l1_fun.argtypes = [
+    ctypes.c_uint,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+]
 
 # Define a class which calls the wrappers
 
 class SphericalHarmonics():
 
     def __init__(self, l_max):
-        self.l_max = l_max
-        self.prefactors = c_get_prefactors(lib, l_max)
+        self._l_max = l_max
+        self._prefactors = c_get_prefactors(lib, l_max)        
 
     def compute(self, xyz, gradients=False):
-        return c_spherical_harmonics(lib, self.l_max, xyz, self.prefactors, gradients)
+        if self._l_max==1:
+            return c_spherical_harmonics_l1(lib, xyz, gradients)
+        else:
+            return c_spherical_harmonics(lib, self._l_max, xyz, self._prefactors, gradients)
 
 
 

@@ -26,6 +26,45 @@ void compute_sph_prefactors(unsigned int l_max, double *factors) {
     }
 }
 
+void cartesian_spherical_harmonics_l0(unsigned int n_samples, double *xyz, double *sph, double *dsph) {
+    #pragma omp parallel
+    {
+        #pragma omp for
+        for (int i_sample=0; i_sample<n_samples; i_sample++) {
+            sph[i_sample] = 0.282094791773878;
+            dsph[i_sample*3] = dsph[i_sample*3+1] = dsph[i_sample*3+2] = 0.0;
+        }
+    }
+}
+
+void cartesian_spherical_harmonics_l1(unsigned int n_samples, double *xyz, 
+                    double *sph, double *dsph) {
+    #pragma omp parallel
+    {
+        double *xyz_i, *sph_i, *dsph_i;
+        
+        #pragma omp for
+        for (int i_sample=0; i_sample<n_samples; i_sample++) {
+            xyz_i = xyz+i_sample*3;
+            sph_i = sph+i_sample*4;
+            dsph_i = dsph+i_sample*4*3;
+            // l=0 m=0
+            sph_i[0] = 0.282094791773878;
+            dsph_i[0] = dsph_i[4] = dsph_i[8] = 0.0;
+            ++sph_i; 
+
+            // l=1 m=-1,0,1
+            sph_i[0] = 0.48860251190292*xyz_i[1];
+            sph_i[1] = 0.48860251190292*xyz_i[2];
+            sph_i[2] = 0.48860251190292*xyz_i[0];
+            
+            dsph_i[1] = 0.0; dsph_i[2] = 0.0; dsph_i[3] = 0.48860251190292;  //d/dx 
+            dsph_i[5] = 0.48860251190292; dsph_i[6] = 0.0; dsph_i[7] = 0.0;  //d/dy
+            dsph_i[9] = 0.0; dsph_i[10] = 0.48860251190292; dsph_i[11] = 0.0;  //d/dz
+
+        }
+    }
+}
 
 void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
             const double* prefactors, double *xyz, double *sph, double *dsph) {
@@ -170,7 +209,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                         dsph_i[size_y*2+l+m] = pdq*c[m];
                         ++k;
                     }
-                    
+
                     // do separately special cases that have lots of zeros
                     // m = l-1
                     pq=prefactors[k]*q[k]*(l-1); 
