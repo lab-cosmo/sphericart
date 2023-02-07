@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
         if (fabs(sph[i]/sph1[i]-1)>1e-6 ) {
-            printf("Cached implementation mismatch %e %e", sph[i], sph1[i]);
+            printf("Cached implementation mismatch %e %e\n", sph[i], sph1[i]);
         }
     }
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
         if (fabs(sph[i]/sph2[i]-1)>1e-6 ) {
-            printf("Parallel implementation mismatch %e %e", sph[i], sph2[i]);
+            printf("Parallel implementation mismatch %e %e\n", sph[i], sph2[i]);
         }
     }
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
@@ -99,12 +99,25 @@ int main(int argc, char *argv[]) {
     double *dsph2 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
 
     gettimeofday(&start, NULL);
-    for (int i_try = 0; i_try < 100; i_try++) {
+    for (int i_try = 0; i_try < n_tries; i_try++) {
         cartesian_spherical_harmonics_cache(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
     } 
     gettimeofday(&end, NULL);
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
     printf("Cache implementation took %f ms\n", 1000.0*time_taken/n_tries);
+
+    gettimeofday(&start, NULL);
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        cartesian_spherical_harmonics_cache(n_samples, l_max, prefactors, xyz, sph1, dsph2); 
+    } 
+    gettimeofday(&end, NULL);
+    for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
+        if (fabs(sph2[i]/sph1[i]-1)>1e-6 ) {
+            printf("Fast implementation mismatch %e %e\n", sph2[i], sph1[i]);
+        }
+    }
+    time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
+    printf("Fast implementation took %f ms\n", 1000.0*time_taken/n_tries);
 
     free(xyz);
     free(sph);
