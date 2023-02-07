@@ -2,47 +2,7 @@ import numpy as np
 import scipy as sp
 from scipy import special
 import ctypes
-
-lib = ctypes.cdll.LoadLibrary("./libsphericart.so")
-
-c_prefactors = lib.compute_sph_prefactors
-c_prefactors.restype = None
-c_prefactors.argtypes = [
-    ctypes.c_uint,
-    ctypes.POINTER(ctypes.c_double),
-]
-
-c_spherical_harmonics = lib.cartesian_spherical_harmonics
-c_spherical_harmonics.restype = None
-c_spherical_harmonics.argtypes = [
-    ctypes.c_uint,
-    ctypes.c_uint,
-    ctypes.POINTER(ctypes.c_double),
-    ctypes.POINTER(ctypes.c_double),
-    ctypes.POINTER(ctypes.c_double),
-    ctypes.POINTER(ctypes.c_double),
-]
-
-def get_prefactors(l_max):
-    prefactors = np.empty((l_max+1)*(l_max+2)//2)
-    prefactors_ptr = prefactors.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-    c_prefactors(l_max, prefactors_ptr)
-    return prefactors
-
-def spherical_harmonics(l_max, xyz, prefactors, gradients=False):
-    n_samples = xyz.shape[0]
-    sph = np.empty((n_samples, (l_max+1)**2))
-    prefactors_ptr = prefactors.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-    xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-    sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-    if gradients:
-        dsph = np.empty((n_samples, 3, (l_max+1)**2))
-        dsph_ptr = dsph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-    else:
-        dsph = None
-        dsph_ptr = ctypes.POINTER(ctypes.c_double)()
-    c_spherical_harmonics(n_samples, l_max, prefactors_ptr, xyz_ptr, sph_ptr, dsph_ptr)
-    return sph, dsph
+from sphericart import get_prefactors, spherical_harmonics
 
 
 def test_against_scipy(xyz: np.ndarray, l: int, m: int):
