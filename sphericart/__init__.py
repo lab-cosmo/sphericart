@@ -4,7 +4,6 @@ import os
 
 
 # Load shared object library and define functions upon importing the sphericart module
-
 path_here = os.path.dirname(os.path.abspath(__file__))
 lib = ctypes.cdll.LoadLibrary(path_here + "/../libsphericart.so")
 

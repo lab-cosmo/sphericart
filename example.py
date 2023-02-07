@@ -41,7 +41,6 @@ for l in range(0, l_max+1):
 
 print("Assertions passed successfully!")
 
-
 n_tries = 100
 import time
 sh_calculator = sphericart.SphericalHarmonics(l_max)
@@ -82,6 +81,8 @@ print("Derivative timings")
 start = time.time()
 for _ in range(100):
     sh_sphericart, sh_derivatives = sh_calculator.compute(xyz, gradients=True)
+    dummy_loss = sh_sphericart.sum()
+    loss_derivatives  = sh_derivatives.sum(axis=2)
 finish = time.time()
 print(f"We took {1000*(finish-start)/n_tries} ms")
 
