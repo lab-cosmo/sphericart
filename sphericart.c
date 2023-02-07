@@ -173,7 +173,7 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
             double *dsph_i = dsph+i_sample*3*(l_max+1)*(l_max+1); 
 
             // Derivatives of q
-            dqdx[0] = 0.0;  // l = m = 0
+            dqdz[0] = dqdy[0] = dqdx[0] = 0.0;  // l = m = 0
             for (int l = 1; l < l_max+1; l++) {
                 dqdx[l*(l+1)/2+l] = 0.0;
                 dqdy[l*(l+1)/2+l] = 0.0;
@@ -352,7 +352,7 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
                 dqdz[k+l] = 0.0;
                 dqdx[k+l-1] = 0.0;
                 dqdy[k+l-1] = 0.0;
-                dqdz[k+l-1] = 0.0;
+                // dqdz[k+l-1] = 0.0;  // Not necessary
                 for (int m = 0; m < l; m++) {
                     if (m != l-1) {
                         dqdx[k+m] = x*q[k-l+m+1];
