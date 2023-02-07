@@ -82,6 +82,10 @@ for l in range(0, l_max+1):
 print("Assertions passed successfully!")
 
 
+prefactors = get_prefactors(20)
+print(prefactors)
+
+
 n_tries = 100
 import time
 prefactors = get_prefactors(l_max)
@@ -104,16 +108,16 @@ print(f"e3nn took {1000*(finish-start)/n_tries} ms")
 # Derivative test:
 delta = 1e-6
 for alpha in range(3):
-    xyzplus = xyz
+    xyzplus = xyz.copy()
     xyzplus[:, alpha] += delta*np.ones_like(xyz[:, alpha])
-    xyzminus = xyz
+    xyzminus = xyz.copy()
     xyzminus[:, alpha] -= delta*np.ones_like(xyz[:, alpha])
     shplus, _ = spherical_harmonics(l_max, xyzplus, prefactors, gradients=False)
     shminus, _ = spherical_harmonics(l_max, xyzminus, prefactors, gradients=False)
     numerical_derivatives = (shplus - shminus)/(2.0*delta)
     sh, analytical_derivatives_all =  spherical_harmonics(l_max, xyz, prefactors, gradients=True)
     analytical_derivatives = analytical_derivatives_all[:, alpha, :]
-    np.allclose(numerical_derivatives, analytical_derivatives)
+    assert np.allclose(numerical_derivatives, analytical_derivatives)
 
 print("Derivative tests passed successfully!")
 

@@ -195,17 +195,17 @@ void cartesian_spherical_harmonics_cache(unsigned int n_samples, unsigned int l_
             dsdy[0] = 0.0;
             dcdy[0] = 0.0;
             for (int m = 1; m < l_max+1; m++) {
-                dsdx[m] = s[m-1];
-                dcdx[m] = c[m-1];
-                dsdy[m] = c[m-1];
-                dcdy[m] = -s[m-1];
+                dsdx[m] = m*s[m-1];
+                dcdx[m] = m*c[m-1];
+                dsdy[m] = m*c[m-1];
+                dcdy[m] = -m*s[m-1];
             }
 
             // Chain rule:
             for (int l=0; l<l_max+1; l++) {
-                dsph_i[(l_max+1)*(l_max+1)*0+l*l+l] = prefactors[l*(l+1)/2]*dqdx[l*(l+1)/2];
-                dsph_i[(l_max+1)*(l_max+1)*1+l*l+l] = prefactors[l*(l+1)/2]*dqdy[l*(l+1)/2];
-                dsph_i[(l_max+1)*(l_max+1)*2+l*l+l] = prefactors[l*(l+1)/2]*dqdz[l*(l+1)/2];
+                dsph_i[(l_max+1)*(l_max+1)*0+l*l+l] = prefactors[l*(l+1)/2]*dqdx[l*(l+1)/2]*M_SQRT1_2;
+                dsph_i[(l_max+1)*(l_max+1)*1+l*l+l] = prefactors[l*(l+1)/2]*dqdy[l*(l+1)/2]*M_SQRT1_2;
+                dsph_i[(l_max+1)*(l_max+1)*2+l*l+l] = prefactors[l*(l+1)/2]*dqdz[l*(l+1)/2]*M_SQRT1_2;
                 for (int m=1; m<l+1; m++) {
                     dsph_i[(l_max+1)*(l_max+1)*0+l*l+l-m] = prefactors[l*(l+1)/2+m]*(dqdx[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdx[m]);
                     dsph_i[(l_max+1)*(l_max+1)*1+l*l+l-m] = prefactors[l*(l+1)/2+m]*(dqdy[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdy[m]);
@@ -351,37 +351,36 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
             dsdy[0] = 0.0;
             dcdy[0] = 0.0;
             for (int m = 1; m < l_max+1; m++) {
-                dsdx[m] = s[m-1];
-                dcdx[m] = c[m-1];
-                dsdy[m] = c[m-1];
-                dcdy[m] = -s[m-1];
+                dsdx[m] = m*s[m-1];
+                dcdx[m] = m*c[m-1];
+                dsdy[m] = m*c[m-1];
+                dcdy[m] = -m*s[m-1];
             }*/
 
             // Chain rule:
             /*
             k=0;
             for (int l=0; l<l_max+1; l++) {
-                dsph_i[l] = prefactors[l*(l+1)/2]*dqdx[l*(l+1)/2];
-                dsph_i[size_y+l] = prefactors[l*(l+1)/2]*dqdy[l*(l+1)/2];
-                dsph_i[size_y*2+l] = prefactors[l*(l+1)/2]*dqdz[l*(l+1)/2];
+                dsph_i[(l_max+1)*(l_max+1)*0+l*l+l] = prefactors[l*(l+1)/2]*dqdx[l*(l+1)/2]*M_SQRT1_2;
+                dsph_i[(l_max+1)*(l_max+1)*1+l*l+l] = prefactors[l*(l+1)/2]*dqdy[l*(l+1)/2]*M_SQRT1_2;
+                dsph_i[(l_max+1)*(l_max+1)*2+l*l+l] = prefactors[l*(l+1)/2]*dqdz[l*(l+1)/2]*M_SQRT1_2;
                 for (int m=1; m<l+1; m++) {
-                    dsph_i[l-m] = prefactors[l*(l+1)/2+m]*(dqdx[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdx[m]);
-                    dsph_i[size_y+l-m] = prefactors[l*(l+1)/2+m]*(dqdy[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdy[m]);
-                    dsph_i[size_y*2+l-m] = prefactors[l*(l+1)/2+m]*dqdz[l*(l+1)/2+m]*s[m];
-                    dsph_i[l+m] = prefactors[l*(l+1)/2+m]*(dqdx[l*(l+1)/2+m]*c[m]+q[l*(l+1)/2+m]*dcdx[m]);
-                    dsph_i[size_y+l+m] = prefactors[l*(l+1)/2+m]*(dqdy[l*(l+1)/2+m]*c[m]+q[l*(l+1)/2+m]*dcdy[m]);
-                    dsph_i[size_y*2+l+m] = prefactors[l*(l+1)/2+m]*dqdz[l*(l+1)/2+m]*c[m];
+                    dsph_i[(l_max+1)*(l_max+1)*0+l*l+l-m] = prefactors[l*(l+1)/2+m]*(dqdx[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdx[m]);
+                    dsph_i[(l_max+1)*(l_max+1)*1+l*l+l-m] = prefactors[l*(l+1)/2+m]*(dqdy[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdy[m]);
+                    dsph_i[(l_max+1)*(l_max+1)*2+l*l+l-m] = prefactors[l*(l+1)/2+m]*dqdz[l*(l+1)/2+m]*s[m];
+                    dsph_i[(l_max+1)*(l_max+1)*0+l*l+l+m] = prefactors[l*(l+1)/2+m]*(dqdx[l*(l+1)/2+m]*c[m]+q[l*(l+1)/2+m]*dcdx[m]);
+                    dsph_i[(l_max+1)*(l_max+1)*1+l*l+l+m] = prefactors[l*(l+1)/2+m]*(dqdy[l*(l+1)/2+m]*c[m]+q[l*(l+1)/2+m]*dcdy[m]);
+                    dsph_i[(l_max+1)*(l_max+1)*2+l*l+l+m] = prefactors[l*(l+1)/2+m]*dqdz[l*(l+1)/2+m]*c[m];
                 }
-                dsph_i += 2*l+1;
             }
             */
             // Chain rule:
             
             k=0;
             for (int l=0; l<l_max+1; l++) {
-                dsph_i[l] = prefactors[k]*dqdx[k];
-                dsph_i[size_y+l] = prefactors[k]*dqdy[k];
-                dsph_i[size_y*2+l] = prefactors[k]*dqdz[k];
+                dsph_i[l] = prefactors[k]*dqdx[k]*M_SQRT1_2;
+                dsph_i[size_y+l] = prefactors[k]*dqdy[k]*M_SQRT1_2;
+                dsph_i[size_y*2+l] = prefactors[k]*dqdz[k]*M_SQRT1_2;
                 ++k;
                 for (int m=1; m<l+1; m++) {
                     pq=prefactors[k]*q[k];
@@ -389,10 +388,10 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
                     dsph_i[l-m] = (pdq*s[m]+pq*s[m-1]);
                     dsph_i[l+m] = (pdq*c[m]+pq*c[m-1]);
                     pdq=prefactors[k]*dqdy[k];
-                    dsph_i[size_y+l-m] = (pdq*s[m]+pq*c[m-1]);
-                    dsph_i[size_y+l+m] = (pdq*c[m]-pq*s[m-1]);
-                    dsph_i[size_y*2+l-m] = prefactors[k]*dqdz[k]*s[m];
-                    dsph_i[size_y*2+l+m] = prefactors[k]*dqdz[k]*c[m];
+                    dsph_i[size_y+l-m] = (pdq*s[m]+pq*m*c[m-1]);
+                    dsph_i[size_y+l+m] = (pdq*c[m]-pq*m*s[m-1]);
+                    dsph_i[size_y*2+l-m] = prefactors[k]*dqdz[k]*m*s[m];
+                    dsph_i[size_y*2+l+m] = prefactors[k]*dqdz[k]*m*c[m];
                     ++k;
                 }
                 dsph_i += 2*l+1;  
