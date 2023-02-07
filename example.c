@@ -41,7 +41,6 @@ int main(int argc, char *argv[]) {
     }
 
     double *prefactors = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
-
     compute_sph_prefactors(l_max, prefactors);
 
     double *xyz = (double*) malloc(sizeof(double)*n_samples*3);
@@ -50,83 +49,32 @@ int main(int argc, char *argv[]) {
     }
 
     double *sph = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
-    double *sph1 = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
-    double *sph2 = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
 
     struct timeval start, end;
     double time_taken;
 
-    printf("WITHOUT DERIVATIVES\n");
-
     gettimeofday(&start, NULL);
     for (int i_try = 0; i_try < n_tries; i_try++) {
-        cartesian_spherical_harmonics_naive(n_samples, l_max, prefactors, xyz, sph, NULL); 
+        cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph, NULL); 
     }
     gettimeofday(&end, NULL);
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
-    printf("Naive implementation took %f ms\n", 1000.0*time_taken/n_tries);
+    printf("Call without derivatives took %f ms\n", 1000.0*time_taken/n_tries);
 
-    gettimeofday(&start, NULL);
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        cartesian_spherical_harmonics_cache(n_samples, l_max, prefactors, xyz, sph1, NULL); 
-    } 
-    gettimeofday(&end, NULL);
-    for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
-        if (fabs(sph[i]/sph1[i]-1)>1e-10 ) {
-            printf("Cached implementation mismatch %e %e\n", sph[i], sph1[i]);
-        }
-    }
-    time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
-    printf("Cache implementation took %f ms\n", 1000.0*time_taken/n_tries);
-
-    gettimeofday(&start, NULL);
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        cartesian_spherical_harmonics_parallel(n_samples, l_max, prefactors, xyz, sph2, NULL); 
-    } 
-    gettimeofday(&end, NULL);
-    for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
-        if (fabs(sph[i]/sph2[i]-1)>1e-10 ) {
-            printf("Parallel implementation mismatch %e %e\n", sph[i], sph2[i]);
-        }
-    }
-    time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
-    printf("Parallel implementation took %f ms\n", 1000.0*time_taken/n_tries);
-
-    printf(" \n");
-    printf("WITH DERIVATIVES\n");
     double *dsph = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
-    double *dsph1 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
-    double *dsph2 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
 
     gettimeofday(&start, NULL);
     for (int i_try = 0; i_try < n_tries; i_try++) {
-        cartesian_spherical_harmonics_cache(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
+        cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph, dsph); 
     } 
     gettimeofday(&end, NULL);
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
-    printf("Cache implementation took %f ms\n", 1000.0*time_taken/n_tries);
-
-    for (int i_try = 0; i_try < n_tries; i_try++) // just run sph-only once to make it comparable to cached
-        cartesian_spherical_harmonics_fast(n_samples, l_max, prefactors, xyz, sph1, NULL); 
-    gettimeofday(&start, NULL);
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        cartesian_spherical_harmonics_fast(n_samples, l_max, prefactors, xyz, sph1, dsph2); 
-    } 
-    gettimeofday(&end, NULL);
-    for (int i=0; i<n_samples*3*(l_max+1)*(l_max+1); ++i) {
-        if (fabs(dsph2[i]/dsph1[i]-1)>1e-10 ) {
-            printf("Fast implementation mismatch %e %e\n", dsph2[i], dsph1[i]);
-        }
-    }
-    time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
-    printf("Fast implementation took %f ms\n", 1000.0*time_taken/n_tries);
+    printf("Call with derivatives took %f ms\n", 1000.0*time_taken/n_tries);
 
     free(xyz);
+    free(prefactors);
     free(sph);
-    free(sph1);
-    free(sph2);
     free(dsph);
-    free(dsph1);
-    free(dsph2);
+
     return 0;
 }

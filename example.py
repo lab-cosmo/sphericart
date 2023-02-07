@@ -12,7 +12,7 @@ c_prefactors.argtypes = [
     ctypes.POINTER(ctypes.c_double),
 ]
 
-c_spherical_harmonics = lib.cartesian_spherical_harmonics_cache
+c_spherical_harmonics = lib.cartesian_spherical_harmonics
 c_spherical_harmonics.restype = None
 c_spherical_harmonics.argtypes = [
     ctypes.c_uint,
@@ -117,3 +117,19 @@ for alpha in range(3):
 
 print("Derivative tests passed successfully!")
 
+print("Derivative timings")
+
+start = time.time()
+for _ in range(100):
+    sh_sphericart, sh_derivatives = spherical_harmonics(l_max, xyz, prefactors, gradients=True)
+finish = time.time()
+print(f"We took {1000*(finish-start)/n_tries} ms")
+
+xyz_tensor.requires_grad = True
+start = time.time()
+for _ in range(100):
+    sh = e3nn.o3.spherical_harmonics(l_max, xyz_tensor, normalize=False)
+    dummy_loss = torch.sum(sh)
+    dummy_loss.backward()
+finish = time.time()
+print(f"e3nn took {1000*(finish-start)/n_tries} ms")
