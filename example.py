@@ -82,10 +82,6 @@ for l in range(0, l_max+1):
 print("Assertions passed successfully!")
 
 
-prefactors = get_prefactors(20)
-print(prefactors)
-
-
 n_tries = 100
 import time
 prefactors = get_prefactors(l_max)

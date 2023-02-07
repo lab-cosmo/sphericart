@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     } 
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*3*(l_max+1)*(l_max+1); ++i) {
-        if (fabs(dsph2[i]-dsph1[i])>1e-10 ) {
+        if (fabs(dsph2[i]/dsph1[i]-1)>1e-10 ) {
             printf("Fast implementation mismatch %e %e\n", dsph2[i], dsph1[i]);
         }
     }
