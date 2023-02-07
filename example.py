@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 from scipy import special
 import ctypes
-from sphericart import get_prefactors, spherical_harmonics
+import sphericart
 
 
 def test_against_scipy(xyz: np.ndarray, l: int, m: int):
@@ -25,8 +25,8 @@ def test_against_scipy(xyz: np.ndarray, l: int, m: int):
     else: # m == 0
         sh_scipy_l_m = complex_sh_scipy_l_m.real
 
-    prefactors = get_prefactors(l_max)
-    sh_sphericart, _ = spherical_harmonics(l_max, xyz, prefactors, gradients=False)
+    sh_calculator = sphericart.SphericalHarmonics(l_max)
+    sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
     sh_sphericart_l_m = sh_sphericart[:, l*l+l+m] / r**l
 
     assert np.allclose(sh_scipy_l_m, sh_sphericart_l_m), f"assertion failed for l={l}, m={m}"
@@ -44,10 +44,10 @@ print("Assertions passed successfully!")
 
 n_tries = 100
 import time
-prefactors = get_prefactors(l_max)
+sh_calculator = sphericart.SphericalHarmonics(l_max)
 start = time.time()
 for _ in range(100):
-    sh_sphericart, _ = spherical_harmonics(l_max, xyz, prefactors, gradients=False)
+    sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
 finish = time.time()
 print(f"We took {1000*(finish-start)/n_tries} ms")
 
@@ -68,10 +68,10 @@ for alpha in range(3):
     xyzplus[:, alpha] += delta*np.ones_like(xyz[:, alpha])
     xyzminus = xyz.copy()
     xyzminus[:, alpha] -= delta*np.ones_like(xyz[:, alpha])
-    shplus, _ = spherical_harmonics(l_max, xyzplus, prefactors, gradients=False)
-    shminus, _ = spherical_harmonics(l_max, xyzminus, prefactors, gradients=False)
+    shplus, _ = sh_calculator.compute(xyzplus, gradients=False)
+    shminus, _ = sh_calculator.compute(xyzminus, gradients=False)
     numerical_derivatives = (shplus - shminus)/(2.0*delta)
-    sh, analytical_derivatives_all =  spherical_harmonics(l_max, xyz, prefactors, gradients=True)
+    sh, analytical_derivatives_all =  sh_calculator.compute(xyz, gradients=True)
     analytical_derivatives = analytical_derivatives_all[:, alpha, :]
     assert np.allclose(numerical_derivatives, analytical_derivatives)
 
@@ -81,7 +81,7 @@ print("Derivative timings")
 
 start = time.time()
 for _ in range(100):
-    sh_sphericart, sh_derivatives = spherical_harmonics(l_max, xyz, prefactors, gradients=True)
+    sh_sphericart, sh_derivatives = sh_calculator.compute(xyz, gradients=True)
 finish = time.time()
 print(f"We took {1000*(finish-start)/n_tries} ms")
 

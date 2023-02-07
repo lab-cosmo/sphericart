@@ -27,13 +27,16 @@ c_spherical_harmonics_fun.argtypes = [
 ]
 
 
-# Define calls to the wrappers
+# Define a class which calls the wrappers
 
-def get_prefactors(l_max):
-    return c_get_prefactors(lib, l_max)
+class SphericalHarmonics():
 
-def spherical_harmonics(l_max, xyz, prefactors, gradients=False):
-    return c_spherical_harmonics(lib, l_max, xyz, prefactors, gradients)
+    def __init__(self, l_max):
+        self.l_max = l_max
+        self.prefactors = c_get_prefactors(lib, l_max)
+
+    def compute(self, xyz, gradients=False):
+        return c_spherical_harmonics(lib, self.l_max, xyz, self.prefactors, gradients)
 
 
 
