@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 
     gettimeofday(&start, NULL);
     for (int i_try = 0; i_try < n_tries; i_try++) {
-        cartesian_spherical_harmonics_cache(n_samples, l_max, prefactors, xyz, sph1, dsph2); 
+        cartesian_spherical_harmonics_fast(n_samples, l_max, prefactors, xyz, sph1, dsph2); 
     } 
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
