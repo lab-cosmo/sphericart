@@ -106,6 +106,8 @@ int main(int argc, char *argv[]) {
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
     printf("Cache implementation took %f ms\n", 1000.0*time_taken/n_tries);
 
+    for (int i_try = 0; i_try < n_tries; i_try++) // just run sph-only once to make it comparable to cached
+        cartesian_spherical_harmonics_fast(n_samples, l_max, prefactors, xyz, sph1, NULL); 
     gettimeofday(&start, NULL);
     for (int i_try = 0; i_try < n_tries; i_try++) {
         cartesian_spherical_harmonics_fast(n_samples, l_max, prefactors, xyz, sph1, dsph2); 

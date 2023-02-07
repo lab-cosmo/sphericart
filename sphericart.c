@@ -240,28 +240,9 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
     double* c = (double*) malloc(sizeof(double)*(l_max+1));
     double* s = (double*) malloc(sizeof(double)*(l_max+1));
 
-    double* dqdx;
-    double* dcdx;
-    double* dsdx;
-    double* dqdy;
-    double* dcdy;
-    double* dsdy;
-    double* dqdz;
+    double pq, pdq, pdqx, pdqy; // temporary to store prefactor*q and dq
 
-    double pq, pdq; // temporary to store prefactor*q and dq
-
-    double *dq;
     int size_y = (l_max+1)*(l_max+1);
-    if (dsph != NULL) {
-        dq = (double*) malloc(sizeof(double)*3*(l_max+1)*(l_max+2)/2);
-        dqdx = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
-        dqdy = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
-        dqdz = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
-        dcdx = (double*) malloc(sizeof(double)*(l_max+1));
-        dsdx = (double*) malloc(sizeof(double)*(l_max+1));
-        dcdy = (double*) malloc(sizeof(double)*(l_max+1));
-        dsdy = (double*) malloc(sizeof(double)*(l_max+1));
-    } 
 
     int k; // utility index
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
@@ -308,11 +289,11 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
             s[m] = c[m-1]*y+s[m-1]*x;
         }
 
-        // We fill the (cartesian) sph by combining Qlm and sine/cosine phi-dependent factors
-        k = 0;
-        for (int l=0; l<l_max+1; l++) {
-            pq = q[k]*prefactors[k];
-            sph_i[l] = pq*M_SQRT1_2;
+        // We fill the (cartesian) sph by combining Qlm and sine/cosine phi-dependent factors        
+        sph_i[0] = q[0]*prefactors[0]*M_SQRT1_2;  //l=0
+        k = 1; ++sph_i;
+        for (int l=1; l<l_max+1; l++) {            
+            sph_i[l] = q[k]*prefactors[k]*M_SQRT1_2;
             for (int m=1; m<l+1; m++) {
                 pq = q[k+m]*prefactors[k+m];
                 sph_i[l-m] = pq*s[m];
@@ -325,89 +306,83 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
         if (dsph != NULL) {
             double *dsph_i = dsph+i_sample*3*(l_max+1)*(l_max+1); 
 
-            // Derivatives of q
-            
-            dqdz[0] = dqdy[0] = dqdx[0] = 0.0;  // l = m = 0
-            k=1;
-            for (int l = 1; l < l_max+1; l++) {
-                dqdx[k+l] = 0.0;
-                dqdy[k+l] = 0.0;
-                dqdz[k+l] = 0.0;
-                dqdx[k+l-1] = 0.0;
-                dqdy[k+l-1] = 0.0;
-                for (int m = 0; m < l; m++) {
-                    if (m != l-1) {
-                        dqdx[k+m] = x*q[k-l+m+1];
-                        dqdy[k+m] = y*q[k-l+m+1];
-                    }
-                    dqdz[k+m] = (l+m)*q[k-l+m];
-                }
-                k+=l+1;
-            }
-
-/*            // Derivatives of c, s
-            dsdx[0] = 0.0;
-            dcdx[0] = 0.0;
-            dsdy[0] = 0.0;
-            dcdy[0] = 0.0;
-            for (int m = 1; m < l_max+1; m++) {
-                dsdx[m] = m*s[m-1];
-                dcdx[m] = m*c[m-1];
-                dsdy[m] = m*c[m-1];
-                dcdy[m] = -m*s[m-1];
-            }*/
-
-            // Chain rule:
-            /*
+            // Chain rule:            
             k=0;
-            for (int l=0; l<l_max+1; l++) {
-                dsph_i[(l_max+1)*(l_max+1)*0+l*l+l] = prefactors[l*(l+1)/2]*dqdx[l*(l+1)/2]*M_SQRT1_2;
-                dsph_i[(l_max+1)*(l_max+1)*1+l*l+l] = prefactors[l*(l+1)/2]*dqdy[l*(l+1)/2]*M_SQRT1_2;
-                dsph_i[(l_max+1)*(l_max+1)*2+l*l+l] = prefactors[l*(l+1)/2]*dqdz[l*(l+1)/2]*M_SQRT1_2;
-                for (int m=1; m<l+1; m++) {
-                    dsph_i[(l_max+1)*(l_max+1)*0+l*l+l-m] = prefactors[l*(l+1)/2+m]*(dqdx[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdx[m]);
-                    dsph_i[(l_max+1)*(l_max+1)*1+l*l+l-m] = prefactors[l*(l+1)/2+m]*(dqdy[l*(l+1)/2+m]*s[m]+q[l*(l+1)/2+m]*dsdy[m]);
-                    dsph_i[(l_max+1)*(l_max+1)*2+l*l+l-m] = prefactors[l*(l+1)/2+m]*dqdz[l*(l+1)/2+m]*s[m];
-                    dsph_i[(l_max+1)*(l_max+1)*0+l*l+l+m] = prefactors[l*(l+1)/2+m]*(dqdx[l*(l+1)/2+m]*c[m]+q[l*(l+1)/2+m]*dcdx[m]);
-                    dsph_i[(l_max+1)*(l_max+1)*1+l*l+l+m] = prefactors[l*(l+1)/2+m]*(dqdy[l*(l+1)/2+m]*c[m]+q[l*(l+1)/2+m]*dcdy[m]);
-                    dsph_i[(l_max+1)*(l_max+1)*2+l*l+l+m] = prefactors[l*(l+1)/2+m]*dqdz[l*(l+1)/2+m]*c[m];
-                }
-            }
-            */
-            // Chain rule:
-            
-            k=0;
-            for (int l=0; l<l_max+1; l++) {
-                dsph_i[l] = prefactors[k]*dqdx[k]*M_SQRT1_2;
-                dsph_i[size_y+l] = prefactors[k]*dqdy[k]*M_SQRT1_2;
-                dsph_i[size_y*2+l] = prefactors[k]*dqdz[k]*M_SQRT1_2;
+            //special case: l=0
+            dsph_i[0] = dsph_i[size_y] = dsph_i[size_y*2] = 0;
+            ++k; ++dsph_i;
+
+            //special case: l=1
+            dsph_i[1] = dsph_i[size_y+1] = 0;
+            dsph_i[size_y*2+1] = prefactors[k]*1*q[k-1]*M_SQRT1_2;
+            ++k; 
+            int l=1;
+            pq=prefactors[k]*q[k]*l;  // also includes a factor of m so we get the phi-dependent derivatives                       
+            dsph_i[l-l] = pq*s[l-1];
+            dsph_i[l+l] = pq*c[l-1];
+            dsph_i[size_y+l-l] = pq*c[l-1];
+            dsph_i[size_y+l+l] = -pq*s[l-1];
+            dsph_i[size_y*2+l-l] = 0;
+            dsph_i[size_y*2+l+l] = 0;
+            ++k;        
+            dsph_i+=3;
+            for (int l=2; l<l_max+1; l++) {
+                dsph_i[l] = prefactors[k]*x*q[k-l+1]*M_SQRT1_2;
+                dsph_i[size_y+l] = prefactors[k]*y*q[k-l+1]*M_SQRT1_2;
+                dsph_i[size_y*2+l] = prefactors[k]*l*q[k-l]*M_SQRT1_2;
+                
                 ++k;
-                for (int m=1; m<l+1; m++) {
-                    pq=prefactors[k]*q[k];
-                    pdq=prefactors[k]*dqdx[k];
-                    dsph_i[l-m] = (pdq*s[m]+pq*m*s[m-1]);
-                    dsph_i[l+m] = (pdq*c[m]+pq*m*c[m-1]);
-                    pdq=prefactors[k]*dqdy[k];
-                    dsph_i[size_y+l-m] = (pdq*s[m]+pq*m*c[m-1]);
-                    dsph_i[size_y+l+m] = (pdq*c[m]-pq*m*s[m-1]);
-                    pdq=prefactors[k]*dqdz[k];
+                for (int m=1; m<l-1; m++) {
+                    pq=prefactors[k]*q[k]*m;  // also includes a factor of m so we get the phi-dependent derivatives
+                    pdq=prefactors[k]*q[k-l+1];
+                    pdqx = pdq*x;
+                    dsph_i[l-m] = (pdqx*s[m]+pq*s[m-1]);
+                    dsph_i[l+m] = (pdqx*c[m]+pq*c[m-1]);
+                    pdqy = pdq*y;
+                    dsph_i[size_y+l-m] = (pdqy*s[m]+pq*c[m-1]);
+                    dsph_i[size_y+l+m] = (pdqy*c[m]-pq*s[m-1]);
+                    pdq=prefactors[k]*(l+m)*q[k-l];
+                    dsph_i[size_y*2+l-m] = pdq*s[m];
+                    dsph_i[size_y*2+l+m] = pdq*c[m];
+                    ++k;
+                }                
+                { // do separately special cases that have lots of zeros
+                    int m=l-1;
+                    pq=prefactors[k]*q[k]*m;  // also includes a factor of m so we get the phi-dependent derivatives
+                    dsph_i[l-m] = pq*s[m-1];
+                    dsph_i[l+m] = pq*c[m-1];
+                    dsph_i[size_y+l-m] = pq*c[m-1];
+                    dsph_i[size_y+l+m] = -pq*s[m-1];
+
+                    pdq=prefactors[k]*(l+m)*q[k-l]; //prefactors[k]*(l+m)*q[k+m-l]; // dqdz[k];
                     dsph_i[size_y*2+l-m] = pdq*s[m];
                     dsph_i[size_y*2+l+m] = pdq*c[m];
                     ++k;
                 }
+                {
+                    pq=prefactors[k]*q[k]*l;  // also includes a factor of m so we get the phi-dependent derivatives                       
+                    dsph_i[l-l] = pq*s[l-1];
+                    dsph_i[l+l] = pq*c[l-1];
+                    dsph_i[size_y+l-l] = pq*c[l-1];
+                    dsph_i[size_y+l+l] = -pq*s[l-1];
+                    dsph_i[size_y*2+l-l] = 0;
+                    dsph_i[size_y*2+l+l] = 0;
+                    ++k;
+                }
+
+                /*
+                pq=prefactors[k]*q[k]*l;  // also includes a factor of m so we get the phi-dependent derivatives
+                dsph_i[l-l] = pq*s[l-1];
+                dsph_i[l+l] = pq*c[l-1];
+                dsph_i[size_y+l-l] = pq*c[l-1];
+                dsph_i[size_y+l+l] = -pq*s[l-1];
+                pdq=prefactors[k]*dqdz[k];
+                dsph_i[size_y*2+l-l] = pdq*s[l];
+                dsph_i[size_y*2+l+l] = pdq*c[l];
+                ++k;*/
                 dsph_i += 2*l+1;  
             }
         }     
-    }
-
-    if (dsph != NULL) {
-        free(dqdx);
-        free(dcdx);
-        free(dsdx);
-        free(dqdy);
-        free(dcdy);
-        free(dsdy);
-        free(dqdz);
     }
 
     free(q);
