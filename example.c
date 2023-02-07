@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
         if (fabs(dsph2[i]/dsph1[i]-1)>1e-6 ) {
-            printf("Fast implementation mismatch %e %e\n", sph2[i], sph1[i]);
+            printf("Fast implementation mismatch %e %e\n", dsph2[i], dsph1[i]);
         }
     }
     time_taken = end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6;
