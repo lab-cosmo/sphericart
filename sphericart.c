@@ -385,13 +385,14 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
                 for (int m=1; m<l+1; m++) {
                     pq=prefactors[k]*q[k];
                     pdq=prefactors[k]*dqdx[k];
-                    dsph_i[l-m] = (pdq*s[m]+pq*s[m-1]);
-                    dsph_i[l+m] = (pdq*c[m]+pq*c[m-1]);
+                    dsph_i[l-m] = (pdq*s[m]+pq*m*s[m-1]);
+                    dsph_i[l+m] = (pdq*c[m]+pq*m*c[m-1]);
                     pdq=prefactors[k]*dqdy[k];
                     dsph_i[size_y+l-m] = (pdq*s[m]+pq*m*c[m-1]);
                     dsph_i[size_y+l+m] = (pdq*c[m]-pq*m*s[m-1]);
-                    dsph_i[size_y*2+l-m] = prefactors[k]*dqdz[k]*m*s[m];
-                    dsph_i[size_y*2+l+m] = prefactors[k]*dqdz[k]*m*c[m];
+                    pdq=prefactors[k]*dqdz[k];
+                    dsph_i[size_y*2+l-m] = pdq*s[m];
+                    dsph_i[size_y*2+l+m] = pdq*c[m];
                     ++k;
                 }
                 dsph_i += 2*l+1;  

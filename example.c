@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     } 
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
-        if (fabs(sph[i]/sph1[i]-1)>1e-6 ) {
+        if (fabs(sph[i]/sph1[i]-1)>1e-10 ) {
             printf("Cached implementation mismatch %e %e\n", sph[i], sph1[i]);
         }
     }
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     } 
     gettimeofday(&end, NULL);
     for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
-        if (fabs(sph[i]/sph2[i]-1)>1e-6 ) {
+        if (fabs(sph[i]/sph2[i]-1)>1e-10 ) {
             printf("Parallel implementation mismatch %e %e\n", sph[i], sph2[i]);
         }
     }
@@ -111,8 +111,8 @@ int main(int argc, char *argv[]) {
         cartesian_spherical_harmonics_fast(n_samples, l_max, prefactors, xyz, sph1, dsph2); 
     } 
     gettimeofday(&end, NULL);
-    for (int i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
-        if (fabs(dsph2[i]/dsph1[i]-1)>1e-6 ) {
+    for (int i=0; i<n_samples*3*(l_max+1)*(l_max+1); ++i) {
+        if (fabs(dsph2[i]-dsph1[i])>1e-10 ) {
             printf("Fast implementation mismatch %e %e\n", dsph2[i], dsph1[i]);
         }
     }
