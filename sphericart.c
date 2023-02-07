@@ -248,7 +248,10 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
     double* dsdy;
     double* dqdz;
 
+    double pq, pdq; // temporary to store prefactor*q and dq
+
     double *dq;
+    int size_q = (l_max+1)*(l_max+2)/2;
     if (dsph != NULL) {
         dq = (double*) malloc(sizeof(double)*3*(l_max+1)*(l_max+2)/2);
         dqdx = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
@@ -308,7 +311,7 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
         // We fill the (cartesian) sph by combining Qlm and sine/cosine phi-dependent factors
         k = 0;
         for (int l=0; l<l_max+1; l++) {
-            double pq = q[k]*prefactors[k];
+            pq = q[k]*prefactors[k];
             sph_i[l] = pq*M_SQRT1_2;
             for (int m=1; m<l+1; m++) {
                 pq = q[k+m]*prefactors[k+m];
@@ -322,11 +325,29 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
         if (dsph != NULL) {
             double *dsph_i = dsph+i_sample*3*(l_max+1)*(l_max+1); 
 
+
+            dqdz[0] = dqdy[0] = dqdx[0] = 0.0;  // l = m = 0
+            for (int l = 1; l < l_max+1; l++) {
+                dqdx[l*(l+1)/2+l] = 0.0;
+                dqdy[l*(l+1)/2+l] = 0.0;
+                dqdz[l*(l+1)/2+l] = 0.0;
+                dqdx[l*(l+1)/2+l-1] = 0.0;
+                dqdy[l*(l+1)/2+l-1] = 0.0;
+                for (int m = 0; m < l; m++) {
+                    if (m != l-1) {
+                        dqdx[l*(l+1)/2+m] = x*q[(l-1)*l/2+m+1];
+                        dqdy[l*(l+1)/2+m] = y*q[(l-1)*l/2+m+1];
+                    }
+                    dqdz[l*(l+1)/2+m] = (l+m)*q[(l-1)*l/2+m];
+                }
+            }
+
             // Derivatives of q
+            /*
             dqdz[0] = dqdy[0] = dqdx[0] = 0.0;  // l = m = 0
             k=1;
             for (int l = 1; l < l_max+1; l++) {
-                dqdx[k+l] = 0.0;
+                dqdx[k+l] = 0.dqdz[0] = dqdy[0] = dqdz[0] = dqdy[0] = [0] = dqdy[0] = 0;
                 dqdy[k+l] = 0.0;
                 dqdz[k+l] = 0.0;
                 dqdx[k+l-1] = 0.0;
@@ -340,7 +361,7 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
                     dqdz[k+m] = (l+m)*q[k-l+m];
                 }
                 k+=l+1;
-            }
+            }*/
 
             // Derivatives of c, s
             dsdx[0] = 0.0;
@@ -355,38 +376,8 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
             }
 
             // Chain rule:
-            k=0;
             for (int l=0; l<l_max+1; l++) {
-                dsph_i[l] = prefactors[k]*dqdx[k];
-                for (int m=1; m<l+1; m++) {
-                    dsph_i[l-m] = prefactors[k+m]*(dqdx[k+m]*s[m]+q[k+m]*dsdx[m]);;
-                    dsph_i[l+m] = prefactors[k+m]*(dqdx[k+m]*c[m]+q[k+m]*dcdx[m]);;
-                }
-                k+=l+1;
-                dsph_i += 2*l+1;
-            }
-            k=0;
-            for (int l=0; l<l_max+1; l++) {
-                dsph_i[l] = prefactors[k]*dqdy[k];
-                for (int m=1; m<l+1; m++) {
-                    dsph_i[l-m] = prefactors[k+m]*(dqdy[k+m]*s[m]+q[k+m]*dsdy[m]);;
-                    dsph_i[l+m] = prefactors[k+m]*(dqdy[k+m]*c[m]+q[k+m]*dcdy[m]);;
-                }
-                k+=l+1;
-                dsph_i += 2*l+1;
-            }
-            k=0;
-            for (int l=0; l<l_max+1; l++) {
-                dsph_i[l] = prefactors[k]*dqdy[k];
-                for (int m=1; m<l+1; m++) {
-                    dsph_i[l-m] = prefactors[k+m]*dqdz[k+m]*s[m];
-                    dsph_i[l+m] = prefactors[k+m]*dqdz[k+m]*c[m];
-                }
-                k+=l+1;
-                dsph_i += 2*l+1;
-            }    
-
-/*
+                dsph_i[(l_max+1)*(l_max+1)*0+l*l+l] = prefactors[l*(l+1)/2]*dqdx[l*(l+1)/2];
                 dsph_i[(l_max+1)*(l_max+1)*1+l*l+l] = prefactors[l*(l+1)/2]*dqdy[l*(l+1)/2];
                 dsph_i[(l_max+1)*(l_max+1)*2+l*l+l] = prefactors[l*(l+1)/2]*dqdz[l*(l+1)/2];
                 for (int m=1; m<l+1; m++) {
@@ -398,7 +389,28 @@ void cartesian_spherical_harmonics_fast(unsigned int n_samples, unsigned int l_m
                     dsph_i[(l_max+1)*(l_max+1)*2+l*l+l+m] = prefactors[l*(l+1)/2+m]*dqdz[l*(l+1)/2+m]*c[m];
                 }
             }
-            */
+            // Chain rule:
+            /*
+            k=0;
+            for (int l=0; l<l_max+1; l++) {
+                dsph_i[l] = prefactors[k]*dqdx[k];
+                dsph_i[size_q+l] = prefactors[k]*dqdy[k];
+                dsph_i[size_q*2+l] = prefactors[k]*dqdz[k];
+                ++k;
+                for (int m=1; m<l+1; m++) {
+                    pq=prefactors[k]*q[k];
+                    pdq=prefactors[k]*dqdx[k];
+                    dsph_i[l-m] = (pdq*s[m]+pq*s[m-1]);
+                    dsph_i[l+m] = (pdq*c[m]+pq*c[m-1]);
+                    pdq=prefactors[k]*dqdy[k];
+                    dsph_i[size_q+l-m] = (pdq*s[m]+pq*c[m-1]);
+                    dsph_i[size_q+l+m] = (pdq*c[m]-pq*s[m-1]);
+                    dsph_i[size_q*2+l-m] = prefactors[k]*dqdz[k]*s[m];
+                    dsph_i[size_q*2+l+m] = prefactors[k]*dqdz[k]*c[m];
+                    ++k;
+                }
+                dsph_i += 2*l+1;  
+            }*/
         }     
     }
 
