@@ -35,6 +35,23 @@ c_spherical_harmonics_l1_fun.argtypes = [
     ctypes.POINTER(ctypes.c_double),
 ]
 
+c_spherical_harmonics_l2_fun = lib.cartesian_spherical_harmonics_l2
+c_spherical_harmonics_l2_fun.restype = None
+c_spherical_harmonics_l2_fun.argtypes = [
+    ctypes.c_uint,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+]
+
+c_spherical_harmonics_l3_fun = lib.cartesian_spherical_harmonics_l1
+c_spherical_harmonics_l3_fun.restype = None
+c_spherical_harmonics_l3_fun.argtypes = [
+    ctypes.c_uint,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+]
 # Define a class which calls the wrappers
 
 class SphericalHarmonics():
@@ -48,6 +65,8 @@ class SphericalHarmonics():
             self._lfun = lambda lib,xyz,gradients : c_spherical_harmonics_l1(lib, xyz, gradients) 
         elif self._l_max==2:
             self._lfun = lambda lib,xyz,gradients : c_spherical_harmonics_l2(lib, xyz, gradients)       
+        elif self._l_max==3:
+            self._lfun = lambda lib,xyz,gradients : c_spherical_harmonics_l3(lib, xyz, gradients)       
         else:
             self._lfun = lambda lib,xyz,gradients : c_spherical_harmonics(lib, self._l_max, xyz, self._prefactors, gradients)       
 

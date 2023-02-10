@@ -113,7 +113,7 @@ void cartesian_spherical_harmonics_l2(unsigned int n_samples, double *xyz,
                 dsph_i[9+4] = -1.73205080756888*dsph_i[6];
                 dsph_i[9+5] = dsph_i[7];
                 dsph_i[9+6] = -0.577350269189626*dsph_i[4];
-                dsph_i[9+7] = 0;
+                dsph_i[9+7] = 0.0;
                 dsph_i[9+8] = -dsph_i[4];
 
                 dsph_i[9*2+1] = 0.0; dsph_i[9*2+2] = 0.48860251190292; dsph_i[9*2+3] = 0.0;  //d/dz
@@ -125,13 +125,13 @@ void cartesian_spherical_harmonics_l2(unsigned int n_samples, double *xyz,
         }
     }
 }
-/*
+
 void cartesian_spherical_harmonics_l3(unsigned int n_samples, double *xyz, 
                     double *sph, double *dsph) {
     #pragma omp parallel
     {
         double *xyz_i, *sph_i, *dsph_i;
-        double tmp1, tmp2, tmp3;
+        double tmp, x2, y2, z2, r2;
         #pragma omp for
         for (int i_sample=0; i_sample<n_samples; i_sample++) {
             xyz_i = xyz+i_sample*3;
@@ -146,32 +146,43 @@ void cartesian_spherical_harmonics_l3(unsigned int n_samples, double *xyz,
             sph_i[3] = 0.48860251190292*xyz_i[0];
             
             // l=2 m=-2,-1,0,1,2
-            tmp1 = 2.23606797749979*xyz_i[0];
-            sph_i[4] = tmp1*sph_i[1];
-            sph_i[7] = tmp1*sph_i[2];
-            sph_i[5] = 2.23606797749979*xyz_i[2]*sph_i[1];
-            tmp1 = xyz_i[0]*xyz_i[0];
-            tmp2 = xyz_i[1]*xyz_i[1];
-            tmp3 = xyz_i[2]*xyz_i[2];
-            sph_i[6] = -0.315391565252520*(tmp1+tmp2-2*tmp3);
-            sph_i[8] = 0.54627421529604*(tmp1-tmp2);
+            tmp = 2.23606797749979*xyz_i[0];
+            sph_i[4] = tmp*sph_i[1]; //(2,-2)
+            sph_i[7] = tmp*sph_i[2]; //(2,1)
+            sph_i[5] = 2.23606797749979*xyz_i[2]*sph_i[1]; //(2,-1)
+            x2 = xyz_i[0]*xyz_i[0];
+            y2 = xyz_i[1]*xyz_i[1];
+            z2 = xyz_i[2]*xyz_i[2];
+            r2 = x2+y2+z2;
+            sph_i[6] = -0.315391565252520*(r2-3*z2); // (2,0)
+            sph_i[8] = 0.54627421529604*(x2-y2); //(2,2)
 
             // l=3 m=-3,-2,-1,0,1,2,3
-            tmp2=tmp2*xyz_i[1]; //y^3
-            sph_i[9]  = 1.62018517460197*xyz_i[0]*sph_i[4]-0.59004358992664*tmp2;
-            sph_i[10] = 2.64575131106459*xyz_i[2]*sph_i[4];
-            sph_i[11] = 
-             
-
+            sph_i[9]  = -0.59004358992664*xyz_i[1]*(y2-3*x2);  //(3,-3)
+            sph_i[10] = 2.64575131106459*xyz_i[2]*sph_i[4];  //(3,-2)            
+            tmp = -0.457045799464466*(r2-5*z2);
+            sph_i[11] = xyz_i[1]*tmp; //(3,-1)
+            sph_i[13] = xyz_i[0]*tmp; //(3,1)
+            sph_i[12] = -1.49270533036046*xyz_i[2]*(z2-2.37799637856361*sph_i[6]); //(3,0)            
+            sph_i[14] = 1.44530572132028*xyz_i[2]*(x2-y2); //(3,2)
+            sph_i[15]  = 0.59004358992664*xyz_i[0]*(x2-3*y2);  //(3,-3)
+            
             if (dsph!=NULL) {
                 dsph_i[0] = dsph_i[16] = dsph_i[16*2] = 0.0;
 
-                dsph_i[1] = 0.0; dsph_i[2] = 0.0; dsph_i[3] = 0.48860251190292;  //d/dx
-                dsph_i[4] = 2.23606797749979*sph_i[1]; 
-                dsph_i[5] = 0.0; 
-                dsph_i[6] = -1.29099444873581*sph_i[3]; 
-                dsph_i[7] = 2.23606797749979*sph_i[2];
-                dsph_i[8] = 2.23606797749979*sph_i[3];
+                dsph_i[1]  = 0.0; dsph_i[2] = 0.0; dsph_i[3] = 0.48860251190292;  //d/dx
+                dsph_i[4]  = 2.23606797749979*sph_i[1]; 
+                dsph_i[5]  = 0.0; 
+                dsph_i[6]  = -1.29099444873581*sph_i[3]; 
+                dsph_i[7]  = 2.23606797749979*sph_i[2];
+                dsph_i[8]  = 2.23606797749979*sph_i[3];
+                dsph_i[9]  = 3.24037034920393*sph_i[4];
+                dsph_i[10] = 2.64575131106459*sph_i[5];
+                dsph_i[11] = -0.83666002653408*sph_i[4];
+                dsph_i[12] = -2.04939015319192*sph_i[7];
+                dsph_i[13] = 0.91409159892893*(y2-z2+4.75599275712721*sph_i[6]);
+                dsph_i[14] = 2.64575131106459*sph_i[7];
+                dsph_i[15] = 3.24037034920393*sph_i[8];
 
                 dsph_i[16+1] = 0.48860251190292; dsph_i[16+2] = 0.0; dsph_i[16+3] = 0.0;  //d/dy
                 dsph_i[16+4] = -1.73205080756888*dsph_i[6];
@@ -179,17 +190,32 @@ void cartesian_spherical_harmonics_l3(unsigned int n_samples, double *xyz,
                 dsph_i[16+6] = -0.577350269189626*dsph_i[4];
                 dsph_i[16+7] = 0;
                 dsph_i[16+8] = -dsph_i[4];
+                dsph_i[16+9]  = dsph_i[15];
+                dsph_i[16+10] = dsph_i[14];
+                dsph_i[16+11] = -0.91409159892893*(y2-z2-1.58533091904240*sph_i[6]); 
+                dsph_i[16+12] = -2.04939015319192*sph_i[5];
+                dsph_i[16+13] = -0.83666002653408*sph_i[4];
+                dsph_i[16+14] = -dsph_i[10];
+                dsph_i[16+15] = -dsph_i[9];
 
                 dsph_i[16*2+1] = 0.0; dsph_i[16*2+2] = 0.48860251190292; dsph_i[16*2+3] = 0.0;  //d/dz
                 dsph_i[16*2+4] = dsph_i[16*2+8] = 0.0;
                 dsph_i[16*2+5] = dsph_i[4];
                 dsph_i[16*2+6] = 1.15470053837925*dsph_i[7];
                 dsph_i[16*2+7] = dsph_i[16+4];
+                dsph_i[16*2+8] = 0.0;
+                dsph_i[16*2+9] = 0.0;
+                dsph_i[16*2+10] = 2.64575131106459*sph_i[4];
+                dsph_i[16*2+11] = 3.34664010613630*sph_i[5];
+                dsph_i[16*2+12] = 3.54964786985977*sph_i[6];
+                dsph_i[16*2+13] = 3.34664010613630*sph_i[7];
+                dsph_i[16*2+14] = 2.64575131106459*sph_i[8];
+                dsph_i[16*2+15] = 0.0; 
             }
         }
     }
 }
-*/
+
 void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
             const double* prefactors, double *xyz, double *sph, double *dsph) {
     /*

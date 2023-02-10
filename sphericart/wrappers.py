@@ -65,3 +65,17 @@ def c_spherical_harmonics_l2(lib, xyz, gradients=False):
         dsph_ptr = ctypes.POINTER(ctypes.c_double)()
     lib.cartesian_spherical_harmonics_l2(n_samples, xyz_ptr, sph_ptr, dsph_ptr)
     return sph, dsph
+
+def c_spherical_harmonics_l3(lib, xyz, gradients=False):    
+    n_samples = xyz.shape[0]
+    sph = np.empty((n_samples, 16))
+    xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    if gradients:
+        dsph = np.empty((n_samples, 3, 16))
+        dsph_ptr = dsph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    else:
+        dsph = None
+        dsph_ptr = ctypes.POINTER(ctypes.c_double)()
+    lib.cartesian_spherical_harmonics_l3(n_samples, xyz_ptr, sph_ptr, dsph_ptr)
+    return sph, dsph
