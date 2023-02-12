@@ -13,7 +13,8 @@ void compute_sph_prefactors(unsigned int l_max, double *factors) {
     unsigned int k=0; // quick access index
     for (unsigned int l=0; l<=l_max; ++l) {
         double factor = (2*l+1)/(2*M_PI);
-        factors[k] = sqrt(factor);        
+        // NB: incorporate here the 1/sqrt(2) factor for m=0
+        factors[k] = sqrt(factor)*M_SQRT1_2;        
         for (int m=1; m<=l; ++m) {
             factor *= 1.0/(l*(l+1)+m*(1-m));
             if (m % 2 == 0) {
@@ -231,7 +232,7 @@ void cartesian_spherical_harmonics_mloop(unsigned int n_samples, unsigned int l_
     {
         // storage arrays for Qlm (modified associated Legendre polynomials)
         // and terms corresponding to (scaled) cosine and sine of the azimuth
-        double c, s, c1, q, q1, q2, qll, ql1;
+        double c, s, c1, q, q1, q2, qll, twolz, lmr2;
 
         // temporaries to store prefactor*q and dq
         double pq; 
@@ -250,7 +251,7 @@ void cartesian_spherical_harmonics_mloop(unsigned int n_samples, unsigned int l_
             double y = xyz[i_sample*3+1];
             double z = xyz[i_sample*3+2];
             double twoz = z+z;
-            double r_sq = x*x+y*y+z*z;
+            double r2 = x*x+y*y+z*z;
 
             // pointer to the segment that should store the i_sample sph
             double *sph_i = sph+i_sample*size_y;            
@@ -263,15 +264,22 @@ void cartesian_spherical_harmonics_mloop(unsigned int n_samples, unsigned int l_
             /* l=0 */
             l=0;
             qll = q2 = 1.0;  // q00
-            sph_i[0] = q2*prefactors[0]*M_SQRT1_2;
+            sph_i[0] = q2*prefactors[0];
 
             l=1;
-            q1 = z; // q10 = (2l-1)*z*q00
-            sph_i[2] = q1*prefactors[1]*M_SQRT1_2;
-                        
+            q1 = z; // q10 = (2l-1)*z*q00  
+            sph_i += 2*l;          
+            sph_i[0] = q1*prefactors[1];
+            twolz = (2*l-1)*z;
+            lmr2 = 0;
+
+            flm = prefactors+1;
             for (l=m+2; l < l_max+1; ++l) {
-                q = ((2*l-1)*z*q1-(l+m-1)*r_sq*q2)/(l-m);
-                sph_i[l*l+l+m] = q * prefactors[l*(l+1)/2+m]*M_SQRT1_2;
+                twolz += twoz;
+                lmr2 += r2;
+                q = (twolz*q1-lmr2*q2)/(l-m);
+                sph_i += 2*l; flm += l;
+                sph_i[0] = q * flm[0];
                 q2 = q1; q1 = q; 
             }
             
@@ -281,28 +289,33 @@ void cartesian_spherical_harmonics_mloop(unsigned int n_samples, unsigned int l_
                 s = c1*y + s*x;
 
                 l = m;
+                sph_i = sph+i_sample*size_y+l*l+l; 
                 qll = q2 = -(2*l-1)*qll; // Q m m 
                 flm = prefactors+l*(l+1)/2+m; 
                 pq = q2 * flm[0]; //prefactors[l*(l+1)/2+m];  
-                sph_i[l*l+l-m] = pq*s;
-                sph_i[l*l+l+m] = pq*c;
+                sph_i[-m] = pq*s;
+                sph_i[m]  = pq*c;
 
                 
-                l = m+1;                 
-                double twolz = (2*l-1)*z;
-                double lmrsq = 2*m*r_sq;                
+                l = m+1;                
+                twolz = (2*l-1)*z;
+                lmr2 = 2*m*r2;
                 q1 = twolz*q2; // Q (m+1) m
-                pq = q1 * prefactors[l*(l+1)/2+m];  
-                sph_i[l*l+l-m] = pq*s;
-                sph_i[l*l+l+m] = pq*c;
+                flm += l;
+                pq = q1 * flm[0];
+                sph_i += 2*l;
+                sph_i[-m] = pq*s;
+                sph_i[m] = pq*c;
 
                 for (l=m+2; l < l_max+1; ++l) {
-                    twolz += twoz;
-                    lmrsq += r_sq;
-                    q = (twolz*q1-lmrsq*q2)/(l-m);
-                    pq = q * prefactors[l*(l+1)/2+m];
-                    sph_i[l*(l+1)-m] = pq*s;
-                    sph_i[l*(l+1)+m] = pq*c;                    
+                    twolz += twoz; // computes (2l-1)z
+                    lmr2 += r2;    // computes (l+m-1)r^2
+                    q = (twolz*q1-lmr2*q2)/(l-m);
+                    flm += l;                    
+                    sph_i += 2*l;
+                    pq = q * flm[0];
+                    sph_i[-m] = pq*s;
+                    sph_i[m] = pq*c;                    
                     q2 = q1; q1 = q; 
                 }
             }
@@ -391,10 +404,10 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
               sine/cosine phi-dependent factors. we use pointer 
               arithmetics to make sure spk_i always points at the 
               beginning of the appropriate memory segment. */
-            sph_i[0] = q[0]*prefactors[0]*M_SQRT1_2;  //l=0
+            sph_i[0] = q[0]*prefactors[0];  //l=0
             k = 1; ++sph_i;
             for (int l=1; l<l_max+1; l++) {            
-                sph_i[l] = q[k]*prefactors[k]*M_SQRT1_2;
+                sph_i[l] = q[k]*prefactors[k];
                 for (int m=1; m<l+1; m++) {
                     pq = q[k+m]*prefactors[k+m];
                     sph_i[l-m] = pq*s[m];
@@ -419,7 +432,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
 
                 // special case: l=1
                 dsph_i[1] = dsph_i[size_y+1] = 0;
-                dsph_i[size_y*2+1] = prefactors[k]*1*q[k-1]*M_SQRT1_2;
+                dsph_i[size_y*2+1] = prefactors[k]*1*q[k-1];
                 ++k; 
                 pq=prefactors[k]*q[k];
                 dsph_i[0] = pq*s[0];
@@ -433,9 +446,9 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
 
                 // general case - iteration
                 for (int l=2; l<l_max+1; l++) {
-                    dsph_i[l] = prefactors[k]*x*q[k-l+1]*M_SQRT1_2;
-                    dsph_i[size_y+l] = prefactors[k]*y*q[k-l+1]*M_SQRT1_2;
-                    dsph_i[size_y*2+l] = prefactors[k]*l*q[k-l]*M_SQRT1_2;
+                    dsph_i[l] = prefactors[k]*x*q[k-l+1];
+                    dsph_i[size_y+l] = prefactors[k]*y*q[k-l+1];
+                    dsph_i[size_y*2+l] = prefactors[k]*l*q[k-l];
                     
                     ++k;
                     for (int m=1; m<l-1; m++) {
