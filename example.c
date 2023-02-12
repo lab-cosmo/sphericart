@@ -66,8 +66,34 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
+    double *sph1 = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        cartesian_spherical_harmonics_mloop(n_samples, l_max, prefactors, xyz, sph1, NULL); 
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    }
+    printf("Call without derivatives (m-loop) took %f ± %f µs/sample\n", 
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    int k=0;
+    for (int l=0; l<(l_max+1); l++)
+    {
+        for (int m=0; m<(l+1); m++) {
+            if (fabs(sph[k+l+m]/sph1[k+l+m]-1)>1e-6) printf("!!!! ");
+            printf("%d %d %e, %e\n", l, m, sph[k+l+m], sph1[k+l+m]);
+        }
+        k+=2*l+1;            
+        //printf("chk %e, %e\n", dsph[i], dsph1[i]);
+    }
+
     double *dsph = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
-    
+    return 1; 
+
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
@@ -94,7 +120,7 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
     
-    double *sph1 = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
+    //double *sph1 = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
     double *dsph1 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
     
     time_total = time2_total = 0;
@@ -170,7 +196,8 @@ int main(int argc, char *argv[]) {
     for (int i=0; i<16*3; i++)
     {
         //printf("chk %e, %e\n", sph[i], sph1[i]);
-        //printf("chk %e, %e\n", dsph[i], dsph1[i]);
+        if (fabs(dsph[i]/dsph1[i]-1)>1e-6) printf("!!!! ");
+        printf("chk %e, %e\n", dsph[i], dsph1[i]);
     }
 
     free(xyz);

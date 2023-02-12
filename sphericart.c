@@ -185,9 +185,9 @@ void cartesian_spherical_harmonics_l3(unsigned int n_samples, double *xyz,
                 dsph_i[15] = 3.24037034920393*sph_i[8];
 
                 dsph_i[16+1] = 0.48860251190292; dsph_i[16+2] = 0.0; dsph_i[16+3] = 0.0;  //d/dy
-                dsph_i[16+4] = -1.73205080756888*dsph_i[6];
+                dsph_i[16+4] = dsph_i[8];
                 dsph_i[16+5] = dsph_i[7];
-                dsph_i[16+6] = -0.577350269189626*dsph_i[4];
+                dsph_i[16+6] = -1.29099444873581*sph_i[1]; //-0.577350269189626*dsph_i[4];
                 dsph_i[16+7] = 0;
                 dsph_i[16+8] = -dsph_i[4];
                 dsph_i[16+9]  = dsph_i[15];
@@ -211,6 +211,100 @@ void cartesian_spherical_harmonics_l3(unsigned int n_samples, double *xyz,
                 dsph_i[16*2+13] = 3.34664010613630*sph_i[7];
                 dsph_i[16*2+14] = 2.64575131106459*sph_i[8];
                 dsph_i[16*2+15] = 0.0; 
+            }
+        }
+    }
+}
+
+void cartesian_spherical_harmonics_mloop(unsigned int n_samples, unsigned int l_max, 
+            const double* prefactors, double *xyz, double *sph, double *dsph) {
+    /*
+        Computes "Cartesian" real spherical harmonics r^l*Y_lm(x,y,z) and 
+        (optionally) their derivatives. This is an opinionated implementation:
+        x,y,z are not scaled, and the resulting harmonic is scaled by r^l.
+        This scaling allows for a stable, and fast implementation and the 
+        r^l term can be easily incorporated into any radial function or 
+        added a posteriori (with the corresponding derivative).
+    */
+
+    #pragma omp parallel
+    {
+        // storage arrays for Qlm (modified associated Legendre polynomials)
+        // and terms corresponding to (scaled) cosine and sine of the azimuth
+        double c, s, c1, q, q1, q2, qll, ql1;
+
+        // temporaries to store prefactor*q and dq
+        double pq; 
+        int size_y = (l_max+1)*(l_max+1);
+
+        /* k is a utility index to traverse lm arrays. we store sph in 
+           a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
+           so we often write a nested loop on l and m and track where we
+           got by incrementing a separate index k. */
+        int l, m, k; 
+        double * flm;
+        #pragma omp for
+        for (int i_sample=0; i_sample<n_samples; i_sample++) {
+
+            double x = xyz[i_sample*3+0];
+            double y = xyz[i_sample*3+1];
+            double z = xyz[i_sample*3+2];
+            double twoz = z+z;
+            double r_sq = x*x+y*y+z*z;
+
+            // pointer to the segment that should store the i_sample sph
+            double *sph_i = sph+i_sample*size_y;            
+            
+            /* do all the m=0 stuff */
+            m = 0; 
+            c = 1.0; 
+            s = 0.0;
+
+            /* l=0 */
+            l=0;
+            qll = q2 = 1.0;  // q00
+            sph_i[0] = q2*prefactors[0]*M_SQRT1_2;
+
+            l=1;
+            q1 = z; // q10 = (2l-1)*z*q00
+            sph_i[2] = q1*prefactors[1]*M_SQRT1_2;
+                        
+            for (l=m+2; l < l_max+1; ++l) {
+                q = ((2*l-1)*z*q1-(l+m-1)*r_sq*q2)/(l-m);
+                sph_i[l*l+l+m] = q * prefactors[l*(l+1)/2+m]*M_SQRT1_2;
+                q2 = q1; q1 = q; 
+            }
+            
+            for (m = 1; m < l_max+1; m++) {
+                c1 = c;
+                c = c*x  - s*y;
+                s = c1*y + s*x;
+
+                l = m;
+                qll = q2 = -(2*l-1)*qll; // Q m m 
+                flm = prefactors+l*(l+1)/2+m; 
+                pq = q2 * flm[0]; //prefactors[l*(l+1)/2+m];  
+                sph_i[l*l+l-m] = pq*s;
+                sph_i[l*l+l+m] = pq*c;
+
+                
+                l = m+1;                 
+                double twolz = (2*l-1)*z;
+                double lmrsq = 2*m*r_sq;                
+                q1 = twolz*q2; // Q (m+1) m
+                pq = q1 * prefactors[l*(l+1)/2+m];  
+                sph_i[l*l+l-m] = pq*s;
+                sph_i[l*l+l+m] = pq*c;
+
+                for (l=m+2; l < l_max+1; ++l) {
+                    twolz += twoz;
+                    lmrsq += r_sq;
+                    q = (twolz*q1-lmrsq*q2)/(l-m);
+                    pq = q * prefactors[l*(l+1)/2+m];
+                    sph_i[l*(l+1)-m] = pq*s;
+                    sph_i[l*(l+1)+m] = pq*c;                    
+                    q2 = q1; q1 = q; 
+                }
             }
         }
     }
@@ -255,18 +349,29 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             // pointer to the segment that should store the i_sample sph
             double *sph_i = sph+i_sample*size_y;
             
+            /* These are scaled version of cos(m phi) and sin(m phi).
+               Basically, these are cos and sin multiplied by r_xy^m,
+               so that they are just plain polynomials of x,y,z.
+            */
+            c[0] = 1.0;
+            s[0] = 0.0;
+            for (int m = 1; m < l_max+1; m++) {
+                c[m] = c[m-1]*x-s[m-1]*y;
+                s[m] = c[m-1]*y+s[m-1]*x;
+            }
+
             /* compute recursively the "Cartesian" associated Legendre polynomials Qlm.
                Qlm is defined as r^l/r_xy^m P_lm, and is a polynomial of x,y,z.
                These are computed with a recursive expression.
               */
             
-            // Initialize the recursion
+            // Initialize the recursion, filling Q_ll and Q_l(l-1)
             q[0+0] = 1.0;
             k=1;
-            for (int m = 1; m < l_max+1; m++) {
-                q[k+m] = -(2*m-1)*q[k-1];
-                q[k+(m-1)] = -z*q[k+m]; // (2*m-1)*z*q[k-1];
-                k += m+1; 
+            for (int l = 1; l < l_max+1; l++) {
+                q[k+l] = -(2*l-1)*q[k-1];
+                q[k+(l-1)] = -z*q[k+l]; // (2*l-1)*z*q[k-1];
+                k += l+1; 
             }
 
             // base index to traverse the Qlm. the initial index for q[lm] starts at l=2
@@ -280,18 +385,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                     ++k; 
                 }
                 k += 2; // we must skip the 2 that are already precomputed
-            }
-
-            /* These are scaled version of cos(m phi) and sin(m phi).
-               Basically, these are cos and sin multiplied by r_xy^m,
-               so that they are just plain polynomials of x,y,z.
-            */
-            c[0] = 1.0;
-            s[0] = 0.0;
-            for (int m = 1; m < l_max+1; m++) {
-                c[m] = c[m-1]*x-s[m-1]*y;
-                s[m] = c[m-1]*y+s[m-1]*x;
-            }
+            }            
 
             /* fill the (Cartesian) sph by combining Qlm and 
               sine/cosine phi-dependent factors. we use pointer 
