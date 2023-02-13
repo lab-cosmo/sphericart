@@ -6,11 +6,13 @@ This is the sphericart project.
 
 To install the C library:
 
-```cd src
+```
+cd src
 mkdir build
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=../../lib/
-make install```
+make install
+```
 
 To install the Python library:
 
