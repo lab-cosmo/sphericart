@@ -4,6 +4,8 @@ c_spherical_harmonics_l0, c_spherical_harmonics_l1, c_spherical_harmonics_l2, c_
 
 class SphericalHarmonics():
 
+    """Docstring?"""
+
     def __init__(self, l_max):
         self._l_max = l_max
         self._prefactors = c_get_prefactors(l_max)
