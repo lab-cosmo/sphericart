@@ -3,8 +3,8 @@
 # -- Project information
 
 project = "sphericart"
-copyright = "2023, sphericart Developers"
-author = "sphericart Developers"
+copyright = "2023, sphericart developers"
+author = "sphericart developers"
 
 release = '0.0'
 version = '0.0.0'

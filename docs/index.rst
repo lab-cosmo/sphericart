@@ -9,8 +9,6 @@ Contents
 --------
 
 .. toctree::
+   :caption: Installation
 
-    installation
-    api
-    examples
-
+   installation
