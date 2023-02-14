@@ -253,12 +253,52 @@ inline void _compute_sph_l4(double x, double y, double z, double x2, double y2, 
     double tmp;
     sph_i[16] = 4.194391357527674*sph_i[4]*sph_i[8];
     sph_i[17] = 3*z*sph_i[9];
-    sph_i[18] = -0.866025403784439*(x2 + y2 - 6*z2)*sph_i[4];
+    tmp = -0.866025403784439*(x2 + y2 - 6*z2);
+    sph_i[18] = tmp*sph_i[4];
+    sph_i[22] = tmp*sph_i[8];
     //tgt_i[18] -> 0.2927700218845600 (Sqrt[5] z sph_i[10] + 5 Sqrt[2] y sph_i[13])
     //tgt_i[18] -> 0.1106566670344976 x (7 Sqrt[5] z sph_i[5] + 5 Sqrt[14] sph_i[11])
     //tgt_i[18] -> 0.692820323027551 sph_i[4] (5 z2 + Sqrt[5 \[Pi]] sph_i[6])
-    sph_i[19] = -0.2449489742783178*sph_i[5]*(5*z2 - 23.77996378563607*sph_i[6]);
+    sph_i[20] = -0.69436507482941*(y*sph_i[11] - 1.6329931618554521*z*sph_i[12] + x * sph_i[13]);
+    tmp = -1.224744871391589*(z2 - 4.755992757127213*sph_i[6]);
+    sph_i[19] = sph_i[5]*tmp; 
+    sph_i[21] = sph_i[7]*tmp; 
+    sph_i[23] = 3*z*sph_i[15];
+    sph_i[24] = -1.060660171779821 * (y*sph_i[9] - x*sph_i[15]);
+}
 
+inline void _compute_dsph_l4(double x, double y, double z, double x2, double y2, double z2, double *sph_i, double *dxsph_i, 
+                double *dysph_i, double *dzsph_i) {  
+    dxsph_i[16] = 4.242640687119285 * sph_i[9];
+    dxsph_i[17] = 3.674234614174767 * sph_i[10];
+    dxsph_i[18] = 1.892349391515120  * y * (y2 + 4.755992757127213 * sph_i[6]);
+    dxsph_i[19] = -1.388730149658827 * sph_i[10];
+    dxsph_i[20] = -2.777460299317654 * sph_i[13];
+    dxsph_i[21] = -1.338093087114578 * ( z *z2 -2.745873698591307* y *sph_i[5] -4.019547514144073* sph_i[12]);
+    dxsph_i[22] = -1.892349391515120 * x * (x2 - 3 * z2);
+    dxsph_i[23] = 3.674234614174767 * sph_i[14];
+    dxsph_i[24] = 4.242640687119285 * sph_i[15];
+
+    dysph_i[16] = dxsph_i[24];
+    dysph_i[17] = dxsph_i[23];
+    dysph_i[18] = -1.892349391515120*x*(y2 - 2*z2 - 1.585330919042404*sph_i[6]);
+    dysph_i[19] = -1.338093087114578 * (z*(3*y2 - z2) - 1.339849171381358*sph_i[12]);
+    dysph_i[20] = -2.777460299317654*sph_i[11];
+    dysph_i[21] = dxsph_i[19];
+    dysph_i[22] = 1.892349391515120 *y*(y2 - 3*z2);
+    dysph_i[23] = -dxsph_i[17];
+    dysph_i[24] = -dxsph_i[16];
+    
+
+    dzsph_i[16] = 0.0;
+    dzsph_i[17] = 3 * sph_i[9];
+    dzsph_i[18] = 3.927922024247863 * sph_i[10];
+    dzsph_i[19] = 4.391550328268399 * sph_i[11];
+    dzsph_i[20] = 4.535573676110727 * sph_i[12];
+    dzsph_i[21] = 4.391550328268399 * sph_i[13];
+    dzsph_i[22] = 3.927922024247863 * sph_i[14];
+    dzsph_i[23] = 3*sph_i[15];
+    dzsph_i[24] = 0.0;
 }
 
 void cartesian_spherical_harmonics_l4(unsigned int n_samples, double *xyz, 
@@ -299,6 +339,8 @@ void cartesian_spherical_harmonics_l4(unsigned int n_samples, double *xyz,
                 _compute_dsph_l2(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i, 
                                 dsph_i, dsph_i+25, dsph_i+25*2);
                 _compute_dsph_l3(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i, 
+                                dsph_i, dsph_i+25, dsph_i+25*2);
+                _compute_dsph_l4(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i, 
                                 dsph_i, dsph_i+25, dsph_i+25*2);
             }
         }
