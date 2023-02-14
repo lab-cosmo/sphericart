@@ -4,7 +4,16 @@ c_spherical_harmonics_l0, c_spherical_harmonics_l1, c_spherical_harmonics_l2, c_
 
 class SphericalHarmonics():
 
-    """Docstring?"""
+    """User-facing spherical harmonics class.
+
+    This function calculates
+
+    Args:
+        l_max (int): Maximum degree of the spherical harmonics to be calculated.
+
+    Returns:
+        SphericalHarmonics object: A spherical harmonics calculator.
+    """
 
     def __init__(self, l_max):
         self._l_max = l_max
