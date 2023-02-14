@@ -309,14 +309,15 @@ time_total = time2_total = 0;
     int k=0; l_max=4;
     for (int l=0; l<(l_max+1); l++)
     {
-        for (int m=0; m<(l+1); m++) {
+        for (int m=-l; m<=l; m++) {
             printf("L= %d   m= %d  \n", l, m);
-            if (fabs(sph[k+l-m]/sph1[k+l-m]-1)>1e-6) printf("!!!! ");
-            printf("SPH(-): %e, %e\n", sph[k+l-m], sph1[k+l-m]);
             if (fabs(sph[k+l+m]/sph1[k+l+m]-1)>1e-6) printf("!!!! ");
-            printf("SPH(+): %e, %e\n", sph[k+l+m], sph1[k+l+m]);
+            printf("SPH: %e, %e\n", sph[k+l+m], sph1[k+l+m]);
+            if (fabs(dsph[k+l+m]/dsph1[k+l+m]-1)>1e-6) printf("!!!! ");            
             printf("DxSPH: %e, %e\n", dsph[k+l+m], dsph1[k+l+m]);
+            if (fabs(dsph[(l_max+1)*(l_max+1)+k+l+m]/dsph1[(l_max+1)*(l_max+1)+k+l+m]-1)>1e-6) printf("!!!! ");            
             printf("DySPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)+k+l+m], dsph1[(l_max+1)*(l_max+1)+k+l+m]);
+            if (fabs(dsph[2*(l_max+1)*(l_max+1)+k+l+m]/dsph1[2*(l_max+1)*(l_max+1)+k+l+m]-1)>1e-6) printf("!!!! ");            
             printf("DzSPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)*2+k+l+m], dsph1[(l_max+1)*(l_max+1)*2+k+l+m]);
         }
         k+=2*l+1;            

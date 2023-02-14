@@ -127,7 +127,7 @@ inline void _compute_dsph_l2(double x, double y, double z, double x2, double y2,
     dzsph_i[4] = dzsph_i[8] = 0.0;
     dzsph_i[5] = dxsph_i[4];
     dzsph_i[6] = 1.15470053837925*dxsph_i[7];
-    dzsph_i[7] = dxsph_i[9+4];
+    dzsph_i[7] = dysph_i[4];
 }
 
 void cartesian_spherical_harmonics_l2(unsigned int n_samples, double *xyz, 
