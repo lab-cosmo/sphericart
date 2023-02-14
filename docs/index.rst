@@ -1,5 +1,5 @@
 Welcome to sphericart's documentation!
-===================================
+======================================
 
 .. note::
 
@@ -9,6 +9,7 @@ Contents
 --------
 
 .. toctree::
-   :caption: Installation
 
-   installation
+    installation
+    api 
+    examples

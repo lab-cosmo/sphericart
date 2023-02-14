@@ -1,4 +1,5 @@
-# Building and installing
+Building and installing
+=======================
 
 To install the C library:
 
