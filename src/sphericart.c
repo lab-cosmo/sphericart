@@ -249,6 +249,62 @@ void cartesian_spherical_harmonics_l3(unsigned int n_samples, double *xyz,
     }
 }
 
+inline void _compute_sph_l4(double x, double y, double z, double x2, double y2, double z2, double *sph_i) {
+    double tmp;
+    sph_i[16] = 4.194391357527674*sph_i[4]*sph_i[8];
+    sph_i[17] = 3*z*sph_i[9];
+    sph_i[18] = -0.866025403784439*(x2 + y2 - 6*z2)*sph_i[4];
+    //tgt_i[18] -> 0.2927700218845600 (Sqrt[5] z sph_i[10] + 5 Sqrt[2] y sph_i[13])
+    //tgt_i[18] -> 0.1106566670344976 x (7 Sqrt[5] z sph_i[5] + 5 Sqrt[14] sph_i[11])
+    //tgt_i[18] -> 0.692820323027551 sph_i[4] (5 z2 + Sqrt[5 \[Pi]] sph_i[6])
+    sph_i[19] = -0.2449489742783178*sph_i[5]*(5*z2 - 23.77996378563607*sph_i[6]);
+
+}
+
+void cartesian_spherical_harmonics_l4(unsigned int n_samples, double *xyz, 
+                    double *sph, double *dsph) {    
+    #pragma omp parallel
+    {   
+        double x2, y2, z2;
+        if (dsph == NULL) {
+            double *xyz_i, *sph_i;            
+            #pragma omp for
+            for (int i_sample=0; i_sample<n_samples; i_sample++) {
+                xyz_i = xyz+i_sample*3;
+                sph_i = sph+i_sample*25;            
+                _compute_sph_l0(sph_i);
+                _compute_sph_l1(xyz_i[0], xyz_i[1], xyz_i[2], sph_i);
+                x2 = xyz_i[0]*xyz_i[0]; y2 = xyz_i[1]*xyz_i[1]; z2 = xyz_i[2]*xyz_i[2]; 
+                _compute_sph_l2(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i);               
+                _compute_sph_l3(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i); 
+                _compute_sph_l4(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i);
+            }            
+        } else {
+            double *xyz_i, *sph_i, *dsph_i;
+            #pragma omp for
+            for (int i_sample=0; i_sample<n_samples; i_sample++) {                
+                xyz_i = xyz+i_sample*3;
+                sph_i = sph+i_sample*25;            
+                _compute_sph_l0(sph_i);
+                _compute_sph_l1(xyz_i[0], xyz_i[1], xyz_i[2], sph_i);
+                x2 = xyz_i[0]*xyz_i[0]; y2 = xyz_i[1]*xyz_i[1]; z2 = xyz_i[2]*xyz_i[2]; 
+                _compute_sph_l2(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i);  
+                _compute_sph_l3(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i);  
+                _compute_sph_l4(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i);            
+                
+                dsph_i = dsph+i_sample*25*3;            
+                _compute_dsph_l0(sph_i, dsph_i, dsph_i+25, dsph_i+25*2);
+                _compute_dsph_l1(xyz_i[0], xyz_i[1], xyz_i[2], sph_i, 
+                                dsph_i, dsph_i+25, dsph_i+25*2);
+                _compute_dsph_l2(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i, 
+                                dsph_i, dsph_i+25, dsph_i+25*2);
+                _compute_dsph_l3(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i, 
+                                dsph_i, dsph_i+25, dsph_i+25*2);
+            }
+        }
+    }
+}
+
 void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
             const double* prefactors, double *xyz, double *sph, double *dsph) {
     /*
