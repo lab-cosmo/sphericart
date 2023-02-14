@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-CFLAGS = -O3 -g -march=native -Wall -fopenmp 
+CFLAGS = -O3 -g -march=native -Wall # -fopenmp 
 
 all: example
 
