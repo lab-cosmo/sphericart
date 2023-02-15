@@ -3,10 +3,10 @@
 serial: CFLAGS = -O3 -g -march=native -Wall 
 parallel: CFLAGS = -O3 -g -march=native -Wall -fopenmp
 
-all: example
+all: parallel
 
-serial: all
-parallel: all
+serial: example
+parallel: example
 
 clean:
 	rm -rf example
