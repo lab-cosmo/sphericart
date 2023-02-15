@@ -1,5 +1,5 @@
-Python API reference
-====================
+Python API
+==========
 
 .. autoclass:: sphericart.SphericalHarmonics
 
