@@ -350,19 +350,56 @@ void cartesian_spherical_harmonics_l4(unsigned int n_samples, double *xyz,
 inline void _compute_sph_l5(double x, double y, double z, double x2, double y2, double z2, double *sph_i) {
     double tmp;
     sph_i[25] = 13.12764113680340 *y*(y2*(x2-0.2*y2)+0.3994658435740642*sph_i[24]);
-    sph_i[26] = 3.316624790355400*z*sph_i[16];
-    sph_i[27] = 4.974937185533100 * (z2 + 0.5284436396808015*sph_i[6])*sph_i[9];
+    tmp = 3.316624790355400*z;
+    sph_i[26] = tmp*sph_i[16];
+    sph_i[34] = tmp*sph_i[24];
+    tmp = 4.974937185533100 * (z2 + 0.5284436396808015*sph_i[6]);
+    sph_i[27] = tmp*sph_i[9];
+    sph_i[33] = tmp*sph_i[15];
     tmp = 5.257947827012948 * sph_i[6];
     sph_i[28] = tmp * sph_i[10];
     sph_i[32] = tmp * sph_i[14];
-    sph_i[29] = 1.427248064296125 * (0.6324555320336759 * z * sph_i[19] + y * sph_i[20]);
-    sph_i[30] = 1.403403869441083 * (3.540173863740353 * sph_i[6] *sph_i[12]-z*z2);
-    sph_i[33] = 0.7827812790964006 * (
-           x *(6.8646842464783*z2 +  3.62759872846844 * sph_i[6]) * sph_i[8] 
-           -0.79160694114915 * sph_i[5] * sph_i[10] -1.32110909920200*y*sph_i[18] );
-     
+    tmp = 0.6324555320336759 *z;
+    sph_i[29] = 1.427248064296125 * (tmp * sph_i[19] + y * sph_i[20]);
+    sph_i[31] = 1.427248064296125 * (x *sph_i[20] + tmp*sph_i[21]);
+    sph_i[30] = 1.403403869441083 * (3.540173863740353 * sph_i[6] *sph_i[12]-z*z2*z2);
+    sph_i[35] = -1.048808848170152 * (y*sph_i[16] - x*sph_i[24]);
+}
 
-    
+inline void _compute_dsph_l5(double x, double y, double z, double x2, double y2, double z2, double *sph_i, double *dxsph_i, 
+                double *dysph_i, double *dzsph_i) {  
+    dxsph_i[25] = 5.244044240850758 * sph_i[16];
+    dxsph_i[26] = 4.690415759823430 * sph_i[17];
+    dxsph_i[27] = 3.582364210034113* (y2*sph_i[4] + 3.58568582800318*x*sph_i[11]);
+    dxsph_i[28] = -8.774964387392122 *(y2* sph_i[5] - z2* sph_i[5] + 0.3086066999241838*sph_i[17]);
+    dxsph_i[29] = -1.914854215512676 * sph_i[18];
+    dxsph_i[30] = -3.496029493900505 * sph_i[21];
+    dxsph_i[31] = -8.616843969807043 * (0.2102610435016800 *z2 *z2 + 
+        1.056887279361603 * sph_i[5]*sph_i[5] + (y2-z2)*sph_i[6] + 0.555555555555556 *sph_i[22]);
+    dxsph_i[32] = -8.774964387392122 * (x2 - z2) * sph_i[7];
+    dxsph_i[33] = -5.170697352496190 * (0.106904496764970*z*dxsph_i[23] -  
+            0.320713490294909*y*sph_i[9] - sph_i[22]);
+    dxsph_i[34] = 4.690415759823430 * sph_i[23];
+    dxsph_i[35] = 5.24404424085076 * sph_i[24];
+
+    dysph_i[25] = dxsph_i[35];
+    dysph_i[26] = dxsph_i[34];
+
+    dysph_i[28] = -8.77496438739212 * (y2 - 1.585330919042404*sph_i[6])*sph_i[7];
+
+
+    dzsph_i[25] = 0.0;
+    dzsph_i[26] = 3.316624790355400 * sph_i[16];
+    dzsph_i[27] = 4.422166387140533 * sph_i[17];
+    dzsph_i[28] = 5.066228051190221 * sph_i[18];
+    dzsph_i[29] = 5.416025603090640 * sph_i[19];
+    dzsph_i[30] = 5.527707983925666 * sph_i[20];
+    dzsph_i[31] = 5.416025603090640 * sph_i[21];
+    dzsph_i[32] = 5.066228051190221 * sph_i[22];
+    dzsph_i[33] = 4.422166387140533 * sph_i[23];
+    dzsph_i[34] = 3.316624790355400 * sph_i[24];
+    dzsph_i[35] = 0.0;
+   
 }
 
 void cartesian_spherical_harmonics_l5(unsigned int n_samples, double *xyz, 
@@ -408,15 +445,14 @@ void cartesian_spherical_harmonics_l5(unsigned int n_samples, double *xyz,
                                 dsph_i, dsph_i+36, dsph_i+36*2);
                 _compute_dsph_l4(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i, 
                                 dsph_i, dsph_i+36, dsph_i+36*2);
-                // to be updated 
-                _compute_dsph_l4(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i, 
+                _compute_dsph_l5(xyz_i[0], xyz_i[1], xyz_i[2], x2, y2, z2, sph_i, 
                                 dsph_i, dsph_i+36, dsph_i+36*2);
             }
         }
     }
 }
 
-void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
+void cartesian_spherical_harmonics_generic(unsigned int n_samples, unsigned int l_max, 
             const double* prefactors, double *xyz, double *sph, double *dsph) {
     /*
         Computes "Cartesian" real spherical harmonics r^l*Y_lm(x,y,z) and 
@@ -592,7 +628,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
 }
 
 #define _HC_LMAX 4
-void cartesian_spherical_harmonics_hybrid(unsigned int n_samples, unsigned int l_max, 
+void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
             const double* prefactors, double *xyz, double *sph, double *dsph) {
     /*
         Computes "Cartesian" real spherical harmonics r^l*Y_lm(x,y,z) and 
@@ -630,13 +666,17 @@ void cartesian_spherical_harmonics_hybrid(unsigned int n_samples, unsigned int l
         double pq, pdq, pdqx, pdqy; 
         int k, size_y = (l_max+1)*(l_max+1);
 
-        // precompute the Qll's 
+        // precompute the Qll's (that are constant)
         q[0+0] = 1.0;
         k=1;
         for (int l = 1; l < l_max+1; l++) {
             q[k+l] = -(2*l-1)*q[k-1];
             k += l+1; 
         }
+
+        // also initialize the sine and cosine, these never change
+        c[0] = 1.0;
+        s[0] = 0.0;
 
         /* k is a utility index to traverse lm arrays. we store sph in 
            a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
@@ -649,7 +689,6 @@ void cartesian_spherical_harmonics_hybrid(unsigned int n_samples, unsigned int l
             double y = xyz[i_sample*3+1];
             double z = xyz[i_sample*3+2];
             double twoz = 2*z;
-            //double r_sq = x*x+y*y+z*z;
             double rxy = x*x+y*y;
 
             // pointer to the segment that should store the i_sample sph
@@ -659,8 +698,6 @@ void cartesian_spherical_harmonics_hybrid(unsigned int n_samples, unsigned int l
                Basically, these are cos and sin multiplied by r_xy^m,
                so that they are just plain polynomials of x,y,z.
             */
-            c[0] = 1.0;
-            s[0] = 0.0;
             for (int m = 1; m < l_max+1; m++) {
                 c[m] = c[m-1]*x-s[m-1]*y;
                 s[m] = c[m-1]*y+s[m-1]*x;
