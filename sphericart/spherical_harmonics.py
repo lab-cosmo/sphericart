@@ -59,7 +59,7 @@ class SphericalHarmonics():
               in the spherical harmonics return array, while the second-to-last axis contains 
               the x, y, and z derivatives, respectively.
 
-        :rtype: tuple(numpy.ndarray, numpy.ndarray or None)
+        :rtype: tuple(numpy.ndarray, numpy.ndarray or `None`)
 
         """
 
