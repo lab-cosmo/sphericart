@@ -56,7 +56,7 @@ class SphericalHarmonics():
             containing all the spherical harmonics' derivatives up to degree l_max. The last 
             axis is organized in the same way as in the spherical harmonics return array, while 
             the second-to-last axis contains the x, y, and z derivatives, respectively.
-        :rtype: tuple(np.ndarray, np.ndarray/None)
+        :rtype: tuple(numpy.ndarray, numpy.ndarray/None)
 
         """
 
