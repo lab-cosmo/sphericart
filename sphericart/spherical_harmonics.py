@@ -11,6 +11,7 @@ class SphericalHarmonics():
     returns a calculator. The l_max value is used to initialize the calculator,
     and, in particular, it is used to calculate the relevant prefactors for the
     calculation of the spherical harmonics.
+
     :param l_max: the maximum degree of the spherical harmonics to be calculated
     :type l_max: int
     :return: a calculator, in the form of a SphericalHarmonics object
@@ -39,6 +40,7 @@ class SphericalHarmonics():
 
         Computes the scaled spherical harmonics :math:`r^l Y_l^m` from the Cartesian 
         coordinates of a set of 3D points.
+        
         :param xyz: The Cartesian coordinates of the 3D points, as an array with
         shape (n_samples, 3).
         :type xyz: numpy.ndarray 
