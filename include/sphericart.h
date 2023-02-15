@@ -1,13 +1,12 @@
 /**
- * This function calculates the spherical harmonics and, optionally, their derivatives 
- * for a set of 3D points.
+ * This function calculates the prefactors needed for the computation of the spherical harmonics.
  * 
  * @param l_max The maximum degree of spherical harmonics for which the prefactors will
  *      be calculated.
  * @param factors On entry, a (possibly uninitialized) array of size ``(l_max+1)*(l_max+2)/2``.
  *      On exit, it will contain the prefactors for the calculation of the spherical harmonics
- *      up to degree ``l_max``, in the order (l, m) = (0, 0), (1, 0), (1, 1), (2, 0),
- *      (2, 1), (2, 2), etc.
+ *      up to degree ``l_max``, in the order ``(l, m) = (0, 0), (1, 0), (1, 1), (2, 0),
+ *      (2, 1), (2, 2)`` etc.
  */
 void compute_sph_prefactors(unsigned int l_max, double *factors);
 
@@ -26,8 +25,8 @@ void compute_sph_prefactors(unsigned int l_max, double *factors);
  *      On exit, this array will contain the spherical harmonics organized along two dimensions. The leading 
  *      dimension is ``n_samples`` long and it represents the different samples, while the inner dimension is 
  *      ``(l_max+1)*(l_max+1)`` long and it contains the spherical harmonics. These are laid out in lexicographic
- *      order. For example, if ``l_max=2``, it will contain (l, m) = (0, 0), (1, -1), (1, 0), (1, 1), 
- *      (2, -2), (2, -1), (2, 0), (2, 1), (2, 2), in this order.
+ *      order. For example, if ``l_max=2``, it will contain ``(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), 
+ *      (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
  * @param dsph On entry, either ``NULL`` or a (possibly uninitialized) array of size ``n_samples*3*(l_max+1)*(l_max+1)``.
  *      If ``dsph`` is ``NULL``, the spherical harmonics' derivatives will not be calculated. Otherwise,
  *      on exit, this array will contain the spherical harmonics' derivatives organized along three dimensions. 
