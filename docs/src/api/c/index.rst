@@ -3,4 +3,4 @@
 C API reference
 ===============
 
-.. doxygenfunction:: rascal_calculator
+.. doxygenfunction:: cartesian_spherical_harmonics_hybrid
