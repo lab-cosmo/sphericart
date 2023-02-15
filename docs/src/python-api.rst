@@ -1,10 +1,9 @@
-API
-===
-
-C API
------
-
 Python API
-----------
+==========
 
 .. autoclass:: sphericart.SphericalHarmonics
+
+    .. automethod:: compute
+
+
+    

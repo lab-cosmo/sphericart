@@ -9,3 +9,5 @@ prefix/
 CMakeLists.txt.user
 CMakeUserPresets.json
 *.pyc
+dist/
+docs_old/
