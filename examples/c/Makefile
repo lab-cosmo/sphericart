@@ -1,8 +1,12 @@
-.PHONY: all clean
+.PHONY: all clean parallel serial
 
-CFLAGS = -O3 -g -march=native -Wall # -fopenmp 
+serial: CFLAGS = -O3 -g -march=native -Wall 
+parallel: CFLAGS = -O3 -g -march=native -Wall -fopenmp
 
 all: example
+
+serial: all
+parallel: all
 
 clean:
 	rm -rf example

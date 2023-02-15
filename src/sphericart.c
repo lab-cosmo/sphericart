@@ -352,10 +352,17 @@ inline void _compute_sph_l5(double x, double y, double z, double x2, double y2, 
     sph_i[25] = 13.12764113680340 *y*(y2*(x2-0.2*y2)+0.3994658435740642*sph_i[24]);
     sph_i[26] = 3.316624790355400*z*sph_i[16];
     sph_i[27] = 4.974937185533100 * (z2 + 0.5284436396808015*sph_i[6])*sph_i[9];
-    sph_i[28] = 5.257947827012948 * sph_i[6] * sph_i[10];
+    tmp = 5.257947827012948 * sph_i[6];
+    sph_i[28] = tmp * sph_i[10];
+    sph_i[32] = tmp * sph_i[14];
     sph_i[29] = 1.427248064296125 * (0.6324555320336759 * z * sph_i[19] + y * sph_i[20]);
     sph_i[30] = 1.403403869441083 * (3.540173863740353 * sph_i[6] *sph_i[12]-z*z2);
+    sph_i[33] = 0.7827812790964006 * (
+           x *(6.8646842464783*z2 +  3.62759872846844 * sph_i[6]) * sph_i[8] 
+           -0.79160694114915 * sph_i[5] * sph_i[10] -1.32110909920200*y*sph_i[18] );
+     
 
+    
 }
 
 void cartesian_spherical_harmonics_l5(unsigned int n_samples, double *xyz, 
