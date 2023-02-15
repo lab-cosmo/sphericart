@@ -2,7 +2,7 @@ API documentation
 -----------------
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
     python-api
     c-api

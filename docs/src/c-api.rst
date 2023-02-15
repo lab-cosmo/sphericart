@@ -1,4 +1,5 @@
 C API
 =====
 
-.. doxygenfunction:: cartesian_spherical_harmonics_hybrid
+.. doxygenfunction:: compute_sph_prefactors
+.. doxygenfunction:: cartesian_spherical_harmonics
