@@ -53,4 +53,4 @@ class SphericalHarmonics():
 
         """
 
-        return self.c_spherical_harmonics(self.l_max, xyz, self.prefactors, gradients)
+        return c_spherical_harmonics(self.l_max, xyz, self.prefactors, gradients)
