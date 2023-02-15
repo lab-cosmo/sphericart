@@ -38,8 +38,8 @@ class SphericalHarmonics():
         """
         Calculates the spherical harmonics.
 
-        Computes the scaled spherical harmonics :math:`r^l Y_l^m` from the Cartesian 
-        coordinates of a set of 3D points.
+        More specifically, it computes the scaled spherical harmonics :math:`r^l Y_l^m` 
+        from the Cartesian coordinates of a set of 3D points.
         
         :param xyz: The Cartesian coordinates of the 3D points, as an array with
             shape (n_samples, 3).
@@ -48,15 +48,18 @@ class SphericalHarmonics():
             and returned in addition to the spherical harmonics. False by default.
         :type gradients: bool
         :return: A tuple containing two values:
+
             * An array of shape (n_samples, (l_max+1)**2) containing all the spherical 
             harmonics up to degree l_max in lexicographic order. For example, if l_max = 2,
             The last axis will correspond to spherical harmonics with (l, m) = (0, 0), (1, -1)
             (1, 0) (1 1) (2 -2) (2 -1) (2 0) (2 1) (2 2), in this order. 
-            * Either None if gradients=False or an array of shape (n_samples, 3, (l_max+1)**2) 
-            containing all the spherical harmonics' derivatives up to degree l_max. The last 
-            axis is organized in the same way as in the spherical harmonics return array, while 
-            the second-to-last axis contains the x, y, and z derivatives, respectively.
-        :rtype: tuple(numpy.ndarray, numpy.ndarray/None)
+            * Either None if gradients=False or, if gradients=True, an array of shape 
+            (n_samples, 3, (l_max+1)**2) containing all the spherical harmonics' derivatives 
+            up to degree l_max. The last axis is organized in the same way as 
+            in the spherical harmonics return array, while the second-to-last axis contains 
+            the x, y, and z derivatives, respectively.
+            
+        :rtype: tuple(numpy.ndarray, numpy.ndarray or None)
 
         """
 
