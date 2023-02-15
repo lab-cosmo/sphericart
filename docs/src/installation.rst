@@ -21,6 +21,8 @@ After cloning the repository with
 
     git clone https://github.com/lab-cosmo/sphericart
 
+the C library can be installed with
+
 .. code-block:: bash
 
     cd sphericart/src
@@ -29,6 +31,6 @@ After cloning the repository with
     cmake .. -DCMAKE_INSTALL_PREFIX=../../lib/
     make install
 
-This will install a shared object library inside the sphericart/lib/ folder.
+This will install a shared object library inside the ``sphericart/lib/`` folder.
 See the examples section for more information on how to link the C shared 
 object library in an external application.
