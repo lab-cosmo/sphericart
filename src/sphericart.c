@@ -384,9 +384,17 @@ inline void _compute_dsph_l5(double x, double y, double z, double x2, double y2,
 
     dysph_i[25] = dxsph_i[35];
     dysph_i[26] = dxsph_i[34];
-
+    dysph_i[27] = -3.102418411497714*(0.534522483824849*y*sph_i[9]
+            -0.654653670707977*z*sph_i[14] - sph_i[22]);
     dysph_i[28] = -8.77496438739212 * (y2 - 1.585330919042404*sph_i[6])*sph_i[7];
-
+    dysph_i[29] = 0.7237468644557459 * (y * (2.12132034355964 * sph_i[9] 
+         -8.21583836257749 * sph_i[11]) + 6.70820393249937 * z * sph_i[12] + sph_i[24]);
+    dysph_i[30] = -3.496029493900505 * sph_i[19];
+    dysph_i[31] = dxsph_i[29];
+    dysph_i[32] = 8.77496438739212 * (y2 - z2) *sph_i[5];
+    dysph_i[33] = 3.582364210034113 * sph_i[4] *(y2 - 5*z2 - 1.585330919042404 * sph_i[6]);
+    dysph_i[34] = -dxsph_i[26];
+    dysph_i[35] = -dxsph_i[25];
 
     dzsph_i[25] = 0.0;
     dzsph_i[26] = 3.316624790355400 * sph_i[16];
