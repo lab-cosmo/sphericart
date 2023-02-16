@@ -17,4 +17,4 @@ For instructions on the installation of the C library, please refer to the
 
 # Licensing
 
-See the LICENCE document.
+See the LICENSE document.
