@@ -729,7 +729,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             // We need also Qlm for l=_HC_LMAX because of the derivatives
             // Initialize the recursion (Qll's are already stored and constant)
             k = (_HC_LMAX)*(_HC_LMAX+1)/2;
-            for (int l = _HC_LMAX; l < l_max+1; l++) {
+            for (l = _HC_LMAX; l < l_max+1; l++) {
                 q[k+(l-1)] = -z*q[k+l]; // (2*m-1)*z*q[k-1];
                 k += l+1;                 
             }
@@ -760,20 +760,20 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1);
             for (l=_HC_LMAX+1; l<l_max+1; l++) {            
                 sph_i[l] = q[k]*prefactors[k];
-                ++k; 
                 // help the compiler unroll the part with 
+                #pragma GCC ivdep                
                 for (m=1; m<_HC_LMAX+1; m++) {
-                    pq = q[k]*prefactors[k];
-                    ++k; 
+                    pq = q[k+m]*prefactors[k+m];
                     sph_i[l-m] = pq*s[m];
                     sph_i[l+m] = pq*c[m];
                 }
+                #pragma GCC ivdep
                 for (; m<l+1; m++) {
-                    pq = q[k]*prefactors[k];
-                    ++k;
+                    pq = q[k+m]*prefactors[k+m];
                     sph_i[l-m] = pq*s[m];
                     sph_i[l+m] = pq*c[m];
-                }             
+                } 
+                k += l+1;           
                 sph_i += 2*l+1;
             }
 
@@ -798,61 +798,61 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                     dsph_i[l] = prefactors[k]*x*q[k-l+1];
                     dsph_i[size_y+l] = prefactors[k]*y*q[k-l+1];
                     dsph_i[size_y*2+l] = prefactors[k]*l*q[k-l];                    
-                    ++k;
-
+                    
                     // hint to a loop unrolling possibility - this has constant # of cycles
+                    #pragma GCC ivdep
                     for (m=1; m<_HC_LMAX-1; m++) {
                         // also includes a factor of m so we get the phi-dependent derivatives
-                        pq=prefactors[k]*q[k]*m;  
-                        pdq=prefactors[k]*q[k-l+1];
+                        pq=prefactors[k+m]*q[k+m]*m;  
+                        pdq=prefactors[k+m]*q[k+m-l+1];
                         pdqx = pdq*x;
                         dsph_i[l-m] = (pdqx*s[m]+pq*s[m-1]);
                         dsph_i[l+m] = (pdqx*c[m]+pq*c[m-1]);
                         pdqy = pdq*y;
                         dsph_i[size_y+l-m] = (pdqy*s[m]+pq*c[m-1]);
                         dsph_i[size_y+l+m] = (pdqy*c[m]-pq*s[m-1]);
-                        pdq=prefactors[k]*(l+m)*q[k-l];
+                        pdq=prefactors[k+m]*(l+m)*q[k+m-l];
                         dsph_i[size_y*2+l-m] = pdq*s[m];
-                        dsph_i[size_y*2+l+m] = pdq*c[m];
-                        ++k;
+                        dsph_i[size_y*2+l+m] = pdq*c[m];                        
                     }
+                    #pragma GCC ivdep
                     for (; m<l-1; m++) {
                         // also includes a factor of m so we get the phi-dependent derivatives
-                        pq=prefactors[k]*q[k]*m;  
-                        pdq=prefactors[k]*q[k-l+1];
+                        pq=prefactors[k+m]*q[k+m]*m;  
+                        pdq=prefactors[k+m]*q[k+m-l+1];
                         pdqx = pdq*x;
                         dsph_i[l-m] = (pdqx*s[m]+pq*s[m-1]);
                         dsph_i[l+m] = (pdqx*c[m]+pq*c[m-1]);
                         pdqy = pdq*y;
                         dsph_i[size_y+l-m] = (pdqy*s[m]+pq*c[m-1]);
                         dsph_i[size_y+l+m] = (pdqy*c[m]-pq*s[m-1]);
-                        pdq=prefactors[k]*(l+m)*q[k-l];
+                        pdq=prefactors[k+m]*(l+m)*q[k+m-l];
                         dsph_i[size_y*2+l-m] = pdq*s[m];
                         dsph_i[size_y*2+l+m] = pdq*c[m];
-                        ++k;
                     }
 
                     // do separately special cases that have lots of zeros
                     // m = l-1
-                    pq=prefactors[k]*q[k]*(l-1); 
+                    pq=prefactors[k+l-1]*q[k+l-1]*(l-1); 
                     dsph_i[l-l+1] = pq*s[l-2];
                     dsph_i[l+l-1] = pq*c[l-2];
                     dsph_i[size_y+l-l+1] = pq*c[l-2];
                     dsph_i[size_y+l+l-1] = -pq*s[l-2];
-                    pdq=prefactors[k]*(l+l-1)*q[k-l]; 
+                    pdq=prefactors[k+l-1]*(l+l-1)*q[k+l-1-l]; 
                     dsph_i[size_y*2+l-l+1] = pdq*s[l-1];
                     dsph_i[size_y*2+l+l-1] = pdq*c[l-1];
-                    ++k;
+                    
                     //m=l
-                    pq=prefactors[k]*q[k]*l; 
+                    pq=prefactors[k+l]*q[k+l]*l; 
                     dsph_i[l-l] = pq*s[l-1];
                     dsph_i[l+l] = pq*c[l-1];
                     dsph_i[size_y+l-l] = pq*c[l-1];
                     dsph_i[size_y+l+l] = -pq*s[l-1];
                     dsph_i[size_y*2+l-l] = 0;
                     dsph_i[size_y*2+l+l] = 0;
-                    ++k;
+                    
                     //advances the pointer for the sph derivatives
+                    k += l+1;
                     dsph_i += 2*l+1;  
                 }
             }     
