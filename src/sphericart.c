@@ -384,9 +384,17 @@ inline void _compute_dsph_l5(double x, double y, double z, double x2, double y2,
 
     dysph_i[25] = dxsph_i[35];
     dysph_i[26] = dxsph_i[34];
-
+    dysph_i[27] = -3.102418411497714*(0.534522483824849*y*sph_i[9]
+            -0.654653670707977*z*sph_i[14] - sph_i[22]);
     dysph_i[28] = -8.77496438739212 * (y2 - 1.585330919042404*sph_i[6])*sph_i[7];
-
+    dysph_i[29] = 0.7237468644557459 * (y * (2.12132034355964 * sph_i[9] 
+         -8.21583836257749 * sph_i[11]) + 6.70820393249937 * z * sph_i[12] + sph_i[24]);
+    dysph_i[30] = -3.496029493900505 * sph_i[19];
+    dysph_i[31] = dxsph_i[29];
+    dysph_i[32] = 8.77496438739212 * (y2 - z2) *sph_i[5];
+    dysph_i[33] = 3.582364210034113 * sph_i[4] *(y2 - 5*z2 - 1.585330919042404 * sph_i[6]);
+    dysph_i[34] = -dxsph_i[26];
+    dysph_i[35] = -dxsph_i[25];
 
     dzsph_i[25] = 0.0;
     dzsph_i[26] = 3.316624790355400 * sph_i[16];
@@ -627,7 +635,7 @@ void cartesian_spherical_harmonics_generic(unsigned int n_samples, unsigned int 
     }
 }
 
-#define _HC_LMAX 4
+#define _HC_LMAX 5
 void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
             const double* prefactors, double *xyz, double *sph, double *dsph) {
     /*
@@ -641,19 +649,21 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
 
     // call directly the fast ones
     if (l_max <= _HC_LMAX) {
-        if (l_max==0) {
-            cartesian_spherical_harmonics_l0(n_samples, xyz, sph, dsph);
-        } else if (l_max == 1) {
-            cartesian_spherical_harmonics_l1(n_samples, xyz, sph, dsph);
-        } else if (l_max == 2) {
-            cartesian_spherical_harmonics_l2(n_samples, xyz, sph, dsph);
-        } else if (l_max == 3) {
-            cartesian_spherical_harmonics_l3(n_samples, xyz, sph, dsph);
+        if (l_max==5) {
+            cartesian_spherical_harmonics_l5(n_samples, xyz, sph, dsph);
         } else if (l_max == 4) {
             cartesian_spherical_harmonics_l4(n_samples, xyz, sph, dsph);
+        } else if (l_max == 3) {
+            cartesian_spherical_harmonics_l3(n_samples, xyz, sph, dsph);
+        } else if (l_max == 2) {
+            cartesian_spherical_harmonics_l2(n_samples, xyz, sph, dsph);
+        } else if (l_max == 1) {
+            cartesian_spherical_harmonics_l1(n_samples, xyz, sph, dsph);
+        } else {
+            cartesian_spherical_harmonics_l0(n_samples, xyz, sph, dsph);
         }
     } else {
-    // general case, but start at 4    
+    // general case, but start at 5
     #pragma omp parallel
     {
         // storage arrays for Qlm (modified associated Legendre polynomials)
@@ -739,6 +749,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             _compute_sph_l2(x,y,z,x2,y2,z2,sph_i);
             _compute_sph_l3(x,y,z,x2,y2,z2,sph_i);
             _compute_sph_l4(x,y,z,x2,y2,z2,sph_i);
+            _compute_sph_l5(x,y,z,x2,y2,z2,sph_i);
 
             k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1);
             for (int l=_HC_LMAX+1; l<l_max+1; l++) {            
@@ -765,6 +776,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                 _compute_dsph_l2(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
                 _compute_dsph_l3(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
                 _compute_dsph_l4(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
+                _compute_dsph_l5(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
                 
                 k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; dsph_i += (_HC_LMAX+1)*(_HC_LMAX+1);
                 // general case - iteration
