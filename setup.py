@@ -41,8 +41,15 @@ class cmake_ext(build_ext):
             check=True,
         )
 
+with open('README.md') as f:
+    long_description = f.read()
+
 setup(
     name="sphericart",
+    version="0.0.1",
+    description="sphericart, a package to calculate spherical harmonics efficiently in Cartesian coordinates",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     packages=find_packages(),
     ext_modules=[
         Extension(name="sphericart", sources=[]),
