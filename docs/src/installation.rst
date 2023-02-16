@@ -33,4 +33,4 @@ the C library can be installed with
 
 This will install a shared object library inside the ``sphericart/lib/`` folder.
 See the examples section for more information on how to link the C shared 
-object library in an external application.
+object library in an external program.
