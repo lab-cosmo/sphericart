@@ -1,35 +1,20 @@
 # sphericart
 
-This is the sphericart project.
+This is sphericart, a multi-language library for the efficient calculation of the 
+spherical harmonics and their derivatives in Cartesian coordinates.
 
-# Building and installing
+For instructions and examples on the usage of the library, please refer to our
+[documentation](https://sphericart.readthedocs.io/en/latest/).
 
-To install the C library:
 
-```
-cd src
-mkdir build
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=../../lib/
-make install
-```
+# Installation
 
-To install the Python library:
+The Python package can be installed with `pip install sphericart`.
 
-```python -m pip install .```
+For instructions on the installation of the C library, please refer to the 
+[documentation](https://sphericart.readthedocs.io/en/latest/).
 
-# Using the library
-
-To use the C and Python libraries, please see the corresponding examples.
-
-# Contributing
-
-See the [CONTRIBUTING](CONTRIBUTING.md) document.
 
 # Licensing
 
-<!--
-Please go to https://choosealicense.com/licenses/ and choose a license that
-fits your needs. The recommended license for a project of this type is the
-Boost Software License 1.0.
--->
+See the LICENCE document.
