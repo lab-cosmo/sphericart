@@ -360,8 +360,8 @@ inline void _compute_sph_l5(double x, double y, double z, double x2, double y2, 
     sph_i[28] = tmp * sph_i[10];
     sph_i[32] = tmp * sph_i[14];
     tmp = 0.6324555320336759 *z;
-    sph_i[29] = 1.427248064296125 * (tmp * sph_i[19] + y * sph_i[20]);
-    sph_i[31] = 1.427248064296125 * (x *sph_i[20] + tmp*sph_i[21]);
+    sph_i[29] = 1.427248064296125 * (y * sph_i[20] + tmp * sph_i[19]);
+    sph_i[31] = 1.427248064296125 * (x * sph_i[20] + tmp * sph_i[21]);
     sph_i[30] = 1.403403869441083 * (3.540173863740353 * sph_i[6] *sph_i[12]-z*z2*z2);
     sph_i[35] = -1.048808848170152 * (y*sph_i[16] - x*sph_i[24]);
 }
@@ -673,8 +673,19 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
 
         // temporaries to store prefactor*q and dq
         double pq, pdq, pdqx, pdqy; 
-        int l, m, k, size_y = (l_max+1)*(l_max+1);
+        int l, m, k, size_y = (l_max+1)*(l_max+1), size_q=(l_max+1)*(l_max+2)/2;
 
+        // precomputes some factors that enter the Qlm iteration. 
+        // TODO: Probably worth pre-computing together with the prefactors,
+        // more for consistency than for efficiency
+        double * qlmfactor = (double*) malloc(sizeof(double)*size_q);
+        k = (_HC_LMAX)*(_HC_LMAX+1)/2;
+        for (l=_HC_LMAX; l < l_max+1; ++l) {
+            for (m=l-2; m>=0; --m) {
+                qlmfactor[k+m] = -1.0/((l+m+1)*(l-m));                    
+            }
+            k += l+1;
+        }
         // precompute the Qll's (that are constant)
         q[0+0] = 1.0;
         k=1;
@@ -727,23 +738,46 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             
             // Fills the Qlm starting from Qll (so we don't need to compute the low ls)
             // We need also Qlm for l=_HC_LMAX because of the derivatives
-            // Initialize the recursion (Qll's are already stored and constant)
-            k = (_HC_LMAX)*(_HC_LMAX+1)/2;
+            // Initialize the recursion for Qll-1 (Qll's are already stored and constant)
+            k = (_HC_LMAX)*(_HC_LMAX+3)/2; // k points at [l,m]
             for (l = _HC_LMAX; l < l_max+1; l++) {
-                q[k+(l-1)] = -z*q[k+l]; // (2*m-1)*z*q[k-1];
-                k += l+1;                 
+                q[k-1] = -z*q[k]; // (2*m-1)*z*q[k-1];
+                k += l+2;                 
             }
 
-            k = (_HC_LMAX)*(_HC_LMAX+1)/2;
+            /*
+            // This very complicated loop rearrangement was supposed to avoid some 
+            // multiplications, but seems not to be helping. I leave it here as a
+            // warning against microptimizations...            
+            double twomz = l_max*twoz; // counter for 2(m+1)z
+            for (m=l_max-2; m>_HC_LMAX-2; m--) {
+                twomz -= twoz;
+                k = (m+1)*(m+6)/2; // k index is set up to point at [l,m] for Ql-type arrays
+                for (l=m+2; l<l_max+1; l++) {                    
+                    q[k] = qlmfactor[k]*(twomz*q[k+1]+rxy*q[k+2]);
+                    k += l+1;
+                }
+            }
+            for (m=_HC_LMAX-2; m>=0; m--) {
+                twomz -= twoz;
+                k = _HC_LMAX*(_HC_LMAX+1)/2+m;
+                for (l=_HC_LMAX; l<l_max+1; l++) {
+                    q[k] = qlmfactor[k]*(twomz*q[k+1]+rxy*q[k+2]);
+                    k += l+1;
+                }
+            }*/
+            
+            k = (_HC_LMAX)*(_HC_LMAX+1)/2;            
             for (l=_HC_LMAX; l < l_max+1; ++l) {
                 double twomz = l*twoz;
                 for (m=l-2; m>=0; --m) {
                     twomz -= twoz;
-                    q[k+m] = -(twomz*q[k+m+1]+rxy*q[k+m+2])/((l+m+1)*(l-m));                    
+                    //q[k+m] = -(twomz*q[k+m+1]+rxy*q[k+m+2])/((l+m+1)*(l-m));                    
+                    q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
                 }
                 k += l+1;
             }
-            
+
             /* fill the (Cartesian) sph by combining Qlm and 
               sine/cosine phi-dependent factors. we use pointer 
               arithmetics to make sure spk_i always points at the 
@@ -760,7 +794,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1);
             for (l=_HC_LMAX+1; l<l_max+1; l++) {            
                 sph_i[l] = q[k]*prefactors[k];
-                // help the compiler unroll the part with 
+                // help the compiler unroll the part with constant size
                 #pragma GCC ivdep                
                 for (m=1; m<_HC_LMAX+1; m++) {
                     pq = q[k+m]*prefactors[k+m];
