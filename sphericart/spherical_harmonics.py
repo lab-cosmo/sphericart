@@ -7,7 +7,7 @@ class SphericalHarmonics():
     The user-facing spherical harmonics class. 
     
     Upon initialization, this class
-    returns a calculator. The l_max value is used to initialize the calculator,
+    returns a calculator. The ``l_max`` value is used to initialize the calculator,
     and, in particular, it is used to calculate the relevant prefactors for the
     calculation of the spherical harmonics.
 
@@ -46,11 +46,11 @@ class SphericalHarmonics():
             * Either ``None`` if ``gradients=False`` or, if ``gradients=True``, an array of shape 
               ``(n_samples, 3, (l_max+1)**2)`` containing all the spherical harmonics' derivatives 
               up to degree ``l_max``. The last axis is organized in the same way as 
-              in the spherical harmonics return array, while the second-to-last axis refers tp 
+              in the spherical harmonics return array, while the second-to-last axis refers to 
               the x, y, and z derivatives, respectively.
 
         :rtype: tuple(``numpy.ndarray``, ``numpy.ndarray`` or ``None``)
 
         """
 
-        return c_spherical_harmonics(self.l_max, xyz, self.prefactors, gradients)
+        return c_spherical_harmonics(self._l_max, xyz, self._prefactors, gradients)
