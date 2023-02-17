@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
-    k=0;
+    k=(l_max+1)*(l_max+1)*(n_samples-1);
     for (int l=0; l<(l_max+1); l++)
     {
         for (int m=-l; m<=l; m++) {

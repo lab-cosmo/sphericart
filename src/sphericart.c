@@ -419,7 +419,7 @@ void cartesian_spherical_harmonics_l5(unsigned int n_samples, double *xyz,
             #pragma omp for
             for (int i_sample=0; i_sample<n_samples; i_sample++) {
                 xyz_i = xyz+i_sample*3;
-                sph_i = sph+i_sample*25;            
+                sph_i = sph+i_sample*36;            
                 _compute_sph_l0(sph_i);
                 _compute_sph_l1(xyz_i[0], xyz_i[1], xyz_i[2], sph_i);
                 x2 = xyz_i[0]*xyz_i[0]; y2 = xyz_i[1]*xyz_i[1]; z2 = xyz_i[2]*xyz_i[2]; 
