@@ -6,6 +6,8 @@
 #include <math.h>
 #include "sphericart.h"
 
+#define _SPH_TOL 1e-5
+
 int main(int argc, char *argv[]) {
 
     unsigned int n_samples = 10000;
@@ -113,26 +115,26 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
-    int size3 = (l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
-    int size2 = 3*(l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
+    int size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
+    int size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
         for (int l=0; l<(l_max+1); l++) {
             for (int m=-l; m<=l; m++) {
-                if (fabs(sph[size3*i_sample+l*l+l+m]/sph1[size3*i_sample+l*l+l+m]-1)>1e-6) {
+                if (fabs(sph[size2*i_sample+l*l+l+m]/sph1[size2*i_sample+l*l+l+m]-1)>_SPH_TOL) {
                     printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
-                    printf("SPH: %e, %e\n", sph[k+l+m], sph1[k+l+m]);
+                    printf("SPH: %e, %e\n", sph[size2*i_sample+l*l+l+m], sph1[size2*i_sample+l*l+l+m]);
                 }
-                if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>1e-6) {
+                if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>_SPH_TOL) {
                     printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);           
-                    printf("DxSPH: %e, %e\n", dsph[k+l+m], dsph1[k+l+m]);
+                    printf("DxSPH: %e, %e\n", dsph[size3*i_sample+size2*0+l*l+l+m], dsph1[size3*i_sample+size2*0+l*l+l+m]);
                 }
-                if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>1e-6) {
+                if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>_SPH_TOL) {
                     printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);            
-                    printf("DySPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)+k+l+m], dsph1[(l_max+1)*(l_max+1)+k+l+m]);
+                    printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
                 }
-                if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>1e-6) {
+                if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
                     printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);         
-                    printf("DzSPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)*2+k+l+m], dsph1[(l_max+1)*(l_max+1)*2+k+l+m]);
+                    printf("DzSPH: %e, %e\n", dsph[size3*i_sample+size2*2+l*l+l+m], dsph1[size3*i_sample+size2*2+l*l+l+m]);
                 }
             }
         }
@@ -402,35 +404,33 @@ int main(int argc, char *argv[]) {
             );
 
     l_max=5;
-    size3 = (l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
-    size2 = 3*(l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
+    size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
+    size2 = 2*(l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
         for (int l=0; l<(l_max+1); l++) {
             for (int m=-l; m<=l; m++) {
-                if (fabs(sph[size3*i_sample+l*l+l+m]/sph1[size3*i_sample+l*l+l+m]-1)>1e-6) {
+                if (fabs(sph[size2*i_sample+l*l+l+m]/sph1[size2*i_sample+l*l+l+m]-1)>_SPH_TOL) {
                     printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
-                    printf("SPH: %e, %e\n", sph[k+l+m], sph1[k+l+m]);
+                    printf("SPH: %e, %e\n", sph[size2*i_sample+l*l+l+m], sph1[size2*i_sample+l*l+l+m]);
                 }
-                if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>1e-6) {
+                if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>_SPH_TOL) {
                     printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);           
-                    printf("DxSPH: %e, %e\n", dsph[k+l+m], dsph1[k+l+m]);
+                    printf("DxSPH: %e, %e\n", dsph[size3*i_sample+size2*0+l*l+l+m], dsph1[size3*i_sample+size2*0+l*l+l+m]);
                 }
-                if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>1e-6) {
+                if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>_SPH_TOL) {
                     printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);            
-                    printf("DySPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)+k+l+m], dsph1[(l_max+1)*(l_max+1)+k+l+m]);
+                    printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
                 }
-                if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>1e-6) {
+                if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
                     printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);         
-                    printf("DzSPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)*2+k+l+m], dsph1[(l_max+1)*(l_max+1)*2+k+l+m]);
+                    printf("DzSPH: %e, %e\n", dsph[size3*i_sample+size2*2+l*l+l+m], dsph1[size3*i_sample+size2*2+l*l+l+m]);
                 }
             }
         }
     }
 
     free(xyz);
-    free(prefactors);
-    free(sph);
-    free(dsph);
+    free(prefactors);    
 
     return 0;
 }
