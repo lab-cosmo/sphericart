@@ -5,7 +5,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -march=native -Wall -fopenmp")
-set(CMAKE_C_FLAGS_SINGLETHREAD "-O3 -march=native -Wall")
+set(CMAKE_C_FLAGS_SINGLETHREAD "-g -O3 -march=native -Wall")
 project(
     sphericart
     VERSION 0.1

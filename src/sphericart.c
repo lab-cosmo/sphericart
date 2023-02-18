@@ -686,6 +686,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             }
             k += l+1;
         }
+
         // precompute the Qll's (that are constant)
         q[0+0] = 1.0;
         k=1;
@@ -714,7 +715,15 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
 
             // pointer to the segment that should store the i_sample sph
             double *sph_i = sph+i_sample*size_y;
-            
+
+            // these are the hard-coded, low-lmax sph
+            _compute_sph_l0(sph_i);
+            _compute_sph_l1(x,y,z,sph_i);
+            _compute_sph_l2(x,y,z,x2,y2,z2,sph_i);
+            _compute_sph_l3(x,y,z,x2,y2,z2,sph_i);
+            _compute_sph_l4(x,y,z,x2,y2,z2,sph_i);
+            _compute_sph_l5(x,y,z,x2,y2,z2,sph_i);
+
             /* These are scaled version of cos(m phi) and sin(m phi).
                Basically, these are cos and sin multiplied by r_xy^m,
                so that they are just plain polynomials of x,y,z.
@@ -724,31 +733,16 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             for (m = 1; m<_HC_LMAX+1; ++m) {
                 c[m] = c[m-1]*x-s[m-1]*y;
                 s[m] = c[m-1]*y+s[m-1]*x;
-            }
-            
+            }            
             for (; m < l_max+1; m++) {
                 c[m] = c[m-1]*x-s[m-1]*y;
                 s[m] = c[m-1]*y+s[m-1]*x;
             }
-
-            /* compute recursively the "Cartesian" associated Legendre polynomials Qlm.
-               Qlm is defined as r^l/r_xy^m P_lm, and is a polynomial of x,y,z.
-               These are computed with a recursive expression.
-              */
             
-            // Fills the Qlm starting from Qll (so we don't need to compute the low ls)
-            // We need also Qlm for l=_HC_LMAX because of the derivatives
-            // Initialize the recursion for Qll-1 (Qll's are already stored and constant)
-            k = (_HC_LMAX)*(_HC_LMAX+3)/2; // k points at [l,m]
-            for (l = _HC_LMAX; l < l_max+1; l++) {
-                q[k-1] = -z*q[k]; // (2*m-1)*z*q[k-1];
-                k += l+2;                 
-            }
-
             /*
             // This very complicated loop rearrangement was supposed to avoid some 
             // multiplications, but seems not to be helping. I leave it here as a
-            // warning against microptimizations...            
+            // warning against micro-optimizations...
             double twomz = l_max*twoz; // counter for 2(m+1)z
             for (m=l_max-2; m>_HC_LMAX-2; m--) {
                 twomz -= twoz;
@@ -767,12 +761,32 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                 }
             }*/
             
-            k = (_HC_LMAX)*(_HC_LMAX+1)/2;            
+            /* compute recursively the "Cartesian" associated Legendre polynomials Qlm.
+               Qlm is defined as r^l/r_xy^m P_lm, and is a polynomial of x,y,z.
+               These are computed with a recursive expression.
+
+               Also assembles the sph in the same loop!
+              */
+            
+            /* Fills the Qlm starting from Qll (so we don't need to compute the low ls)
+             We need also Qlm for l=_HC_LMAX because it's used in the derivatives */
+            // Initialize the recursion for Qll-1 (Qll's are already stored and constant)
+            k = (_HC_LMAX)*(_HC_LMAX+3)/2; // k points at [l,m]
+            for (l = _HC_LMAX; l < l_max+1; l++) {
+                q[k+l-1] = -z*q[k]; // (2*m-1)*z*q[k-1];
+                k += l+2;                 
+            }
+            
+            // k points at Q[l,0]; sph_i at Y[l,0] (mid-way through the l chunk)
+            k = (_HC_LMAX)*(_HC_LMAX+1)/2; sph_i = (_HC_LMAX)*(_HC_LMAX+1);           
             for (l=_HC_LMAX; l < l_max+1; ++l) {
+                q[k+l-1] = -z*q[k+l];
+
+                
                 double twomz = l*twoz;
+                // k points at [l,0]
                 for (m=l-2; m>=0; --m) {
                     twomz -= twoz;
-                    //q[k+m] = -(twomz*q[k+m+1]+rxy*q[k+m+2])/((l+m+1)*(l-m));                    
                     q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
                 }
                 k += l+1;
@@ -783,32 +797,25 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
               arithmetics to make sure spk_i always points at the 
               beginning of the appropriate memory segment. */
 
-            // these are the hard-coded, low-lmax
-            _compute_sph_l0(sph_i);
-            _compute_sph_l1(x,y,z,sph_i);
-            _compute_sph_l2(x,y,z,x2,y2,z2,sph_i);
-            _compute_sph_l3(x,y,z,x2,y2,z2,sph_i);
-            _compute_sph_l4(x,y,z,x2,y2,z2,sph_i);
-            _compute_sph_l5(x,y,z,x2,y2,z2,sph_i);
-
-            k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1);
+            // k indexes [l,0] and sph_i also [l,0] (mid-way through the l chunk)
+            k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);
             for (l=_HC_LMAX+1; l<l_max+1; l++) {            
-                sph_i[l] = q[k]*prefactors[k];
+                sph_i[0] = q[k]*prefactors[k];
                 // help the compiler unroll the part with constant size
                 #pragma GCC ivdep                
                 for (m=1; m<_HC_LMAX+1; m++) {
                     pq = q[k+m]*prefactors[k+m];
-                    sph_i[l-m] = pq*s[m];
-                    sph_i[l+m] = pq*c[m];
+                    sph_i[-m] = pq*s[m];
+                    sph_i[+m] = pq*c[m];
                 }
                 #pragma GCC ivdep
                 for (; m<l+1; m++) {
                     pq = q[k+m]*prefactors[k+m];
-                    sph_i[l-m] = pq*s[m];
-                    sph_i[l+m] = pq*c[m];
+                    sph_i[-m] = pq*s[m];
+                    sph_i[+m] = pq*c[m];
                 } 
                 k += l+1;           
-                sph_i += 2*l+1;
+                sph_i += 2*l+2;
             }
 
             if (dsph != NULL) {
@@ -826,12 +833,15 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                 _compute_dsph_l4(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
                 _compute_dsph_l5(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
                 
-                k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; dsph_i += (_HC_LMAX+1)*(_HC_LMAX+1);
+                // k points at [l,0]
+                k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; 
+                // dsph_i points at [l,0] as well (halfway through the l segment)
+                dsph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);
                 // general case - iteration
                 for (l=_HC_LMAX+1; l<l_max+1; l++) {
-                    dsph_i[l] = prefactors[k]*x*q[k-l+1];
-                    dsph_i[size_y+l] = prefactors[k]*y*q[k-l+1];
-                    dsph_i[size_y*2+l] = prefactors[k]*l*q[k-l];                    
+                    dsph_i[0] = prefactors[k]*x*q[k-l+1];
+                    dsph_i[size_y] = prefactors[k]*y*q[k-l+1];
+                    dsph_i[size_y*2] = prefactors[k]*l*q[k-l];                    
                     
                     // hint to a loop unrolling possibility - this has constant # of cycles
                     #pragma GCC ivdep
@@ -840,14 +850,14 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                         pq=prefactors[k+m]*q[k+m]*m;  
                         pdq=prefactors[k+m]*q[k+m-l+1];
                         pdqx = pdq*x;
-                        dsph_i[l-m] = (pdqx*s[m]+pq*s[m-1]);
-                        dsph_i[l+m] = (pdqx*c[m]+pq*c[m-1]);
+                        dsph_i[-m] = (pdqx*s[m]+pq*s[m-1]);
+                        dsph_i[+m] = (pdqx*c[m]+pq*c[m-1]);
                         pdqy = pdq*y;
-                        dsph_i[size_y+l-m] = (pdqy*s[m]+pq*c[m-1]);
-                        dsph_i[size_y+l+m] = (pdqy*c[m]-pq*s[m-1]);
+                        dsph_i[size_y-m] = (pdqy*s[m]+pq*c[m-1]);
+                        dsph_i[size_y+m] = (pdqy*c[m]-pq*s[m-1]);
                         pdq=prefactors[k+m]*(l+m)*q[k+m-l];
-                        dsph_i[size_y*2+l-m] = pdq*s[m];
-                        dsph_i[size_y*2+l+m] = pdq*c[m];                        
+                        dsph_i[size_y*2-m] = pdq*s[m];
+                        dsph_i[size_y*2+m] = pdq*c[m];                        
                     }
                     #pragma GCC ivdep
                     for (; m<l-1; m++) {
@@ -855,39 +865,39 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                         pq=prefactors[k+m]*q[k+m]*m;  
                         pdq=prefactors[k+m]*q[k+m-l+1];
                         pdqx = pdq*x;
-                        dsph_i[l-m] = (pdqx*s[m]+pq*s[m-1]);
-                        dsph_i[l+m] = (pdqx*c[m]+pq*c[m-1]);
+                        dsph_i[-m] = (pdqx*s[m]+pq*s[m-1]);
+                        dsph_i[+m] = (pdqx*c[m]+pq*c[m-1]);
                         pdqy = pdq*y;
-                        dsph_i[size_y+l-m] = (pdqy*s[m]+pq*c[m-1]);
-                        dsph_i[size_y+l+m] = (pdqy*c[m]-pq*s[m-1]);
+                        dsph_i[size_y-m] = (pdqy*s[m]+pq*c[m-1]);
+                        dsph_i[size_y+m] = (pdqy*c[m]-pq*s[m-1]);
                         pdq=prefactors[k+m]*(l+m)*q[k+m-l];
-                        dsph_i[size_y*2+l-m] = pdq*s[m];
-                        dsph_i[size_y*2+l+m] = pdq*c[m];
+                        dsph_i[size_y*2-m] = pdq*s[m];
+                        dsph_i[size_y*2+m] = pdq*c[m];
                     }
 
                     // do separately special cases that have lots of zeros
                     // m = l-1
                     pq=prefactors[k+l-1]*q[k+l-1]*(l-1); 
-                    dsph_i[l-l+1] = pq*s[l-2];
-                    dsph_i[l+l-1] = pq*c[l-2];
-                    dsph_i[size_y+l-l+1] = pq*c[l-2];
-                    dsph_i[size_y+l+l-1] = -pq*s[l-2];
+                    dsph_i[-l+1] = pq*s[l-2];
+                    dsph_i[l-1] = pq*c[l-2];
+                    dsph_i[size_y-l+1] = pq*c[l-2];
+                    dsph_i[size_y+l-1] = -pq*s[l-2];
                     pdq=prefactors[k+l-1]*(l+l-1)*q[k+l-1-l]; 
-                    dsph_i[size_y*2+l-l+1] = pdq*s[l-1];
-                    dsph_i[size_y*2+l+l-1] = pdq*c[l-1];
+                    dsph_i[size_y*2-l+1] = pdq*s[l-1];
+                    dsph_i[size_y*2+l-1] = pdq*c[l-1];
                     
                     //m=l
                     pq=prefactors[k+l]*q[k+l]*l; 
-                    dsph_i[l-l] = pq*s[l-1];
-                    dsph_i[l+l] = pq*c[l-1];
-                    dsph_i[size_y+l-l] = pq*c[l-1];
-                    dsph_i[size_y+l+l] = -pq*s[l-1];
-                    dsph_i[size_y*2+l-l] = 0;
-                    dsph_i[size_y*2+l+l] = 0;
+                    dsph_i[-l] = pq*s[l-1];
+                    dsph_i[l] = pq*c[l-1];
+                    dsph_i[size_y-l] = pq*c[l-1];
+                    dsph_i[size_y+l] = -pq*s[l-1];
+                    dsph_i[size_y*2-l] = 0;
+                    dsph_i[size_y*2+l] = 0;
                     
                     //advances the pointer for the sph derivatives
                     k += l+1;
-                    dsph_i += 2*l+1;  
+                    dsph_i += 2*l+2;  
                 }
             }     
         }
