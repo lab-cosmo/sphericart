@@ -780,29 +780,46 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             // We need also Qlm for l=_HC_LMAX because it's used in the derivatives
             k = (_HC_LMAX)*(_HC_LMAX+1)/2;
             q[k+_HC_LMAX-1] = -z*q[k+_HC_LMAX];
-            twomz = (_HC_LMAX+1)*twoz;
+            twomz = (_HC_LMAX)*twoz; // compute decrementally to hold 2(m+1)z
             for (m=_HC_LMAX-2; m>=0; --m) {
                 twomz -= twoz;
                 q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
             }
 
-            // k points at Q[l,0]; sph_i at Y[l,0] (mid-way through the l chunk)
-            k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; 
+            // k points at Q[l,0]; sph_i at Y[l,0] (mid-way through each l chunk)
+            k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);
+            // also fill the sph at the same time to save loops 
             for (l=_HC_LMAX+1; l < l_max+1; ++l) {
-                q[k+l-1] = -z*q[k+l];
+                // l=+-m
+                pq = q[k+l]*prefactors[k+l];
+                sph_i[-l] = pq*s[l];
+                sph_i[+l] = pq*c[l];
+
+                // l=+-(m-1)
+                q[k+l-1] = -z*q[k+l];                
+                pq = q[k+l-1]*prefactors[k+l-1];
+                sph_i[-l+1] = pq*s[l-1];
+                sph_i[+l-1] = pq*c[l-1];
+
+                // and now do the other m's, decrementally
                 twomz = l*twoz;
-                // k points at [l,0]
                 for (m=l-2; m>=0; --m) {
                     twomz -= twoz;
                     q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
+                    pq = q[k+m]*prefactors[k+m];
+                    sph_i[-m] = pq*s[m];
+                    sph_i[+m] = pq*c[m];
                 }
+
+                // shift pointers & indexes to the next l block
                 k += l+1;
+                sph_i += 2*l+2;
             }
 
             /* fill the (Cartesian) sph by combining Qlm and 
               sine/cosine phi-dependent factors. we use pointer 
               arithmetics to make sure spk_i always points at the 
-              beginning of the appropriate memory segment. */
+              beginning of the appropriate memory segment. 
 
             // k indexes [l,0] and sph_i also [l,0] (mid-way through the l chunk)
             k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);
@@ -823,7 +840,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                 } 
                 k += l+1;           
                 sph_i += 2*l+2;
-            }
+            }*/
 
             if (dsph != NULL) {
                 // if the pointer is set, we compute the derivatives
