@@ -568,14 +568,17 @@ void cartesian_spherical_harmonics_generic(unsigned int n_samples, unsigned int 
 
                 // and now do the other m's, decrementally
                 twomz = l*twoz; // compute decrementally to hold 2(m+1)z
-                for (m=l-2; m>=0; --m) {
+                for (m=l-2; m>0; --m) {
                     twomz -= twoz;
                     q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
                     pq = q[k+m]*prefactors[k+m];
                     sph_i[-m] = pq*s[m];
                     sph_i[+m] = pq*c[m];
                 }   
-                
+                // m=0
+                q[k] = qlmfactor[k]*(twoz*q[k+1]+rxy*q[k+2]);
+                sph_i[0] = q[k]*prefactors[k];
+
                 // shift pointers & indexes to the next l block
                 k += l+1;
                 sph_i += 2*l+2;
@@ -645,33 +648,8 @@ void cartesian_spherical_harmonics_generic(unsigned int n_samples, unsigned int 
 }
 
 #define _HC_LMAX 5
-void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
+void _compute_highl_no_dsph(unsigned int n_samples, unsigned int l_max, 
             const double* prefactors, double *xyz, double *sph, double *dsph) {
-    /*
-        Computes "Cartesian" real spherical harmonics r^l*Y_lm(x,y,z) and 
-        (optionally) their derivatives. This is an opinionated implementation:
-        x,y,z are not scaled, and the resulting harmonic is scaled by r^l.
-        This scaling allows for a stable, and fast implementation and the 
-        r^l term can be easily incorporated into any radial function or 
-        added a posteriori (with the corresponding derivative). 
-    */
-
-    // call directly the fast ones
-    if (l_max <= _HC_LMAX) {
-        if (l_max==5) {
-            cartesian_spherical_harmonics_l5(n_samples, xyz, sph, dsph);
-        } else if (l_max == 4) {
-            cartesian_spherical_harmonics_l4(n_samples, xyz, sph, dsph);
-        } else if (l_max == 3) {
-            cartesian_spherical_harmonics_l3(n_samples, xyz, sph, dsph);
-        } else if (l_max == 2) {
-            cartesian_spherical_harmonics_l2(n_samples, xyz, sph, dsph);
-        } else if (l_max == 1) {
-            cartesian_spherical_harmonics_l1(n_samples, xyz, sph, dsph);
-        } else {
-            cartesian_spherical_harmonics_l0(n_samples, xyz, sph, dsph);
-        }
-    } else {
     // general case, but start at _HC_LMAX and use hard-coding before that
     #pragma omp parallel
     {
@@ -814,105 +792,261 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                     sph_i[-m] = pq*s[m];
                     sph_i[+m] = pq*c[m];
                 }
-                for (m=_HC_LMAX-1; m>=0; --m) {
+                for (m=_HC_LMAX-1; m>0; --m) {
                     twomz -= twoz;
                     q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
                     pq = q[k+m]*prefactors[k+m];
                     sph_i[-m] = pq*s[m];
                     sph_i[+m] = pq*c[m];
                 }   
-                
+                // m=0
+                q[k] = qlmfactor[k]*(twoz*q[k+1]+rxy*q[k+2]);
+                sph_i[0] = q[k]*prefactors[k];
+
                 // shift pointers & indexes to the next l block
                 k += l+1;
                 sph_i += 2*l+2;
             }
-
-            if (dsph != NULL) {
-                // if the pointer is set, we compute the derivatives
-                // we use the chain rule and some nice recursions
-
-                // updates the pointer to the derivative storage
-                double *dsph_i = dsph+i_sample*3*size_y; 
-                sph_i = sph+i_sample*size_y; // must also re-set the sph pointer                
-
-                _compute_dsph_l0(sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
-                _compute_dsph_l1(x,y,z,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);                
-                _compute_dsph_l2(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
-                _compute_dsph_l3(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
-                _compute_dsph_l4(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
-                _compute_dsph_l5(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
-                
-                // k points at [l,0]
-                k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; 
-                // dsph_i points at [l,0] as well (halfway through the l segment)
-                dsph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);
-                // general case - iteration
-                for (l=_HC_LMAX+1; l<l_max+1; l++) {
-                    dsph_i[0] = prefactors[k]*x*q[k-l+1];
-                    dsph_i[size_y] = prefactors[k]*y*q[k-l+1];
-                    dsph_i[size_y*2] = prefactors[k]*l*q[k-l];                    
-                    
-                    // hint to a loop unrolling possibility - this has constant # of cycles
-                    #pragma GCC ivdep
-                    for (m=1; m<_HC_LMAX-1; m++) {
-                        // also includes a factor of m so we get the phi-dependent derivatives
-                        pq=prefactors[k+m]*q[k+m]*m;  
-                        pdq=prefactors[k+m]*q[k+m-l+1];
-                        pdqx = pdq*x;
-                        dsph_i[-m] = (pdqx*s[m]+pq*s[m-1]);
-                        dsph_i[+m] = (pdqx*c[m]+pq*c[m-1]);
-                        pdqy = pdq*y;
-                        dsph_i[size_y-m] = (pdqy*s[m]+pq*c[m-1]);
-                        dsph_i[size_y+m] = (pdqy*c[m]-pq*s[m-1]);
-                        pdq=prefactors[k+m]*(l+m)*q[k+m-l];
-                        dsph_i[size_y*2-m] = pdq*s[m];
-                        dsph_i[size_y*2+m] = pdq*c[m];                        
-                    }
-                    #pragma GCC ivdep
-                    for (; m<l-1; m++) {
-                        // also includes a factor of m so we get the phi-dependent derivatives
-                        pq=prefactors[k+m]*q[k+m]*m;  
-                        pdq=prefactors[k+m]*q[k+m-l+1];
-                        pdqx = pdq*x;
-                        dsph_i[-m] = (pdqx*s[m]+pq*s[m-1]);
-                        dsph_i[+m] = (pdqx*c[m]+pq*c[m-1]);
-                        pdqy = pdq*y;
-                        dsph_i[size_y-m] = (pdqy*s[m]+pq*c[m-1]);
-                        dsph_i[size_y+m] = (pdqy*c[m]-pq*s[m-1]);
-                        pdq=prefactors[k+m]*(l+m)*q[k+m-l];
-                        dsph_i[size_y*2-m] = pdq*s[m];
-                        dsph_i[size_y*2+m] = pdq*c[m];
-                    }
-
-                    // do separately special cases that have lots of zeros
-                    // m = l-1
-                    pq=prefactors[k+l-1]*q[k+l-1]*(l-1); 
-                    dsph_i[-l+1] = pq*s[l-2];
-                    dsph_i[l-1] = pq*c[l-2];
-                    dsph_i[size_y-l+1] = pq*c[l-2];
-                    dsph_i[size_y+l-1] = -pq*s[l-2];
-                    pdq=prefactors[k+l-1]*(l+l-1)*q[k+l-1-l]; 
-                    dsph_i[size_y*2-l+1] = pdq*s[l-1];
-                    dsph_i[size_y*2+l-1] = pdq*c[l-1];
-                    
-                    //m=l
-                    pq=prefactors[k+l]*q[k+l]*l; 
-                    dsph_i[-l] = pq*s[l-1];
-                    dsph_i[l] = pq*c[l-1];
-                    dsph_i[size_y-l] = pq*c[l-1];
-                    dsph_i[size_y+l] = -pq*s[l-1];
-                    dsph_i[size_y*2-l] = 0;
-                    dsph_i[size_y*2+l] = 0;
-                    
-                    //advances the pointer for the sph derivatives
-                    k += l+1;
-                    dsph_i += 2*l+2;  
-                }
-            }     
         }
         free(q);
         free(c);
         free(s);
     }
+}
+
+void _compute_highl_with_dsph(unsigned int n_samples, unsigned int l_max, 
+            const double* prefactors, double *xyz, double *sph, double *dsph) {
+    // general case, but start at _HC_LMAX and use hard-coding before that
+    #pragma omp parallel
+    {
+        // storage arrays for Qlm (modified associated Legendre polynomials)
+        // and terms corresponding to (scaled) cosine and sine of the azimuth
+        double* q = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
+        double* c = (double*) malloc(sizeof(double)*(l_max+1));
+        double* s = (double*) malloc(sizeof(double)*(l_max+1));
+
+        // temporaries to store prefactor*q and dq
+        double pq, pdq, pdqx, pdqy; 
+        int l, m, k, size_y = (l_max+1)*(l_max+1), size_q=(l_max+1)*(l_max+2)/2;
+
+        // precomputes some factors that enter the Qlm iteration. 
+        // TODO: Probably worth pre-computing together with the prefactors,
+        // more for consistency than for efficiency
+        double * qlmfactor = (double*) malloc(sizeof(double)*size_q);
+        k = (_HC_LMAX)*(_HC_LMAX+1)/2;
+        for (l=_HC_LMAX; l < l_max+1; ++l) {
+            for (m=l-2; m>=0; --m) {
+                qlmfactor[k+m] = -1.0/((l+m+1)*(l-m));                    
+            }
+            k += l+1;
+        }
+
+        // precompute the Qll's (that are constant)
+        q[0+0] = 1.0;
+        k=1;
+        for (l = 1; l < l_max+1; l++) {
+            q[k+l] = -(2*l-1)*q[k-1];
+            k += l+1; 
+        }
+
+        // also initialize the sine and cosine, these never change
+        c[0] = 1.0;
+        s[0] = 0.0;
+
+        /* k is a utility index to traverse lm arrays. we store sph in 
+           a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
+           so we often write a nested loop on l and m and track where we
+           got by incrementing a separate index k. */        
+        #pragma omp for
+        for (int i_sample=0; i_sample<n_samples; i_sample++) {
+
+            double x = xyz[i_sample*3+0];
+            double y = xyz[i_sample*3+1];
+            double z = xyz[i_sample*3+2];
+            double twoz = 2*z, twomz;
+            double x2=x*x, y2=y*y, z2=z*z;
+            double rxy = x2+y2;
+
+            // pointer to the segment that should store the i_sample sph
+            double *sph_i = sph+i_sample*size_y;
+
+            // these are the hard-coded, low-lmax sph
+            _compute_sph_l0(sph_i);
+            _compute_sph_l1(x,y,z,sph_i);
+            _compute_sph_l2(x,y,z,x2,y2,z2,sph_i);
+            _compute_sph_l3(x,y,z,x2,y2,z2,sph_i);
+            _compute_sph_l4(x,y,z,x2,y2,z2,sph_i);
+            _compute_sph_l5(x,y,z,x2,y2,z2,sph_i);
+
+            // updates the pointer to the derivative storage
+            double *dsph_i = dsph+i_sample*3*size_y; 
+            _compute_dsph_l0(sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
+            _compute_dsph_l1(x,y,z,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);                
+            _compute_dsph_l2(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
+            _compute_dsph_l3(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
+            _compute_dsph_l4(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
+            _compute_dsph_l5(x,y,z,x2,y2,z2,sph_i,dsph_i,dsph_i+size_y,dsph_i+size_y*2);
+            
+            /* These are scaled version of cos(m phi) and sin(m phi).
+               Basically, these are cos and sin multiplied by r_xy^m,
+               so that they are just plain polynomials of x,y,z.
+            */
+
+            // help the compiler unroll the first part of the loop
+            for (m = 1; m<_HC_LMAX+1; ++m) {
+                c[m] = c[m-1]*x-s[m-1]*y;
+                s[m] = c[m-1]*y+s[m-1]*x;
+            }            
+            for (; m < l_max+1; m++) {
+                c[m] = c[m-1]*x-s[m-1]*y;
+                s[m] = c[m-1]*y+s[m-1]*x;
+            }
+            
+            /* compute recursively the "Cartesian" associated Legendre polynomials Qlm.
+               Qlm is defined as r^l/r_xy^m P_lm, and is a polynomial of x,y,z.
+               These are computed with a recursive expression.
+
+               Also assembles the (Cartesian) sph by combining Qlm and 
+               sine/cosine phi-dependent factors. we use pointer 
+               arithmetics to make sure spk_i always points at the 
+               beginning of the appropriate memory segment. 
+            */
+            
+            // We need also Qlm for l=_HC_LMAX because it's used in the derivatives
+            k = (_HC_LMAX)*(_HC_LMAX+1)/2;
+            q[k+_HC_LMAX-1] = -z*q[k+_HC_LMAX];
+            twomz = (_HC_LMAX)*twoz; // compute decrementally to hold 2(m+1)z
+            for (m=_HC_LMAX-2; m>=0; --m) {
+                twomz -= twoz;
+                q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
+            }
+
+            // main loop!
+            // k points at Q[l,0]; sph_i at Y[l,0] (mid-way through each l chunk)
+            k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; 
+            sph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);   
+            dsph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);         
+            for (l=_HC_LMAX+1; l < l_max+1; ++l) {
+                // l=+-m
+                pq = q[k+l]*prefactors[k+l];
+                sph_i[-l] = pq*s[l];
+                sph_i[+l] = pq*c[l];
+
+                pq*=l; 
+                dsph_i[-l] = pq*s[l-1];
+                dsph_i[l] = pq*c[l-1];
+                dsph_i[size_y-l] = pq*c[l-1];
+                dsph_i[size_y+l] = -pq*s[l-1];
+                dsph_i[size_y*2-l] = 0;
+                dsph_i[size_y*2+l] = 0;
+
+                // l=+-(m-1)
+                q[k+l-1] = -z*q[k+l];                
+                pq = q[k+l-1]*prefactors[k+l-1];
+                sph_i[-l+1] = pq*s[l-1];
+                sph_i[+l-1] = pq*c[l-1];
+
+                pq*=(l-1); 
+                dsph_i[-l+1] = pq*s[l-2];
+                dsph_i[l-1] = pq*c[l-2];
+                dsph_i[size_y-l+1] = pq*c[l-2];
+                dsph_i[size_y+l-1] = -pq*s[l-2];
+                pdq=prefactors[k+l-1]*(l+l-1)*q[k+l-1-l]; 
+                dsph_i[size_y*2-l+1] = pdq*s[l-1];
+                dsph_i[size_y*2+l-1] = pdq*c[l-1];
+
+                // and now do the other m's, decrementally
+                twomz = l*twoz; // compute decrementally to hold 2(m+1)z
+                for (m=l-2; m>_HC_LMAX-1; --m) {
+                    twomz -= twoz;
+                    q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
+                    pq = q[k+m]*prefactors[k+m];
+                    sph_i[-m] = pq*s[m];
+                    sph_i[+m] = pq*c[m];
+
+                    pq*=m;  
+                    pdq=prefactors[k+m]*q[k+m-l+1];
+                    pdqx = pdq*x;
+                    dsph_i[-m] = (pdqx*s[m]+pq*s[m-1]);
+                    dsph_i[+m] = (pdqx*c[m]+pq*c[m-1]);
+                    pdqy = pdq*y;
+                    dsph_i[size_y-m] = (pdqy*s[m]+pq*c[m-1]);
+                    dsph_i[size_y+m] = (pdqy*c[m]-pq*s[m-1]);
+                    pdq=prefactors[k+m]*(l+m)*q[k+m-l];
+                    dsph_i[size_y*2-m] = pdq*s[m];
+                    dsph_i[size_y*2+m] = pdq*c[m];
+                }
+                for (m=_HC_LMAX-1; m>0; --m) {
+                    twomz -= twoz;
+                    q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
+                    pq = q[k+m]*prefactors[k+m];
+                    sph_i[-m] = pq*s[m];
+                    sph_i[+m] = pq*c[m];
+
+                    pq*=m;  
+                    pdq=prefactors[k+m]*q[k+m-l+1];
+                    pdqx = pdq*x;
+                    dsph_i[-m] = (pdqx*s[m]+pq*s[m-1]);
+                    dsph_i[+m] = (pdqx*c[m]+pq*c[m-1]);
+                    pdqy = pdq*y;
+                    dsph_i[size_y-m] = (pdqy*s[m]+pq*c[m-1]);
+                    dsph_i[size_y+m] = (pdqy*c[m]-pq*s[m-1]);
+                    pdq=prefactors[k+m]*(l+m)*q[k+m-l];
+                    dsph_i[size_y*2-m] = pdq*s[m];
+                    dsph_i[size_y*2+m] = pdq*c[m];
+                }   
+                // m=0
+                q[k] = qlmfactor[k]*(twoz*q[k+1]+rxy*q[k+2]);
+                sph_i[0] = q[k]*prefactors[k];
+
+                // derivatives
+                dsph_i[0] = prefactors[k]*x*q[k-l+1];
+                dsph_i[size_y] = prefactors[k]*y*q[k-l+1];
+                dsph_i[size_y*2] = prefactors[k]*l*q[k-l];    
+
+                // shift pointers & indexes to the next l block
+                k += l+1;
+                sph_i += 2*l+2;
+                dsph_i += 2*l+2;  
+            }
+        }
+        free(q);
+        free(c);
+        free(s);
+    }
+}
+
+void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
+            const double* prefactors, double *xyz, double *sph, double *dsph) {
+    /*
+        Computes "Cartesian" real spherical harmonics r^l*Y_lm(x,y,z) and 
+        (optionally) their derivatives. This is an opinionated implementation:
+        x,y,z are not scaled, and the resulting harmonic is scaled by r^l.
+        This scaling allows for a stable, and fast implementation and the 
+        r^l term can be easily incorporated into any radial function or 
+        added a posteriori (with the corresponding derivative). 
+    */
+
+    // call directly the fast ones
+    if (l_max <= _HC_LMAX) {
+        if (l_max==5) {
+            cartesian_spherical_harmonics_l5(n_samples, xyz, sph, dsph);
+        } else if (l_max == 4) {
+            cartesian_spherical_harmonics_l4(n_samples, xyz, sph, dsph);
+        } else if (l_max == 3) {
+            cartesian_spherical_harmonics_l3(n_samples, xyz, sph, dsph);
+        } else if (l_max == 2) {
+            cartesian_spherical_harmonics_l2(n_samples, xyz, sph, dsph);
+        } else if (l_max == 1) {
+            cartesian_spherical_harmonics_l1(n_samples, xyz, sph, dsph);
+        } else {
+            cartesian_spherical_harmonics_l0(n_samples, xyz, sph, dsph);
+        }
+    } else {
+        if (dsph==NULL) {
+            _compute_highl_no_dsph(n_samples, l_max, prefactors, xyz, sph, dsph);
+        } else {
+            _compute_highl_with_dsph(n_samples, l_max, prefactors, xyz, sph, dsph);
+        }
     }
 }

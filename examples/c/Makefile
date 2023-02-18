@@ -1,7 +1,7 @@
 .PHONY: all clean parallel serial
 
-serial: CFLAGS = -O3 -g -march=native -Wall 
-parallel: CFLAGS = -O3 -g -march=native -Wall -fopenmp
+serial: CFLAGS = -O2 -g -march=native -Wall 
+parallel: CFLAGS = -O2 -g -march=native -Wall -fopenmp
 
 all: parallel
 
