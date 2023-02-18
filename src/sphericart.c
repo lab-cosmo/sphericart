@@ -709,7 +709,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
             double x = xyz[i_sample*3+0];
             double y = xyz[i_sample*3+1];
             double z = xyz[i_sample*3+2];
-            double twoz = 2*z;
+            double twoz = 2*z, twomz;
             double x2=x*x, y2=y*y, z2=z*z;
             double rxy = x2+y2;
 
@@ -768,22 +768,29 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                Also assembles the sph in the same loop!
               */
             
-            /* Fills the Qlm starting from Qll (so we don't need to compute the low ls)
-             We need also Qlm for l=_HC_LMAX because it's used in the derivatives */
+            /* Fills the Qlm starting from Qll (so we don't need to compute the low ls) */
+             
             // Initialize the recursion for Qll-1 (Qll's are already stored and constant)
-            k = (_HC_LMAX)*(_HC_LMAX+3)/2; // k points at [l,m]
+            /*k = (_HC_LMAX)*(_HC_LMAX+3)/2; // k points at [l,m]
             for (l = _HC_LMAX; l < l_max+1; l++) {
                 q[k+l-1] = -z*q[k]; // (2*m-1)*z*q[k-1];
                 k += l+2;                 
-            }
+            }*/
             
-            // k points at Q[l,0]; sph_i at Y[l,0] (mid-way through the l chunk)
-            k = (_HC_LMAX)*(_HC_LMAX+1)/2; sph_i = (_HC_LMAX)*(_HC_LMAX+1);           
-            for (l=_HC_LMAX; l < l_max+1; ++l) {
-                q[k+l-1] = -z*q[k+l];
+            // We need also Qlm for l=_HC_LMAX because it's used in the derivatives
+            k = (_HC_LMAX)*(_HC_LMAX+1)/2;
+            q[k+_HC_LMAX-1] = -z*q[k+_HC_LMAX];
+            twomz = (_HC_LMAX+1)*twoz;
+            for (m=_HC_LMAX-2; m>=0; --m) {
+                twomz -= twoz;
+                q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
+            }
 
-                
-                double twomz = l*twoz;
+            // k points at Q[l,0]; sph_i at Y[l,0] (mid-way through the l chunk)
+            k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; 
+            for (l=_HC_LMAX+1; l < l_max+1; ++l) {
+                q[k+l-1] = -z*q[k+l];
+                twomz = l*twoz;
                 // k points at [l,0]
                 for (m=l-2; m>=0; --m) {
                     twomz -= twoz;
