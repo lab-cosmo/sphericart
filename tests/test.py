@@ -24,7 +24,7 @@ def test_against_scipy(xyz: np.ndarray, l: int, m: int):
     else: # m == 0
         sh_scipy_l_m = complex_sh_scipy_l_m.real
 
-    sh_calculator = sphericart.SphericalHarmonics(l_max)
+    sh_calculator = sphericart.SphericalHarmonics(l)
     sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
     sh_sphericart_l_m = sh_sphericart[:, l*l+l+m] / r**l
 

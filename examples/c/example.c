@@ -40,7 +40,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("Running with l_max= %d, n_try= %d, n_samples= %d\n", l_max, n_tries, n_samples);
+    printf("Running with l_max= %d, n_tries= %d, n_samples= %d\n", l_max, n_tries, n_samples);
+    printf("\n");
     double *prefactors = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
     compute_sph_prefactors(l_max, prefactors);
 
@@ -112,23 +113,32 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
-    k=(l_max+1)*(l_max+1)*(n_samples-1);
-    for (int l=0; l<(l_max+1); l++)
-    {
-        for (int m=-l; m<=l; m++) {
-            printf("L= %d   m= %d  \n", l, m);
-            if (fabs(sph[k+l+m]/sph1[k+l+m]-1)>1e-6) printf("!!!! ");
-            printf("SPH: %e, %e\n", sph[k+l+m], sph1[k+l+m]);
-            if (fabs(dsph[k+l+m]/dsph1[k+l+m]-1)>1e-6) printf("!!!! ");            
-            printf("DxSPH: %e, %e\n", dsph[k+l+m], dsph1[k+l+m]);
-            if (fabs(dsph[(l_max+1)*(l_max+1)+k+l+m]/dsph1[(l_max+1)*(l_max+1)+k+l+m]-1)>1e-6) printf("!!!! ");            
-            printf("DySPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)+k+l+m], dsph1[(l_max+1)*(l_max+1)+k+l+m]);
-            if (fabs(dsph[2*(l_max+1)*(l_max+1)+k+l+m]/dsph1[2*(l_max+1)*(l_max+1)+k+l+m]-1)>1e-6) printf("!!!! ");            
-            printf("DzSPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)*2+k+l+m], dsph1[(l_max+1)*(l_max+1)*2+k+l+m]);
+    int size3 = (l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
+    int size2 = 3*(l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
+    for (int i_sample=0; i_sample<n_samples; i_sample++) {
+        for (int l=0; l<(l_max+1); l++) {
+            for (int m=-l; m<=l; m++) {
+                if (fabs(sph[size3*i_sample+l*l+l+m]/sph1[size3*i_sample+l*l+l+m]-1)>1e-6) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("SPH: %e, %e\n", sph[k+l+m], sph1[k+l+m]);
+                }
+                if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>1e-6) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);           
+                    printf("DxSPH: %e, %e\n", dsph[k+l+m], dsph1[k+l+m]);
+                }
+                if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>1e-6) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);            
+                    printf("DySPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)+k+l+m], dsph1[(l_max+1)*(l_max+1)+k+l+m]);
+                }
+                if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>1e-6) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);         
+                    printf("DzSPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)*2+k+l+m], dsph1[(l_max+1)*(l_max+1)*2+k+l+m]);
+                }
+            }
         }
-        k+=2*l+1;            
-        //printf("chk %e, %e\n", dsph[i], dsph1[i]);
-    }    
+    }
+
+    printf("\n");
     printf("================ Low-l timings ===========\n");
 
     time_total = time2_total = 0;
@@ -391,25 +401,31 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
-    k=0;
     l_max=5;
-    for (int l=0; l<(l_max+1); l++)
-    {
-        for (int m=-l; m<=l; m++) {
-            printf("L= %d   m= %d  \n", l, m);
-            if (fabs(sph[k+l+m]/sph1[k+l+m]-1)>1e-6) printf("!!!! ");
-            printf("SPH: %e, %e\n", sph[k+l+m], sph1[k+l+m]);
-            if (fabs(dsph[k+l+m]/dsph1[k+l+m]-1)>1e-6) printf("!!!! ");            
-            printf("DxSPH: %e, %e\n", dsph[k+l+m], dsph1[k+l+m]);
-            if (fabs(dsph[(l_max+1)*(l_max+1)+k+l+m]/dsph1[(l_max+1)*(l_max+1)+k+l+m]-1)>1e-6) printf("!!!! ");            
-            printf("DySPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)+k+l+m], dsph1[(l_max+1)*(l_max+1)+k+l+m]);
-            if (fabs(dsph[2*(l_max+1)*(l_max+1)+k+l+m]/dsph1[2*(l_max+1)*(l_max+1)+k+l+m]-1)>1e-6) printf("!!!! ");            
-            printf("DzSPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)*2+k+l+m], dsph1[(l_max+1)*(l_max+1)*2+k+l+m]);
+    size3 = (l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
+    size2 = 3*(l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
+    for (int i_sample=0; i_sample<n_samples; i_sample++) {
+        for (int l=0; l<(l_max+1); l++) {
+            for (int m=-l; m<=l; m++) {
+                if (fabs(sph[size3*i_sample+l*l+l+m]/sph1[size3*i_sample+l*l+l+m]-1)>1e-6) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("SPH: %e, %e\n", sph[k+l+m], sph1[k+l+m]);
+                }
+                if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>1e-6) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);           
+                    printf("DxSPH: %e, %e\n", dsph[k+l+m], dsph1[k+l+m]);
+                }
+                if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>1e-6) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);            
+                    printf("DySPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)+k+l+m], dsph1[(l_max+1)*(l_max+1)+k+l+m]);
+                }
+                if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>1e-6) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);         
+                    printf("DzSPH: %e, %e\n", dsph[(l_max+1)*(l_max+1)*2+k+l+m], dsph1[(l_max+1)*(l_max+1)*2+k+l+m]);
+                }
+            }
         }
-        k+=2*l+1;            
-        //printf("chk %e, %e\n", dsph[i], dsph1[i]);
     }
-
 
     free(xyz);
     free(prefactors);
