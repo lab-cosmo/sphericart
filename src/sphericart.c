@@ -765,17 +765,11 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                Qlm is defined as r^l/r_xy^m P_lm, and is a polynomial of x,y,z.
                These are computed with a recursive expression.
 
-               Also assembles the sph in the same loop!
-              */
-            
-            /* Fills the Qlm starting from Qll (so we don't need to compute the low ls) */
-             
-            // Initialize the recursion for Qll-1 (Qll's are already stored and constant)
-            /*k = (_HC_LMAX)*(_HC_LMAX+3)/2; // k points at [l,m]
-            for (l = _HC_LMAX; l < l_max+1; l++) {
-                q[k+l-1] = -z*q[k]; // (2*m-1)*z*q[k-1];
-                k += l+2;                 
-            }*/
+               Also assembles the (Cartesian) sph by combining Qlm and 
+               sine/cosine phi-dependent factors. we use pointer 
+               arithmetics to make sure spk_i always points at the 
+               beginning of the appropriate memory segment. 
+            */
             
             // We need also Qlm for l=_HC_LMAX because it's used in the derivatives
             k = (_HC_LMAX)*(_HC_LMAX+1)/2;
@@ -786,9 +780,9 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                 q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
             }
 
+            // main loop!
             // k points at Q[l,0]; sph_i at Y[l,0] (mid-way through each l chunk)
-            k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);
-            // also fill the sph at the same time to save loops 
+            k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);            
             for (l=_HC_LMAX+1; l < l_max+1; ++l) {
                 // l=+-m
                 pq = q[k+l]*prefactors[k+l];
@@ -802,7 +796,7 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                 sph_i[+l-1] = pq*c[l-1];
 
                 // and now do the other m's, decrementally
-                twomz = l*twoz;
+                twomz = l*twoz; // compute decrementally to hold 2(m+1)z
                 for (m=l-2; m>_HC_LMAX-1; --m) {
                     twomz -= twoz;
                     q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
@@ -822,32 +816,6 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
                 k += l+1;
                 sph_i += 2*l+2;
             }
-
-            /* fill the (Cartesian) sph by combining Qlm and 
-              sine/cosine phi-dependent factors. we use pointer 
-              arithmetics to make sure spk_i always points at the 
-              beginning of the appropriate memory segment. 
-
-            // k indexes [l,0] and sph_i also [l,0] (mid-way through the l chunk)
-            k = (_HC_LMAX+1)*(_HC_LMAX+2)/2; sph_i += (_HC_LMAX+1)*(_HC_LMAX+1+1);
-            for (l=_HC_LMAX+1; l<l_max+1; l++) {            
-                sph_i[0] = q[k]*prefactors[k];
-                // help the compiler unroll the part with constant size
-                #pragma GCC ivdep                
-                for (m=1; m<_HC_LMAX+1; m++) {
-                    pq = q[k+m]*prefactors[k+m];
-                    sph_i[-m] = pq*s[m];
-                    sph_i[+m] = pq*c[m];
-                }
-                #pragma GCC ivdep
-                for (; m<l+1; m++) {
-                    pq = q[k+m]*prefactors[k+m];
-                    sph_i[-m] = pq*s[m];
-                    sph_i[+m] = pq*c[m];
-                } 
-                k += l+1;           
-                sph_i += 2*l+2;
-            }*/
 
             if (dsph != NULL) {
                 // if the pointer is set, we compute the derivatives
