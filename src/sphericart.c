@@ -803,14 +803,21 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
 
                 // and now do the other m's, decrementally
                 twomz = l*twoz;
-                for (m=l-2; m>=0; --m) {
+                for (m=l-2; m>_HC_LMAX-1; --m) {
                     twomz -= twoz;
                     q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
                     pq = q[k+m]*prefactors[k+m];
                     sph_i[-m] = pq*s[m];
                     sph_i[+m] = pq*c[m];
                 }
-
+                for (m=_HC_LMAX-1; m>=0; --m) {
+                    twomz -= twoz;
+                    q[k+m] = qlmfactor[k+m]*(twomz*q[k+m+1]+rxy*q[k+m+2]);
+                    pq = q[k+m]*prefactors[k+m];
+                    sph_i[-m] = pq*s[m];
+                    sph_i[+m] = pq*c[m];
+                }   
+                
                 // shift pointers & indexes to the next l block
                 k += l+1;
                 sph_i += 2*l+2;
