@@ -403,9 +403,61 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
-    l_max=5;
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        cartesian_spherical_harmonics_generic(n_samples, 6, prefactors, xyz, sph, NULL); 
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    } 
+    printf("Call with l=6 (sph) took %f ± %f µs/sample\n", 
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        cartesian_spherical_harmonics_generic(n_samples, 6, prefactors, xyz, sph, dsph); 
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    } 
+    printf("Call with l=6 (dsph) took %f ± %f µs/sample\n", 
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+    
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        cartesian_spherical_harmonics_l6(n_samples, xyz, sph1, NULL); 
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    } 
+    printf("Call with hardcoded l=6 (sph) took %f ± %f µs/sample\n", 
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        cartesian_spherical_harmonics_l6(n_samples, xyz, sph1, dsph1); 
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    } 
+    printf("Call with hardcoded l=6 (dsph) took %f ± %f µs/sample\n", 
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    l_max=6;
     size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
-    size2 = 2*(l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
+    size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
         for (int l=0; l<(l_max+1); l++) {
             for (int m=-l; m<=l; m++) {
