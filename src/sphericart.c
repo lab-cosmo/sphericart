@@ -502,6 +502,19 @@ void cartesian_spherical_harmonics_l5(unsigned int n_samples, double *xyz,
     (dysph_i)[45] = 7.648529270389177 *(y2 - z2 - 1.58533091904240*(sph_i)[6])*(sph_i)[10];\
     (dysph_i)[46] = 11.40175425099138*(0.2360174359706574*y2*y2*y + (y2 -\
        3*z2)*(sph_i)[9] + 0.1348399724926484*( sph_i)[25]);\
+    (dzsph_i)[36] = 0.0;\
+    (dzsph_i)[37] = 3.605551275463989*(sph_i)[25];\
+    (dzsph_i)[38] = 4.861724348043977*(sph_i)[26];\
+    (dzsph_i)[39] = 5.64881323014763*(sph_i)[27];\
+    (dzsph_i)[40] = 6.14964891828646*(sph_i)[28];\
+    (dzsph_i)[41] = 6.43145678393600*(sph_i)[29];\
+    (dzsph_i)[42] = 6.52268767805531*(sph_i)[30];\
+    (dzsph_i)[43] = 6.43145678393600*(sph_i)[31];\
+    (dzsph_i)[44] = 6.14964891828646*(sph_i)[32];\
+    (dzsph_i)[45] = 5.64881323014763*(sph_i)[33];\
+    (dzsph_i)[46] = 4.861724348043977*(sph_i)[34];\
+    (dzsph_i)[47] = 3.605551275463989*(sph_i)[35];\
+    (dzsph_i)[48] = 0.0;\
     }
 
 
@@ -873,7 +886,7 @@ void cartesian_spherical_harmonics_generic(unsigned int n_samples, unsigned int 
 }
 
 
-#define _HC_LMAX 5
+#define _HC_LMAX 6
 void _compute_highl_no_dsph(unsigned int n_samples, unsigned int l_max, 
             const double* prefactors, double *xyz, double *sph, double *dsph) {
     // general case, but start at _HC_LMAX and use hard-coding before that
@@ -937,6 +950,7 @@ void _compute_highl_no_dsph(unsigned int n_samples, unsigned int l_max,
             _COMPUTE_SPH_L3(x,y,z,x2,y2,z2,sph_i);
             _COMPUTE_SPH_L4(x,y,z,x2,y2,z2,sph_i);
             _COMPUTE_SPH_L5(x,y,z,x2,y2,z2,sph_i);
+            _COMPUTE_SPH_L6(x,y,z,x2,y2,z2,sph_i);
 
             /* These are scaled version of cos(m phi) and sin(m phi).
                Basically, these are cos and sin multiplied by r_xy^m,
@@ -1103,6 +1117,7 @@ void _compute_highl_with_dsph(unsigned int n_samples, unsigned int l_max,
             _COMPUTE_SPH_L3(x,y,z,x2,y2,z2,sph_i);
             _COMPUTE_SPH_L4(x,y,z,x2,y2,z2,sph_i);
             _COMPUTE_SPH_L5(x,y,z,x2,y2,z2,sph_i);
+            _COMPUTE_SPH_L6(x,y,z,x2,y2,z2,sph_i);
 
             // updates the pointer to the derivative storage
             double *dsph_i = dsph+i_sample*3*size_y;
@@ -1116,6 +1131,7 @@ void _compute_highl_with_dsph(unsigned int n_samples, unsigned int l_max,
             _COMPUTE_DSPH_L3(x,y,z,x2,y2,z2,sph_i,dxsph_i,dysph_i,dzsph_i);
             _COMPUTE_DSPH_L4(x,y,z,x2,y2,z2,sph_i,dxsph_i,dysph_i,dzsph_i);
             _COMPUTE_DSPH_L5(x,y,z,x2,y2,z2,sph_i,dxsph_i,dysph_i,dzsph_i);
+            _COMPUTE_DSPH_L6(x,y,z,x2,y2,z2,sph_i,dxsph_i,dysph_i,dzsph_i);
             
             /* These are scaled version of cos(m phi) and sin(m phi).
                Basically, these are cos and sin multiplied by r_xy^m,
