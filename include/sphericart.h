@@ -44,4 +44,5 @@ void cartesian_spherical_harmonics_l2(unsigned int n_samples, double *xyz, doubl
 void cartesian_spherical_harmonics_l3(unsigned int n_samples, double *xyz, double *sph, double *dsph);
 void cartesian_spherical_harmonics_l4(unsigned int n_samples, double *xyz, double *sph, double *dsph);
 void cartesian_spherical_harmonics_l5(unsigned int n_samples, double *xyz, double *sph, double *dsph);
+void cartesian_spherical_harmonics_l6(unsigned int n_samples, double *xyz, double *sph, double *dsph);
 void cartesian_spherical_harmonics_generic(unsigned int n_samples, unsigned int l_max, const double* prefactors, double *xyz, double *sph, double *dsph);

@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
     unsigned int n_samples = 10000;
     unsigned int n_tries = 100;
     unsigned int l_max = 10;
-    int c, k=0;
+    int c;
 
     // parse command line options
     while ((c = getopt (argc, argv, "l:s:t:")) != -1) {
