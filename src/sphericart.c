@@ -1275,7 +1275,9 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
 
     // call directly the fast ones
     if (l_max <= _HC_LMAX) {
-        if (l_max==5) {
+        if (l_max==6) {
+            cartesian_spherical_harmonics_l6(n_samples, xyz, sph, dsph);
+        } else if (l_max==5) {
             cartesian_spherical_harmonics_l5(n_samples, xyz, sph, dsph);
         } else if (l_max == 4) {
             cartesian_spherical_harmonics_l4(n_samples, xyz, sph, dsph);
