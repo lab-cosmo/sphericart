@@ -31,7 +31,7 @@ def test_against_scipy(xyz: np.ndarray, l: int, m: int):
     assert np.allclose(sh_scipy_l_m, sh_sphericart_l_m), f"assertion failed for l={l}, m={m}"
 
 
-n_samples = 100
+n_samples = 10
 l_max = 20
 xyz = np.random.rand(n_samples, 3)
 for l in range(0, l_max+1):

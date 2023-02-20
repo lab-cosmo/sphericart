@@ -474,7 +474,7 @@ int main(int argc, char *argv[]) {
                     printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);         
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
                     printf("DzSPH: %e, %e\n", dsph[size3*i_sample+size2*2+l*l+l+m], dsph1[size3*i_sample+size2*2+l*l+l+m]);
                 }
             }
@@ -483,6 +483,10 @@ int main(int argc, char *argv[]) {
 
     free(xyz);
     free(prefactors);    
+    free(sph);
+    free(dsph);
+    free(sph1);
+    free(dsph1);
 
     return 0;
 }

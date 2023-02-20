@@ -12,3 +12,5 @@ CMakeUserPresets.json
 dist/
 docker*
 wheelhouse/
+example
+libsphericart.so

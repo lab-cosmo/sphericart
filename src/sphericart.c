@@ -56,7 +56,7 @@ void cartesian_spherical_harmonics_l0(unsigned int n_samples, double *xyz, doubl
     (sph_i)[2] = 0.48860251190292*z; \
     (sph_i)[3] = 0.48860251190292*x;  
 
-#define _COMPUTE_DSPH_L1(sph_i, dxsph_i, dysph_i, dzsph_i) \               
+#define _COMPUTE_DSPH_L1(sph_i, dxsph_i, dysph_i, dzsph_i) \
     (dxsph_i)[1] = 0.0; (dxsph_i)[2] = 0.0; (dxsph_i)[3] = 0.48860251190292; \
     (dysph_i)[1] = 0.48860251190292; (dysph_i)[2] = 0.0; (dysph_i)[3] = 0.0; \
     (dzsph_i)[1] = 0.0; (dzsph_i)[2] = 0.48860251190292; (dzsph_i)[3] = 0.0; 
@@ -271,7 +271,7 @@ void cartesian_spherical_harmonics_l3(unsigned int n_samples, double *xyz,
     (dysph_i)[21] = (dxsph_i)[19];\
     (dysph_i)[22] = 1.892349391515120 *y*(y2 - 3*z2);\
     (dysph_i)[23] = -(dxsph_i)[17];\
-    (dysph_i)[24] = -(dxsph_i)[16]; \   
+    (dysph_i)[24] = -(dxsph_i)[16];\
     \
     (dzsph_i)[16] = 0.0;\
     (dzsph_i)[17] = 3 * (sph_i)[9];\
@@ -584,7 +584,7 @@ void _compute_no_dsph(unsigned int n_samples, unsigned int l_max,
         double* s = (double*) malloc(sizeof(double)*(l_max+1));
 
         // temporaries to store prefactor*q and dq
-        double pq, pdq, pdqx, pdqy; 
+        double pq;
         int l, m, k, size_y = (l_max+1)*(l_max+1), size_q=(l_max+1)*(l_max+2)/2;
 
         // precomputes some factors that enter the Qlm iteration. 
@@ -688,6 +688,7 @@ void _compute_no_dsph(unsigned int n_samples, unsigned int l_max,
                 sph_i += 2*l+2;
             }
         }
+        free(qlmfactor);
         free(q);
         free(c);
         free(s);
@@ -860,6 +861,7 @@ void _compute_with_dsph(unsigned int n_samples, unsigned int l_max,
             }
   
         }
+        free(qlmfactor);
         free(q);
         free(c);
         free(s);
@@ -899,7 +901,7 @@ void _compute_highl_no_dsph(unsigned int n_samples, unsigned int l_max,
         double* s = (double*) malloc(sizeof(double)*(l_max+1));
 
         // temporaries to store prefactor*q and dq
-        double pq, pdq, pdqx, pdqy; 
+        double pq;
         int l, m, k, size_y = (l_max+1)*(l_max+1), size_q=(l_max+1)*(l_max+2)/2;
 
         // precomputes some factors that enter the Qlm iteration. 
@@ -1048,6 +1050,7 @@ void _compute_highl_no_dsph(unsigned int n_samples, unsigned int l_max,
                 sph_i += 2*l+2;
             }
         }
+        free(qlmfactor);
         free(q);
         free(c);
         free(s);
@@ -1256,6 +1259,7 @@ void _compute_highl_with_dsph(unsigned int n_samples, unsigned int l_max,
                 dsph_i += 2*l+2;  
             }
         }
+        free(qlmfactor);
         free(q);
         free(c);
         free(s);
