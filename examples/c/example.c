@@ -6,7 +6,7 @@
 #include <math.h>
 #include "sphericart.h"
 
-#define _SPH_TOL 1e-5
+#define _SPH_TOL 1e-6
 
 int main(int argc, char *argv[]) {
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        normalized_cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, NULL); 
+        normalized_cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph, NULL); 
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        normalized_cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
+        normalized_cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph, dsph); 
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
@@ -140,11 +140,63 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
-    cartesian_spherical_harmonics_generic(n_samples, l_max, prefactors, xyz, sph, dsph);
-    cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        normalized_cartesian_spherical_harmonics_rl(n_samples, l_max, prefactors, xyz, sph1, NULL); 
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    } 
+    printf("Call without derivatives (normalized rl) took %f ± %f µs/sample\n", 
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+    
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        normalized_cartesian_spherical_harmonics_rl(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    } 
+    printf("Call with derivatives (normalized rl) took %f ± %f µs/sample\n", 
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
 
     int size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
     int size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
+    for (int i_sample=0; i_sample<n_samples; i_sample++) {
+        for (int l=0; l<(l_max+1); l++) {
+            for (int m=-l; m<=l; m++) {
+                if (fabs(sph[size2*i_sample+l*l+l+m]/sph1[size2*i_sample+l*l+l+m]-1)>_SPH_TOL) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("SPH: %e, %e\n", sph[size2*i_sample+l*l+l+m], sph1[size2*i_sample+l*l+l+m]);
+                }
+                if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>_SPH_TOL) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);           
+                    printf("DxSPH: %e, %e\n", dsph[size3*i_sample+size2*0+l*l+l+m], dsph1[size3*i_sample+size2*0+l*l+l+m]);
+                }
+                if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>_SPH_TOL) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);            
+                    printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
+                }
+                if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);         
+                    printf("DzSPH: %e, %e\n", dsph[size3*i_sample+size2*2+l*l+l+m], dsph1[size3*i_sample+size2*2+l*l+l+m]);
+                }
+            }
+        }
+    }
+
+
+    cartesian_spherical_harmonics_generic(n_samples, l_max, prefactors, xyz, sph, dsph);
+    cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
+
+    size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
+    size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
     for (int i_sample=0; i_sample<n_samples; i_sample++) {
         for (int l=0; l<(l_max+1); l++) {
             for (int m=-l; m<=l; m++) {

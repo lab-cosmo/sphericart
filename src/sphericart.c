@@ -1307,6 +1307,10 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
 void normalized_cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
     const double* prefactors, double *xyz, double *sph, double *dsph) {
 
+    /*
+    Wrapper that normalizes the spherical harmonics by normalization of the xyz coordinates.
+    */
+
     double* normalized_xyz = (double*) malloc(sizeof(double)*n_samples*3);
     // An alternative might be to modify xyz in-place and then change it back at the end.
 
@@ -1323,26 +1327,68 @@ void normalized_cartesian_spherical_harmonics(unsigned int n_samples, unsigned i
         int n_sh = (l_max+1)*(l_max+1);
         #pragma omp parallel for
         for (int i_sample=0; i_sample<n_samples; i_sample++) {
-            double r = sqrt(xyz[i_sample*3+0]*xyz[i_sample*3+0]+xyz[i_sample*3+1]*xyz[i_sample*3+1]+xyz[i_sample*3+2]*xyz[i_sample*3+2]);
-            double d_normx_d_x = (1.0-normalized_xyz[i_sample*3+0]*normalized_xyz[i_sample*3+0])/r;
-            double d_normx_d_y = -normalized_xyz[i_sample*3+0]*normalized_xyz[i_sample*3+1]/r;
-            double d_normx_d_z = -normalized_xyz[i_sample*3+0]*normalized_xyz[i_sample*3+2]/r;
-            double d_normy_d_y = (1.0-normalized_xyz[i_sample*3+1]*normalized_xyz[i_sample*3+1])/r;
-            double d_normy_d_x = -normalized_xyz[i_sample*3+1]*normalized_xyz[i_sample*3+0]/r;
-            double d_normy_d_z = -normalized_xyz[i_sample*3+1]*normalized_xyz[i_sample*3+2]/r;
-            double d_normz_d_z = (1.0-normalized_xyz[i_sample*3+2]*normalized_xyz[i_sample*3+2])/r;
-            double d_normz_d_x = -normalized_xyz[i_sample*3+2]*normalized_xyz[i_sample*3+0]/r;
-            double d_normz_d_y = -normalized_xyz[i_sample*3+2]*normalized_xyz[i_sample*3+1]/r;
+            double* xyz_i = xyz + 3*i_sample;
+            double* normalized_xyz_i = normalized_xyz + 3*i_sample;
+            double* dsph_i = dsph + 3*n_sh*i_sample;
+            double r = sqrt(xyz_i[0]*xyz_i[0]+xyz_i[1]*xyz_i[1]+xyz_i[2]*xyz_i[2]);
+            // We save some compute time by noting that these are symmetric, e.g., d_normx_d_y = d_normy_d_x
+            double d_normx_d_x = (1.0-normalized_xyz_i[0]*normalized_xyz_i[0])/r;
+            double d_normx_d_y = -normalized_xyz_i[0]*normalized_xyz_i[1]/r;
+            double d_normx_d_z = -normalized_xyz_i[0]*normalized_xyz_i[2]/r;
+            double d_normy_d_y = (1.0-normalized_xyz_i[1]*normalized_xyz_i[1])/r;
+            double d_normy_d_z = -normalized_xyz_i[1]*normalized_xyz_i[2]/r;
+            double d_normz_d_z = (1.0-normalized_xyz_i[2]*normalized_xyz_i[2])/r;
             for (int i_sh=0; i_sh<n_sh; i_sh++) {
-                double d_sph_d_normx = dsph[3*n_sh*i_sample+n_sh*0+i_sh];
-                double d_sph_d_normy = dsph[3*n_sh*i_sample+n_sh*1+i_sh];
-                double d_sph_d_normz = dsph[3*n_sh*i_sample+n_sh*2+i_sh];
-                dsph[3*n_sh*i_sample+n_sh*0+i_sh] = d_sph_d_normx*d_normx_d_x + d_sph_d_normy*d_normy_d_x + d_sph_d_normz*d_normz_d_x;
-                dsph[3*n_sh*i_sample+n_sh*1+i_sh] = d_sph_d_normx*d_normx_d_y + d_sph_d_normy*d_normy_d_y + d_sph_d_normz*d_normz_d_y;
-                dsph[3*n_sh*i_sample+n_sh*2+i_sh] = d_sph_d_normx*d_normx_d_z + d_sph_d_normy*d_normy_d_z + d_sph_d_normz*d_normz_d_z;
+                double d_sph_d_normx = dsph_i[n_sh*0+i_sh];
+                double d_sph_d_normy = dsph_i[n_sh*1+i_sh];
+                double d_sph_d_normz = dsph_i[n_sh*2+i_sh];
+                dsph_i[n_sh*0+i_sh] = d_sph_d_normx*d_normx_d_x + d_sph_d_normy*d_normx_d_y + d_sph_d_normz*d_normx_d_z;
+                dsph_i[n_sh*1+i_sh] = d_sph_d_normx*d_normx_d_y + d_sph_d_normy*d_normy_d_y + d_sph_d_normz*d_normy_d_z;
+                dsph_i[n_sh*2+i_sh] = d_sph_d_normx*d_normx_d_z + d_sph_d_normy*d_normy_d_z + d_sph_d_normz*d_normz_d_z;
             }
         }
     }
 
     free(normalized_xyz);
+}
+
+
+void normalized_cartesian_spherical_harmonics_rl(unsigned int n_samples, unsigned int l_max, 
+    const double* prefactors, double *xyz, double *sph, double *dsph) {
+
+    /*
+    Wrapper that normalizes the spherical harmonics via multiplication by r^-l.
+    */
+
+    cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph, dsph);
+
+    int n_sh = (l_max+1)*(l_max+1);
+    #pragma omp parallel for
+    for (int i_sample=0; i_sample<n_samples; i_sample++) {
+        double* xyz_i = xyz + 3*i_sample;
+        double* sph_i = sph + n_sh*i_sample;
+        double r = sqrt(xyz_i[0]*xyz_i[0]+xyz_i[1]*xyz_i[1]+xyz_i[2]*xyz_i[2]);
+        for (int l=0; l<l_max+1; l++) {
+            double r_l = pow(r, -l);
+            for (int m=-l; m<l+1; m++) {
+                sph_i[l*l+l+m] *= r_l;
+            }
+        }
+
+        if (dsph != NULL) {
+            double* dsph_i = dsph + 3*n_sh*i_sample;
+            double x = xyz_i[0];
+            double y = xyz_i[1];
+            double z = xyz_i[2];
+            for (int l=0; l<l_max+1; l++) {
+                double r_l = pow(r, -l);
+                double r_2 = pow(r, -2);
+                for (int m=-l; m<l+1; m++) {
+                    dsph_i[n_sh*0+l*l+l+m] = r_l*dsph_i[n_sh*0+l*l+l+m]-l*r_2*sph_i[l*l+l+m]*x;
+                    dsph_i[n_sh*1+l*l+l+m] = r_l*dsph_i[n_sh*1+l*l+l+m]-l*r_2*sph_i[l*l+l+m]*y;
+                    dsph_i[n_sh*2+l*l+l+m] = r_l*dsph_i[n_sh*2+l*l+l+m]-l*r_2*sph_i[l*l+l+m]*z;
+                }
+            }
+        }
+    }
 }
