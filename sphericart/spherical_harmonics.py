@@ -1,4 +1,4 @@
-from .wrappers import c_get_prefactors, c_spherical_harmonics
+from .wrappers import c_get_prefactors, c_spherical_harmonics, c_normalized_spherical_harmonics
 
 
 class SphericalHarmonics():
@@ -18,9 +18,10 @@ class SphericalHarmonics():
 
     """
 
-    def __init__(self, l_max):
+    def __init__(self, l_max, normalize=False):
         self._l_max = l_max
         self._prefactors = c_get_prefactors(l_max)
+        self._normalize = normalize
 
 
     def compute(self, xyz, gradients=False):
@@ -53,4 +54,9 @@ class SphericalHarmonics():
 
         """
 
-        return c_spherical_harmonics(self._l_max, xyz, self._prefactors, gradients)
+        if self._normalize:
+            sh = c_normalized_spherical_harmonics(self._l_max, xyz, self._prefactors, gradients)
+        else:
+            sh = c_spherical_harmonics(self._l_max, xyz, self._prefactors, gradients)
+
+        return sh

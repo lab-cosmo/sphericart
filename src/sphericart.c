@@ -1302,3 +1302,47 @@ void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max,
         }
     }
 }
+
+
+void normalized_cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, 
+    const double* prefactors, double *xyz, double *sph, double *dsph) {
+
+    double* normalized_xyz = (double*) malloc(sizeof(double)*n_samples*3);
+    // An alternative might be to modify xyz in-place and then change it back at the end.
+
+    #pragma omp parallel for
+    for (int i_sample=0; i_sample<n_samples; i_sample++) {
+        double r = sqrt(xyz[i_sample*3+0]*xyz[i_sample*3+0]+xyz[i_sample*3+1]*xyz[i_sample*3+1]+xyz[i_sample*3+2]*xyz[i_sample*3+2]);
+        normalized_xyz[i_sample*3+0] = xyz[i_sample*3+0]/r;
+        normalized_xyz[i_sample*3+1] = xyz[i_sample*3+1]/r;
+        normalized_xyz[i_sample*3+2] = xyz[i_sample*3+2]/r;
+    }
+    cartesian_spherical_harmonics(n_samples, l_max, prefactors, normalized_xyz, sph, dsph);
+
+    if (dsph != NULL) {
+        int n_sh = (l_max+1)*(l_max+1);
+        #pragma omp parallel for
+        for (int i_sample=0; i_sample<n_samples; i_sample++) {
+            double r = sqrt(xyz[i_sample*3+0]*xyz[i_sample*3+0]+xyz[i_sample*3+1]*xyz[i_sample*3+1]+xyz[i_sample*3+2]*xyz[i_sample*3+2]);
+            double d_normx_d_x = (1.0-normalized_xyz[i_sample*3+0]*normalized_xyz[i_sample*3+0])/r;
+            double d_normx_d_y = -normalized_xyz[i_sample*3+0]*normalized_xyz[i_sample*3+1]/r;
+            double d_normx_d_z = -normalized_xyz[i_sample*3+0]*normalized_xyz[i_sample*3+2]/r;
+            double d_normy_d_y = (1.0-normalized_xyz[i_sample*3+1]*normalized_xyz[i_sample*3+1])/r;
+            double d_normy_d_x = -normalized_xyz[i_sample*3+1]*normalized_xyz[i_sample*3+0]/r;
+            double d_normy_d_z = -normalized_xyz[i_sample*3+1]*normalized_xyz[i_sample*3+2]/r;
+            double d_normz_d_z = (1.0-normalized_xyz[i_sample*3+2]*normalized_xyz[i_sample*3+2])/r;
+            double d_normz_d_x = -normalized_xyz[i_sample*3+2]*normalized_xyz[i_sample*3+0]/r;
+            double d_normz_d_y = -normalized_xyz[i_sample*3+2]*normalized_xyz[i_sample*3+1]/r;
+            for (int i_sh=0; i_sh<n_sh; i_sh++) {
+                double d_sph_d_normx = dsph[3*n_sh*i_sample+n_sh*0+i_sh];
+                double d_sph_d_normy = dsph[3*n_sh*i_sample+n_sh*1+i_sh];
+                double d_sph_d_normz = dsph[3*n_sh*i_sample+n_sh*2+i_sh];
+                dsph[3*n_sh*i_sample+n_sh*0+i_sh] = d_sph_d_normx*d_normx_d_x + d_sph_d_normy*d_normy_d_x + d_sph_d_normz*d_normz_d_x;
+                dsph[3*n_sh*i_sample+n_sh*1+i_sh] = d_sph_d_normx*d_normx_d_y + d_sph_d_normy*d_normy_d_y + d_sph_d_normz*d_normz_d_y;
+                dsph[3*n_sh*i_sample+n_sh*2+i_sh] = d_sph_d_normx*d_normx_d_z + d_sph_d_normy*d_normy_d_z + d_sph_d_normz*d_normz_d_z;
+            }
+        }
+    }
+
+    free(normalized_xyz);
+}

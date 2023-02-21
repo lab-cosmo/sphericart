@@ -36,6 +36,7 @@ void compute_sph_prefactors(unsigned int l_max, double *factors);
  *      of the spherical harmonics: x, y, and z, respectively.
  */
 void cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, const double* prefactors, double *xyz, double *sph, double *dsph);
+void normalized_cartesian_spherical_harmonics(unsigned int n_samples, unsigned int l_max, const double* prefactors, double *xyz, double *sph, double *dsph);
 
 // Undocumented functions (for benchmarking and testing purposes)
 void cartesian_spherical_harmonics_l0(unsigned int n_samples, double *xyz, double *sph, double *dsph);

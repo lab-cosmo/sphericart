@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
     }
-    printf("Call without derivatives took %f ± %f µs/sample\n", 
+    printf("Call without derivatives (generic) took %f ± %f µs/sample\n", 
             1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
                                        (time_total/n_tries)*(time_total/n_tries))
             );
@@ -80,11 +80,10 @@ int main(int argc, char *argv[]) {
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
     } 
-    printf("Call with derivatives took %f ± %f µs/sample\n", 
+    printf("Call with derivatives (generic) took %f ± %f µs/sample\n", 
             1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
                                        (time_total/n_tries)*(time_total/n_tries))
             );
-
 
     double *sph1 = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
     double *dsph1 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
@@ -97,7 +96,7 @@ int main(int argc, char *argv[]) {
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
     } 
-    printf("Call without derivatives (hybrid) took %f ± %f µs/sample\n", 
+    printf("Call without derivatives took %f ± %f µs/sample\n", 
             1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
                                        (time_total/n_tries)*(time_total/n_tries))
             );
@@ -110,10 +109,39 @@ int main(int argc, char *argv[]) {
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
     } 
-    printf("Call with derivatives (hybrid) took %f ± %f µs/sample\n", 
+    printf("Call with derivatives took %f ± %f µs/sample\n", 
             1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
                                        (time_total/n_tries)*(time_total/n_tries))
             );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        normalized_cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, NULL); 
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    } 
+    printf("Call without derivatives (normalized) took %f ± %f µs/sample\n", 
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+    
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        normalized_cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    } 
+    printf("Call with derivatives (normalized) took %f ± %f µs/sample\n", 
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    cartesian_spherical_harmonics_generic(n_samples, l_max, prefactors, xyz, sph, dsph);
+    cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
 
     int size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
     int size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays

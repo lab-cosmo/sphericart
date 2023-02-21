@@ -24,3 +24,14 @@ c_spherical_harmonics_fun.argtypes = [
     ctypes.POINTER(ctypes.c_double),
     ctypes.POINTER(ctypes.c_double),
 ]
+
+c_spherical_harmonics_fun = lib.normalized_cartesian_spherical_harmonics
+c_spherical_harmonics_fun.restype = None
+c_spherical_harmonics_fun.argtypes = [
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_double),
+]
