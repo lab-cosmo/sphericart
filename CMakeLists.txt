@@ -31,12 +31,14 @@ set_target_properties(sphericart PROPERTIES
 
 set_target_properties(sphericart PROPERTIES
     # Set the version of C++ standard we need
-    CXX_STANDARD 11
+    CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
     # hide non-exported symbols by default
     CXX_VISIBILITY_PRESET hidden
 )
+
+set(CMAKE_CXX_FLAGS "-g -O2 -march=native -Wall -fopenmp")
 
 target_include_directories(sphericart PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
