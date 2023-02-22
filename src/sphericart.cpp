@@ -5,7 +5,7 @@
 
 #define HARDCODED_LMAX 6
 
-void sphericart::compute_sph_prefactors(unsigned int l_max, double *factors) {
+void sphericart::compute_sph_prefactors(int l_max, double *factors) {
     /*
         Computes the prefactors for the spherical harmonics
         (-1)^|m| sqrt((2l+1)/(2pi) (l-|m|)!/(l+|m}\|)!)
@@ -14,8 +14,8 @@ void sphericart::compute_sph_prefactors(unsigned int l_max, double *factors) {
         is associated with the Yl0's
     */
 
-    unsigned int k = 0; // quick access index
-    for (unsigned int l = 0; l <= l_max; ++l) {
+    auto k = 0; // quick access index
+    for (int l = 0; l <= l_max; ++l) {
         double factor = (2 * l + 1) / (2 * M_PI);
         // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
         factors[k] = sqrt(factor) * M_SQRT1_2;
@@ -32,10 +32,10 @@ void sphericart::compute_sph_prefactors(unsigned int l_max, double *factors) {
 }
 
 void sphericart::cartesian_spherical_harmonics(
-    unsigned int n_samples,
-    unsigned int l_max,
+    int n_samples,
+    int l_max,
     const double *prefactors,
-    double *xyz,
+    const double *xyz,
     double *sph,
     double *dsph
 ) {
