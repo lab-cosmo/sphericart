@@ -23,23 +23,22 @@ inline void compute_generic(int n_samples, int l_max, double *prefactors, double
 
 
 int main(int argc, char *argv[]) {
-
-    unsigned int n_samples = 10000;
-    unsigned int n_tries = 100;
-    unsigned int l_max = 10;
-    int c;
+    size_t n_samples = 10000;
+    size_t n_tries = 100;
+    size_t l_max = 10;
 
     // parse command line options
+    int c;
     while ((c = getopt (argc, argv, "l:s:t:")) != -1) {
         switch (c) {
         case 'l':
-            sscanf(optarg, "%u", &l_max);
+            sscanf(optarg, "%zu", &l_max);
             break;
         case 's':
-            sscanf(optarg, "%u", &n_samples);
+            sscanf(optarg, "%zu", &n_samples);
             break;
         case 't':
-            sscanf(optarg, "%u", &n_tries);
+            sscanf(optarg, "%zu", &n_tries);
             break;
         case '?':
             if (optopt == 'c')
@@ -56,13 +55,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("Running with l_max= %d, n_tries= %d, n_samples= %d\n", l_max, n_tries, n_samples);
+    printf("Running with l_max= %zu, n_tries= %zu, n_samples= %zu\n", l_max, n_tries, n_samples);
     printf("\n");
     double *prefactors = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
     compute_sph_prefactors(l_max, prefactors);
 
     double *xyz = (double*) malloc(sizeof(double)*n_samples*3);
-    for (int i=0; i<n_samples*3; ++i) {
+    for (size_t i=0; i<n_samples*3; ++i) {
         xyz[i] = (double)rand()/ (double) RAND_MAX *2.0-1.0;
     }
 
@@ -72,7 +71,7 @@ int main(int argc, char *argv[]) {
     double time, time_total, time2_total;
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, l_max, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
@@ -87,7 +86,7 @@ int main(int argc, char *argv[]) {
     double *dsph = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, l_max, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
@@ -104,7 +103,7 @@ int main(int argc, char *argv[]) {
     double *dsph1 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
@@ -117,7 +116,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
@@ -131,23 +130,23 @@ int main(int argc, char *argv[]) {
 
     int size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
     int size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
-    for (int i_sample=0; i_sample<n_samples; i_sample++) {
-        for (int l=0; l<(l_max+1); l++) {
-            for (int m=-l; m<=l; m++) {
+    for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
+        for (size_t l=0; l<(l_max+1); l++) {
+            for (int m=-static_cast<int>(l); m<=static_cast<int>(l); m++) {
                 if (fabs(sph[size2*i_sample+l*l+l+m]/sph1[size2*i_sample+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
                     printf("SPH: %e, %e\n", sph[size2*i_sample+l*l+l+m], sph1[size2*i_sample+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
                     printf("DxSPH: %e, %e\n", dsph[size3*i_sample+size2*0+l*l+l+m], dsph1[size3*i_sample+size2*0+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
                     printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
                     printf("DzSPH: %e, %e\n", dsph[size3*i_sample+size2*2+l*l+l+m], dsph1[size3*i_sample+size2*2+l*l+l+m]);
                 }
             }
@@ -158,7 +157,7 @@ int main(int argc, char *argv[]) {
     printf("================ Low-l timings ===========\n");
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 1, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
@@ -171,7 +170,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 1, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
@@ -184,7 +183,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<false,1>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
@@ -197,7 +196,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<true,1>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
@@ -210,7 +209,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 2, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
@@ -223,7 +222,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 2, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
@@ -236,7 +235,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<false,2>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
@@ -249,7 +248,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<true,2>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
@@ -262,7 +261,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 3, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
@@ -275,7 +274,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 3, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
@@ -288,7 +287,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<false,3>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
@@ -301,7 +300,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<true,3>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
@@ -314,7 +313,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 4, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
@@ -327,7 +326,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 4, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
@@ -340,7 +339,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<false,4>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
@@ -353,7 +352,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<true,4>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
@@ -366,7 +365,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 5, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
@@ -379,7 +378,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 5, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
@@ -392,7 +391,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<false,5>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
@@ -405,7 +404,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<true,5>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
@@ -418,7 +417,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 6, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
@@ -431,7 +430,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         compute_generic(n_samples, 6, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
@@ -444,7 +443,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<false,6>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
@@ -457,7 +456,7 @@ int main(int argc, char *argv[]) {
             );
 
     time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
         hardcoded_sph<true,6>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
@@ -472,23 +471,23 @@ int main(int argc, char *argv[]) {
     l_max=6;
     size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
     size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
-    for (int i_sample=0; i_sample<n_samples; i_sample++) {
-        for (int l=0; l<(l_max+1); l++) {
-            for (int m=-l; m<=l; m++) {
+    for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
+        for (size_t l=0; l<(l_max+1); l++) {
+            for (int m=-static_cast<int>(l); m<=static_cast<int>(l); m++) {
                 if (fabs(sph[size2*i_sample+l*l+l+m]/sph1[size2*i_sample+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
                     printf("SPH: %e, %e\n", sph[size2*i_sample+l*l+l+m], sph1[size2*i_sample+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
                     printf("DxSPH: %e, %e\n", dsph[size3*i_sample+size2*0+l*l+l+m], dsph1[size3*i_sample+size2*0+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
                     printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
+                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
                     printf("DzSPH: %e, %e\n", dsph[size3*i_sample+size2*2+l*l+l+m], dsph1[size3*i_sample+size2*2+l*l+l+m]);
                 }
             }
