@@ -1,16 +1,1 @@
-.idea/
-.vs/
-.vscode/
 build/
-*egg-info*
-cmake/open-cpp-coverage.cmake
-cmake-build-*/
-prefix/
-CMakeLists.txt.user
-CMakeUserPresets.json
-*.pyc
-dist/
-docker*
-wheelhouse/
-example
-libsphericart.so
