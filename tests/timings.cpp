@@ -55,8 +55,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("Running with l_max= %zu, n_tries= %zu, n_samples= %zu\n", l_max, n_tries, n_samples);
+    printf("Running with n_tries= %zu, n_samples= %zu\n", n_tries, n_samples);
     printf("\n");
+    printf("============= l_max = %d ==============\n", l_max);
     double *prefactors = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
     compute_sph_prefactors(l_max, prefactors);
 

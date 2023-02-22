@@ -3,8 +3,6 @@
 #include "sphericart.hpp"
 #include "templates.hpp"
 
-#define HARDCODED_LMAX 6
-
 void sphericart::compute_sph_prefactors(int l_max, double *factors) {
     /*
         Computes the prefactors for the spherical harmonics
@@ -49,7 +47,7 @@ void sphericart::cartesian_spherical_harmonics(
     */
 
     // call directly the fast ones
-    if (l_max <= HARDCODED_LMAX) {
+    if (l_max <= SPHERICART_LMAX_HARDCODED) {
         if (dsph == nullptr) {
             switch (l_max) {
             case 0:
@@ -102,9 +100,9 @@ void sphericart::cartesian_spherical_harmonics(
         }
     } else {
         if (dsph == nullptr) {
-            generic_sph<false, HARDCODED_LMAX>(n_samples, l_max, prefactors, xyz, sph, dsph);
+            generic_sph<false, SPHERICART_LMAX_HARDCODED>(n_samples, l_max, prefactors, xyz, sph, dsph);
         } else {
-            generic_sph<true, HARDCODED_LMAX>(n_samples, l_max, prefactors, xyz, sph, dsph);
+            generic_sph<true, SPHERICART_LMAX_HARDCODED>(n_samples, l_max, prefactors, xyz, sph, dsph);
         }
     }
 }

@@ -1,12 +1,21 @@
 #ifndef SPHERICART_TEMPLATES_HPP
 #define SPHERICART_TEMPLATES_HPP
 
-#include <cstring>
+/*
+    Template implemntation of Cartesian Ylm calculators. 
+
+    The template functions use compile-time `if constexpr()` constructs to 
+    implement calculators for spherical harmonics that can handle different
+    type of calls, e.g. with or without derivative calculations, and with
+    different numbers of terms computed with hard-coded expressions.
+*/
 
 #include "macros.hpp"
 
 template <int HARDCODED_LMAX>
 inline void hardcoded_sph_template(double x, double y, double z, double x2, double y2, double z2, double *sph_i) {
+    static_assert(HARDCODED_LMAX <= SPHERICART_LMAX_HARDCODED, "Computing hardcoded sph beyond what is currently implemented.");
+
     COMPUTE_SPH_L0(sph_i);
 
     if constexpr (HARDCODED_LMAX > 0) {
@@ -31,7 +40,7 @@ inline void hardcoded_sph_template(double x, double y, double z, double x2, doub
 
     if constexpr (HARDCODED_LMAX > 5) {
         COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i);
-    }
+    }    
 }
 
 template <int HARDCODED_LMAX>
@@ -47,6 +56,13 @@ inline void hardcoded_sph_derivative_template(
     double *dysph_i,
     double *dzsph_i
 ) {
+
+    /*
+        Combines the macro hard-coded dYlm/d(x,y,z) calculators to get all the terms up to HC_LMAX. 
+        This templated version evaluates the ifs at compile time avoiding unnecessary in-loop
+        branching. 
+    */
+
     COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i);
 
     if constexpr (HARDCODED_LMAX > 0) {
@@ -76,6 +92,11 @@ inline void hardcoded_sph_derivative_template(
 
 template <bool DO_DERIVATIVES, int HARDCODED_LMAX>
 void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) {
+    /*
+        Cartesian Ylm calculator using the hardcoded expressions. 
+        Templated version, just calls _compute_sph_templated and 
+        _compute_dsph_templated functions within a loop. 
+    */
     #pragma omp parallel
     {
         const double *xyz_i = nullptr;
@@ -114,7 +135,10 @@ void generic_sph(
     double *sph,
     double *dsph
 ) {
-    // general case, but start at HARDCODED_LMAX and use hard-coding before that
+    // general case, but start at HARDCODED_LMAX and use hard-coding before that.
+    // implementation assumes to use hardcoded expressions for at least l=0,1
+    static_assert(HARDCODED_LMAX>=1, "Cannot call the generic Ylm calculator for l<=1.");
+
     #pragma omp parallel
     {
         // thread-local storage arrays for Qlm (modified associated Legendre
@@ -127,11 +151,16 @@ void generic_sph(
         auto size_y = (l_max + 1) * (l_max + 1);
         auto size_q = (l_max + 1) * (l_max + 2) / 2;
 
+        /* k is a utility index to traverse lm arrays. we store sph in
+        a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
+        so we often write a nested loop on l and m and track where we
+        got by incrementing a separate index k. */
+        auto k = (HARDCODED_LMAX) * (HARDCODED_LMAX + 1) / 2;
+        
         // precomputes some factors that enter the Qlm iteration.
         // TODO: Probably worth pre-computing together with the prefactors,
         // more for consistency than for efficiency
         double *qlmfactor = (double *)malloc(sizeof(double) * size_q);
-        auto k = (HARDCODED_LMAX) * (HARDCODED_LMAX + 1) / 2;
         for (int l = HARDCODED_LMAX; l < l_max + 1; l++) {
             for (int m = l - 2; m >= 0; --m) {
                 qlmfactor[k + m] = -1.0 / ((l + m + 1) * (l - m));
@@ -150,11 +179,6 @@ void generic_sph(
         // also initialize the sine and cosine, these never change
         c[0] = 1.0;
         s[0] = 0.0;
-
-        /* k is a utility index to traverse lm arrays. we store sph in
-        a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
-        so we often write a nested loop on l and m and track where we
-        got by incrementing a separate index k. */
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
 
