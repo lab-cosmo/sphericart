@@ -71,58 +71,58 @@ int main(int argc, char *argv[]) {
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, l_max, prefactors, xyz, sph, NULL); 
+        compute_generic(n_samples, l_max, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
     }
-    printf("Call without derivatives took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    printf("Call without derivatives took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     double *dsph = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
-    
+
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, l_max, prefactors, xyz, sph, dsph); 
+        compute_generic(n_samples, l_max, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with derivatives took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with derivatives took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
 
     double *sph1 = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
     double *dsph1 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
-    
+
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, NULL); 
+        cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call without derivatives (hybrid) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call without derivatives (hybrid) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
-    
+
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1); 
+        cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with derivatives (hybrid) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with derivatives (hybrid) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
@@ -136,15 +136,15 @@ int main(int argc, char *argv[]) {
                     printf("SPH: %e, %e\n", sph[size2*i_sample+l*l+l+m], sph1[size2*i_sample+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);           
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
                     printf("DxSPH: %e, %e\n", dsph[size3*i_sample+size2*0+l*l+l+m], dsph1[size3*i_sample+size2*0+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);            
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
                     printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);         
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
                     printf("DzSPH: %e, %e\n", dsph[size3*i_sample+size2*2+l*l+l+m], dsph1[size3*i_sample+size2*2+l*l+l+m]);
                 }
             }
@@ -157,312 +157,312 @@ int main(int argc, char *argv[]) {
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, 1, prefactors, xyz, sph, NULL); 
+        compute_generic(n_samples, 1, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=1 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
-    
-    time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 1, prefactors, xyz, sph, dsph); 
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=1 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with l=1 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<false,1>(n_samples, xyz, sph1, NULL); 
+        compute_generic(n_samples, 1, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=1 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with l=1 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<true,1>(n_samples, xyz, sph1, dsph1); 
+        cartesian_spherical_harmonics_hc<false,1>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=1 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with hardcoded l=1 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, 2, prefactors, xyz, sph, NULL); 
+        cartesian_spherical_harmonics_hc<true,1>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=2 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
-    
-    time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 2, prefactors, xyz, sph, dsph); 
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=2 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
-    
-    time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<false,2>(n_samples, xyz, sph1, NULL); 
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=2 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with hardcoded l=1 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<true,2>(n_samples, xyz, sph1, dsph1); 
+        compute_generic(n_samples, 2, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=2 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with l=2 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, 3, prefactors, xyz, sph, NULL); 
+        compute_generic(n_samples, 2, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=3 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with l=2 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, 3, prefactors, xyz, sph, dsph); 
+        cartesian_spherical_harmonics_hc<false,2>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=3 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
-    
-    time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<false,3>(n_samples, xyz, sph1, NULL); 
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=3 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with hardcoded l=2 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<true,3>(n_samples, xyz, sph1, dsph1); 
+        cartesian_spherical_harmonics_hc<true,2>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=3 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
-    
-    time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 4, prefactors, xyz, sph, NULL); 
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=4 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with hardcoded l=2 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, 4, prefactors, xyz, sph, dsph); 
+        compute_generic(n_samples, 3, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=4 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
-    
-    time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<false,4>(n_samples, xyz, sph1, NULL); 
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=4 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with l=3 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<true,4>(n_samples, xyz, sph1, dsph1); 
+        compute_generic(n_samples, 3, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=4 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with l=3 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, 5, prefactors, xyz, sph, NULL); 
+        cartesian_spherical_harmonics_hc<false,3>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=5 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with hardcoded l=3 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, 5, prefactors, xyz, sph, dsph); 
+        cartesian_spherical_harmonics_hc<true,3>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=5 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
-    
-    time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<false,5>(n_samples, xyz, sph1, NULL); 
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=5 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with hardcoded l=3 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<true,5>(n_samples, xyz, sph1, dsph1); 
+        compute_generic(n_samples, 4, prefactors, xyz, sph, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=5 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with l=4 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, 6, prefactors, xyz, sph, NULL); 
+        compute_generic(n_samples, 4, prefactors, xyz, sph, dsph);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=6 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with l=4 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        compute_generic(n_samples, 6, prefactors, xyz, sph, dsph); 
+        cartesian_spherical_harmonics_hc<false,4>(n_samples, xyz, sph1, NULL);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with l=6 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
-    
-    time_total = time2_total = 0;
-    for (int i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<false,6>(n_samples, xyz, sph1, NULL); 
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=6 (sph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with hardcoded l=4 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
     time_total = time2_total = 0;
     for (int i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics_hc<true,6>(n_samples, xyz, sph1, dsph1); 
+        cartesian_spherical_harmonics_hc<true,4>(n_samples, xyz, sph1, dsph1);
         gettimeofday(&end, NULL);
         time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
         time_total += time; time2_total +=  time*time;
-    } 
-    printf("Call with hardcoded l=6 (dsph) took %f ± %f µs/sample\n", 
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries - 
+    }
+    printf("Call with hardcoded l=4 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        compute_generic(n_samples, 5, prefactors, xyz, sph, NULL);
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    }
+    printf("Call with l=5 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        compute_generic(n_samples, 5, prefactors, xyz, sph, dsph);
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    }
+    printf("Call with l=5 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        cartesian_spherical_harmonics_hc<false,5>(n_samples, xyz, sph1, NULL);
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    }
+    printf("Call with hardcoded l=5 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        cartesian_spherical_harmonics_hc<true,5>(n_samples, xyz, sph1, dsph1);
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    }
+    printf("Call with hardcoded l=5 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        compute_generic(n_samples, 6, prefactors, xyz, sph, NULL);
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    }
+    printf("Call with l=6 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        compute_generic(n_samples, 6, prefactors, xyz, sph, dsph);
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    }
+    printf("Call with l=6 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        cartesian_spherical_harmonics_hc<false,6>(n_samples, xyz, sph1, NULL);
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    }
+    printf("Call with hardcoded l=6 (sph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
+                                       (time_total/n_tries)*(time_total/n_tries))
+            );
+
+    time_total = time2_total = 0;
+    for (int i_try = 0; i_try < n_tries; i_try++) {
+        gettimeofday(&start, NULL);
+        cartesian_spherical_harmonics_hc<true,6>(n_samples, xyz, sph1, dsph1);
+        gettimeofday(&end, NULL);
+        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
+        time_total += time; time2_total +=  time*time;
+    }
+    printf("Call with hardcoded l=6 (dsph) took %f ± %f µs/sample\n",
+            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
@@ -477,11 +477,11 @@ int main(int argc, char *argv[]) {
                     printf("SPH: %e, %e\n", sph[size2*i_sample+l*l+l+m], sph1[size2*i_sample+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);           
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
                     printf("DxSPH: %e, %e\n", dsph[size3*i_sample+size2*0+l*l+l+m], dsph1[size3*i_sample+size2*0+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);            
+                    printf("Problem detected at i_sample = %d, L = %d, m = %d \n", i_sample, l, m);
                     printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
                 }
                 if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
@@ -493,7 +493,7 @@ int main(int argc, char *argv[]) {
     }
 
     free(xyz);
-    free(prefactors);    
+    free(prefactors);
     free(sph);
     free(dsph);
     free(sph1);

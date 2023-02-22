@@ -38,7 +38,7 @@ set_target_properties(sphericart PROPERTIES
     CXX_VISIBILITY_PRESET hidden
 )
 
-set(CMAKE_CXX_FLAGS "-g -O2 -march=native -Wall -fopenmp")
+# set(CMAKE_CXX_FLAGS "-g -O2 -march=native -Wall -fopenmp")
 
 target_include_directories(sphericart PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
