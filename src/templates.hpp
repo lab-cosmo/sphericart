@@ -68,8 +68,8 @@ template <bool DO_DSPH, int HC_LMAX>
 void cartesian_spherical_harmonics_hc(unsigned int n_samples, double *xyz, double *sph, double *dsph) {
     #pragma omp parallel
     {
-        double x, y, z, x2, y2, z2;
-        double *xyz_i, *sph_i, *dxsph_i, *dysph_i, *dzsph_i;
+        double x, y, z, x2=0, y2=0, z2=0;
+        double *xyz_i, *sph_i;
         constexpr int size_y=((HC_LMAX+1) * (HC_LMAX+1));
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
@@ -86,9 +86,9 @@ void cartesian_spherical_harmonics_hc(unsigned int n_samples, double *xyz, doubl
             _compute_sph_templated<HC_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
             if constexpr (DO_DSPH) {
-                dxsph_i = dsph + i_sample * size_y * 3;
-                dysph_i = dxsph_i + size_y;
-                dzsph_i = dysph_i + size_y;
+                double *dxsph_i = dsph + i_sample * size_y * 3;
+                double *dysph_i = dxsph_i + size_y;
+                double *dzsph_i = dysph_i + size_y;
                 _compute_dsph_templated<HC_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
             }
         }
