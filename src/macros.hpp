@@ -1,16 +1,16 @@
 #ifndef SPHERICART_MACROS_HPP
 #define SPHERICART_MACROS_HPP
 
-#define _COMPUTE_SPH_L0(sph_i) (sph_i)[0] = 0.282094791773878;
+#define COMPUTE_SPH_L0(sph_i) (sph_i)[0] = 0.282094791773878;
 
-#define _COMPUTE_DSPH_L0(sph_i, dxsph_i, dysph_i, dzsph_i) (dxsph_i)[0] = (dysph_i)[0] = (dzsph_i)[0] = 0.0;
+#define COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i) (dxsph_i)[0] = (dysph_i)[0] = (dzsph_i)[0] = 0.0;
 
-#define _COMPUTE_SPH_L1(x, y, z, sph_i)                                                                                \
+#define COMPUTE_SPH_L1(x, y, z, sph_i)                                                                                \
     (sph_i)[1] = 0.48860251190292 * y;                                                                                 \
     (sph_i)[2] = 0.48860251190292 * z;                                                                                 \
     (sph_i)[3] = 0.48860251190292 * x;
 
-#define _COMPUTE_DSPH_L1(sph_i, dxsph_i, dysph_i, dzsph_i)                                                             \
+#define COMPUTE_SPH_DERIVATIVE_L1(sph_i, dxsph_i, dysph_i, dzsph_i)                                                             \
     (dxsph_i)[1] = 0.0;                                                                                                \
     (dxsph_i)[2] = 0.0;                                                                                                \
     (dxsph_i)[3] = 0.48860251190292;                                                                                   \
@@ -21,7 +21,7 @@
     (dzsph_i)[2] = 0.48860251190292;                                                                                   \
     (dzsph_i)[3] = 0.0;
 
-#define _COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i)                                                                    \
+#define COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i)                                                                    \
     {                                                                                                                  \
         double tmp;                                                                                                    \
         tmp = 2.23606797749979 * x;                                                                                    \
@@ -32,7 +32,7 @@
         (sph_i)[8] = 0.54627421529604 * (x2 - y2);                                                                     \
     }
 
-#define _COMPUTE_DSPH_L2(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
+#define COMPUTE_SPH_DERIVATIVE_L2(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
     (dxsph_i)[4] = 2.23606797749979 * (sph_i)[1];                                                                      \
     (dxsph_i)[5] = 0.0;                                                                                                \
     (dxsph_i)[6] = -1.29099444873581 * (sph_i)[3];                                                                     \
@@ -50,7 +50,7 @@
     (dzsph_i)[6] = 1.15470053837925 * (dxsph_i)[7];                                                                    \
     (dzsph_i)[7] = (dysph_i)[4];
 
-#define _COMPUTE_SPH_L3(x, y, z, x2, y2, z2, sph_i)                                                                    \
+#define COMPUTE_SPH_L3(x, y, z, x2, y2, z2, sph_i)                                                                    \
     {                                                                                                                  \
         double tmp;                                                                                                    \
         sph_i[9] = -0.59004358992664 * y * (y2 - 3 * x2);                                                              \
@@ -63,7 +63,7 @@
         sph_i[15] = 0.59004358992664 * x * (x2 - 3 * y2);                                                              \
     }
 
-#define _COMPUTE_DSPH_L3(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
+#define COMPUTE_SPH_DERIVATIVE_L3(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
     dxsph_i[9] = 3.24037034920393 * sph_i[4];                                                                          \
     dxsph_i[10] = 2.64575131106459 * sph_i[5];                                                                         \
     dxsph_i[11] = -0.83666002653408 * sph_i[4];                                                                        \
@@ -88,7 +88,7 @@
     dzsph_i[14] = 2.64575131106459 * sph_i[8];                                                                         \
     dzsph_i[15] = 0.0;
 
-#define _COMPUTE_SPH_L4(x, y, z, x2, y2, z2, sph_i)                                                                    \
+#define COMPUTE_SPH_L4(x, y, z, x2, y2, z2, sph_i)                                                                    \
     {                                                                                                                  \
         double tmp;                                                                                                    \
         sph_i[16] = 4.194391357527674 * sph_i[4] * sph_i[8];                                                           \
@@ -104,7 +104,7 @@
         sph_i[24] = -1.060660171779821 * (y * sph_i[9] - x * sph_i[15]);                                               \
     }
 
-#define _COMPUTE_DSPH_L4(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
+#define COMPUTE_SPH_DERIVATIVE_L4(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
     (dxsph_i)[16] = 4.242640687119285 * (sph_i)[9];                                                                    \
     (dxsph_i)[17] = 3.674234614174767 * (sph_i)[10];                                                                   \
     (dxsph_i)[18] = 1.892349391515120 * y * (y2 + 4.755992757127213 * (sph_i)[6]);                                     \
@@ -136,7 +136,7 @@
     (dzsph_i)[23] = 3 * (sph_i)[15];                                                                                   \
     (dzsph_i)[24] = 0.0;
 
-#define _COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i)                                                                    \
+#define COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i)                                                                    \
     {                                                                                                                  \
         double tmp;                                                                                                    \
         sph_i[25] = 13.12764113680340 * y * (y2 * (x2 - 0.2 * y2) + 0.3994658435740642 * sph_i[24]);                   \
@@ -156,7 +156,7 @@
         sph_i[35] = -1.048808848170152 * (y * sph_i[16] - x * sph_i[24]);                                              \
     }
 
-#define _COMPUTE_DSPH_L5(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
+#define COMPUTE_SPH_DERIVATIVE_L5(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
     (dxsph_i)[25] = 5.244044240850758 * (sph_i)[16];                                                                   \
     (dxsph_i)[26] = 4.690415759823430 * (sph_i)[17];                                                                   \
     (dxsph_i)[27] = 3.582364210034113 * (y2 * (sph_i)[4] + 3.58568582800318 * x * (sph_i)[11]);                        \
@@ -197,7 +197,7 @@
     (dzsph_i)[34] = 3.316624790355400 * (sph_i)[24];                                                                   \
     (dzsph_i)[35] = 0.0;
 
-#define _COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i)                                                                    \
+#define COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i)                                                                    \
     {                                                                                                                  \
         double tmp;                                                                                                    \
         (sph_i)[36] = 3.924637560539857 * (sph_i)[9] * (sph_i)[15];                                                    \
@@ -220,7 +220,7 @@
         (sph_i)[48] = -1.040832999733066 * (y * (sph_i)[25] - x * (sph_i)[35]);                                        \
     }
 
-#define _COMPUTE_DSPH_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
+#define COMPUTE_SPH_DERIVATIVE_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i)                                        \
     {                                                                                                                  \
         double tmp;                                                                                                    \
         (dxsph_i)[36] = 6.244997998398398 * (sph_i)[25];                                                               \

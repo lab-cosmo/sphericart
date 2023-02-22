@@ -3,7 +3,7 @@
 #include "sphericart.hpp"
 #include "templates.hpp"
 
-#define _HC_LMAX 6
+#define HARDCODED_LMAX 6
 
 void sphericart::compute_sph_prefactors(unsigned int l_max, double *factors) {
     /*
@@ -31,7 +31,7 @@ void sphericart::compute_sph_prefactors(unsigned int l_max, double *factors) {
     }
 }
 
-void cartesian_spherical_harmonics(
+void sphericart::cartesian_spherical_harmonics(
     unsigned int n_samples,
     unsigned int l_max,
     const double *prefactors,
@@ -49,62 +49,62 @@ void cartesian_spherical_harmonics(
     */
 
     // call directly the fast ones
-    if (l_max <= _HC_LMAX) {
+    if (l_max <= HARDCODED_LMAX) {
         if (dsph == nullptr) {
             switch (l_max) {
             case 0:
-                cartesian_spherical_harmonics_hc<false, 0>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<false, 0>(n_samples, xyz, sph, dsph);
                 break;
             case 1:
-                cartesian_spherical_harmonics_hc<false, 1>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<false, 1>(n_samples, xyz, sph, dsph);
                 break;
             case 2:
-                cartesian_spherical_harmonics_hc<false, 2>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<false, 2>(n_samples, xyz, sph, dsph);
                 break;
             case 3:
-                cartesian_spherical_harmonics_hc<false, 3>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<false, 3>(n_samples, xyz, sph, dsph);
                 break;
             case 4:
-                cartesian_spherical_harmonics_hc<false, 4>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<false, 4>(n_samples, xyz, sph, dsph);
                 break;
             case 5:
-                cartesian_spherical_harmonics_hc<false, 5>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<false, 5>(n_samples, xyz, sph, dsph);
                 break;
             case 6:
-                cartesian_spherical_harmonics_hc<false, 6>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<false, 6>(n_samples, xyz, sph, dsph);
                 break;
             }
 
         } else {
             switch (l_max) {
             case 0:
-                cartesian_spherical_harmonics_hc<true, 0>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<true, 0>(n_samples, xyz, sph, dsph);
                 break;
             case 1:
-                cartesian_spherical_harmonics_hc<true, 1>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<true, 1>(n_samples, xyz, sph, dsph);
                 break;
             case 2:
-                cartesian_spherical_harmonics_hc<true, 2>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<true, 2>(n_samples, xyz, sph, dsph);
                 break;
             case 3:
-                cartesian_spherical_harmonics_hc<true, 3>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<true, 3>(n_samples, xyz, sph, dsph);
                 break;
             case 4:
-                cartesian_spherical_harmonics_hc<true, 4>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<true, 4>(n_samples, xyz, sph, dsph);
                 break;
             case 5:
-                cartesian_spherical_harmonics_hc<true, 5>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<true, 5>(n_samples, xyz, sph, dsph);
                 break;
             case 6:
-                cartesian_spherical_harmonics_hc<true, 6>(n_samples, xyz, sph, dsph);
+                hardcoded_sph<true, 6>(n_samples, xyz, sph, dsph);
                 break;
             }
         }
     } else {
         if (dsph == nullptr) {
-            _compute_sphcrt_templated<false, _HC_LMAX>(n_samples, l_max, prefactors, xyz, sph, dsph);
+            generic_sph<false, HARDCODED_LMAX>(n_samples, l_max, prefactors, xyz, sph, dsph);
         } else {
-            _compute_sphcrt_templated<true, _HC_LMAX>(n_samples, l_max, prefactors, xyz, sph, dsph);
+            generic_sph<true, HARDCODED_LMAX>(n_samples, l_max, prefactors, xyz, sph, dsph);
         }
     }
 }
