@@ -5,6 +5,7 @@ project(sphericart CXX)
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 
 OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" ON) # TODO: change default to OFF
+OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
@@ -53,10 +54,14 @@ generate_export_header(sphericart
 target_compile_definitions(sphericart PRIVATE sphericart_EXPORTS)
 
 # Handle optimization flags
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    message(STATUS "OpenMP is enabled")
-    target_link_libraries(sphericart PUBLIC OpenMP::OpenMP_CXX)
+if (SPHERICART_OPENMP)
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        message(STATUS "OpenMP is enabled")
+        target_link_libraries(sphericart PUBLIC OpenMP::OpenMP_CXX)
+    else()
+        message(WARNING "Could not find OpenMP")
+    endif()
 endif()
 
 include(CheckCXXCompilerFlag)
