@@ -4,6 +4,8 @@ project(sphericart CXX)
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 
+OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" ON) # TODO: change default to OFF
+
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     if("${CMAKE_BUILD_TYPE}" STREQUAL "" AND "${CMAKE_CONFIGURATION_TYPES}" STREQUAL "")
@@ -29,11 +31,9 @@ set_target_properties(sphericart PROPERTIES
     SOVERSION "0.1"
 )
 
+target_compile_features(sphericart PUBLIC cxx_std_17)
+
 set_target_properties(sphericart PROPERTIES
-    # Set the version of C++ standard we need
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
     # hide non-exported symbols by default
     CXX_VISIBILITY_PRESET hidden
 )
@@ -53,5 +53,11 @@ generate_export_header(sphericart
     BASE_NAME SPHERICART
     EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/include/sphericart/exports.h
 )
+
+enable_testing()
+if (SPHERICART_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
 
 # TODO: installation from cmake

@@ -4,17 +4,20 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <math.h>
+
 #include "sphericart.hpp"
+
+#include "../src/templates.hpp"
 
 #define _SPH_TOL 1e-6
 using namespace sphericart;
 
-// shorthand for all-past-1 generice sph only
+// shorthand for all-past-1 generic sph only
 inline void compute_generic(int n_samples, int l_max, double *prefactors, double *xyz, double *sph, double *dsph) {
     if (dsph==NULL) {
-        _compute_sphcrt_templated<false,1>(n_samples, l_max, prefactors, xyz, sph, dsph);
+        _compute_sphcrt_templated<false, 1>(n_samples, l_max, prefactors, xyz, sph, dsph);
     } else {
-        _compute_sphcrt_templated<true,1>(n_samples, l_max, prefactors, xyz, sph, dsph);
+        _compute_sphcrt_templated<true, 1>(n_samples, l_max, prefactors, xyz, sph, dsph);
     }
 }
 
