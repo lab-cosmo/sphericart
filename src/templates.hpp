@@ -70,6 +70,7 @@ void cartesian_spherical_harmonics_hc(unsigned int n_samples, double *xyz, doubl
     {
         double x, y, z, x2, y2, z2;
         double *xyz_i, *sph_i, *dxsph_i, *dysph_i, *dzsph_i;
+        constexpr int size_y=((HC_LMAX+1) * (HC_LMAX+1));
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
             xyz_i = xyz + i_sample * 3;
@@ -81,13 +82,13 @@ void cartesian_spherical_harmonics_hc(unsigned int n_samples, double *xyz, doubl
                 y2 = y * y;
                 z2 = z * z;
             }
-            sph_i = sph + i_sample * (HC_LMAX * HC_LMAX);
+            sph_i = sph + i_sample * size_y;
             _compute_sph_templated<HC_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
             if constexpr (DO_DSPH) {
-                dxsph_i = dsph + i_sample * (HC_LMAX * HC_LMAX) * 3;
-                dysph_i = dxsph_i + (HC_LMAX * HC_LMAX);
-                dzsph_i = dysph_i + (HC_LMAX * HC_LMAX);
+                dxsph_i = dsph + i_sample * size_y * 3;
+                dysph_i = dxsph_i + size_y;
+                dzsph_i = dysph_i + size_y;
                 _compute_dsph_templated<HC_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
             }
         }
