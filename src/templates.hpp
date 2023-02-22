@@ -5,98 +5,108 @@
 
 #include "macros.hpp"
 
-template <int HC_LMAX>
-inline void _compute_sph_templated(double x, double y, double z, double x2, double y2, double z2, double *sph_i) {
-    _COMPUTE_SPH_L0(sph_i);
+template <int HARDCODED_LMAX>
+inline void hardcoded_sph_template(double x, double y, double z, double x2, double y2, double z2, double *sph_i) {
+    COMPUTE_SPH_L0(sph_i);
 
-    if constexpr (HC_LMAX > 0) {
-        _COMPUTE_SPH_L1(x, y, z, sph_i);
+    if constexpr (HARDCODED_LMAX > 0) {
+        COMPUTE_SPH_L1(x, y, z, sph_i);
     }
 
-    if constexpr (HC_LMAX > 1) {
-        _COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i);
+    if constexpr (HARDCODED_LMAX > 1) {
+        COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i);
     }
 
-    if constexpr (HC_LMAX > 2) {
-        _COMPUTE_SPH_L3(x, y, z, x2, y2, z2, sph_i);
+    if constexpr (HARDCODED_LMAX > 2) {
+        COMPUTE_SPH_L3(x, y, z, x2, y2, z2, sph_i);
     }
 
-    if constexpr (HC_LMAX > 3) {
-        _COMPUTE_SPH_L4(x, y, z, x2, y2, z2, sph_i);
+    if constexpr (HARDCODED_LMAX > 3) {
+        COMPUTE_SPH_L4(x, y, z, x2, y2, z2, sph_i);
     }
 
-    if constexpr (HC_LMAX > 4) {
-        _COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i);
+    if constexpr (HARDCODED_LMAX > 4) {
+        COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i);
     }
 
-    if constexpr (HC_LMAX > 5) {
-        _COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i);
-    }
-}
-
-template <int HC_LMAX>
-inline void _compute_dsph_templated(double x, double y, double z, double x2, double y2, double z2, double *sph_i,
-                                    double *dxsph_i, double *dysph_i, double *dzsph_i) {
-    _COMPUTE_DSPH_L0(sph_i, dxsph_i, dysph_i, dzsph_i);
-
-    if constexpr (HC_LMAX > 0) {
-        _COMPUTE_DSPH_L1(sph_i, dxsph_i, dysph_i, dzsph_i);
-    }
-
-    if constexpr (HC_LMAX > 1) {
-        _COMPUTE_DSPH_L2(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
-    }
-
-    if constexpr (HC_LMAX > 2) {
-        _COMPUTE_DSPH_L3(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
-    }
-
-    if constexpr (HC_LMAX > 3) {
-        _COMPUTE_DSPH_L4(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
-    }
-
-    if constexpr (HC_LMAX > 4) {
-        _COMPUTE_DSPH_L5(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
-    }
-
-    if constexpr (HC_LMAX > 5) {
-        _COMPUTE_DSPH_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+    if constexpr (HARDCODED_LMAX > 5) {
+        COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i);
     }
 }
 
-template <bool DO_DSPH, int HC_LMAX>
-void cartesian_spherical_harmonics_hc(unsigned int n_samples, double *xyz, double *sph, double *dsph) {
+template <int HARDCODED_LMAX>
+inline void hardcoded_sph_derivative_template(
+    double x,
+    double y,
+    double z,
+    double x2,
+    double y2,
+    double z2,
+    double *sph_i,
+    double *dxsph_i,
+    double *dysph_i,
+    double *dzsph_i
+) {
+    COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i);
+
+    if constexpr (HARDCODED_LMAX > 0) {
+        COMPUTE_SPH_DERIVATIVE_L1(sph_i, dxsph_i, dysph_i, dzsph_i);
+    }
+
+    if constexpr (HARDCODED_LMAX > 1) {
+        COMPUTE_SPH_DERIVATIVE_L2(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+    }
+
+    if constexpr (HARDCODED_LMAX > 2) {
+        COMPUTE_SPH_DERIVATIVE_L3(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+    }
+
+    if constexpr (HARDCODED_LMAX > 3) {
+        COMPUTE_SPH_DERIVATIVE_L4(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+    }
+
+    if constexpr (HARDCODED_LMAX > 4) {
+        COMPUTE_SPH_DERIVATIVE_L5(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+    }
+
+    if constexpr (HARDCODED_LMAX > 5) {
+        COMPUTE_SPH_DERIVATIVE_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+    }
+}
+
+template <bool DO_DERIVATIVES, int HARDCODED_LMAX>
+void hardcoded_sph(unsigned int n_samples, double *xyz, double *sph, double *dsph) {
     #pragma omp parallel
     {
         double x, y, z, x2=0, y2=0, z2=0;
         double *xyz_i, *sph_i;
-        constexpr int size_y=((HC_LMAX+1) * (HC_LMAX+1));
+        constexpr int size_y=((HARDCODED_LMAX+1) * (HARDCODED_LMAX+1));
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
             xyz_i = xyz + i_sample * 3;
             x = xyz_i[0];
             y = xyz_i[1];
             z = xyz_i[2];
-            if constexpr (HC_LMAX > 2) {
+            if constexpr (HARDCODED_LMAX > 2) {
                 x2 = x * x;
                 y2 = y * y;
                 z2 = z * z;
             }
             sph_i = sph + i_sample * size_y;
-            _compute_sph_templated<HC_LMAX>(x, y, z, x2, y2, z2, sph_i);
+            hardcoded_sph_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
-            if constexpr (DO_DSPH) {
+            if constexpr (DO_DERIVATIVES) {
                 double *dxsph_i = dsph + i_sample * size_y * 3;
                 double *dysph_i = dxsph_i + size_y;
                 double *dzsph_i = dysph_i + size_y;
-                _compute_dsph_templated<HC_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+                hardcoded_sph_derivative_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
             }
         }
     }
 }
 
-template <bool DO_DSPH, int HC_LMAX>
-void _compute_sphcrt_templated(
+template <bool DO_DERIVATIVES, int HARDCODED_LMAX>
+void generic_sph(
     unsigned int n_samples,
     unsigned int l_max,
     const double *prefactors,
@@ -104,7 +114,7 @@ void _compute_sphcrt_templated(
     double *sph,
     double *dsph
 ) {
-    // general case, but start at HC_LMAX and use hard-coding before that
+    // general case, but start at HARDCODED_LMAX and use hard-coding before that
     #pragma omp parallel
     {
         // storage arrays for Qlm (modified associated Legendre polynomials)
@@ -121,8 +131,8 @@ void _compute_sphcrt_templated(
         // TODO: Probably worth pre-computing together with the prefactors,
         // more for consistency than for efficiency
         double *qlmfactor = (double *)malloc(sizeof(double) * size_q);
-        k = (HC_LMAX) * (HC_LMAX + 1) / 2;
-        for (l = HC_LMAX; l < l_max + 1; ++l) {
+        k = (HARDCODED_LMAX) * (HARDCODED_LMAX + 1) / 2;
+        for (l = HARDCODED_LMAX; l < l_max + 1; ++l) {
             for (m = l - 2; m >= 0; --m) {
                 qlmfactor[k + m] = -1.0 / ((l + m + 1) * (l - m));
             }
@@ -160,16 +170,16 @@ void _compute_sphcrt_templated(
             double *dsph_i, *dxsph_i, *dysph_i, *dzsph_i;
 
             // these are the hard-coded, low-lmax sph
-            _compute_sph_templated<HC_LMAX>(x, y, z, x2, y2, z2, sph_i);
+            hardcoded_sph_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
-            if constexpr (DO_DSPH) {
+            if constexpr (DO_DERIVATIVES) {
                 // updates the pointer to the derivative storage
                 dsph_i = dsph + i_sample * 3 * size_y;
                 dxsph_i = dsph_i;
                 dysph_i = dxsph_i + size_y;
                 dzsph_i = dysph_i + size_y;
 
-                _compute_dsph_templated<HC_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+                hardcoded_sph_derivative_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
             }
 
             /* These are scaled version of cos(m phi) and sin(m phi).
@@ -178,7 +188,7 @@ void _compute_sphcrt_templated(
             */
 
             // help the compiler unroll the first part of the loop
-            for (m = 1; m < HC_LMAX + 1; ++m) {
+            for (m = 1; m < HARDCODED_LMAX + 1; ++m) {
                 c[m] = c[m - 1] * x - s[m - 1] * y;
                 s[m] = c[m - 1] * y + s[m - 1] * x;
             }
@@ -197,32 +207,32 @@ void _compute_sphcrt_templated(
                beginning of the appropriate memory segment.
             */
 
-            // We need also Qlm for l=HC_LMAX because it's used in the derivatives
-            k = (HC_LMAX) * (HC_LMAX + 1) / 2;
-            q[k + HC_LMAX - 1] = -z * q[k + HC_LMAX];
-            twomz = (HC_LMAX)*twoz; // compute decrementally to hold 2(m+1)z
-            for (m = HC_LMAX - 2; m >= 0; --m) {
+            // We need also Qlm for l=HARDCODED_LMAX because it's used in the derivatives
+            k = (HARDCODED_LMAX) * (HARDCODED_LMAX + 1) / 2;
+            q[k + HARDCODED_LMAX - 1] = -z * q[k + HARDCODED_LMAX];
+            twomz = (HARDCODED_LMAX)*twoz; // compute decrementally to hold 2(m+1)z
+            for (m = HARDCODED_LMAX - 2; m >= 0; --m) {
                 twomz -= twoz;
                 q[k + m] = qlmfactor[k + m] * (twomz * q[k + m + 1] + rxy * q[k + m + 2]);
             }
 
             // main loop!
             // k points at Q[l,0]; sph_i at Y[l,0] (mid-way through each l chunk)
-            k = (HC_LMAX + 1) * (HC_LMAX + 2) / 2;
-            sph_i += (HC_LMAX + 1) * (HC_LMAX + 1 + 1);
+            k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
+            sph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
 
-            if constexpr (DO_DSPH) {
-                dxsph_i += (HC_LMAX + 1) * (HC_LMAX + 1 + 1);
-                dysph_i += (HC_LMAX + 1) * (HC_LMAX + 1 + 1);
-                dzsph_i += (HC_LMAX + 1) * (HC_LMAX + 1 + 1);
+            if constexpr (DO_DERIVATIVES) {
+                dxsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+                dysph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+                dzsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
             }
-            for (l = HC_LMAX + 1; l < l_max + 1; ++l) {
+            for (l = HARDCODED_LMAX + 1; l < l_max + 1; ++l) {
                 // l=+-m
                 pq = q[k + l] * prefactors[k + l];
                 sph_i[-l] = pq * s[l];
                 sph_i[+l] = pq * c[l];
 
-                if constexpr (DO_DSPH) {
+                if constexpr (DO_DERIVATIVES) {
                     pq *= l;
                     dxsph_i[-l] = pq * s[l - 1];
                     dxsph_i[l] = pq * c[l - 1];
@@ -238,7 +248,7 @@ void _compute_sphcrt_templated(
                 sph_i[-l + 1] = pq * s[l - 1];
                 sph_i[+l - 1] = pq * c[l - 1];
 
-                if constexpr (DO_DSPH) {
+                if constexpr (DO_DERIVATIVES) {
                     pq *= (l - 1);
                     dxsph_i[-l + 1] = pq * s[l - 2];
                     dxsph_i[l - 1] = pq * c[l - 2];
@@ -251,14 +261,14 @@ void _compute_sphcrt_templated(
 
                 // and now do the other m's, decrementally
                 twomz = l * twoz; // compute decrementally to hold 2(m+1)z
-                for (m = l - 2; m > HC_LMAX - 1; --m) {
+                for (m = l - 2; m > HARDCODED_LMAX - 1; --m) {
                     twomz -= twoz;
                     q[k + m] = qlmfactor[k + m] * (twomz * q[k + m + 1] + rxy * q[k + m + 2]);
                     pq = q[k + m] * prefactors[k + m];
                     sph_i[-m] = pq * s[m];
                     sph_i[+m] = pq * c[m];
 
-                    if constexpr (DO_DSPH) {
+                    if constexpr (DO_DERIVATIVES) {
                         pq *= m;
                         pdq = prefactors[k + m] * q[k + m - l + 1];
                         pdqx = pdq * x;
@@ -272,14 +282,14 @@ void _compute_sphcrt_templated(
                         dzsph_i[m] = pdq * c[m];
                     }
                 }
-                for (m = HC_LMAX - 1; m > 0; --m) {
+                for (m = HARDCODED_LMAX - 1; m > 0; --m) {
                     twomz -= twoz;
                     q[k + m] = qlmfactor[k + m] * (twomz * q[k + m + 1] + rxy * q[k + m + 2]);
                     pq = q[k + m] * prefactors[k + m];
                     sph_i[-m] = pq * s[m];
                     sph_i[+m] = pq * c[m];
 
-                    if constexpr (DO_DSPH) {
+                    if constexpr (DO_DERIVATIVES) {
                         pq *= m;
                         pdq = prefactors[k + m] * q[k + m - l + 1];
                         pdqx = pdq * x;
@@ -297,7 +307,7 @@ void _compute_sphcrt_templated(
                 q[k] = qlmfactor[k] * (twoz * q[k + 1] + rxy * q[k + 2]);
                 sph_i[0] = q[k] * prefactors[k];
 
-                if constexpr (DO_DSPH) {
+                if constexpr (DO_DERIVATIVES) {
                     // derivatives
                     dxsph_i[0] = prefactors[k] * x * q[k - l + 1];
                     dysph_i[0] = prefactors[k] * y * q[k - l + 1];
