@@ -68,8 +68,6 @@ for normalized in [False, True]:
         numerical_derivatives = (shplus - shminus) / (2.0 * delta)
         sh, analytical_derivatives_all = sh_calculator.compute(xyz, gradients=True)
         analytical_derivatives = analytical_derivatives_all[:, alpha, :]
-        print("analytical,", alpha,  analytical_derivatives[:2, :2] )
-        print("numerical,", alpha,  numerical_derivatives[:2, :2] )
         assert np.allclose(numerical_derivatives, 
                analytical_derivatives), f"derivative failed for normalize={normalized})"
 

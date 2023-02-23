@@ -402,14 +402,11 @@ void generic_sph(
                 dysph_i = dxsph_i + size_y;
                 dzsph_i = dysph_i + size_y;
 
-                for (k=0; k<size_y; ++k) {
-                    dxsph_i[k]*=ir;
-                    dysph_i[k]*=ir;
-                    dzsph_i[k]*=ir;
+                for (k=0; k<size_y; ++k) {                    
                     auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
-                    dxsph_i[k] -= x*tmp;
-                    dysph_i[k] -= y*tmp;
-                    dzsph_i[k] -= z*tmp;
+                    dxsph_i[k] = (dxsph_i[k]-x*tmp)*ir;
+                    dysph_i[k] = (dysph_i[k]-y*tmp)*ir;
+                    dzsph_i[k] = (dzsph_i[k]-z*tmp)*ir;
                 }
             }
 
