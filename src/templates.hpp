@@ -394,6 +394,7 @@ void generic_sph(
                 k += l + 1;
                 sph_i += 2 * l + 2;
             }
+            
             if constexpr(DO_DERIVATIVES && NORMALIZED) {
                 // corrects derivatives for normalization
                 dsph_i = dsph + i_sample * 3 * size_y;
@@ -402,10 +403,10 @@ void generic_sph(
                 dzsph_i = dysph_i + size_y;
 
                 for (k=0; k<size_y; ++k) {
-                    auto dsph_dnx = dxsph_i[k]*ir;
-                    auto dsph_dny = dysph_i[k]*ir;
-                    auto dsph_dnz = dzsph_i[k]*ir;
-                    auto tmp = (dsph_dnx*x+dsph_dny*y+dsph_dnz*z);
+                    dxsph_i[k]*=ir;
+                    dysph_i[k]*=ir;
+                    dzsph_i[k]*=ir;
+                    auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
                     dxsph_i[k] -= x*tmp;
                     dysph_i[k] -= y*tmp;
                     dzsph_i[k] -= z*tmp;

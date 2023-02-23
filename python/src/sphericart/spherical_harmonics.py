@@ -10,14 +10,21 @@ class SphericalHarmonics:
     calculate the relevant prefactors for the calculation of the spherical
     harmonics.
 
-    :param l_max: the maximum degree of the spherical harmonics to be calculated
+    :param l_max: 
+            the maximum degree of the spherical harmonics to be calculated
     :type l_max: int
+
+    :param normalized: 
+            whether to compute normalized spherical harmonics (default: False)
+    :type normalized: bool
+
     :return: a calculator, in the form of a SphericalHarmonics object
     """
 
-    def __init__(self, l_max):
+    def __init__(self, l_max, normalized=False):
         self._l_max = l_max
         self._prefactors = c_get_prefactors(l_max)
+        self._normalized = normalized
 
     def __del__(self):
         # TODO: free the prefactors
@@ -55,4 +62,5 @@ class SphericalHarmonics:
 
         """
 
-        return c_spherical_harmonics(self._l_max, xyz, self._prefactors, gradients)
+        return c_spherical_harmonics(self._l_max, xyz, self._prefactors, 
+                                      gradients, self._normalized)
