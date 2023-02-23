@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     printf("Running with n_tries= %zu, n_samples= %zu\n", n_tries, n_samples);
     printf("\n");
     printf("============= l_max = %d ==============\n", l_max);
-    double *prefactors = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2)/2);
+    double *prefactors = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2));
     compute_sph_prefactors(l_max, prefactors);
 
     double *xyz = (double*) malloc(sizeof(double)*n_samples*3);
@@ -157,6 +157,7 @@ int main(int argc, char *argv[]) {
     printf("\n");
     printf("================ Low-l timings ===========\n");
 
+    compute_sph_prefactors(1, prefactors);
     time_total = time2_total = 0;
     for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
@@ -209,6 +210,7 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
+    compute_sph_prefactors(2, prefactors);
     time_total = time2_total = 0;
     for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
@@ -261,6 +263,7 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
+    compute_sph_prefactors(3, prefactors);
     time_total = time2_total = 0;
     for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
@@ -313,6 +316,7 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
+    compute_sph_prefactors(4, prefactors);
     time_total = time2_total = 0;
     for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
@@ -365,6 +369,7 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
+    compute_sph_prefactors(5, prefactors);
     time_total = time2_total = 0;
     for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);
@@ -417,6 +422,7 @@ int main(int argc, char *argv[]) {
                                        (time_total/n_tries)*(time_total/n_tries))
             );
 
+    compute_sph_prefactors(6, prefactors);
     time_total = time2_total = 0;
     for (size_t i_try = 0; i_try < n_tries; i_try++) {
         gettimeofday(&start, NULL);

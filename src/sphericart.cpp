@@ -1,5 +1,5 @@
 #include <cmath>
-
+#include<iostream>
 #include "sphericart.hpp"
 #include "templates.hpp"
 
@@ -10,6 +10,10 @@ void sphericart::compute_sph_prefactors(int l_max, double *factors) {
         Use an iterative formula to avoid computing a ratio
         of factorials, and incorporates the 1/sqrt(2) that
         is associated with the Yl0's
+        Also computes a set of coefficients that are needed
+        in the iterative calculation of the Qlm, and just 
+        stashes them at the end of factors, which should therefore
+        be (l_max+1)*(l_max+2) in size
     */
 
     auto k = 0; // quick access index
@@ -24,6 +28,15 @@ void sphericart::compute_sph_prefactors(int l_max, double *factors) {
             } else {
                 factors[k + m] = -sqrt(factor);
             }
+        }
+        k += l + 1;
+    }
+    
+    // now computes the additional factors of -1/((l+m+1)(l-m)) 
+    // that are needed in the recursive calculation of Qlm
+    for (int l = 0; l < l_max + 1; l++) {        
+        for (int m = l - 2; m >= 0; --m) {
+            factors[k + m] = -1.0 / ((l + m + 1) * (l - m));
         }
         k += l + 1;
     }
