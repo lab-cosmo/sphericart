@@ -155,18 +155,17 @@ void generic_sph(
         a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
         so we often write a nested loop on l and m and track where we
         got by incrementing a separate index k. */
-        auto k = (HARDCODED_LMAX) * (HARDCODED_LMAX + 1) / 2;
+        int k = 0;
         
-        // precomputes some factors that enter the Qlm iteration.
-        // TODO: Probably worth pre-computing together with the prefactors,
-        // more for consistency than for efficiency
-        double *qlmfactor = (double *)malloc(sizeof(double) * size_q);
-        for (int l = HARDCODED_LMAX; l < l_max + 1; l++) {
+        // gets an index to some factors that enter the Qlm iteration, 
+        // and are pre-computed together with the prefactors
+        const double *qlmfactor = prefactors+size_q;
+        /*for (int l = HARDCODED_LMAX; l < l_max + 1; l++) {
             for (int m = l - 2; m >= 0; --m) {
                 qlmfactor[k + m] = -1.0 / ((l + m + 1) * (l - m));
             }
             k += l + 1;
-        }
+        }*/
 
         // precompute the Qll's (that are constant)
         q[0 + 0] = 1.0;
@@ -359,7 +358,6 @@ void generic_sph(
             }
         }
 
-        free(qlmfactor);
         free(q);
         free(c);
         free(s);
