@@ -64,7 +64,7 @@ inline void _hardcoded_lmax_switch(int n_samples, int l_max, const double *xyz, 
         hardcoded_sph<DO_DERIVATIVES, NORMALIZED, 5>(n_samples, xyz, sph, dsph);
         break;
     case 6:
-        hardcoded_sph<DO_DERIVATIVES, false, 6>(n_samples, xyz, sph, dsph);
+        hardcoded_sph<DO_DERIVATIVES, NORMALIZED, 6>(n_samples, xyz, sph, dsph);
         break;
     }
 }

@@ -33,7 +33,17 @@ def test_against_scipy(xyz: np.ndarray, l: int, m: int):
 
     assert np.allclose(
         sh_scipy_l_m, sh_sphericart_l_m
-    ), f"assertion failed for l={l}, m={m}"
+    ), f"SPH value failed for l={l}, m={m}"
+
+    sh_calculator = sphericart.SphericalHarmonics(l, normalized=True)
+    sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
+    sh_normalized_l_m = sh_sphericart[:, l * l + l + m]
+
+    assert np.allclose(
+        sh_scipy_l_m, sh_normalized_l_m
+    ), f"normalized value failed for l={l}, m={m}"
+
+
 
 
 n_samples = 10
@@ -45,19 +55,22 @@ for l in range(0, l_max + 1):
 
 print("Spherical harmonics tests passed successfully!")
 
-
-sh_calculator = sphericart.SphericalHarmonics(l_max)
 delta = 1e-6
-for alpha in range(3):
-    xyzplus = xyz.copy()
-    xyzplus[:, alpha] += delta * np.ones_like(xyz[:, alpha])
-    xyzminus = xyz.copy()
-    xyzminus[:, alpha] -= delta * np.ones_like(xyz[:, alpha])
-    shplus, _ = sh_calculator.compute(xyzplus, gradients=False)
-    shminus, _ = sh_calculator.compute(xyzminus, gradients=False)
-    numerical_derivatives = (shplus - shminus) / (2.0 * delta)
-    sh, analytical_derivatives_all = sh_calculator.compute(xyz, gradients=True)
-    analytical_derivatives = analytical_derivatives_all[:, alpha, :]
-    assert np.allclose(numerical_derivatives, analytical_derivatives)
+for normalized in [False, True]:
+    sh_calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
+    for alpha in range(3):
+        xyzplus = xyz.copy()
+        xyzplus[:, alpha] += delta * np.ones_like(xyz[:, alpha])
+        xyzminus = xyz.copy()
+        xyzminus[:, alpha] -= delta * np.ones_like(xyz[:, alpha])
+        shplus, _ = sh_calculator.compute(xyzplus, gradients=False)
+        shminus, _ = sh_calculator.compute(xyzminus, gradients=False)
+        numerical_derivatives = (shplus - shminus) / (2.0 * delta)
+        sh, analytical_derivatives_all = sh_calculator.compute(xyz, gradients=True)
+        analytical_derivatives = analytical_derivatives_all[:, alpha, :]
+        print("analytical,", alpha,  analytical_derivatives[:2, :2] )
+        print("numerical,", alpha,  numerical_derivatives[:2, :2] )
+        assert np.allclose(numerical_derivatives, 
+               analytical_derivatives), f"derivative failed for normalize={normalized})"
 
 print("Derivative tests passed successfully!")
