@@ -176,14 +176,19 @@ void generic_sph(
 
     const auto size_y = (l_max + 1) * (l_max + 1);
     const auto size_q = (l_max + 1) * (l_max + 2) / 2;
-    #pragma omp parallel
+
+    // gets an index to some factors that enter the Qlm iteration, 
+    // and are pre-computed together with the prefactors
+    const double *qlmfactor = prefactors+size_q;
+
+    #pragma omp parallel 
     {
         // thread-local storage arrays for Qlm (modified associated Legendre
         // polynomials) and terms corresponding to (scaled) cosine and sine of
         // the azimuth
-        double *q = (double *)malloc(sizeof(double) * (l_max + 1) * (l_max + 2) / 2);
-        double *c = (double *)malloc(sizeof(double) * (l_max + 1));
-        double *s = (double *)malloc(sizeof(double) * (l_max + 1));
+        double *q = new double[(l_max + 1) * (l_max + 2) / 2];
+        double *c = new double[l_max + 1];
+        double *s = new double[l_max + 1];
         double ir;
 
         // pointers to the sections of the output arrays that hold Ylm and derivatives 
@@ -200,10 +205,6 @@ void generic_sph(
         got by incrementing a separate index k. */
         int k = 0;
         
-        // gets an index to some factors that enter the Qlm iteration, 
-        // and are pre-computed together with the prefactors
-        const double *qlmfactor = prefactors+size_q;
-
         // precompute the Qll's (that are constant)
         q[0 + 0] = 1.0;
         k = 1;
@@ -412,9 +413,9 @@ void generic_sph(
 
         }
 
-        free(q);
-        free(c);
-        free(s);
+        delete[] q;
+        delete[] c;
+        delete[] s;
     }
 }
 
