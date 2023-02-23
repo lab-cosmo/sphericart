@@ -131,10 +131,10 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
                 if constexpr(NORMALIZED) {
                     // corrects derivatives for normalization
                     for (int k=0; k<size_y; ++k) {
-                        auto dsph_dnx = dxsph_i[k]*ir;
-                        auto dsph_dny = dysph_i[k]*ir;
-                        auto dsph_dnz = dzsph_i[k]*ir;
-                        auto tmp = (dsph_dnx*x+dsph_dny*y+dsph_dnz*z);
+                        dxsph_i[k]*=ir;
+                        dysph_i[k]*=ir;
+                        dzsph_i[k]*=ir;
+                        auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
                         dxsph_i[k] -= x*tmp;
                         dysph_i[k] -= y*tmp;
                         dzsph_i[k] -= z*tmp;
