@@ -42,6 +42,33 @@ void sphericart::compute_sph_prefactors(int l_max, double *factors) {
     }
 }
 
+template <bool DO_DERIVATIVES, bool NORMALIZED>
+inline void _hardcoded_lmax_switch(int n_samples, int l_max, const double *xyz, double *sph, double *dsph) {
+    switch (l_max) {
+    case 0:
+        hardcoded_sph<DO_DERIVATIVES, NORMALIZED, 0>(n_samples, xyz, sph, dsph);
+        break;
+    case 1:
+        hardcoded_sph<DO_DERIVATIVES, NORMALIZED, 1>(n_samples, xyz, sph, dsph);
+        break;
+    case 2:
+        hardcoded_sph<DO_DERIVATIVES, NORMALIZED, 2>(n_samples, xyz, sph, dsph);
+        break;
+    case 3:
+        hardcoded_sph<DO_DERIVATIVES, NORMALIZED, 3>(n_samples, xyz, sph, dsph);
+        break;
+    case 4:
+        hardcoded_sph<DO_DERIVATIVES, NORMALIZED, 4>(n_samples, xyz, sph, dsph);
+        break;
+    case 5:
+        hardcoded_sph<DO_DERIVATIVES, NORMALIZED, 5>(n_samples, xyz, sph, dsph);
+        break;
+    case 6:
+        hardcoded_sph<DO_DERIVATIVES, false, 6>(n_samples, xyz, sph, dsph);
+        break;
+    }
+}
+
 void sphericart::cartesian_spherical_harmonics(
     int n_samples,
     int l_max,
@@ -61,61 +88,49 @@ void sphericart::cartesian_spherical_harmonics(
 
     // call directly the fast ones
     if (l_max <= SPHERICART_LMAX_HARDCODED) {
-        if (dsph == nullptr) {
-            switch (l_max) {
-            case 0:
-                hardcoded_sph<false, 0>(n_samples, xyz, sph, dsph);
-                break;
-            case 1:
-                hardcoded_sph<false, 1>(n_samples, xyz, sph, dsph);
-                break;
-            case 2:
-                hardcoded_sph<false, 2>(n_samples, xyz, sph, dsph);
-                break;
-            case 3:
-                hardcoded_sph<false, 3>(n_samples, xyz, sph, dsph);
-                break;
-            case 4:
-                hardcoded_sph<false, 4>(n_samples, xyz, sph, dsph);
-                break;
-            case 5:
-                hardcoded_sph<false, 5>(n_samples, xyz, sph, dsph);
-                break;
-            case 6:
-                hardcoded_sph<false, 6>(n_samples, xyz, sph, dsph);
-                break;
-            }
-
+        if (dsph == nullptr) {            
+            _hardcoded_lmax_switch<false,false>(n_samples, l_max, xyz, sph, dsph);
         } else {
-            switch (l_max) {
-            case 0:
-                hardcoded_sph<true, 0>(n_samples, xyz, sph, dsph);
-                break;
-            case 1:
-                hardcoded_sph<true, 1>(n_samples, xyz, sph, dsph);
-                break;
-            case 2:
-                hardcoded_sph<true, 2>(n_samples, xyz, sph, dsph);
-                break;
-            case 3:
-                hardcoded_sph<true, 3>(n_samples, xyz, sph, dsph);
-                break;
-            case 4:
-                hardcoded_sph<true, 4>(n_samples, xyz, sph, dsph);
-                break;
-            case 5:
-                hardcoded_sph<true, 5>(n_samples, xyz, sph, dsph);
-                break;
-            case 6:
-                hardcoded_sph<true, 6>(n_samples, xyz, sph, dsph);
-                break;
-            }
+            _hardcoded_lmax_switch<true, false>(n_samples, l_max, xyz, sph, dsph);            
         }
     } else {
         if (dsph == nullptr) {
-            generic_sph<false, SPHERICART_LMAX_HARDCODED>(n_samples, l_max, prefactors, xyz, sph, dsph);
+            generic_sph<false, false, SPHERICART_LMAX_HARDCODED>(n_samples, l_max, prefactors, xyz, sph, dsph);
         } else {
-            generic_sph<true, SPHERICART_LMAX_HARDCODED>(n_samples, l_max, prefactors, xyz, sph, dsph);
+            generic_sph<true, false, SPHERICART_LMAX_HARDCODED>(n_samples, l_max, prefactors, xyz, sph, dsph);
+        }
+    }
+}
+
+void sphericart::normalized_spherical_harmonics(
+    int n_samples,
+    int l_max,
+    const double *prefactors,
+    const double *xyz,
+    double *sph,
+    double *dsph
+) {
+    /*
+        Computes "Cartesian" real spherical harmonics r^l*Y_lm(x,y,z) and
+        (optionally) their derivatives. This is an opinionated implementation:
+        x,y,z are not scaled, and the resulting harmonic is scaled by r^l.
+        This scaling allows for a stable, and fast implementation and the
+        r^l term can be easily incorporated into any radial function or
+        added a posteriori (with the corresponding derivative).
+    */
+
+    // call directly the fast ones
+    if (l_max <= SPHERICART_LMAX_HARDCODED) {
+        if (dsph == nullptr) {            
+            _hardcoded_lmax_switch<false,true>(n_samples, l_max, xyz, sph, dsph);
+        } else {
+            _hardcoded_lmax_switch<true, true>(n_samples, l_max, xyz, sph, dsph);            
+        }
+    } else {
+        if (dsph == nullptr) {
+            generic_sph<false, true, SPHERICART_LMAX_HARDCODED>(n_samples, l_max, prefactors, xyz, sph, dsph);
+        } else {
+            generic_sph<true, true, SPHERICART_LMAX_HARDCODED>(n_samples, l_max, prefactors, xyz, sph, dsph);
         }
     }
 }
