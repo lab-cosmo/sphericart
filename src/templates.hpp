@@ -58,9 +58,9 @@ inline void hardcoded_sph_derivative_template(
 ) {
 
     /*
-        Combines the macro hard-coded dYlm/d(x,y,z) calculators to get all the terms up to HC_LMAX. 
-        This templated version evaluates the ifs at compile time avoiding unnecessary in-loop
-        branching. 
+        Combines the macro hard-coded dYlm/d(x,y,z) calculators to get all the terms 
+        up to HC_LMAX.  This templated version evaluates the ifs at compile time 
+        avoiding unnecessary in-loop branching. 
     */
 
     COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i);
@@ -135,10 +135,28 @@ void generic_sph(
     double *sph,
     double *dsph
 ) {
-    // general case, but start at HARDCODED_LMAX and use hard-coding before that.
+    /*
+        Implementation of the general case, but start at HARDCODED_LMAX and use 
+        hard-coding before that. 
+
+        Some general implementation remarks: 
+        - we use an alternative iteration for the Qlm that avoids computing the 
+          low-l section
+        - we compute at the same time Qlm and the corresponding Ylm, to reuse
+          more of the pieces and stay local in memory. we use `if constexpr`
+          to avoid runtime branching in the DO_DERIVATIVES=true/false cases
+        - we explicitly split the loops in a fixed-length (depending on the 
+          template parameter HARDCODED_LMAX) and a variable lenght one, so that
+          the compiler can choose to unroll if it makes sense
+        - there's a bit of pointer gymnastics because of the contiguous storage
+          of the irregularly-shaped Q[l,m] and Y[l,m] arrays 
+    */
+    
     // implementation assumes to use hardcoded expressions for at least l=0,1
     static_assert(HARDCODED_LMAX>=1, "Cannot call the generic Ylm calculator for l<=1.");
 
+    const auto size_y = (l_max + 1) * (l_max + 1);
+    const auto size_q = (l_max + 1) * (l_max + 2) / 2;
     #pragma omp parallel
     {
         // thread-local storage arrays for Qlm (modified associated Legendre
@@ -147,9 +165,14 @@ void generic_sph(
         double *q = (double *)malloc(sizeof(double) * (l_max + 1) * (l_max + 2) / 2);
         double *c = (double *)malloc(sizeof(double) * (l_max + 1));
         double *s = (double *)malloc(sizeof(double) * (l_max + 1));
-
-        auto size_y = (l_max + 1) * (l_max + 1);
-        auto size_q = (l_max + 1) * (l_max + 2) / 2;
+        
+        // pointers to the sections of the output arrays that hold Ylm and derivatives 
+        // for a given point
+        double* sph_i = nullptr; 
+        double* dsph_i = nullptr;
+        double* dxsph_i = nullptr;
+        double* dysph_i = nullptr;
+        double* dzsph_i = nullptr;
 
         /* k is a utility index to traverse lm arrays. we store sph in
         a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
@@ -160,12 +183,6 @@ void generic_sph(
         // gets an index to some factors that enter the Qlm iteration, 
         // and are pre-computed together with the prefactors
         const double *qlmfactor = prefactors+size_q;
-        /*for (int l = HARDCODED_LMAX; l < l_max + 1; l++) {
-            for (int m = l - 2; m >= 0; --m) {
-                qlmfactor[k + m] = -1.0 / ((l + m + 1) * (l - m));
-            }
-            k += l + 1;
-        }*/
 
         // precompute the Qll's (that are constant)
         q[0 + 0] = 1.0;
@@ -178,6 +195,7 @@ void generic_sph(
         // also initialize the sine and cosine, these never change
         c[0] = 1.0;
         s[0] = 0.0;
+
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
 
@@ -191,12 +209,8 @@ void generic_sph(
             auto rxy = x2 + y2;
 
             // pointer to the segment that should store the i_sample sph
-            double* sph_i = sph + i_sample * size_y;
-            double* dsph_i = nullptr;
-            double* dxsph_i = nullptr;
-            double* dysph_i = nullptr;
-            double* dzsph_i = nullptr;
-
+            sph_i = sph + i_sample * size_y;
+            
             // these are the hard-coded, low-lmax sph
             hardcoded_sph_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
@@ -207,14 +221,13 @@ void generic_sph(
                 dysph_i = dxsph_i + size_y;
                 dzsph_i = dysph_i + size_y;
 
+                // these are the hard-coded, low-lmax sph
                 hardcoded_sph_derivative_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
             }
 
             /* These are scaled version of cos(m phi) and sin(m phi).
                Basically, these are cos and sin multiplied by r_xy^m,
-               so that they are just plain polynomials of x,y,z.
-            */
-
+               so that they are just plain polynomials of x,y,z.    */
             // help the compiler unroll the first part of the loop
             int m = 0;
             for (m = 1; m < HARDCODED_LMAX + 1; ++m) {
@@ -233,8 +246,7 @@ void generic_sph(
                Also assembles the (Cartesian) sph by combining Qlm and
                sine/cosine phi-dependent factors. we use pointer
                arithmetics to make sure spk_i always points at the
-               beginning of the appropriate memory segment.
-            */
+               beginning of the appropriate memory segment.   */
 
             // We need also Qlm for l=HARDCODED_LMAX because it's used in the derivatives
             auto k = (HARDCODED_LMAX) * (HARDCODED_LMAX + 1) / 2;
@@ -255,13 +267,13 @@ void generic_sph(
                 dysph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
                 dzsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
             }
+
             for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
                 // l=+-m
                 auto pq = q[k + l] * prefactors[k + l];
                 auto pdq = 0.0;
                 auto pdqx = 0.0;
                 auto pdqy = 0.0;
-
 
                 sph_i[-l] = pq * s[l];
                 sph_i[+l] = pq * c[l];
