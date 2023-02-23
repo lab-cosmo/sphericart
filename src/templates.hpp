@@ -90,7 +90,7 @@ inline void hardcoded_sph_derivative_template(
     }
 }
 
-template <bool DO_DERIVATIVES, int HARDCODED_LMAX>
+template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) {
     /*
         Cartesian Ylm calculator using the hardcoded expressions. 
@@ -102,6 +102,7 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
         const double *xyz_i = nullptr;
         double *sph_i = nullptr;
         constexpr auto size_y = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
+        double ir;
 
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
@@ -112,7 +113,13 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
             auto x2 = x * x;
             auto y2 = y * y;
             auto z2 = z * z;
-
+            if constexpr(NORMALIZED) {
+                auto ir2 = 1.0/(x2+y2+z2);
+                ir = sqrt(ir2);
+                x*=ir; y*=ir; z*=ir;
+                x2*=ir2; y2*=ir2; z2*=ir2;
+            }
+            
             sph_i = sph + i_sample * size_y;
             hardcoded_sph_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
@@ -121,12 +128,24 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
                 double *dysph_i = dxsph_i + size_y;
                 double *dzsph_i = dysph_i + size_y;
                 hardcoded_sph_derivative_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+                if constexpr(NORMALIZED) {
+                    // corrects derivatives for normalization
+                    for (int k=0; k<size_y; ++k) {
+                        auto dsph_dnx = dxsph_i[k]*ir;
+                        auto dsph_dny = dysph_i[k]*ir;
+                        auto dsph_dnz = dzsph_i[k]*ir;
+                        auto tmp = (dsph_dnx*x+dsph_dny*y+dsph_dnz*z);
+                        dxsph_i[k] -= x*tmp;
+                        dysph_i[k] -= y*tmp;
+                        dzsph_i[k] -= z*tmp;
+                    }
+                }
             }
         }
     }
 }
 
-template <bool DO_DERIVATIVES, int HARDCODED_LMAX>
+template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 void generic_sph(
     int n_samples,
     int l_max,
@@ -165,7 +184,8 @@ void generic_sph(
         double *q = (double *)malloc(sizeof(double) * (l_max + 1) * (l_max + 2) / 2);
         double *c = (double *)malloc(sizeof(double) * (l_max + 1));
         double *s = (double *)malloc(sizeof(double) * (l_max + 1));
-        
+        double ir;
+
         // pointers to the sections of the output arrays that hold Ylm and derivatives 
         // for a given point
         double* sph_i = nullptr; 
@@ -201,11 +221,17 @@ void generic_sph(
 
             auto x = xyz[i_sample * 3 + 0];
             auto y = xyz[i_sample * 3 + 1];
-            auto z = xyz[i_sample * 3 + 2];
-            auto twoz = 2 * z;
+            auto z = xyz[i_sample * 3 + 2];            
             auto x2 = x * x;
             auto y2 = y * y;
-            auto z2 = z * z;
+            auto z2 = z * z;            
+            if constexpr(NORMALIZED) {
+                auto ir2 = 1.0/(x2+y2+z2);
+                ir = sqrt(ir2);
+                x*=ir; y*=ir; z*=ir;
+                x2*=ir2; y2*=ir2; z2*=ir2;
+            }
+            auto twoz = 2 * z;
             auto rxy = x2 + y2;
 
             // pointer to the segment that should store the i_sample sph
@@ -368,6 +394,24 @@ void generic_sph(
                 k += l + 1;
                 sph_i += 2 * l + 2;
             }
+            if constexpr(DO_DERIVATIVES && NORMALIZED) {
+                // corrects derivatives for normalization
+                dsph_i = dsph + i_sample * 3 * size_y;
+                dxsph_i = dsph_i;
+                dysph_i = dxsph_i + size_y;
+                dzsph_i = dysph_i + size_y;
+
+                for (k=0; k<size_y; ++k) {
+                    auto dsph_dnx = dxsph_i[k]*ir;
+                    auto dsph_dny = dysph_i[k]*ir;
+                    auto dsph_dnz = dzsph_i[k]*ir;
+                    auto tmp = (dsph_dnx*x+dsph_dny*y+dsph_dnz*z);
+                    dxsph_i[k] -= x*tmp;
+                    dysph_i[k] -= y*tmp;
+                    dzsph_i[k] -= z*tmp;
+                }
+            }
+
         }
 
         free(q);
