@@ -2,10 +2,20 @@ cmake_minimum_required(VERSION 3.10)
 
 project(sphericart CXX)
 
+file(READ ${PROJECT_SOURCE_DIR}/VERSION SPHERICART_VERSION)
+string(STRIP ${SPHERICART_VERSION} SPHERICART_VERSION)
+string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" SPHERICART_VERSION_MAJOR "${SPHERICART_VERSION}")
+string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_MINOR "${SPHERICART_VERSION}")
+string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_PATCH "${SPHERICART_VERSION}")
+
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 
 OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" ON) # TODO: change default to OFF
 OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
+
+set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
+set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install DLL/binaries")
+set(INCLUDE_INSTALL_DIR "include" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install headers")
 
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
@@ -89,4 +99,33 @@ if (SPHERICART_BUILD_TESTS)
 endif()
 
 
-# TODO: installation from cmake
+#------------------------------------------------------------------------------#
+# Installation configuration
+#------------------------------------------------------------------------------#
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sphericart-config-version.in.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/sphericart-config-version.cmake"
+    @ONLY
+)
+
+install(TARGETS sphericart
+    EXPORT sphericart-targets
+    LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+    ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+    RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    "${PROJECT_SOURCE_DIR}/cmake/sphericart-config.in.cmake"
+    "${PROJECT_BINARY_DIR}/sphericart-config.cmake"
+    INSTALL_DESTINATION ${LIB_INSTALL_DIR}/cmake/sphericart
+)
+
+install(EXPORT sphericart-targets DESTINATION ${LIB_INSTALL_DIR}/cmake/sphericart)
+install(FILES "${PROJECT_BINARY_DIR}/sphericart-config-version.cmake"
+              "${PROJECT_BINARY_DIR}/sphericart-config.cmake"
+        DESTINATION ${LIB_INSTALL_DIR}/cmake/sphericart)
+
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${INCLUDE_INSTALL_DIR})
+install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION ${INCLUDE_INSTALL_DIR})
