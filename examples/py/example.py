@@ -21,7 +21,7 @@ def sphericart_example(l_max=10, n_samples=10000, n_tries=100, normalized=False)
     
     xyz = np.random.rand(n_samples, 3)
     
-    print("Timings")
+    print(f"== Timings for computing spherical harmonics up to l={l_max} ==")
 
     sh_calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
     start = time.time()
@@ -31,12 +31,44 @@ def sphericart_example(l_max=10, n_samples=10000, n_tries=100, normalized=False)
     print(f"sphericart took {1e9*(finish-start)/n_tries/n_samples} ns/sample")
 
     if _HAS_E3NN:
-        xyz_tensor = torch.tensor(xyz)
-        sh = e3nn.o3.spherical_harmonics(l_max, xyz_tensor, normalize=normalized)  # allow compilation (??)
+        # e3nn expects [y,z,x]
+        xyz_tensor = torch.tensor(xyz[:,[1,2,0]])
+        sh = e3nn.o3.spherical_harmonics(list(range(l_max+1)), xyz_tensor, normalize=normalized)  # allow compilation (??)
         start = time.time()
         for _ in range(n_tries):
-            sh = e3nn.o3.spherical_harmonics(l_max, xyz_tensor, normalize=normalized)
+            sh = e3nn.o3.spherical_harmonics(list(range(l_max+1)), xyz_tensor, normalize=normalized)
+        finish = time.time()        
+        assert(np.allclose(sh, sh_sphericart)) # checks that the implementations match
+        print(f"e3nn took {1e9*(finish-start)/n_tries/n_samples} ns/sample")
+
+    print("== Timings including gradients for spherical harmonics ==")
+
+    start = time.time()
+    for _ in range(n_tries):
+        sh_sphericart, sh_derivatives = sh_calculator.compute(xyz, gradients=True)
+        # also computes a dummy loss which is the sum of the sph values. useful to compare with torch backprop
+        dummy_loss = sh_sphericart.sum()
+        loss_derivatives  = sh_derivatives.sum(axis=2)
+    finish = time.time()
+    print(f"sphericart took {1e9*(finish-start)/n_tries/n_samples} ns/sample")
+
+    if _HAS_E3NN:
+        xyz_tensor.requires_grad = True
+        
+        # checks that the implementations match
+        sh = e3nn.o3.spherical_harmonics(list(range(l_max+1)), xyz_tensor, normalize=normalized)
+        dummy_loss = torch.sum(sh)
+        dummy_loss.backward()
+        assert(np.allclose(loss_derivatives[:,[1,2,0]], xyz_tensor.grad.detach().numpy())) 
+        
+        # here we accumulate the gradient so it computes nonsese, but it should be ok for timings
+        start = time.time()
+        for _ in range(n_tries):
+            sh = e3nn.o3.spherical_harmonics(list(range(l_max+1)), xyz_tensor, normalize=normalized)
+            dummy_loss = torch.sum(sh)
+            dummy_loss.backward()
         finish = time.time()
+        
         print(f"e3nn took {1e9*(finish-start)/n_tries/n_samples} ns/sample")
 
 import argparse
@@ -59,24 +91,3 @@ if __name__ == "__main__":
         args.t,
         args.normalized
     )
-
-"""
-print("Derivative timings")
-
-start = time.time()
-for _ in range(100):
-    sh_sphericart, sh_derivatives = sh_calculator.compute(xyz, gradients=True)
-    dummy_loss = sh_sphericart.sum()
-    loss_derivatives  = sh_derivatives.sum(axis=2)
-finish = time.time()
-print(f"sphericart took {1000*(finish-start)/n_tries} ms")
-
-xyz_tensor.requires_grad = True
-start = time.time()
-for _ in range(100):
-    sh = e3nn.o3.spherical_harmonics(l_max, xyz_tensor, normalize=False)
-    dummy_loss = torch.sum(sh)
-    dummy_loss.backward()
-finish = time.time()
-print(f"e3nn took {1000*(finish-start)/n_tries} ms")
-"""
