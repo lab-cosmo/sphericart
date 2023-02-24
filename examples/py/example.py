@@ -23,9 +23,15 @@ def sphericart_example(l_max=10, n_samples=10000, n_tries=100, normalized=False)
     
     print(f"== Timings for computing spherical harmonics up to l={l_max} ==")
 
+    # `sphericart` provides a SphericalHarmonics object that initializes the 
+    # calculation and then can be called on any n x 3 arrays of Cartesian 
+    # coordinates. It computes _all_ SPH up to a given l_max, and can compute
+    # scaled (default) and normalized (standard Ylm) harmonics.     
     sh_calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
     start = time.time()
     for _ in range(n_tries):
+        # if called with gradient = False, compute() returns a n x (l_max+1)**2
+        # array holding all the spherical harmonics up to l_max, and None
         sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
     finish = time.time()
     print(f"sphericart took {1e9*(finish-start)/n_tries/n_samples} ns/sample")
@@ -45,6 +51,8 @@ def sphericart_example(l_max=10, n_samples=10000, n_tries=100, normalized=False)
 
     start = time.time()
     for _ in range(n_tries):
+        # if called with gradient = True, compute() returns a n x 3 x(l_max+1)**2
+        # array holding all the spherical harmonics derivatives up to l_max
         sh_sphericart, sh_derivatives = sh_calculator.compute(xyz, gradients=True)
         # also computes a dummy loss which is the sum of the sph values. useful to compare with torch backprop
         dummy_loss = sh_sphericart.sum()
