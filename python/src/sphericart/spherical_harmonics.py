@@ -47,16 +47,16 @@ class SphericalHarmonics:
 
         :return: A tuple containing two values:
             * An array of shape ``(n_samples, (l_max+1)**2)`` containing all the
-              spherical harmonics up to degree `l_max` in lexicographic order.
-              For example, if ``l_max = 2``, The last axis will correspond to
-              spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
-              1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
+            spherical harmonics up to degree `l_max` in lexicographic order. For
+            example, if ``l_max = 2``, The last axis will correspond to
+            spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1, 1),
+            (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
             * Either ``None`` if ``gradients=False`` or, if ``gradients=True``,
-              an array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
-              the spherical harmonics' derivatives up to degree ``l_max``. The
-              last axis is organized in the same way as in the spherical
-              harmonics return array, while the second-to-last axis refers to
-              the x, y, and z derivatives, respectively.
+            an array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
+            the spherical harmonics' derivatives up to degree ``l_max``. The
+            last axis is organized in the same way as in the spherical harmonics
+            return array, while the second-to-last axis refers to the x, y, and
+            z derivatives, respectively.
 
         :rtype: tuple(``numpy.ndarray``, ``numpy.ndarray`` or ``None``)
 
