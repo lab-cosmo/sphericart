@@ -11,7 +11,7 @@ void sphericart::compute_sph_prefactors(int l_max, double *factors) {
         of factorials, and incorporates the 1/sqrt(2) that
         is associated with the Yl0's
         Also computes a set of coefficients that are needed
-        in the iterative calculation of the Qlm, and just 
+        in the iterative calculation of the Qlm, and just
         stashes them at the end of factors, which should therefore
         be (l_max+1)*(l_max+2) in size
     */
@@ -31,10 +31,10 @@ void sphericart::compute_sph_prefactors(int l_max, double *factors) {
         }
         k += l + 1;
     }
-    
-    // now computes the additional factors of -1/((l+m+1)(l-m)) 
+
+    // now computes the additional factors of -1/((l+m+1)(l-m))
     // that are needed in the recursive calculation of Qlm
-    for (int l = 0; l < l_max + 1; l++) {        
+    for (int l = 0; l < l_max + 1; l++) {
         for (int m = l - 2; m >= 0; --m) {
             factors[k + m] = -1.0 / ((l + m + 1) * (l - m));
         }
@@ -88,10 +88,10 @@ void sphericart::cartesian_spherical_harmonics(
 
     // call directly the fast ones
     if (l_max <= SPHERICART_LMAX_HARDCODED) {
-        if (dsph == nullptr) {            
+        if (dsph == nullptr) {
             _hardcoded_lmax_switch<false,false>(n_samples, l_max, xyz, sph, dsph);
         } else {
-            _hardcoded_lmax_switch<true, false>(n_samples, l_max, xyz, sph, dsph);            
+            _hardcoded_lmax_switch<true, false>(n_samples, l_max, xyz, sph, dsph);
         }
     } else {
         if (dsph == nullptr) {
@@ -121,10 +121,10 @@ void sphericart::normalized_spherical_harmonics(
 
     // call directly the fast ones
     if (l_max <= SPHERICART_LMAX_HARDCODED) {
-        if (dsph == nullptr) {            
+        if (dsph == nullptr) {
             _hardcoded_lmax_switch<false,true>(n_samples, l_max, xyz, sph, dsph);
         } else {
-            _hardcoded_lmax_switch<true, true>(n_samples, l_max, xyz, sph, dsph);            
+            _hardcoded_lmax_switch<true, true>(n_samples, l_max, xyz, sph, dsph);
         }
     } else {
         if (dsph == nullptr) {

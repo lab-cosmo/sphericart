@@ -2,13 +2,15 @@
 #define SPHERICART_TEMPLATES_HPP
 
 /*
-    Template implemntation of Cartesian Ylm calculators. 
+    Template implementation of Cartesian Ylm calculators.
 
-    The template functions use compile-time `if constexpr()` constructs to 
+    The template functions use compile-time `if constexpr()` constructs to
     implement calculators for spherical harmonics that can handle different
     type of calls, e.g. with or without derivative calculations, and with
     different numbers of terms computed with hard-coded expressions.
 */
+
+#include <vector>
 
 #include "macros.hpp"
 
@@ -40,7 +42,7 @@ inline void hardcoded_sph_template(double x, double y, double z, double x2, doub
 
     if constexpr (HARDCODED_LMAX > 5) {
         COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i);
-    }    
+    }
 }
 
 template <int HARDCODED_LMAX>
@@ -58,9 +60,9 @@ inline void hardcoded_sph_derivative_template(
 ) {
 
     /*
-        Combines the macro hard-coded dYlm/d(x,y,z) calculators to get all the terms 
-        up to HC_LMAX.  This templated version evaluates the ifs at compile time 
-        avoiding unnecessary in-loop branching. 
+        Combines the macro hard-coded dYlm/d(x,y,z) calculators to get all the terms
+        up to HC_LMAX.  This templated version evaluates the ifs at compile time
+        avoiding unnecessary in-loop branching.
     */
 
     COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i);
@@ -93,9 +95,9 @@ inline void hardcoded_sph_derivative_template(
 template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) {
     /*
-        Cartesian Ylm calculator using the hardcoded expressions. 
-        Templated version, just calls _compute_sph_templated and 
-        _compute_dsph_templated functions within a loop. 
+        Cartesian Ylm calculator using the hardcoded expressions.
+        Templated version, just calls _compute_sph_templated and
+        _compute_dsph_templated functions within a loop.
     */
     #pragma omp parallel
     {
@@ -119,7 +121,7 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
                 x*=ir; y*=ir; z*=ir;
                 x2*=ir2; y2*=ir2; z2*=ir2;
             }
-            
+
             sph_i = sph + i_sample * size_y;
             hardcoded_sph_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
@@ -155,45 +157,45 @@ void generic_sph(
     double *dsph
 ) {
     /*
-        Implementation of the general case, but start at HARDCODED_LMAX and use 
-        hard-coding before that. 
+        Implementation of the general case, but start at HARDCODED_LMAX and use
+        hard-coding before that.
 
-        Some general implementation remarks: 
-        - we use an alternative iteration for the Qlm that avoids computing the 
+        Some general implementation remarks:
+        - we use an alternative iteration for the Qlm that avoids computing the
           low-l section
         - we compute at the same time Qlm and the corresponding Ylm, to reuse
           more of the pieces and stay local in memory. we use `if constexpr`
           to avoid runtime branching in the DO_DERIVATIVES=true/false cases
-        - we explicitly split the loops in a fixed-length (depending on the 
+        - we explicitly split the loops in a fixed-length (depending on the
           template parameter HARDCODED_LMAX) and a variable lenght one, so that
           the compiler can choose to unroll if it makes sense
         - there's a bit of pointer gymnastics because of the contiguous storage
-          of the irregularly-shaped Q[l,m] and Y[l,m] arrays 
+          of the irregularly-shaped Q[l,m] and Y[l,m] arrays
     */
-    
+
     // implementation assumes to use hardcoded expressions for at least l=0,1
     static_assert(HARDCODED_LMAX>=1, "Cannot call the generic Ylm calculator for l<=1.");
 
     const auto size_y = (l_max + 1) * (l_max + 1);
     const auto size_q = (l_max + 1) * (l_max + 2) / 2;
 
-    // gets an index to some factors that enter the Qlm iteration, 
+    // gets an index to some factors that enter the Qlm iteration,
     // and are pre-computed together with the prefactors
     const double *qlmfactor = prefactors+size_q;
 
-    #pragma omp parallel 
+    #pragma omp parallel
     {
         // thread-local storage arrays for Qlm (modified associated Legendre
         // polynomials) and terms corresponding to (scaled) cosine and sine of
         // the azimuth
-        double *q = new double[(l_max + 1) * (l_max + 2) / 2];
-        double *c = new double[l_max + 1];
-        double *s = new double[l_max + 1];
-        double ir;
+        auto q = std::vector<double>((l_max + 1) * (l_max + 2) / 2, 0.0);
+        auto c = std::vector<double>(l_max + 1, 0.0);
+        auto s = std::vector<double>(l_max + 1, 0.0);
+        double ir = 0.0;
 
-        // pointers to the sections of the output arrays that hold Ylm and derivatives 
+        // pointers to the sections of the output arrays that hold Ylm and derivatives
         // for a given point
-        double* sph_i = nullptr; 
+        double* sph_i = nullptr;
         double* dsph_i = nullptr;
         double* dxsph_i = nullptr;
         double* dysph_i = nullptr;
@@ -204,7 +206,7 @@ void generic_sph(
         so we often write a nested loop on l and m and track where we
         got by incrementing a separate index k. */
         int k = 0;
-        
+
         // precompute the Qll's (that are constant)
         q[0 + 0] = 1.0;
         k = 1;
@@ -222,10 +224,10 @@ void generic_sph(
 
             auto x = xyz[i_sample * 3 + 0];
             auto y = xyz[i_sample * 3 + 1];
-            auto z = xyz[i_sample * 3 + 2];            
+            auto z = xyz[i_sample * 3 + 2];
             auto x2 = x * x;
             auto y2 = y * y;
-            auto z2 = z * z;            
+            auto z2 = z * z;
             if constexpr(NORMALIZED) {
                 auto ir2 = 1.0/(x2+y2+z2);
                 ir = sqrt(ir2);
@@ -237,7 +239,7 @@ void generic_sph(
 
             // pointer to the segment that should store the i_sample sph
             sph_i = sph + i_sample * size_y;
-            
+
             // these are the hard-coded, low-lmax sph
             hardcoded_sph_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
@@ -395,7 +397,7 @@ void generic_sph(
                 k += l + 1;
                 sph_i += 2 * l + 2;
             }
-            
+
             if constexpr(DO_DERIVATIVES && NORMALIZED) {
                 // corrects derivatives for normalization
                 dsph_i = dsph + i_sample * 3 * size_y;
@@ -403,7 +405,7 @@ void generic_sph(
                 dysph_i = dxsph_i + size_y;
                 dzsph_i = dysph_i + size_y;
 
-                for (k=0; k<size_y; ++k) {                    
+                for (k=0; k<size_y; ++k) {
                     auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
                     dxsph_i[k] = (dxsph_i[k]-x*tmp)*ir;
                     dysph_i[k] = (dysph_i[k]-y*tmp)*ir;
@@ -412,10 +414,6 @@ void generic_sph(
             }
 
         }
-
-        delete[] q;
-        delete[] c;
-        delete[] s;
     }
 }
 

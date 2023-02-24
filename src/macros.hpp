@@ -3,17 +3,17 @@
 
 /*
     Hard-coded expressions for low-l Cartesian spherical harmonics and their derivatives.
-    
+
     These are implemented as macros to be included anywhere at compile time. They assume
-    values are computed for one point at a time, and that the spherical harmonics are 
+    values are computed for one point at a time, and that the spherical harmonics are
     stored in a contiguous section that "flattens" the (l,m) dimensions, e.g.
     [ (0,0), (1,-1), (1,0), (1,1), (2,-2), ...]
     Functions get pointers to the beginning of the storage space for the current sample,
-    x,y,z and, for l>1, x^2, y^2 and z^2, which can be reused. 
+    x,y,z and, for l>1, x^2, y^2 and z^2, which can be reused.
     Each macro computes one l, and macros should be called in order as the higher l
     reuse calculations at lower angular momentum. The expressions here are derived
     with computer assisted algebra by attempting all possible polynomial decompositions
-    and selecting that with the smallest number of operations. 
+    and selecting that with the smallest number of operations.
 */
 
 #define SPHERICART_LMAX_HARDCODED 6
