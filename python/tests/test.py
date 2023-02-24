@@ -80,3 +80,7 @@ class TestSphericart(unittest.TestCase):
                 self.assertTrue(
                     np.allclose(numerical_derivatives, analytical_derivatives)
                 )
+
+
+if __name__ == "__main__":
+    unittest.main()
