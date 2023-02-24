@@ -66,7 +66,7 @@ def _lib_path():
             _check_dll(path)
         return path
 
-    raise ImportError("Could not find equistore shared library at " + path)
+    raise ImportError("Could not find sphericart shared library at " + path)
 
 
 def _check_dll(path):

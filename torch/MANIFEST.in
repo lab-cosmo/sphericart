@@ -1,0 +1,14 @@
+include CMakeLists.txt
+
+# the core folder is a symbolic link to the root of the repository, so we
+# can include the corresponding sources in a Python source distribution
+recursive-include core/src *
+recursive-include core/include *
+recursive-include core/cmake *
+recursive-include core/tests *
+
+include core/VERSION
+include core/CMakeLists.txt
+
+recursive-include src *
+recursive-include include *

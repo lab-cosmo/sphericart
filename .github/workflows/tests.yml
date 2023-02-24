@@ -45,7 +45,7 @@ jobs:
     name: check Python build
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
     steps:
       - uses: actions/checkout@v3
 
@@ -69,3 +69,6 @@ jobs:
 
       - name: python build tests
         run: tox -e build-python
+
+      - name: torch build tests
+        run: tox -e build-torch
