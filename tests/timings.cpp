@@ -1,9 +1,9 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/time.h>
 #include <unistd.h>
-#include <ctype.h>
-#include <math.h>
+#include <sys/time.h>
+
+#include <cmath>
+#include <chrono>
+#include <iostream>
 
 #include "sphericart.hpp"
 
@@ -14,11 +14,33 @@ using namespace sphericart;
 
 // shorthand for all-past-1 generic sph only
 inline void compute_generic(int n_samples, int l_max, double *prefactors, double *xyz, double *sph, double *dsph) {
-    if (dsph==NULL) {
+    if (dsph==nullptr) {
         generic_sph<false, false, 1>(n_samples, l_max, prefactors, xyz, sph, dsph);
     } else {
         generic_sph<true, false, 1>(n_samples, l_max, prefactors, xyz, sph, dsph);
     }
+}
+
+template<typename Fn>
+inline void benchmark(std::string context, size_t n_samples, size_t n_tries, Fn function) {
+    auto time = 0.0;
+    auto time2 = 0.0;
+
+    for (size_t i_try = 0; i_try < n_tries; i_try++) {
+        auto start = std::chrono::steady_clock::now();
+
+        function();
+
+        auto end = std::chrono::steady_clock::now();
+
+        double duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        time += duration / n_samples;
+        time2 += duration * duration / n_samples;
+    }
+
+    auto std = sqrt(time2 / n_tries - (time / n_tries) * (time / n_tries));
+    std::cout << context << " took " << time / n_tries;
+    std::cout << " ± " << std << " ns / sample" << std::endl;
 }
 
 
@@ -55,79 +77,40 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("Running with n_tries= %zu, n_samples= %zu\n", n_tries, n_samples);
-    printf("\n");
-    printf("============= l_max = %d ==============\n", l_max);
-    double *prefactors = (double*) malloc(sizeof(double)*(l_max+1)*(l_max+2));
-    compute_sph_prefactors(l_max, prefactors);
+    std::cout << "Running with n_tries=" << n_tries << ", n_samples=" << n_samples << std::endl;
+    std::cout << "\n============= l_max = " << l_max << " ==============" << std::endl;
 
-    double *xyz = (double*) malloc(sizeof(double)*n_samples*3);
+    auto prefactors = std::vector<double>((l_max+1)*(l_max+2), 0.0);
+    compute_sph_prefactors(l_max, prefactors.data());
+
+    auto xyz = std::vector<double>(n_samples*3, 0.0);
     for (size_t i=0; i<n_samples*3; ++i) {
         xyz[i] = (double)rand()/ (double) RAND_MAX *2.0-1.0;
     }
 
-    double *sph = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
+    auto sph = std::vector<double>(n_samples*(l_max+1)*(l_max+1), 0.0);
+    auto dsph = std::vector<double>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
 
-    struct timeval start, end;
-    double time, time_total, time2_total;
+    benchmark("Call without derivatives", n_samples, n_tries, [&](){
+        compute_generic(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, l_max, prefactors, xyz, sph, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call without derivatives took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("Call with derivatives", n_samples, n_tries, [&](){
+        compute_generic(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    });
+    std::cout << std::endl;
 
-    double *dsph = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
+    auto sph1 = std::vector<double>(n_samples*(l_max+1)*(l_max+1), 0.0);
+    auto dsph1 = std::vector<double>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, l_max, prefactors, xyz, sph, dsph);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with derivatives took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("Call without derivatives (hybrid)", n_samples, n_tries, [&](){
+        cartesian_spherical_harmonics(n_samples, l_max, prefactors.data(), xyz.data(), sph1.data(), nullptr);
+    });
 
-
-    double *sph1 = (double*) malloc(sizeof(double)*n_samples*(l_max+1)*(l_max+1));
-    double *dsph1 = (double*) malloc(sizeof(double)*n_samples*3*(l_max+1)*(l_max+1));
-
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call without derivatives (hybrid) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
-
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        cartesian_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with derivatives (hybrid) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("Call with derivatives (hybrid)", n_samples, n_tries, [&](){
+        cartesian_spherical_harmonics(n_samples, l_max, prefactors.data(), xyz.data(), sph1.data(), dsph1.data());
+    });
+    std::cout << std::endl;
 
     int size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
     int size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
@@ -154,352 +137,129 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        normalized_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call without derivatives (hybrid, normalized) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("Call without derivatives (hybrid, normalized)", n_samples, n_tries, [&](){
+        normalized_spherical_harmonics(n_samples, l_max, prefactors.data(), xyz.data(), sph1.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        normalized_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph1, dsph1);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with derivatives (hybrid, normalized) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("Call with derivatives (hybrid, normalized)", n_samples, n_tries, [&](){
+        normalized_spherical_harmonics(n_samples, l_max, prefactors.data(), xyz.data(), sph1.data(), dsph1.data());
+    });
+    std::cout << std::endl;
 
-    printf("\n");
-    printf("================ Low-l timings ===========\n");
+    std::cout << "================ Low-l timings ===========" << std::endl;
 
-    compute_sph_prefactors(1, prefactors);
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 1, prefactors, xyz, sph, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=1 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    compute_sph_prefactors(1, prefactors.data());
+    benchmark("L=1 values                      ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 1, prefactors, xyz, sph, dsph);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=1 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=1 values+derivatives          ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<false,false,1>(n_samples, xyz, sph1, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=1 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=1 hardcoded values            ", n_samples, n_tries, [&](){
+        hardcoded_sph<false, false, 1>(n_samples, xyz.data(), sph1.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<true,false,1>(n_samples, xyz, sph1, dsph1);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=1 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=1 hardcoded values+derivatives", n_samples, n_tries, [&](){
+        hardcoded_sph<true, false, 1>(n_samples, xyz.data(), sph1.data(), dsph1.data());
+    });
+    std::cout << std::endl;
 
-    compute_sph_prefactors(2, prefactors);
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 2, prefactors, xyz, sph, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=2 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    //========================================================================//
+    compute_sph_prefactors(2, prefactors.data());
+    benchmark("L=2 values                      ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 2, prefactors, xyz, sph, dsph);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=2 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=2 values+derivatives          ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<false,false,2>(n_samples, xyz, sph1, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=2 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=2 hardcoded values            ", n_samples, n_tries, [&](){
+        hardcoded_sph<false, false, 2>(n_samples, xyz.data(), sph1.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<true,false,2>(n_samples, xyz, sph1, dsph1);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=2 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=2 hardcoded values+derivatives", n_samples, n_tries, [&](){
+        hardcoded_sph<true, false, 2>(n_samples, xyz.data(), sph1.data(), dsph1.data());
+    });
+    std::cout << std::endl;
 
-    compute_sph_prefactors(3, prefactors);
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 3, prefactors, xyz, sph, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=3 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    //========================================================================//
+    compute_sph_prefactors(3, prefactors.data());
+    benchmark("L=3 values                      ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 3, prefactors, xyz, sph, dsph);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=3 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=3 values+derivatives          ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<false,false,3>(n_samples, xyz, sph1, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=3 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=3 hardcoded values            ", n_samples, n_tries, [&](){
+        hardcoded_sph<false, false, 3>(n_samples, xyz.data(), sph1.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<true,false,3>(n_samples, xyz, sph1, dsph1);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=3 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=3 hardcoded values+derivatives", n_samples, n_tries, [&](){
+        hardcoded_sph<true, false, 3>(n_samples, xyz.data(), sph1.data(), dsph1.data());
+    });
+    std::cout << std::endl;
 
-    compute_sph_prefactors(4, prefactors);
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 4, prefactors, xyz, sph, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=4 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    //========================================================================//
+    compute_sph_prefactors(4, prefactors.data());
+    benchmark("L=4 values                      ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 4, prefactors, xyz, sph, dsph);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=4 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=4 values+derivatives          ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<false,false,4>(n_samples, xyz, sph1, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=4 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=4 hardcoded values            ", n_samples, n_tries, [&](){
+        hardcoded_sph<false, false, 4>(n_samples, xyz.data(), sph1.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<true,false,4>(n_samples, xyz, sph1, dsph1);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=4 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=4 hardcoded values+derivatives", n_samples, n_tries, [&](){
+        hardcoded_sph<true, false, 4>(n_samples, xyz.data(), sph1.data(), dsph1.data());
+    });
+    std::cout << std::endl;
 
-    compute_sph_prefactors(5, prefactors);
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 5, prefactors, xyz, sph, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=5 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    //========================================================================//
+    compute_sph_prefactors(5, prefactors.data());
+    benchmark("L=5 values                      ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 5, prefactors, xyz, sph, dsph);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=5 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=5 values+derivatives          ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<false,false,5>(n_samples, xyz, sph1, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=5 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=5 hardcoded values            ", n_samples, n_tries, [&](){
+        hardcoded_sph<false, false, 5>(n_samples, xyz.data(), sph1.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<true,false,5>(n_samples, xyz, sph1, dsph1);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=5 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=5 hardcoded values+derivatives", n_samples, n_tries, [&](){
+        hardcoded_sph<true, false, 5>(n_samples, xyz.data(), sph1.data(), dsph1.data());
+    });
+    std::cout << std::endl;
 
-    compute_sph_prefactors(6, prefactors);
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 6, prefactors, xyz, sph, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=6 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    //========================================================================//
+    compute_sph_prefactors(6, prefactors.data());
+    benchmark("L=6 values                      ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        compute_generic(n_samples, 6, prefactors, xyz, sph, dsph);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with l=6 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=6 values+derivatives          ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<false,false,6>(n_samples, xyz, sph1, NULL);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=6 (sph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=6 hardcoded values            ", n_samples, n_tries, [&](){
+        hardcoded_sph<false, false, 6>(n_samples, xyz.data(), sph1.data(), nullptr);
+    });
 
-    time_total = time2_total = 0;
-    for (size_t i_try = 0; i_try < n_tries; i_try++) {
-        gettimeofday(&start, NULL);
-        hardcoded_sph<true,false,6>(n_samples, xyz, sph1, dsph1);
-        gettimeofday(&end, NULL);
-        time = (end.tv_sec + end.tv_usec / 1e6 - start.tv_sec - start.tv_usec / 1e6)/n_samples;
-        time_total += time; time2_total +=  time*time;
-    }
-    printf("Call with hardcoded l=6 (dsph) took %f ± %f µs/sample\n",
-            1e6*time_total/n_tries, 1e6*sqrt(time2_total/n_tries -
-                                       (time_total/n_tries)*(time_total/n_tries))
-            );
+    benchmark("L=6 hardcoded values+derivatives", n_samples, n_tries, [&](){
+        hardcoded_sph<true, false, 6>(n_samples, xyz.data(), sph1.data(), dsph1.data());
+    });
+    std::cout << std::endl;
 
     l_max=6;
     size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
@@ -526,13 +286,6 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-
-    free(xyz);
-    free(prefactors);
-    free(sph);
-    free(dsph);
-    free(sph1);
-    free(dsph1);
 
     return 0;
 }

@@ -10,11 +10,11 @@ class SphericalHarmonics:
     calculate the relevant prefactors for the calculation of the spherical
     harmonics.
 
-    :param l_max: 
+    :param l_max:
             the maximum degree of the spherical harmonics to be calculated
     :type l_max: int
 
-    :param normalized: 
+    :param normalized:
             whether to compute normalized spherical harmonics (default: False)
     :type normalized: bool
 
@@ -62,5 +62,6 @@ class SphericalHarmonics:
 
         """
 
-        return c_spherical_harmonics(self._l_max, xyz, self._prefactors, 
-                                      gradients, self._normalized)
+        return c_spherical_harmonics(
+            self._l_max, xyz, self._prefactors, gradients, self._normalized
+        )

@@ -27,4 +27,3 @@ extern "C" void sphericart_normalized_spherical_harmonics(
 ) {
     sphericart::normalized_spherical_harmonics(n_samples, l_max, prefactors, xyz, sph, dsph);
 }
-

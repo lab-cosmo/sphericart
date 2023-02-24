@@ -31,7 +31,7 @@ def c_spherical_harmonics(l_max, xyz, prefactors, gradients=False, normalized=Fa
     lib = _get_library()
     if normalized:
         lib.sphericart_normalized_spherical_harmonics(
-        n_samples, l_max, prefactors_ptr, xyz_ptr, sph_ptr, dsph_ptr
+            n_samples, l_max, prefactors_ptr, xyz_ptr, sph_ptr, dsph_ptr
         )
     else:
         lib.sphericart_cartesian_spherical_harmonics(
