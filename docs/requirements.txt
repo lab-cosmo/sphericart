@@ -1,0 +1,4 @@
+# sphinx dependencies
+sphinx
+furo            # sphinx theme
+breathe >=4.33  # C and C++ => sphinx through doxygen
