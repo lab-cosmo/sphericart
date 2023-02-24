@@ -1,0 +1,71 @@
+name: Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    # Check all PR
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    name: Test on ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-20.04
+          - os: macos-11
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: install tests dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install tox
+
+      - name: run C++ build and tests
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build .
+          ctest
+
+      - name: run Python tests
+        run: tox
+
+  # check that we can build Python wheels on any Python version
+  python-build:
+    runs-on: ubuntu-20.04
+    name: check Python build
+    strategy:
+      matrix:
+        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: setup rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          default: true
+          target: x86_64-unknown-linux-gnu
+
+      - name: install python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install tox wheel
+
+      - name: python build tests
+        run: tox -e build-python
