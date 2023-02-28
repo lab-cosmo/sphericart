@@ -26,7 +26,7 @@ if (SPHERICART_TORCH_BUILD_FOR_PYTHON)
     # include this file (in core/torch/CMakeLists.txt) if SPHERICART_BUILD_TORCH=ON.
     set(SPHERICART_BUILD_TORCH OFF CACHE BOOL "" FORCE)
     mark_as_advanced(SPHERICART_BUILD_TORCH)
-    add_subdirectory(core)
+    add_subdirectory(sphericart)
 
     # add path to the cmake configuration of the version of libtorch used
     # by the Python torch module. PYTHON_EXECUTABLE is provided by skbuild

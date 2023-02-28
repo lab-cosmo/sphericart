@@ -27,7 +27,7 @@ class cmake_ext(build_ext):
     """Build the native library using cmake"""
 
     def run(self):
-        source_dir = ROOT
+        source_dir = os.path.join(ROOT, "sphericart")
         build_dir = os.path.join(ROOT, "build", "cmake-build")
         install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart")
 
@@ -69,7 +69,7 @@ class bdist_egg_disabled(bdist_egg):
 
 if __name__ == "__main__":
     setup(
-        version=open("VERSION").readline().strip(),
+        version=open(os.path.join("sphericart", "VERSION")).readline().strip(),
         ext_modules=[
             Extension(name="sphericart", sources=[]),
         ],
