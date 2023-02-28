@@ -108,7 +108,7 @@ if (SPHERICART_BUILD_TESTS)
 endif()
 
 if (SPHERICART_BUILD_TORCH)
-    add_subdirectory(torch)
+    add_subdirectory(../torch torch)
 endif()
 
 #------------------------------------------------------------------------------#
