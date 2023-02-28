@@ -38,6 +38,9 @@ jobs:
 
       - name: run Python tests
         run: tox
+        env:
+          # Use the CPU only version of torch when building/running the code
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
   # check that we can build Python wheels on any Python version
   python-build:
@@ -64,3 +67,6 @@ jobs:
 
       - name: torch build tests
         run: tox -e build-torch
+        env:
+          # Use the CPU only version of torch when building/running the code
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
