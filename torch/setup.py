@@ -58,7 +58,7 @@ class bdist_egg_disabled(bdist_egg):
 
 if __name__ == "__main__":
     setup(
-        version=open(os.path.join("core", "VERSION")).readline().strip(),
+        version=open(os.path.join("sphericart", "VERSION")).readline().strip(),
         ext_modules=[
             Extension(name="sphericart_torch", sources=[]),
         ],
