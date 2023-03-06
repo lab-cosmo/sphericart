@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 
+import cmake
 from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
 from setuptools.command.build_ext import build_ext
@@ -24,19 +25,19 @@ class cmake_ext(build_ext):
 
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
-            # do not build sphericart as a shared library
-            "-DBUILD_SHARED_LIBS=OFF",
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
+            # "-DCMAKE_FIND_DEBUG_MODE=ON",
         ]
 
+        CMAKE_EXE = os.path.join(cmake.CMAKE_BIN_DIR, "cmake")
         subprocess.run(
-            ["cmake", source_dir, *cmake_options],
+            [CMAKE_EXE, source_dir, *cmake_options],
             cwd=build_dir,
             check=True,
         )
         subprocess.run(
-            ["cmake", "--build", build_dir, "--target", "install"],
+            [CMAKE_EXE, "--build", build_dir, "--target", "install"],
             check=True,
         )
 
