@@ -6,10 +6,12 @@ project(sphericart_torch CXX)
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     if("${CMAKE_BUILD_TYPE}" STREQUAL "" AND "${CMAKE_CONFIGURATION_TYPES}" STREQUAL "")
         message(STATUS "Setting build type to 'relwithdebinfo' as none was specified.")
-        set(CMAKE_BUILD_TYPE "relwithdebinfo"
+        set(
+            CMAKE_BUILD_TYPE "relwithdebinfo"
             CACHE STRING
             "Choose the type of build, options are: none(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) debug release relwithdebinfo minsizerel."
-        FORCE)
+            FORCE
+        )
         set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS release debug relwithdebinfo minsizerel none)
     endif()
 endif()
@@ -22,9 +24,10 @@ if (SPHERICART_TORCH_BUILD_FOR_PYTHON)
         message(FATAL_ERROR "SPHERICART_TORCH_BUILD_FOR_PYTHON can only be set when this project is the root project")
     endif()
 
-    # prevent recursive build: we are including core/CMakeLists.txt, which can
-    # include this file (in core/torch/CMakeLists.txt) if SPHERICART_BUILD_TORCH=ON.
+    # prevent recursive build: we are including sphericart/CMakeLists.txt, which can
+    # include this file (in sphericart/torch/CMakeLists.txt) if SPHERICART_BUILD_TORCH=ON.
     set(SPHERICART_BUILD_TORCH OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     mark_as_advanced(SPHERICART_BUILD_TORCH)
     add_subdirectory(sphericart)
 
@@ -43,6 +46,40 @@ if (SPHERICART_TORCH_BUILD_FOR_PYTHON)
 
     string(STRIP ${TORCH_CMAKE_PATH_OUTPUT} TORCH_CMAKE_PATH_OUTPUT)
     set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${TORCH_CMAKE_PATH_OUTPUT}")
+
+    # ============================= Handle CUDNN ============================= #
+    # The FindCUDNN.cmake distributed with PyTorch is a bit broken, so we have a
+    # fixed version in `cmake/FindCUDNN.cmake`, and we set the right variables
+    # for it below to point the code to the right `libcudnn.do`/`cudnn.h`
+    set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
+
+    # First try using the `nvidia.cudnn` package (dependency of torch on PyPI)
+    execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} -c "import nvidia.cudnn, os; print(os.path.dirname(nvidia.cudnn.__file__))"
+        RESULT_VARIABLE CUDNN_CMAKE_PATH_RESULT
+        OUTPUT_VARIABLE CUDNN_CMAKE_PATH_OUTPUT
+        ERROR_VARIABLE CUDNN_CMAKE_PATH_ERROR
+    )
+    if (${CUDNN_CMAKE_PATH_RESULT} EQUAL 0)
+        string(STRIP ${CUDNN_CMAKE_PATH_OUTPUT} CUDNN_CMAKE_PATH_OUTPUT)
+        set(CUDNN_ROOT ${CUDNN_CMAKE_PATH_OUTPUT})
+    else()
+        # Otherwise try to find CuDNN inside PyTorch itself
+        set(CUDNN_ROOT ${TORCH_CMAKE_PATH_OUTPUT}/../..)
+
+        if (NOT EXISTS ${CUDNN_ROOT}/include/cudnn_version.h)
+            # HACK: create a minimal cudnn_version.h (with a made-up version),
+            # because it is not bundled together with the CuDNN shared library
+            # in PyTorch: https://github.com/pytorch/pytorch/issues/47743
+            file(WRITE ${CUDNN_ROOT}/include/cudnn_version.h "#define CUDNN_MAJOR 8\n#define CUDNN_MINOR 5\n#define CUDNN_PATCHLEVEL 0\n")
+        endif()
+    endif()
+
+    set(CUDNN_INCLUDE_DIR ${CUDNN_ROOT}/include CACHE PATH "" FORCE)
+    set(CUDNN_LIBRARY ${CUDNN_ROOT}/lib CACHE PATH "" FORCE)
+    unset(CUDNN_ROOT)
+
+    mark_as_advanced(CUDNN_INCLUDE_DIR CUDNN_LIBRARY)
 endif()
 
 find_package(Torch 1.13 REQUIRED)
