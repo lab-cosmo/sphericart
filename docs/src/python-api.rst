@@ -2,8 +2,9 @@ Python API
 ==========
 
 .. autoclass:: sphericart.SphericalHarmonics
+    :members:
 
-    .. automethod:: compute
+Torch API
+---------
 
-
-    
+.. autoclass:: sphericart_torch.spherical_harmonics

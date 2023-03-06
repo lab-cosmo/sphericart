@@ -22,6 +22,9 @@ jobs:
           sudo apt install doxygen
       - name: build documentation
         run: tox -e docs
+        env:
+          # Use the CPU only version of torch when building/running the code
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
       - name: put documentation in the website
         run: |
