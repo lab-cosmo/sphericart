@@ -157,7 +157,7 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
     }
 }
 
-template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <bool DO_DERIVATIVES, int HARDCODED_LMAX>
 static inline void generic_sph_l_channel(int l, 
     double x, double y, double z, double rxy, double twoz, 
     double *sph_i,
@@ -194,7 +194,6 @@ static inline void generic_sph_l_channel(int l,
 
     // l=+-(m-1)
     qlm_1 = -z*qlm_2;
-    //REM  qk[l-1] = qlm_1;
     pq = qlm_1 * pk[l - 1];
     sph_i[-l + 1] = pq * s[l - 1];
     sph_i[+l - 1] = pq * c[l - 1];
@@ -372,7 +371,7 @@ static inline void generic_sph_sample(int l_max,
     auto pk = prefactors+k;
     auto qlmk = qlmfactor+k;
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
-        generic_sph_l_channel<DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l, x, y, z, rxy, twoz, 
+        generic_sph_l_channel<DO_DERIVATIVES, HARDCODED_LMAX>(l, x, y, z, rxy, twoz, 
                     sph_i, dxsph_i, dysph_i, dzsph_i, pk, qlmk, c, s);
 
         // shift pointers & indexes to the next l block
