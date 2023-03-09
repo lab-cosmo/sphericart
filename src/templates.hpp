@@ -159,13 +159,13 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
 
 template <bool DO_DERIVATIVES, int HARDCODED_LMAX>
 static inline void generic_sph_l_channel(int l, 
-    double x, double y, double z, double rxy, double twoz, 
-    double *sph_i,
-    double *dxsph_i, double *dysph_i, double *dzsph_i,
-    const double *pk,
-    const double *qlmk,
+    double x, double y, double z, double rxy, 
+    const double *pk, const double *qlmk,
     std::vector<double> &c,
-    std::vector<double> &s
+    std::vector<double> &s,
+    std::vector<double> &twomz,
+    double *sph_i,
+    double *dxsph_i, double *dysph_i, double *dzsph_i
 )
 {    
     // working space for the recursive evaluation of Qlm and Q(l-1)m
@@ -212,10 +212,8 @@ static inline void generic_sph_l_channel(int l,
     }
 
     // and now do the other m's, decrementally
-    auto twomz = l * twoz; // compute decrementally to hold 2(m+1)z
-    for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {
-        twomz -= twoz;
-        qlm_0 = qlmk[m] * (twomz * qlm_1 + rxy * qlm_2);
+    for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {        
+        qlm_0 = qlmk[m] * (twomz[m] * qlm_1 + rxy * qlm_2);
         qlm_2 = qlm_1; qlm_1 = qlm_0; // shift
         
         pq = qlm_0 * pk[m];
@@ -224,7 +222,7 @@ static inline void generic_sph_l_channel(int l,
 
         if constexpr (DO_DERIVATIVES) {
             pq *= m;
-            ql1m_0 = qlmk[m-l] * (twomz * ql1m_1 + rxy * ql1m_2);
+            ql1m_0 = qlmk[m-l] * (twomz[m] * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
             
             pdq = pk[m] * ql1m_2;
@@ -239,9 +237,8 @@ static inline void generic_sph_l_channel(int l,
             dzsph_i[m] = pdq * c[m];
         }
     }
-    for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {
-        twomz -= twoz;
-        qlm_0 = qlmk[m] * (twomz * qlm_1 + rxy * qlm_2);
+    for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {        
+        qlm_0 = qlmk[m] * (twomz[m] * qlm_1 + rxy * qlm_2);
         qlm_2 = qlm_1; qlm_1 = qlm_0; // shift
         
         pq = qlm_0 * pk[m];
@@ -250,7 +247,7 @@ static inline void generic_sph_l_channel(int l,
 
         if constexpr (DO_DERIVATIVES) {
             pq *= m;
-            ql1m_0 = qlmk[m-l] * (twomz * ql1m_1 + rxy * ql1m_2);
+            ql1m_0 = qlmk[m-l] * (twomz[m] * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
             
             pdq = pk[m] * ql1m_2;
@@ -267,11 +264,11 @@ static inline void generic_sph_l_channel(int l,
     }
 
     // m=0
-    qlm_0 = qlmk[0] * (twoz * qlm_1 + rxy * qlm_2);  
+    qlm_0 = qlmk[0] * (twomz[0] * qlm_1 + rxy * qlm_2);  
     sph_i[0] = qlm_0 * pk[0];
 
     if constexpr (DO_DERIVATIVES) {
-        ql1m_0 = qlmk[-l] * (twoz * ql1m_1 + rxy * ql1m_2);
+        ql1m_0 = qlmk[-l] * (twomz[0] * ql1m_1 + rxy * ql1m_2);
         ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
         // derivatives
         dxsph_i[0] = pk[0] * x *ql1m_2; 
@@ -281,15 +278,16 @@ static inline void generic_sph_l_channel(int l,
 }
 
 template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-static inline void generic_sph_sample(int l_max,
-    const double *prefactors,
+static inline void generic_sph_sample(int l_max,    
+    int size_y,
+    const double *pylm,
+    const double *pqlm,
+    std::vector<double> &c,
+    std::vector<double> &s,
+    std::vector<double> &twomz,
     const double *xyz_i,
     double *sph_i,
-    double *dsph_i,
-    int size_y,
-    int size_q,
-    std::vector<double> &c,
-    std::vector<double> &s
+    double *dsph_i
 ) {
 
     double ir = 0.0;
@@ -297,8 +295,7 @@ static inline void generic_sph_sample(int l_max,
     double* dysph_i = nullptr;
     double* dzsph_i = nullptr;     
     // gets an index to some factors that enter the Qlm iteration,
-    // and are pre-computed together with the prefactors
-    const double *qlmfactor = prefactors+size_q;
+    // and are pre-computed together with the prefactors    
 
     /* k is a utility index to traverse lm arrays. we store sph in
     a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
@@ -339,13 +336,16 @@ static inline void generic_sph_sample(int l_max,
         so that they are just plain polynomials of x,y,z.    */
     // help the compiler unroll the first part of the loop
     int m = 0;
+    twomz[0] = twoz;
     for (m = 1; m < HARDCODED_LMAX + 1; ++m) {
         c[m] = c[m - 1] * x - s[m - 1] * y;
         s[m] = c[m - 1] * y + s[m - 1] * x;
+        twomz[m] = twomz[m-1] + twoz; 
     }
     for (; m < l_max + 1; m++) {
         c[m] = c[m - 1] * x - s[m - 1] * y;
         s[m] = c[m - 1] * y + s[m - 1] * x;
+        twomz[m] = twomz[m-1] + twoz; 
     }
 
     /* compute recursively the "Cartesian" associated Legendre polynomials Qlm.
@@ -368,11 +368,12 @@ static inline void generic_sph_sample(int l_max,
         dzsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
     }
 
-    auto pk = prefactors+k;
-    auto qlmk = qlmfactor+k;
+    auto pk = pylm+k;
+    auto qlmk = pqlm+k;
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
-        generic_sph_l_channel<DO_DERIVATIVES, HARDCODED_LMAX>(l, x, y, z, rxy, twoz, 
-                    sph_i, dxsph_i, dysph_i, dzsph_i, pk, qlmk, c, s);
+        generic_sph_l_channel<DO_DERIVATIVES, HARDCODED_LMAX>(l, x, y, z, rxy, 
+                    pk, qlmk, c, s, twomz,
+                    sph_i, dxsph_i, dysph_i, dzsph_i);
 
         // shift pointers & indexes to the next l block
         qlmk += l+1; pk+=l+1;
@@ -430,9 +431,9 @@ void generic_sph(
     // implementation assumes to use hardcoded expressions for at least l=0,1
     static_assert(HARDCODED_LMAX>=1, "Cannot call the generic Ylm calculator for l<=1.");
 
-    const auto size_y = (l_max + 1) * (l_max + 1);
-    const auto size_q = (l_max + 1) * (l_max + 2) / 2;
-    
+    const auto size_y = (l_max + 1) * (l_max + 1);    
+    const double *qlmfactors = prefactors+(l_max + 1) * (l_max + 2) / 2;
+
     #pragma omp parallel
     {
         // thread-local storage arrays for Qlm (modified associated Legendre
@@ -440,6 +441,7 @@ void generic_sph(
         // the azimuth
         auto c = std::vector<double>(l_max + 1, 0.0);
         auto s = std::vector<double>(l_max + 1, 0.0);
+        auto twomz = std::vector<double>(l_max + 1, 0.0);
         
         // pointers to the sections of the output arrays that hold Ylm and derivatives
         // for a given point
@@ -460,8 +462,8 @@ void generic_sph(
                 dsph_i = dsph + i_sample * 3 * size_y;
             }            
             
-            generic_sph_sample<DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l_max, prefactors, xyz_i, sph_i, dsph_i,
-                                size_y, size_q, c, s);
+            generic_sph_sample<DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l_max, size_y,
+            prefactors, qlmfactors, c, s, twomz, xyz_i, sph_i, dsph_i);
         }
     }
 }
