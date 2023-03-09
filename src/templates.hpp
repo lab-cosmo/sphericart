@@ -164,21 +164,27 @@ static inline void generic_sph_l_channel(int l,
     double x, double y, double z, double rxy, double twoz, 
     double *sph_i,
     double *dxsph_i, double *dysph_i, double *dzsph_i,
-    double* qk,
     const double *pk,
     const double *qlmk,
+    std::vector<double> &q,
     std::vector<double> &c,
     std::vector<double> &s
 )
 {    
+    // fetches the pre-computed Qll
+    // working arrays for the recursive evaluation of Qlm and Q(l-1)m
+    double qlm_2, qlm_1, qlm_0;
+    double ql1m_2, ql1m_1, ql1m_0;
+    qlm_2 = q[l];    
+
     // l=+-m
-    auto pq = qk[l] * pk[l];
+    auto pq = qlm_2 * pk[l];
     auto pdq = 0.0;
     auto pdqx = 0.0;
     auto pdqy = 0.0;
 
     sph_i[-l] = pq * s[l];
-    sph_i[+l] = pq * c[l];
+    sph_i[+l] = pq * c[l];    
 
     if constexpr (DO_DERIVATIVES) {
         pq *= l;
@@ -188,11 +194,13 @@ static inline void generic_sph_l_channel(int l,
         dysph_i[l] = -pq * s[l - 1];
         dzsph_i[-l] = 0;
         dzsph_i[l] = 0;
+        ql1m_2 = 0;
     }
 
     // l=+-(m-1)
-    qk[l - 1] = -z * qk[l];
-    pq = qk[l - 1] * pk[l - 1];
+    qlm_1 = -z*qlm_2;
+    //REM  qk[l-1] = qlm_1;
+    pq = qlm_1 * pk[l - 1];
     sph_i[-l + 1] = pq * s[l - 1];
     sph_i[+l - 1] = pq * c[l - 1];
 
@@ -202,7 +210,10 @@ static inline void generic_sph_l_channel(int l,
         dxsph_i[l - 1] = pq * c[l - 2];
         dysph_i[-l + 1] = pq * c[l - 2];
         dysph_i[l - 1] = -pq * s[l - 2];
-        pdq = pk[l - 1] * (l + l - 1) * qk[l - 1 - l];
+
+        // uses Q(l-1)(l-1) to initialize the other recursion
+        ql1m_1 = q[l-1];
+        pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
         dzsph_i[-l + 1] = pdq * s[l - 1];
         dzsph_i[l - 1] = pdq * c[l - 1];
     }
@@ -211,56 +222,68 @@ static inline void generic_sph_l_channel(int l,
     auto twomz = l * twoz; // compute decrementally to hold 2(m+1)z
     for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {
         twomz -= twoz;
-        qk[m] = qlmk[m] * (twomz * qk[m + 1] + rxy * qk[m + 2]);
-        pq = qk[m] * pk[m];
+        qlm_0 = qlmk[m] * (twomz * qlm_1 + rxy * qlm_2);
+        qlm_2 = qlm_1; qlm_1 = qlm_0; // shift
+        
+        pq = qlm_0 * pk[m];
         sph_i[-m] = pq * s[m];
         sph_i[+m] = pq * c[m];
 
         if constexpr (DO_DERIVATIVES) {
             pq *= m;
-            pdq = pk[m] * qk[m - l + 1];
+            ql1m_0 = qlmk[m-l] * (twomz * ql1m_1 + rxy * ql1m_2);
+            ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
+            
+            pdq = pk[m] * ql1m_2;
             pdqx = pdq * x;
             dxsph_i[-m] = (pdqx * s[m] + pq * s[m - 1]);
             dxsph_i[+m] = (pdqx * c[m] + pq * c[m - 1]);
             pdqy = pdq * y;
             dysph_i[-m] = (pdqy * s[m] + pq * c[m - 1]);
             dysph_i[m] = (pdqy * c[m] - pq * s[m - 1]);
-            pdq = pk[m] * (l + m) * qk[m - l];
+            pdq = pk[m] * (l + m) * ql1m_1;
             dzsph_i[-m] = pdq * s[m];
             dzsph_i[m] = pdq * c[m];
         }
     }
     for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {
         twomz -= twoz;
-        qk[m] = qlmk[m] * (twomz * qk[m + 1] + rxy * qk[m + 2]);
-        pq = qk[m] * pk[m];
+        qlm_0 = qlmk[m] * (twomz * qlm_1 + rxy * qlm_2);
+        qlm_2 = qlm_1; qlm_1 = qlm_0; // shift
+        
+        pq = qlm_0 * pk[m];
         sph_i[-m] = pq * s[m];
         sph_i[+m] = pq * c[m];
 
         if constexpr (DO_DERIVATIVES) {
             pq *= m;
-            pdq = pk[m] * qk[m - l + 1];
+            ql1m_0 = qlmk[m-l] * (twomz * ql1m_1 + rxy * ql1m_2);
+            ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
+            
+            pdq = pk[m] * ql1m_2;
             pdqx = pdq * x;
             dxsph_i[-m] = (pdqx * s[m] + pq * s[m - 1]);
             dxsph_i[+m] = (pdqx * c[m] + pq * c[m - 1]);
             pdqy = pdq * y;
             dysph_i[-m] = (pdqy * s[m] + pq * c[m - 1]);
             dysph_i[m] = (pdqy * c[m] - pq * s[m - 1]);
-            pdq = pk[m] * (l + m) * qk[m - l];
+            pdq = pk[m] * (l + m) * ql1m_1;
             dzsph_i[-m] = pdq * s[m];
             dzsph_i[m] = pdq * c[m];
         }
     }
 
     // m=0
-    qk[0] = qlmk[0] * (twoz * qk[1] + rxy * qk[2]);
-    sph_i[0] = qk[0] * pk[0];
+    qlm_0 = qlmk[0] * (twoz * qlm_1 + rxy * qlm_2);  
+    sph_i[0] = qlm_0 * pk[0];
 
     if constexpr (DO_DERIVATIVES) {
+        ql1m_0 = qlmk[-l] * (twoz * ql1m_1 + rxy * ql1m_2);
+        ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
         // derivatives
-        dxsph_i[0] = pk[0] * x * qk[-l + 1];
-        dysph_i[0] = pk[0] * y * qk[-l + 1];
-        dzsph_i[0] = pk[0] * l * qk[-l];
+        dxsph_i[0] = pk[0] * x *ql1m_2; 
+        dysph_i[0] = pk[0] * y *ql1m_2; 
+        dzsph_i[0] = pk[0] * l *ql1m_1; 
     }
 }
 
@@ -342,15 +365,6 @@ static inline void generic_sph_sample(int l_max,
         arithmetics to make sure spk_i always points at the
         beginning of the appropriate memory segment.   */
 
-    // We need also Qlm for l=HARDCODED_LMAX because it's used in the derivatives
-    k = (HARDCODED_LMAX) * (HARDCODED_LMAX + 1) / 2;
-    q[k + HARDCODED_LMAX - 1] = -z * q[k + HARDCODED_LMAX];
-    auto twomz = (HARDCODED_LMAX) * twoz; // compute decrementally to hold 2(m+1)z
-    for (int m = HARDCODED_LMAX - 2; m >= 0; --m) {
-        twomz -= twoz;
-        q[k + m] = qlmfactor[k + m] * (twomz * q[k + m + 1] + rxy * q[k + m + 2]);
-    }
-
     // main loop!
     // k points at Q[l,0]; sph_i at Y[l,0] (mid-way through each l chunk)
     k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
@@ -362,15 +376,14 @@ static inline void generic_sph_sample(int l_max,
         dzsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
     }
 
-    auto qk = &q[0]+k;
     auto pk = prefactors+k;
     auto qlmk = qlmfactor+k;
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
         generic_sph_l_channel<DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l, x, y, z, rxy, twoz, 
-                    sph_i, dxsph_i, dysph_i, dzsph_i, qk, pk, qlmk, c, s);
+                    sph_i, dxsph_i, dysph_i, dzsph_i, pk, qlmk, q, c, s);
 
         // shift pointers & indexes to the next l block
-        qk += l+1; qlmk += l+1; pk+=l+1;
+        qlmk += l+1; pk+=l+1;
         sph_i += 2 * l + 2;
 
         if constexpr(DO_DERIVATIVES) {
@@ -433,7 +446,7 @@ void generic_sph(
         // thread-local storage arrays for Qlm (modified associated Legendre
         // polynomials) and terms corresponding to (scaled) cosine and sine of
         // the azimuth
-        auto q = std::vector<double>((l_max + 1) * (l_max + 2) / 2, 0.0);
+        auto q = std::vector<double>(l_max + 1, 0.0);
         auto c = std::vector<double>(l_max + 1, 0.0);
         auto s = std::vector<double>(l_max + 1, 0.0);
         
@@ -442,12 +455,10 @@ void generic_sph(
         double* sph_i = nullptr;
         double* dsph_i = nullptr;   
 
-        // precompute the Qll's (that are constant)
-        q[0 + 0] = 1.0;
-        int k = 1;
+        // precompute the Qll's (that are constant)   // TODO make this part of the initialization
+        q[0] = 1.0;
         for (int l = 1; l < l_max + 1; l++) {
-            q[k + l] = -(2 * l - 1) * q[k - 1];
-            k += l + 1;
+            q[l] = -(2 * l - 1) * q[l - 1];
         }
 
         // also initialize the sine and cosine, these never change
