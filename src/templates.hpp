@@ -157,8 +157,6 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
     }
 }
 
-
-
 template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 static inline void generic_sph_l_channel(int l, 
     double x, double y, double z, double rxy, double twoz, 
@@ -166,16 +164,14 @@ static inline void generic_sph_l_channel(int l,
     double *dxsph_i, double *dysph_i, double *dzsph_i,
     const double *pk,
     const double *qlmk,
-    std::vector<double> &q,
     std::vector<double> &c,
     std::vector<double> &s
 )
 {    
-    // fetches the pre-computed Qll
-    // working arrays for the recursive evaluation of Qlm and Q(l-1)m
+    // working space for the recursive evaluation of Qlm and Q(l-1)m
     double qlm_2, qlm_1, qlm_0;
     double ql1m_2, ql1m_1, ql1m_0;
-    qlm_2 = q[l];    
+    qlm_2 = qlmk[l]; // fetches the pre-computed Qll    
 
     // l=+-m
     auto pq = qlm_2 * pk[l];
@@ -189,9 +185,8 @@ static inline void generic_sph_l_channel(int l,
     if constexpr (DO_DERIVATIVES) {
         pq *= l;
         dxsph_i[-l] = pq * s[l - 1];
-        dxsph_i[l] = pq * c[l - 1];
-        dysph_i[-l] = pq * c[l - 1];
-        dysph_i[l] = -pq * s[l - 1];
+        dysph_i[-l] = dxsph_i[l] = pq * c[l - 1];
+        dysph_i[l] = -dxsph_i[-l]; 
         dzsph_i[-l] = 0;
         dzsph_i[l] = 0;
         ql1m_2 = 0;
@@ -207,12 +202,11 @@ static inline void generic_sph_l_channel(int l,
     if constexpr (DO_DERIVATIVES) {
         pq *= (l - 1);
         dxsph_i[-l + 1] = pq * s[l - 2];
-        dxsph_i[l - 1] = pq * c[l - 2];
-        dysph_i[-l + 1] = pq * c[l - 2];
-        dysph_i[l - 1] = -pq * s[l - 2];
+        dysph_i[-l + 1] = dxsph_i[l - 1] = pq * c[l - 2];         
+        dysph_i[l - 1] = -dxsph_i[-l + 1]; 
 
         // uses Q(l-1)(l-1) to initialize the other recursion
-        ql1m_1 = q[l-1];
+        ql1m_1 = qlmk[-1];
         pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
         dzsph_i[-l + 1] = pdq * s[l - 1];
         dzsph_i[l - 1] = pdq * c[l - 1];
@@ -295,7 +289,6 @@ static inline void generic_sph_sample(int l_max,
     double *dsph_i,
     int size_y,
     int size_q,
-    std::vector<double> &q,
     std::vector<double> &c,
     std::vector<double> &s
 ) {
@@ -380,7 +373,7 @@ static inline void generic_sph_sample(int l_max,
     auto qlmk = qlmfactor+k;
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
         generic_sph_l_channel<DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l, x, y, z, rxy, twoz, 
-                    sph_i, dxsph_i, dysph_i, dzsph_i, pk, qlmk, q, c, s);
+                    sph_i, dxsph_i, dysph_i, dzsph_i, pk, qlmk, c, s);
 
         // shift pointers & indexes to the next l block
         qlmk += l+1; pk+=l+1;
@@ -446,7 +439,6 @@ void generic_sph(
         // thread-local storage arrays for Qlm (modified associated Legendre
         // polynomials) and terms corresponding to (scaled) cosine and sine of
         // the azimuth
-        auto q = std::vector<double>(l_max + 1, 0.0);
         auto c = std::vector<double>(l_max + 1, 0.0);
         auto s = std::vector<double>(l_max + 1, 0.0);
         
@@ -454,13 +446,7 @@ void generic_sph(
         // for a given point
         double* sph_i = nullptr;
         double* dsph_i = nullptr;   
-
-        // precompute the Qll's (that are constant)   // TODO make this part of the initialization
-        q[0] = 1.0;
-        for (int l = 1; l < l_max + 1; l++) {
-            q[l] = -(2 * l - 1) * q[l - 1];
-        }
-
+        
         // also initialize the sine and cosine, these never change
         c[0] = 1.0;
         s[0] = 0.0;
@@ -476,7 +462,7 @@ void generic_sph(
             }            
             
             generic_sph_sample<DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l_max, prefactors, xyz_i, sph_i, dsph_i,
-                                size_y, size_q, q, c, s);
+                                size_y, size_q, c, s);
         }
     }
 }

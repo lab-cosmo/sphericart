@@ -32,12 +32,14 @@ void sphericart::compute_sph_prefactors(int l_max, double *factors) {
         k += l + 1;
     }
 
-    // now computes the additional factors of -1/((l+m+1)(l-m))
-    // that are needed in the recursive calculation of Qlm
-    for (int l = 0; l < l_max + 1; l++) {
+    // that are needed in the recursive calculation of Qlm.
+    // Xll is just Qll, Xlm is the factor that enters the alternative m recursion 
+    factors[k] = 1.0; k += 1;
+    for (int l = 1; l < l_max + 1; l++) {
+        factors[k+l] = -(2 * l - 1) * factors[k - 1];
         for (int m = l - 1; m >= 0; --m) {
             factors[k + m] = -1.0 / ((l + m + 1) * (l - m));
-        }
+        }        
         k += l + 1;
     }
 }
