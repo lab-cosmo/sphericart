@@ -228,8 +228,8 @@ static inline void generic_sph_l_channel(int l,
             dxsph_i[-m] = (pdqx * s[m] + pqs);
             dxsph_i[+m] = (pdqx * c[m] + pqc);
             auto pdqy = pdq * y;
-            dysph_i[-m] = (pdqy * s[m] + pqs);
-            dysph_i[m] = (pdqy * c[m] - pqc);
+            dysph_i[-m] = (pdqy * s[m] + pqc);
+            dysph_i[m] = (pdqy * c[m] - pqs);
             pdq = pk[m] * (l + m) * ql1m_1;
             dzsph_i[-m] = pdq * s[m];
             dzsph_i[m] = pdq * c[m];
