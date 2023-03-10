@@ -175,10 +175,7 @@ static inline void generic_sph_l_channel(int l,
 
     // l=+-m
     auto pq = qlm_2 * pk[l];
-    auto pdq = 0.0;
-    auto pdqx = 0.0;
-    auto pdqy = 0.0;
-
+    
     sph_i[-l] = pq * s[l];
     sph_i[+l] = pq * c[l];    
 
@@ -206,7 +203,7 @@ static inline void generic_sph_l_channel(int l,
 
         // uses Q(l-1)(l-1) to initialize the other recursion
         ql1m_1 = qlmk[-1];
-        pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
+        auto pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
         dzsph_i[-l + 1] = pdq * s[l - 1];
         dzsph_i[l - 1] = pdq * c[l - 1];
     }
@@ -225,13 +222,14 @@ static inline void generic_sph_l_channel(int l,
             ql1m_0 = qlmk[m-l] * (twomz[m] * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
             
-            pdq = pk[m] * ql1m_2;
-            pdqx = pdq * x;
-            dxsph_i[-m] = (pdqx * s[m] + pq * s[m - 1]);
-            dxsph_i[+m] = (pdqx * c[m] + pq * c[m - 1]);
-            pdqy = pdq * y;
-            dysph_i[-m] = (pdqy * s[m] + pq * c[m - 1]);
-            dysph_i[m] = (pdqy * c[m] - pq * s[m - 1]);
+            auto pdq = pk[m] * ql1m_2;
+            auto pqs = pq*s[m-1], pqc=pq*c[m-1];
+            auto pdqx = pdq * x;
+            dxsph_i[-m] = (pdqx * s[m] + pqs);
+            dxsph_i[+m] = (pdqx * c[m] + pqc);
+            auto pdqy = pdq * y;
+            dysph_i[-m] = (pdqy * s[m] + pqs);
+            dysph_i[m] = (pdqy * c[m] - pqc);
             pdq = pk[m] * (l + m) * ql1m_1;
             dzsph_i[-m] = pdq * s[m];
             dzsph_i[m] = pdq * c[m];
@@ -250,13 +248,14 @@ static inline void generic_sph_l_channel(int l,
             ql1m_0 = qlmk[m-l] * (twomz[m] * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
             
-            pdq = pk[m] * ql1m_2;
-            pdqx = pdq * x;
-            dxsph_i[-m] = (pdqx * s[m] + pq * s[m - 1]);
-            dxsph_i[+m] = (pdqx * c[m] + pq * c[m - 1]);
-            pdqy = pdq * y;
-            dysph_i[-m] = (pdqy * s[m] + pq * c[m - 1]);
-            dysph_i[m] = (pdqy * c[m] - pq * s[m - 1]);
+            auto pdq = pk[m] * ql1m_2;
+            auto pqs = pq*s[m-1], pqc=pq*c[m-1];
+            auto pdqx = pdq * x;            
+            dxsph_i[-m] = (pdqx * s[m] + pqs);
+            dxsph_i[+m] = (pdqx * c[m] + pqc);
+            auto pdqy = pdq * y;
+            dysph_i[-m] = (pdqy * s[m] + pqc);
+            dysph_i[m] = (pdqy * c[m] - pqs);
             pdq = pk[m] * (l + m) * ql1m_1;
             dzsph_i[-m] = pdq * s[m];
             dzsph_i[m] = pdq * c[m];
