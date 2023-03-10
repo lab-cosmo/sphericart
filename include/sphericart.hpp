@@ -19,6 +19,7 @@ namespace sphericart {
  *        the order `(l, m) = (0, 0), (1, 0), (1, 1), (2, 0), (2, 1), ...`
  */
 void SPHERICART_EXPORT compute_sph_prefactors(int l_max, double *factors);
+void SPHERICART_EXPORT compute_sph_prefactors(int l_max, float *factors);
 
 /**
  * This function calculates the spherical harmonics and, optionally, their
@@ -65,6 +66,15 @@ void SPHERICART_EXPORT cartesian_spherical_harmonics(
     double *dsph
 );
 
+void SPHERICART_EXPORT cartesian_spherical_harmonics(
+    int n_samples,
+    int l_max,
+    const float* prefactors,
+    const float *xyz,
+    float *sph,
+    float *dsph
+);
+
 void SPHERICART_EXPORT normalized_spherical_harmonics(
     int n_samples,
     int l_max,
@@ -72,6 +82,15 @@ void SPHERICART_EXPORT normalized_spherical_harmonics(
     const double *xyz,
     double *sph,
     double *dsph
+);
+
+void SPHERICART_EXPORT normalized_spherical_harmonics(
+    int n_samples,
+    int l_max,
+    const float* prefactors,
+    const float *xyz,
+    float *sph,
+    float *dsph
 );
 
 } // namespace sphericart

@@ -14,8 +14,8 @@
 
 #include "macros.hpp"
 
-template <int HARDCODED_LMAX>
-inline void hardcoded_sph_template(double x, double y, double z, double x2, double y2, double z2, double *sph_i) {
+template <typename DTYPE, int HARDCODED_LMAX>
+inline void hardcoded_sph_template(DTYPE x, DTYPE y, DTYPE z, DTYPE x2, DTYPE y2, DTYPE z2, DTYPE *sph_i) {
     static_assert(HARDCODED_LMAX <= SPHERICART_LMAX_HARDCODED, "Computing hardcoded sph beyond what is currently implemented.");
 
     COMPUTE_SPH_L0(sph_i);
@@ -45,18 +45,18 @@ inline void hardcoded_sph_template(double x, double y, double z, double x2, doub
     }
 }
 
-template <int HARDCODED_LMAX>
+template <typename DTYPE, int HARDCODED_LMAX>
 inline void hardcoded_sph_derivative_template(
-    double x,
-    double y,
-    double z,
-    double x2,
-    double y2,
-    double z2,
-    double *sph_i,
-    double *dxsph_i,
-    double *dysph_i,
-    double *dzsph_i
+    DTYPE x,
+    DTYPE y,
+    DTYPE z,
+    DTYPE x2,
+    DTYPE y2,
+    DTYPE z2,
+    DTYPE *sph_i,
+    DTYPE *dxsph_i,
+    DTYPE *dysph_i,
+    DTYPE *dzsph_i
 ) {
 
     /*
@@ -92,15 +92,15 @@ inline void hardcoded_sph_derivative_template(
     }
 }
 
-template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-inline void hardcoded_sph_sample(const double *xyz_i, double *sph_i, double *dsph_i, int size_y) {
+template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, DTYPE *dsph_i, int size_y) {
     auto x = xyz_i[0];
     auto y = xyz_i[1];
     auto z = xyz_i[2];
     auto x2 = x * x;
     auto y2 = y * y;
     auto z2 = z * z;
-    double ir=0;
+    DTYPE ir=0;
 
     if constexpr(NORMALIZED) {
         auto ir2 = 1.0/(x2+y2+z2);
@@ -109,13 +109,13 @@ inline void hardcoded_sph_sample(const double *xyz_i, double *sph_i, double *dsp
         x2*=ir2; y2*=ir2; z2*=ir2;
     }
     
-    hardcoded_sph_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
+    hardcoded_sph_template<DTYPE, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
     if constexpr (DO_DERIVATIVES) {
-        double *dxsph_i = dsph_i;
-        double *dysph_i = dxsph_i + size_y;
-        double *dzsph_i = dysph_i + size_y;
-        hardcoded_sph_derivative_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        DTYPE *dxsph_i = dsph_i;
+        DTYPE *dysph_i = dxsph_i + size_y;
+        DTYPE *dzsph_i = dysph_i + size_y;
+        hardcoded_sph_derivative_template<DTYPE, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
         if constexpr(NORMALIZED) {
             // corrects derivatives for normalization
             for (int k=0; k<size_y; ++k) {
@@ -131,8 +131,8 @@ inline void hardcoded_sph_sample(const double *xyz_i, double *sph_i, double *dsp
     }
 }
 
-template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) {
+template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+void hardcoded_sph(int n_samples, const DTYPE *xyz, DTYPE *sph, DTYPE *dsph) {
     /*
         Cartesian Ylm calculator using the hardcoded expressions.
         Templated version, just calls _compute_sph_templated and
@@ -140,9 +140,9 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
     */
     #pragma omp parallel
     {
-        const double *xyz_i = nullptr;
-        double *sph_i = nullptr;
-        double *dsph_i = nullptr;
+        const DTYPE *xyz_i = nullptr;
+        DTYPE *sph_i = nullptr;
+        DTYPE *dsph_i = nullptr;
         constexpr auto size_y = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);        
 
         #pragma omp for
@@ -152,25 +152,25 @@ void hardcoded_sph(int n_samples, const double *xyz, double *sph, double *dsph) 
             if constexpr (DO_DERIVATIVES) {
                 dsph_i = dsph + i_sample * size_y * 3;
             }
-            hardcoded_sph_sample<DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, size_y);
+            hardcoded_sph_sample<DTYPE, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, size_y);
         }
     }
 }
 
-template <bool DO_DERIVATIVES, int HARDCODED_LMAX>
+template <typename DTYPE, bool DO_DERIVATIVES, int HARDCODED_LMAX>
 static inline void generic_sph_l_channel(int l, 
-    double x, double y, double z, double rxy, 
-    const double *pk, const double *qlmk,
-    std::vector<double> &c,
-    std::vector<double> &s,
-    std::vector<double> &twomz,
-    double *sph_i,
-    double *dxsph_i, double *dysph_i, double *dzsph_i
+    DTYPE x, DTYPE y, DTYPE z, DTYPE rxy, 
+    const DTYPE *pk, const DTYPE *qlmk,
+    std::vector<DTYPE> &c,
+    std::vector<DTYPE> &s,
+    std::vector<DTYPE> &twomz,
+    DTYPE *sph_i,
+    DTYPE *dxsph_i, DTYPE *dysph_i, DTYPE *dzsph_i
 )
 {    
     // working space for the recursive evaluation of Qlm and Q(l-1)m
-    double qlm_2, qlm_1, qlm_0;
-    double ql1m_2, ql1m_1, ql1m_0;
+    DTYPE qlm_2, qlm_1, qlm_0;
+    DTYPE ql1m_2, ql1m_1, ql1m_0;
     qlm_2 = qlmk[l]; // fetches the pre-computed Qll    
 
     // l=+-m
@@ -277,23 +277,23 @@ static inline void generic_sph_l_channel(int l,
     }
 }
 
-template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 static inline void generic_sph_sample(int l_max,    
     int size_y,
-    const double *pylm,
-    const double *pqlm,
-    std::vector<double> &c,
-    std::vector<double> &s,
-    std::vector<double> &twomz,
-    const double *xyz_i,
-    double *sph_i,
-    double *dsph_i
+    const DTYPE *pylm,
+    const DTYPE *pqlm,
+    std::vector<DTYPE> &c,
+    std::vector<DTYPE> &s,
+    std::vector<DTYPE> &twomz,
+    const DTYPE *xyz_i,
+    DTYPE *sph_i,
+    DTYPE *dsph_i
 ) {
 
-    double ir = 0.0;
-    double* dxsph_i = nullptr;
-    double* dysph_i = nullptr;
-    double* dzsph_i = nullptr;     
+    DTYPE ir = 0.0;
+    DTYPE* dxsph_i = nullptr;
+    DTYPE* dysph_i = nullptr;
+    DTYPE* dzsph_i = nullptr;     
     // gets an index to some factors that enter the Qlm iteration,
     // and are pre-computed together with the prefactors    
 
@@ -319,7 +319,7 @@ static inline void generic_sph_sample(int l_max,
     auto rxy = x2 + y2;
     
     // these are the hard-coded, low-lmax sph
-    hardcoded_sph_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
+    hardcoded_sph_template<DTYPE, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
     if constexpr (DO_DERIVATIVES) {
         // updates the pointer to the derivative storage
@@ -328,7 +328,7 @@ static inline void generic_sph_sample(int l_max,
         dzsph_i = dysph_i + size_y;
 
         // these are the hard-coded, low-lmax sph
-        hardcoded_sph_derivative_template<HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        hardcoded_sph_derivative_template<DTYPE, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
     }
 
     /* These are scaled version of cos(m phi) and sin(m phi).
@@ -371,7 +371,7 @@ static inline void generic_sph_sample(int l_max,
     auto pk = pylm+k;
     auto qlmk = pqlm+k;
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
-        generic_sph_l_channel<DO_DERIVATIVES, HARDCODED_LMAX>(l, x, y, z, rxy, 
+        generic_sph_l_channel<DTYPE, DO_DERIVATIVES, HARDCODED_LMAX>(l, x, y, z, rxy, 
                     pk, qlmk, c, s, twomz,
                     sph_i, dxsph_i, dysph_i, dzsph_i);
 
@@ -402,14 +402,14 @@ static inline void generic_sph_sample(int l_max,
 }
 
 
-template <bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 void generic_sph(
     int n_samples,
     int l_max,
-    const double *prefactors,
-    const double *xyz,
-    double *sph,
-    double *dsph
+    const DTYPE *prefactors,
+    const DTYPE *xyz,
+    DTYPE *sph,
+    DTYPE *dsph
 ) {
     /*
         Implementation of the general case, but start at HARDCODED_LMAX and use
@@ -432,21 +432,21 @@ void generic_sph(
     static_assert(HARDCODED_LMAX>=1, "Cannot call the generic Ylm calculator for l<=1.");
 
     const auto size_y = (l_max + 1) * (l_max + 1);    
-    const double *qlmfactors = prefactors+(l_max + 1) * (l_max + 2) / 2;
+    const DTYPE *qlmfactors = prefactors + (l_max + 1) * (l_max + 2) / 2;
 
     #pragma omp parallel
     {
         // thread-local storage arrays for Qlm (modified associated Legendre
         // polynomials) and terms corresponding to (scaled) cosine and sine of
         // the azimuth
-        auto c = std::vector<double>(l_max + 1, 0.0);
-        auto s = std::vector<double>(l_max + 1, 0.0);
-        auto twomz = std::vector<double>(l_max + 1, 0.0);
+        auto c = std::vector<DTYPE>(l_max + 1, 0.0);
+        auto s = std::vector<DTYPE>(l_max + 1, 0.0);
+        auto twomz = std::vector<DTYPE>(l_max + 1, 0.0);
         
         // pointers to the sections of the output arrays that hold Ylm and derivatives
         // for a given point
-        double* sph_i = nullptr;
-        double* dsph_i = nullptr;   
+        DTYPE* sph_i = nullptr;
+        DTYPE* dsph_i = nullptr;   
         
         // also initialize the sine and cosine, these never change
         c[0] = 1.0;
@@ -462,7 +462,7 @@ void generic_sph(
                 dsph_i = dsph + i_sample * 3 * size_y;
             }            
             
-            generic_sph_sample<DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l_max, size_y,
+            generic_sph_sample<DTYPE, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l_max, size_y,
             prefactors, qlmfactors, c, s, twomz, xyz_i, sph_i, dsph_i);
         }
     }
