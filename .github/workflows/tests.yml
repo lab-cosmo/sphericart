@@ -32,12 +32,15 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ..
+          cmake ../sphericart
           cmake --build .
           ctest
 
       - name: run Python tests
         run: tox
+        env:
+          # Use the CPU only version of torch when building/running the code
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
   # check that we can build Python wheels on any Python version
   python-build:
@@ -45,7 +48,7 @@ jobs:
     name: check Python build
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
     steps:
       - uses: actions/checkout@v3
 
@@ -54,14 +57,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: setup rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          default: true
-          target: x86_64-unknown-linux-gnu
-
       - name: install python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -69,3 +64,9 @@ jobs:
 
       - name: python build tests
         run: tox -e build-python
+
+      - name: torch build tests
+        run: tox -e build-torch
+        env:
+          # Use the CPU only version of torch when building/running the code
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu

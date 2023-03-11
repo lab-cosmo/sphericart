@@ -15,6 +15,7 @@ If the `e3nn` package is present, also compares results.
 
 try:
     import e3nn
+
     import torch
 
     _HAS_E3NN = True
