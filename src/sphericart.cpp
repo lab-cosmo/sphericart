@@ -50,10 +50,11 @@ void sphericart::compute_sph_prefactors(int l_max, double *factors) {
     _compute_sph_prefactors<double>(l_max, factors);
 }
 
-// specialized versions
+/*
 void sphericart::compute_sph_prefactors(int l_max, float *factors) {
     _compute_sph_prefactors<float>(l_max, factors);
 }
+*/
 
 template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED>
 inline void _hardcoded_lmax_switch(int n_samples, int l_max, const DTYPE *xyz, DTYPE *sph, DTYPE *dsph) {
@@ -122,12 +123,13 @@ void sphericart::cartesian_spherical_harmonics(int n_samples,
     _cartesian_spherical_harmonics<double>(n_samples, l_max, prefactors, xyz, sph, dsph);
 }
 
+/*
 void sphericart::cartesian_spherical_harmonics(int n_samples,
     int l_max, const float *prefactors,
     const float *xyz, float *sph, float *dsph) {
     _cartesian_spherical_harmonics<float>(n_samples, l_max, prefactors, xyz, sph, dsph);
 }
-
+*/
 
 template<typename DTYPE>
 inline void _normalized_spherical_harmonics(
@@ -170,9 +172,11 @@ void sphericart::normalized_spherical_harmonics(
     _normalized_spherical_harmonics<double>(n_samples, l_max, prefactors, xyz, sph, dsph);
 }
 
+/*
 void sphericart::normalized_spherical_harmonics(
     int n_samples, int l_max,
     const float *prefactors, 
     const float *xyz, float *sph, float *dsph) {
     _normalized_spherical_harmonics<float>(n_samples, l_max, prefactors, xyz, sph, dsph);
 }
+*/

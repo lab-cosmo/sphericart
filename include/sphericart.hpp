@@ -22,7 +22,7 @@ namespace sphericart {
  *        the second containing constansts that are needed to evaluate the $Q_l^m$.
  */
 void SPHERICART_EXPORT compute_sph_prefactors(int l_max, double *factors);
-void SPHERICART_EXPORT compute_sph_prefactors(int l_max, float *factors);
+// void SPHERICART_EXPORT compute_sph_prefactors(int l_max, float *factors);
 
 /**
  * This function calculates the spherical harmonics and, optionally, their
@@ -68,6 +68,7 @@ void SPHERICART_EXPORT cartesian_spherical_harmonics(
     double *sph,
     double *dsph
 );
+/*
 void SPHERICART_EXPORT cartesian_spherical_harmonics(
     int n_samples,
     int l_max,
@@ -76,6 +77,7 @@ void SPHERICART_EXPORT cartesian_spherical_harmonics(
     float *sph,
     float *dsph
 );
+*/
 
 /**
  * This function calculates the conventional (normalized) spherical harmonics and, 
@@ -92,6 +94,7 @@ void SPHERICART_EXPORT normalized_spherical_harmonics(
     double *sph,
     double *dsph
 );
+/*
 void SPHERICART_EXPORT normalized_spherical_harmonics(
     int n_samples,
     int l_max,
@@ -100,7 +103,7 @@ void SPHERICART_EXPORT normalized_spherical_harmonics(
     float *sph,
     float *dsph
 );
-
+*/
 } // namespace sphericart
 
 #endif
