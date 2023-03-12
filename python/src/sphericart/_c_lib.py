@@ -4,9 +4,10 @@ import sys
 
 _HERE = os.path.realpath(os.path.dirname(__file__))
 
+
 class _yq_buffer(ctypes.Structure):
-    _fields_ = [('y', ctypes.c_double),
-                ('q', ctypes.c_double)]
+    _fields_ = [("y", ctypes.c_double), ("q", ctypes.c_double)]
+
 
 def setup_functions(lib):
     lib.sphericart_compute_sph_prefactors.restype = None
