@@ -1,3 +1,7 @@
+/** \file sphericart.h
+*  Defines the C API for `sphericart`.
+*/
+
 #ifndef SPHERICART_H
 #define SPHERICART_H
 
@@ -18,8 +22,8 @@ extern "C" {
  *        the calculation of the spherical harmonics up to degree `l_max`, in
  *        the order `(l, m) = (0, 0), (1, 0), (1, 1), (2, 0), (2, 1), ...`. 
  *        The array contains two blocks of size `(l_max+1) * (l_max+2) / 2`: 
- *        the first holds the numerical prefactors that enter the full $Y_l^m$,
- *        the second containing constansts that are needed to evaluate the $Q_l^m$.
+ *        the first holds the numerical prefactors that enter the full \f$Y_l^m\f$,
+ *        the second containing constansts that are needed to evaluate the \f$Q_l^m\f$.
  */
 void SPHERICART_EXPORT sphericart_compute_sph_prefactors(int l_max, double *factors);
 
@@ -31,7 +35,7 @@ void SPHERICART_EXPORT sphericart_compute_sph_prefactors(int l_max, double *fact
  *        will be calculated.
  * @param l_max The maximum degree of the spherical harmonics to be calculated.
  * @param prefactors Prefactors for the spherical harmonics as computed by the
- *        `sphericart_compute_sph_prefactors` function.
+ *        sphericart_compute_sph_prefactors() function.
  * @param xyz An array of size `(n_samples)*3`. It contains the Cartesian
  *        coordinates of the 3D points for which the spherical harmonics are to
  *        be computed, organized along two dimensions. The outer dimension is
@@ -71,8 +75,8 @@ void SPHERICART_EXPORT sphericart_cartesian_spherical_harmonics(
 /**
  * This function calculates the conventional (normalized) spherical harmonics and, 
  * optionally, their derivatives for a set of 3D points. 
- * Takes the same arguments as `sphericart_spherical_harmonics`, and simply returns
- * values evaluated for the normalized positions (x/r, y/r, z/r), with the corresponding
+ * Takes the same arguments as sphericart_cartesian_spherical_harmonics(), and simply returns
+ * values evaluated for the normalized positions \f$(x/r, y/r, z/r)\f$, with the corresponding
  * derivatives.
  */
 void SPHERICART_EXPORT sphericart_normalized_spherical_harmonics(
