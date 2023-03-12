@@ -15,7 +15,20 @@
 #include "macros.hpp"
 
 template <typename DTYPE, int HARDCODED_LMAX>
-inline void hardcoded_sph_template(DTYPE x, DTYPE y, DTYPE z, DTYPE x2, DTYPE y2, DTYPE z2, DTYPE *sph_i) {
+inline void hardcoded_sph_template(
+    DTYPE __attribute__((unused)) x, // these are unused in some code pathways, hopefully the compiler will compile them away
+    DTYPE __attribute__((unused)) y, 
+    DTYPE __attribute__((unused)) z, 
+    DTYPE __attribute__((unused)) x2, 
+    DTYPE __attribute__((unused)) y2, 
+    DTYPE __attribute__((unused)) z2, 
+    DTYPE *sph_i) {
+    /*
+        Combines the macro hard-coded Ylm calculators to get all the terms
+        up to HC_LMAX.  This templated version evaluates the ifs at compile time
+        avoiding unnecessary in-loop branching.
+    */
+
     static_assert(HARDCODED_LMAX <= SPHERICART_LMAX_HARDCODED, "Computing hardcoded sph beyond what is currently implemented.");
 
     COMPUTE_SPH_L0(sph_i);
@@ -47,18 +60,17 @@ inline void hardcoded_sph_template(DTYPE x, DTYPE y, DTYPE z, DTYPE x2, DTYPE y2
 
 template <typename DTYPE, int HARDCODED_LMAX>
 inline void hardcoded_sph_derivative_template(
-    DTYPE x,
-    DTYPE y,
-    DTYPE z,
-    DTYPE x2,
-    DTYPE y2,
-    DTYPE z2,
-    DTYPE *sph_i,
+    DTYPE __attribute__((unused)) x,  // tell the compiler these may be unused in some code paths (namely for LMAX<3)
+    DTYPE __attribute__((unused)) y,
+    DTYPE __attribute__((unused)) z,
+    DTYPE __attribute__((unused)) x2,
+    DTYPE __attribute__((unused)) y2,
+    DTYPE __attribute__((unused)) z2,
+    DTYPE __attribute__((unused)) *sph_i,
     DTYPE *dxsph_i,
     DTYPE *dysph_i,
     DTYPE *dzsph_i
 ) {
-
     /*
         Combines the macro hard-coded dYlm/d(x,y,z) calculators to get all the terms
         up to HC_LMAX.  This templated version evaluates the ifs at compile time
@@ -93,20 +105,24 @@ inline void hardcoded_sph_derivative_template(
 }
 
 template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, DTYPE *dsph_i, int size_y) {
-    auto x = xyz_i[0];
+inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, DTYPE __attribute__((unused)) *dsph_i, int size_y) {
+/* 
+    Wrapper for the hardcoded derivatives that also allows to apply normalization. Computes a single
+    sample, and uses a template to avoid branching. 
+*/
+
+    auto x  = xyz_i[0];
     auto y = xyz_i[1];
     auto z = xyz_i[2];
     auto x2 = x * x;
     auto y2 = y * y;
     auto z2 = z * z;
-    DTYPE ir=0;
+    DTYPE __attribute__((unused)) ir=0;
 
     if constexpr(NORMALIZED) {
-        auto ir2 = 1.0/(x2+y2+z2);
-        ir = sqrt(ir2);
+        ir = 1.0/sqrt(x2+y2+z2);
         x*=ir; y*=ir; z*=ir;
-        x2*=ir2; y2*=ir2; z2*=ir2;
+        x2 = x*x; y2=y*y; z2=z*z;
     }
     
     hardcoded_sph_template<DTYPE, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
@@ -132,19 +148,19 @@ inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, DTYPE *dsph_i
 }
 
 template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-void hardcoded_sph(int n_samples, const DTYPE *xyz, DTYPE *sph, DTYPE *dsph) {
+void hardcoded_sph(int n_samples, const DTYPE *xyz, DTYPE *sph, DTYPE __attribute__((unused)) *dsph) {
     /*
         Cartesian Ylm calculator using the hardcoded expressions.
         Templated version, just calls _compute_sph_templated and
         _compute_dsph_templated functions within a loop.
     */
+    constexpr auto size_y = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);        
     #pragma omp parallel
-    {
+    {        
         const DTYPE *xyz_i = nullptr;
         DTYPE *sph_i = nullptr;
         DTYPE *dsph_i = nullptr;
-        constexpr auto size_y = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);        
-
+        
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
             xyz_i = xyz + i_sample * 3;
@@ -159,18 +175,23 @@ void hardcoded_sph(int n_samples, const DTYPE *xyz, DTYPE *sph, DTYPE *dsph) {
 
 template <typename DTYPE, bool DO_DERIVATIVES, int HARDCODED_LMAX>
 static inline void generic_sph_l_channel(int l, 
-    DTYPE x, DTYPE y, DTYPE z, DTYPE rxy, 
+    DTYPE __attribute__((unused)) x,  // these might be unused for LMAX=1, not worth a full separate implementation
+    DTYPE __attribute__((unused)) y, 
+    DTYPE __attribute__((unused)) z, 
+    DTYPE __attribute__((unused)) rxy, 
     const DTYPE *pk, const DTYPE *qlmk,
     std::vector<DTYPE> &c,
     std::vector<DTYPE> &s,
     std::vector<DTYPE> &twomz,
     DTYPE *sph_i,
-    DTYPE *dxsph_i, DTYPE *dysph_i, DTYPE *dzsph_i
+    DTYPE __attribute__((unused)) *dxsph_i, 
+    DTYPE __attribute__((unused)) *dysph_i, 
+    DTYPE __attribute__((unused)) *dzsph_i
 )
 {    
     // working space for the recursive evaluation of Qlm and Q(l-1)m
-    DTYPE qlm_2, qlm_1, qlm_0;
-    DTYPE ql1m_2, ql1m_1, ql1m_0;
+    DTYPE __attribute__((unused)) qlm_2, qlm_1, qlm_0;
+    DTYPE __attribute__((unused)) ql1m_2, ql1m_1, ql1m_0;
     qlm_2 = qlmk[l]; // fetches the pre-computed Qll    
 
     // l=+-m
@@ -286,10 +307,10 @@ static inline void generic_sph_sample(int l_max,
     std::vector<DTYPE> &twomz,
     const DTYPE *xyz_i,
     DTYPE *sph_i,
-    DTYPE *dsph_i
+    DTYPE __attribute__((unused)) *dsph_i
 ) {
 
-    DTYPE ir = 0.0;
+    DTYPE __attribute__((unused)) ir = 0.0;
     DTYPE* dxsph_i = nullptr;
     DTYPE* dysph_i = nullptr;
     DTYPE* dzsph_i = nullptr;     
@@ -408,7 +429,7 @@ void generic_sph(
     const DTYPE *prefactors,
     const DTYPE *xyz,
     DTYPE *sph,
-    DTYPE *dsph
+    DTYPE __attribute__((unused)) *dsph
 ) {
     /*
         Implementation of the general case, but start at HARDCODED_LMAX and use

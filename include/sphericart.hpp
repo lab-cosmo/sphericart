@@ -16,7 +16,10 @@ namespace sphericart {
  * @param factors On entry, a (possibly uninitialized) array of size
  *        `(l_max+1) * (l_max+2)`. On exit, it will contain the prefactors for
  *        the calculation of the spherical harmonics up to degree `l_max`, in
- *        the order `(l, m) = (0, 0), (1, 0), (1, 1), (2, 0), (2, 1), ...`
+ *        the order `(l, m) = (0, 0), (1, 0), (1, 1), (2, 0), (2, 1), ...`. 
+ *        The array contains two blocks of size `(l_max+1) * (l_max+2) / 2`: 
+ *        the first holds the numerical prefactors that enter the full $Y_l^m$,
+ *        the second containing constansts that are needed to evaluate the $Q_l^m$.
  */
 void SPHERICART_EXPORT compute_sph_prefactors(int l_max, double *factors);
 void SPHERICART_EXPORT compute_sph_prefactors(int l_max, float *factors);
@@ -65,7 +68,6 @@ void SPHERICART_EXPORT cartesian_spherical_harmonics(
     double *sph,
     double *dsph
 );
-
 void SPHERICART_EXPORT cartesian_spherical_harmonics(
     int n_samples,
     int l_max,
@@ -75,6 +77,13 @@ void SPHERICART_EXPORT cartesian_spherical_harmonics(
     float *dsph
 );
 
+/**
+ * This function calculates the conventional (normalized) spherical harmonics and, 
+ * optionally, their derivatives for a set of 3D points. 
+ * Takes the same arguments as `sphericart_spherical_harmonics`, and simply returns
+ * values evaluated for the normalized positions (x/r, y/r, z/r), with the corresponding
+ * derivatives.
+ */
 void SPHERICART_EXPORT normalized_spherical_harmonics(
     int n_samples,
     int l_max,
@@ -83,7 +92,6 @@ void SPHERICART_EXPORT normalized_spherical_harmonics(
     double *sph,
     double *dsph
 );
-
 void SPHERICART_EXPORT normalized_spherical_harmonics(
     int n_samples,
     int l_max,
