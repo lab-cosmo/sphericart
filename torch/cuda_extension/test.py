@@ -90,8 +90,6 @@ def time_me(function, args):
 
     print (function)
     print (time)
-    
-    #print("spherical harmonics CPU (+deriv)", t_cpu_sph_harmonics.timeit(1000))
 
 nsample = 1000
 
@@ -128,33 +126,3 @@ for lmax in [0, 1, 5,7, 20, 25]:
 
     # spherical_harmonics_cuda_extension.adjust_shared_memory(xyz.double(), lmax, 1, True)
     # time_me(spherical_harmonics_cuda_extension.spherical_harmonics_cuda, {'lmax': lmax, 'xyz': xyz.double(), 'prefactors': prefactors.double()})
-
-    
-""" 
-    '''
-    timings for the forward pass
-    '''
-
-    xyz = torch.rand(nsample, 3, requires_grad=False).float().cuda()
-
-    t_cuda_sph_harmonics = benchmark.Timer(
-        stmt='sh(lmax, prefactors, xyz)',
-        globals={'xyz': xyz, 'lmax': lmax, 'prefactors' : prefactors.float() ,"sh": spherical_harmonics_cuda_extension.spherical_harmonics_cuda})
-
-
-    print("spherical harmonics CUDA", t_cuda_sph_harmonics.timeit(1000))
-
-    xyz = torch.rand(nsample, 3, requires_grad=True).float().cuda()
-
-    t_cuda_sph_harmonics = benchmark.Timer(
-        stmt='sh(lmax, prefactors, xyz)',
-        globals={'xyz': xyz, 'lmax': lmax, 'prefactors' : prefactors.float() ,"sh": spherical_harmonics_cuda_extension.spherical_harmonics_cuda})
-
-    print("spherical harmonics CUDA (+deriv)", t_cuda_sph_harmonics.timeit(1000))
-
-
-    t_cpu_sph_harmonics = benchmark.Timer(
-        stmt='sh(xyz, gradients)',
-        globals={'xyz': xyz.cpu().double().detach().numpy(), 'lmax': lmax, 'gradients': True,"sh": sh_calculator.compute})
-
-    print("spherical harmonics CPU (+deriv)", t_cpu_sph_harmonics.timeit(1000)) """
