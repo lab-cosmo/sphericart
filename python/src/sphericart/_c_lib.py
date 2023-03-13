@@ -4,22 +4,19 @@ import sys
 
 _HERE = os.path.realpath(os.path.dirname(__file__))
 
-class _yq_buffer(ctypes.Structure):
-    _fields_ = [('y', ctypes.c_double),
-                ('q', ctypes.c_double)]
 
 def setup_functions(lib):
     lib.sphericart_compute_sph_prefactors.restype = None
     lib.sphericart_compute_sph_prefactors.argtypes = [
         ctypes.c_int,
-        ctypes.POINTER(_yq_buffer),
+        ctypes.POINTER(ctypes.c_double),
     ]
 
     lib.sphericart_cartesian_spherical_harmonics.restype = None
     lib.sphericart_cartesian_spherical_harmonics.argtypes = [
         ctypes.c_int,
         ctypes.c_int,
-        ctypes.POINTER(_yq_buffer),
+        ctypes.POINTER(ctypes.c_double),
         ctypes.POINTER(ctypes.c_double),
         ctypes.POINTER(ctypes.c_double),
         ctypes.POINTER(ctypes.c_double),
@@ -29,7 +26,7 @@ def setup_functions(lib):
     lib.sphericart_normalized_spherical_harmonics.argtypes = [
         ctypes.c_int,
         ctypes.c_int,
-        ctypes.POINTER(_yq_buffer),
+        ctypes.POINTER(ctypes.c_double),
         ctypes.POINTER(ctypes.c_double),
         ctypes.POINTER(ctypes.c_double),
         ctypes.POINTER(ctypes.c_double),

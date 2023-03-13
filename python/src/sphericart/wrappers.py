@@ -2,12 +2,12 @@ import ctypes
 
 import numpy as np
 
-from ._c_lib import _get_library, _yq_buffer
+from ._c_lib import _get_library
 
 
 def c_get_prefactors(l_max):
     prefactors = np.empty((l_max + 1) * (l_max + 2))
-    prefactors_ptr = prefactors.ctypes.data_as(ctypes.POINTER(_yq_buffer))
+    prefactors_ptr = prefactors.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
     lib = _get_library()
     lib.sphericart_compute_sph_prefactors(l_max, prefactors_ptr)
@@ -17,7 +17,7 @@ def c_get_prefactors(l_max):
 def c_spherical_harmonics(l_max, xyz, prefactors, gradients=False, normalized=False):
     n_samples = xyz.shape[0]
     sph = np.empty((n_samples, (l_max + 1) ** 2))
-    prefactors_ptr = prefactors.ctypes.data_as(ctypes.POINTER(_yq_buffer))
+    prefactors_ptr = prefactors.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
