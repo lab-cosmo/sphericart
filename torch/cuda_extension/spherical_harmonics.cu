@@ -693,15 +693,12 @@ __global__ void generic_spherical_harmonics_kernel(const torch::PackedTensorAcce
     }
 
     __syncthreads();
+
     // write out all (min(HARDCODED_LMAX, lmax) +1)**2 hardcoded elements
     write_buffers(atom_idx, natoms, x, y, z, ir, (mm + 1) * (mm + 1), 0, buffer_sph, buffer_dsph_x,
                   buffer_dsph_y, buffer_dsph_z, sph, dsph, requires_grad, normalize);
 
-    /* fill the (Cartesian) sph by combining Qlm and
-        sine/cosine phi-dependent factors. we use pointer
-        arithmetics to make sure spk_i always points at the
-        beginning of the appropriate memory segment. */
-
+    //now lets do the generic terms...
     int size_q = (lmax + 1) * (lmax + 2) / 2;
     int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
 
@@ -727,10 +724,6 @@ __global__ void generic_spherical_harmonics_kernel(const torch::PackedTensorAcce
         generic_sph_l_channel_device(l, x, y, z, rxy, twoz, buffer_sph,
                                      buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
                                      sph_offset, pk, qlmk, buffer_c, buffer_s, requires_grad);
-
-        /*generic_sph_l_channel_device(l, HARDCODED_LMAX, x, y, z, rxy, twoz, buffer_sph,
-                                     buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
-                                     sph_offset, pk, qlmk, buffer_c, buffer_s, requires_grad); */
 
         // write out temporary storage buffers
         write_buffers(atom_idx, natoms, x, y, z, ir, 2 * l + 1, base_index, buffer_sph, buffer_dsph_x,
