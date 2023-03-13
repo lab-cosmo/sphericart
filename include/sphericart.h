@@ -1,5 +1,5 @@
 /** \file sphericart.h
-*  The C API for `sphericart` contains C wrappers for the C++ functions and structs defined in `sphericart.hpp`. 
+*  Defines the C API for `sphericart`.
 */
 
 #ifndef SPHERICART_H
@@ -10,18 +10,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @struct sphericart_yq_buffer
-* Holds prefactors for evaluating \f$Y_l^m\f$ and \f$Q_l^m\f$.
- * 
- * @var sphericart_yq_buffer::y 
- *      The prefactors for \f$Y_l^m\f$ 
- * @var sphericart_yq_buffer::q 
- *      Coefficients used to evaluate \f$Q_l^m\f$
-*/
-typedef struct {
-    double y, q;
-} sphericart_yq_buffer;
 
 /**
  * This function calculates the prefactors needed for the computation of the
@@ -37,7 +25,7 @@ typedef struct {
  *        the first holds the numerical prefactors that enter the full \f$Y_l^m\f$,
  *        the second containing constansts that are needed to evaluate the \f$Q_l^m\f$.
  */
-void SPHERICART_EXPORT sphericart_compute_sph_prefactors(int l_max, sphericart_yq_buffer *factors);
+void SPHERICART_EXPORT sphericart_compute_sph_prefactors(int l_max, double *factors);
 
 /**
  * This function calculates the Cartesian (un-normalized) spherical harmonics and, 
@@ -78,7 +66,7 @@ void SPHERICART_EXPORT sphericart_compute_sph_prefactors(int l_max, sphericart_y
 void SPHERICART_EXPORT sphericart_cartesian_spherical_harmonics(
     int n_samples,
     int l_max,
-    const sphericart_yq_buffer* prefactors,
+    const double* prefactors,
     const double *xyz,
     double *sph,
     double *dsph
@@ -94,7 +82,7 @@ void SPHERICART_EXPORT sphericart_cartesian_spherical_harmonics(
 void SPHERICART_EXPORT sphericart_normalized_spherical_harmonics(
     int n_samples,
     int l_max,
-    const sphericart_yq_buffer* prefactors,
+    const double* prefactors,
     const double *xyz,
     double *sph,
     double *dsph

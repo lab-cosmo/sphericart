@@ -14,7 +14,7 @@
 using namespace sphericart;
 
 // shorthand for all-past-1 generic sph only
-inline void compute_generic(int n_samples, int l_max, yq_buffer<DTYPE> *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph) {
+inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph) {
     if (dsph==nullptr) {
         generic_sph<DTYPE, false, false, 1>(n_samples, l_max, prefactors, xyz, sph, dsph);
     } else {
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Running with n_tries=" << n_tries << ", n_samples=" << n_samples << std::endl;
     std::cout << "\n============= l_max = " << l_max << " ==============" << std::endl;
 
-    auto prefactors = std::vector<yq_buffer<DTYPE> >((l_max+1)*(l_max+2)/2);
+    auto prefactors = std::vector<DTYPE>((l_max+1)*(l_max+2), 0.0);
     compute_sph_prefactors(l_max, prefactors.data());
 
     auto xyz = std::vector<DTYPE>(n_samples*3, 0.0);
