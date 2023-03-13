@@ -15,6 +15,8 @@ using namespace torch::autograd;
 #define HARDCODED_LMAX 6
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
+#define CHECK_SIMILARITY(x, y) TORCH_CHECK(x.type().scalarType() == y.type().scalarType(), #x " and " #y " must have the same dtype.")
+
 #define CHECK_INPUT(x) \
     CHECK_CUDA(x);     \
     CHECK_CONTIGUOUS(x)
@@ -775,6 +777,10 @@ std::vector<torch::Tensor> generic_spherical_harmonics_gpu(torch::Tensor xyz,
                                                            int lmax,
                                                            int GRID_DIM_Y)
 {
+
+    CHECK_INPUT(xyz);
+    CHECK_INPUT(prefactors);
+    CHECK_SIMILARITY(xyz, prefactors);
 
     int ntotal = (lmax + 1) * (lmax + 1);
 
