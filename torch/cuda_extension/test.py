@@ -49,12 +49,12 @@ def check_correctness(sph_harmonics_cuda,gradients_cuda,  sphericart_sph , spher
     '''
     for performance reasons sph_harmonics and derivs are ordered as [nirreps, nedges] and [nirreps,3,nedges] on the GPU so need to transpose...
     '''
-    gradients = gradients_cuda.transpose(0,-1)
-    sph_harmonics = sph_harmonics_cuda.transpose(0,1)
+    #gradients = gradients_cuda.transpose(0,-1)
+    #sph_harmonics = sph_harmonics_cuda.transpose(0,1)
 
     '''convert to FP64 to compare with CPU implementation'''
-    sph_harmonics_cpu = sph_harmonics.cpu().detach().numpy()
-    deriv_cpu = gradients.cpu().detach().numpy()
+    sph_harmonics_cpu = sph_harmonics_cuda.cpu().detach().numpy()
+    deriv_cpu = gradients_cuda.cpu().detach().numpy()
 
     '''
     lets test some correctness vs CPU implementation

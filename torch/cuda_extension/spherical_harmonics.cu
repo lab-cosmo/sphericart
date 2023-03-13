@@ -835,11 +835,11 @@ std::vector<torch::Tensor> generic_spherical_harmonics_gpu(torch::Tensor xyz,
 
     if (xyz.requires_grad())
     {
-        return {sph, d_sph};
+        return {sph.transpose(0, 1).contiguous(), d_sph.transpose(0, 2).contiguous()};
     }
     else
     {
-        return {sph};
+        return {sph.transpose(0, 1).contiguous()};
     }
 }
 
