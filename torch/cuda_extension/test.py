@@ -119,6 +119,9 @@ for lmax in [0, 1, 5,7, 20, 25]:
     sh_cuda, sh_cuda_deriv = compute_spherical_harmonics_cuda(xyz, prefactors, True, torch.float32)
     check_correctness(sh_cuda,sh_cuda_deriv, sh_sphericart, sh_sphericart_grad)
 
+    '''
+    Timings for CPU and FP32 CUDA code
+    '''
     time_me(sh_calculator.compute, {'xyz': xyz_cpu, 'gradients': True})
     
     spherical_harmonics_cuda_extension.adjust_shared_memory(xyz.float(), lmax, 1, True)
