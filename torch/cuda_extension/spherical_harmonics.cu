@@ -530,11 +530,11 @@ __device__ inline void write_buffers(int atom_idx, int natoms, scalar_t x, scala
     }
 }
 template <typename scalar_t>
-__global__ void generic_spherical_harmonics_kernel(const torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> xyz,
-                                                   const torch::PackedTensorAccessor32<scalar_t, 1, torch::RestrictPtrTraits> prefactors,
-                                                   const int lmax,
-                                                   const bool requires_grad,
-                                                   const bool normalize,
+__global__ void generic_spherical_harmonics_kernel(torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> xyz,
+                                                   torch::PackedTensorAccessor32<scalar_t, 1, torch::RestrictPtrTraits> prefactors,
+                                                   int lmax,
+                                                   bool requires_grad,
+                                                   bool normalize,
                                                    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> sph,
                                                    torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph)
 {
@@ -772,8 +772,8 @@ void adjust_shared_memory(torch::Tensor xyz, int lmax, int GRID_DIM_Y, bool requ
 
 std::vector<torch::Tensor> generic_spherical_harmonics_gpu(torch::Tensor xyz,
                                                            torch::Tensor prefactors,
-                                                           const int lmax,
-                                                           const int GRID_DIM_Y)
+                                                           int lmax,
+                                                           int GRID_DIM_Y)
 {
 
     int ntotal = (lmax + 1) * (lmax + 1);
