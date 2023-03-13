@@ -65,7 +65,9 @@ def check_correctness(sph_harmonics_cuda,gradients_cuda,  sphericart_sph , spher
     if (len(idx[0]) > 1):
         print (f"diff spherical_harmonics in {orig_dtype}, check the following indices and values:")
         print (idx)
+        print ('--CUDA--')
         print (sph_harmonics_cpu[idx])
+        print ('--Reference--')
         print (sphericart_sph[idx])
 
     idx = np.where(deriv_cpu - sphericart_gradients > 5e-3)
@@ -73,7 +75,9 @@ def check_correctness(sph_harmonics_cuda,gradients_cuda,  sphericart_sph , spher
     if (len(idx[0]) > 1):
         print (f"diff in gradients in {orig_dtype}, check the following indices and values:")
         print (idx)
+        print ('--CUDA--')
         print (deriv_cpu[idx])
+        print ('--Reference--')
         print (sh_sphericart_grad[idx])
 
 def time_me(function, args):
