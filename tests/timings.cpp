@@ -36,7 +36,7 @@ inline void benchmark(std::string context, size_t n_samples, size_t n_tries, Fn 
 
         double duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
         time += duration / n_samples;
-        time2 += duration * duration / n_samples;
+        time2 += duration * duration / (n_samples * n_samples);
     }
 
     auto std = sqrt(time2 / n_tries - (time / n_tries) * (time / n_tries));
