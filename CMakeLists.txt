@@ -63,7 +63,9 @@ generate_export_header(sphericart
 )
 target_compile_definitions(sphericart PRIVATE sphericart_EXPORTS)
 
-# Handle optimization flags
+# Handle optimization and OpenMP flags
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-Wunknown-pragmas" COMPILER_SUPPORTS_WPRAGMAS)
 if (SPHERICART_OPENMP)
     find_package(OpenMP)
     if(OpenMP_CXX_FOUND)
@@ -71,10 +73,16 @@ if (SPHERICART_OPENMP)
         target_link_libraries(sphericart PUBLIC OpenMP::OpenMP_CXX)
     else()
         message(WARNING "Could not find OpenMP")
+        if(COMPILER_SUPPORTS_WPRAGMAS)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+        endif()
+    endif()
+else()    
+    if(COMPILER_SUPPORTS_WPRAGMAS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
     endif()
 endif()
 
-include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
 if(COMPILER_SUPPORTS_MARCH_NATIVE)
     message(STATUS "march=native is enabled")
@@ -88,7 +96,7 @@ if(COMPILER_SUPPORTS_WALL)
 endif()
 
 check_cxx_compiler_flag("-Wextra" COMPILER_SUPPORTS_WEXTRA)
-if(COMPILER_SUPPORTS_WALL)
+if(COMPILER_SUPPORTS_WEXTRA)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
 endif()
 
