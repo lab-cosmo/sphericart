@@ -1,6 +1,5 @@
 #include "stdlib.h"
 #include "sphericart.h"
-#include "sphericart/exports.h"
 
 
 int main() {
