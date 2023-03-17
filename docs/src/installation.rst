@@ -1,7 +1,6 @@
 Installation
 ============
 
-Only Unix-based systems are supported for the moment. We plan to support Windows and MacOS in the future.
 
 Python package
 --------------
@@ -12,25 +11,36 @@ The Python package can be installed with pip by simply running
 
     pip install sphericart
 
-C library
----------
+This basic package makes use of NumPy. A PyTorch-based implementation,
+which includes GPU support, can be installed with 
 
-After cloning the repository with 
+.. code-block:: bash
+
+    pip install sphericart?????????????????
+
+
+C/C++ library
+-------------
+
+First, the repository needs to be cloned with 
 
 .. code-block:: bash
 
     git clone https://github.com/lab-cosmo/sphericart
 
-the C library can be installed with
+After that, default installation of the C/C++ library can be achieved as
 
 .. code-block:: bash
 
-    cd sphericart/src
+    cd sphericart/
     mkdir build
-    cd build
-    cmake .. -DCMAKE_INSTALL_PREFIX=../../lib/
+    cd build/
+    cmake ..
     make install
 
-This will install a shared object library inside the ``sphericart/lib/`` folder.
-See the examples section for more information on how to link the C shared 
-object library in an external program.
+This will attempt to install a static library inside the /usr/local/lib/ folder, 
+which will almost certainly cause a permission error. This can be solved by using 
+administrator privileges (e.g., ``sudo make install``). Alternatively, the destination 
+folder can be changed by adding ``-DCMAKE_INSTALL_PREFIX=...`` to the ``cmake ..`` command.
+In practice, we recommend ``cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local``, which
+will be appropriate in the vast majority of cases.
