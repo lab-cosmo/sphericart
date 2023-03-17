@@ -40,6 +40,7 @@ add_library(sphericart
 set_target_properties(sphericart PROPERTIES
     VERSION "0.1.0"
     SOVERSION "0.1"
+    POSITION_INDEPENDENT_CODE ON
 )
 
 # we need to compile sphericart with C++17 for if constexpr
@@ -78,7 +79,7 @@ if (SPHERICART_OPENMP)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
         endif()
     endif()
-else()    
+else()
     if(COMPILER_SUPPORTS_WPRAGMAS)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
     endif()

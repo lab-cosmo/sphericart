@@ -58,7 +58,7 @@ class bdist_egg_disabled(bdist_egg):
 
 if __name__ == "__main__":
     setup(
-        version=open(os.path.join("sphericart", "VERSION")).readline().strip(),
+        version=open(os.path.join(ROOT, "sphericart", "VERSION")).readline().strip(),
         ext_modules=[
             Extension(name="sphericart_torch", sources=[]),
         ],
@@ -67,9 +67,9 @@ if __name__ == "__main__":
             "bdist_egg": bdist_egg if "bdist_egg" in sys.argv else bdist_egg_disabled,
         },
         package_data={
-            "sphericart": [
-                "sphericart/lib/*",
-                "sphericart/include/*",
+            "sphericart_torch": [
+                "sphericart_torch/lib/*",
+                "sphericart_torch/include/*",
             ]
         },
     )
