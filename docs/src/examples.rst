@@ -2,19 +2,13 @@ Examples
 ========
 
 We provide concrete examples on how to calculate spherical harmonics.
+
+
 Python example
 --------------
 
-The Python example in ``examples/python/`` can be run with
-
-.. code-block:: bash
-
-    python example.py
-
-This example calculates the spherical harmonics and their derivatives, and it 
-benchmarks the evaluation times against the spherical harmonics implementation
-of e3nn (https://github.com/e3nn/e3nn).
-
+.. literalinclude:: ../../examples/python/example.py
+    :language: python
 
 
 C example
