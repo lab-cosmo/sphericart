@@ -145,7 +145,11 @@ inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, [[maybe_unuse
 }
 
 template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-void hardcoded_sph(int n_samples, const DTYPE *xyz, DTYPE *sph, [[maybe_unused]] DTYPE *dsph) {
+void hardcoded_sph(int n_samples,
+    [[maybe_unused]] int l_max_dummy,  // dummy variables to have a uniform interface
+    [[maybe_unused]] const DTYPE *prefactors_dummy,
+    [[maybe_unused]] DTYPE *buffers_dummy,
+    const DTYPE *xyz, DTYPE *sph, [[maybe_unused]] DTYPE *dsph) {
     /*
         Cartesian Ylm calculator using the hardcoded expressions.
         Templated version, just calls _compute_sph_templated and
@@ -178,9 +182,9 @@ static inline void generic_sph_l_channel(int l,
     [[maybe_unused]] DTYPE z, 
     [[maybe_unused]] DTYPE rxy, 
     const DTYPE *pk, const DTYPE *qlmk,
-    std::vector<DTYPE> &c,
-    std::vector<DTYPE> &s,
-    std::vector<DTYPE> &twomz,
+    DTYPE *c,
+    DTYPE *s,
+    DTYPE *twomz,
     DTYPE *sph_i,
     [[maybe_unused]] DTYPE *dxsph_i, 
     [[maybe_unused]] DTYPE *dysph_i, 
@@ -298,9 +302,9 @@ static inline void generic_sph_sample(int l_max,
     int size_y,
     const DTYPE *pylm,
     const DTYPE *pqlm,
-    std::vector<DTYPE> &c,
-    std::vector<DTYPE> &s,
-    std::vector<DTYPE> &twomz,
+    DTYPE *c,
+    DTYPE *s,
+    DTYPE *twomz,
     const DTYPE *xyz_i,
     DTYPE *sph_i,
     [[maybe_unused]] DTYPE *dsph_i
@@ -420,6 +424,7 @@ void generic_sph(
     int n_samples,
     int l_max,
     const DTYPE *prefactors,
+    DTYPE *buffers,
     const DTYPE *xyz,
     DTYPE *sph,
     [[maybe_unused]] DTYPE *dsph
@@ -444,17 +449,20 @@ void generic_sph(
     // implementation assumes to use hardcoded expressions for at least l=0,1
     static_assert(HARDCODED_LMAX>=1, "Cannot call the generic Ylm calculator for l<=1.");
 
-    const auto size_y = (l_max + 1) * (l_max + 1);    
-    const DTYPE *qlmfactors = prefactors + (l_max + 1) * (l_max + 2) / 2;
+    const auto size_y = (l_max + 1) * (l_max + 1);
+    const auto size_q = (l_max + 1) * (l_max + 2)/2;
+    const DTYPE *qlmfactors = prefactors + size_q;
 
+#ifdef _OPENMP
     #pragma omp parallel
     {
-        // thread-local storage arrays for Qlm (modified associated Legendre
-        // polynomials) and terms corresponding to (scaled) cosine and sine of
-        // the azimuth
-        auto c = std::vector<DTYPE>(l_max + 1, 0.0);
-        auto s = std::vector<DTYPE>(l_max + 1, 0.0);
-        auto twomz = std::vector<DTYPE>(l_max + 1, 0.0);
+        auto c = buffers + omp_get_thread_num() * size_q *3;
+#else
+        auto c = buffers;        
+#endif 
+        auto s = c+size_q;
+        auto twomz = s+size_q;        
+        // ^^^ thread-local storage arrays for terms corresponding to (scaled) cosine and sine of the azimuth, and 2mz
         
         // pointers to the sections of the output arrays that hold Ylm and derivatives
         // for a given point
@@ -476,9 +484,11 @@ void generic_sph(
             }            
             
             generic_sph_sample<DTYPE, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l_max, size_y,
-            prefactors, qlmfactors, c, s, twomz, xyz_i, sph_i, dsph_i);
+                prefactors, qlmfactors, c, s, twomz, xyz_i, sph_i, dsph_i);
         }
+#ifdef _OPENMP        
     }
+#endif    
 }
 
 #endif

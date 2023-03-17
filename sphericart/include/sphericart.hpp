@@ -6,11 +6,15 @@
 #define SPHERICART_HPP
 
 #include <cstddef>
-
+#include <vector>
 #include "sphericart/exports.h"
 
-namespace sphericart {
+#ifdef _OPENMP
+#include "omp.h"
+#endif
 
+
+namespace sphericart {
 /**
  * This function calculates the prefactors needed for the computation of the
  * spherical harmonics.
@@ -108,6 +112,37 @@ void SPHERICART_EXPORT normalized_spherical_harmonics(
     float *dsph
 );
 */
+
+
+/**
+ * Wrapper class to compute spherical harmonics. 
+ * It handles initialization of the prefactors and of the buffers that 
+ * are necessary to compute efficiently the spherical harmonics. 
+*/
+template<typename DTYPE>
+class SphericalHarmonics{
+private:
+    size_t l_max;
+    bool normalize;
+    DTYPE *prefactors;
+    DTYPE *buffers;
+    // use function pointers to call up the right functions
+    void (*_array_no_derivatives)(int, int, const DTYPE*, DTYPE*, const DTYPE*, DTYPE*, DTYPE*);
+    void (*_array_with_derivatives)(int, int, const DTYPE*, DTYPE*, const DTYPE*, DTYPE*, DTYPE*);
+
+public:     
+    SphericalHarmonics(size_t l_max, bool normalize=false); 
+    ~SphericalHarmonics(); 
+
+    void compute(size_t n_samples, const std::vector<DTYPE>& xyz, std::vector<DTYPE>& sph);
+    void compute(size_t n_samples, const std::vector<DTYPE>& xyz, std::vector<DTYPE>& sph, std::vector<DTYPE>& dsph);
+    void compute(const std::vector<DTYPE>& xyz_i, std::vector<DTYPE>& sph_i); 
+}; // class SphericalHarmonics
+
+// extern template definitions: these will be created and compiled in sphericart.cpp
+extern template class SphericalHarmonics<float>;
+extern template class SphericalHarmonics<double>;
+
 } //namespace sphericart
 
 #endif
