@@ -20,7 +20,7 @@ Python
 C++
 ---
 
-.. literalinclude:: ../../examples/cpp/example.c
+.. literalinclude:: ../../examples/cpp/example.cpp
     :language: c++
 
 
