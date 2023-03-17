@@ -14,21 +14,17 @@ For instructions and examples on the usage of the library, please refer to our
 From source
 
 ```bash
-pip install git+https://github.com/lab-cosmo/sphericart
+git clone https://github.com/lab-cosmo/sphericart
+pip install .
+
+# if you also want the torch bindings
+pip install ./torch
 ```
 
-Pre-built (https://pypi.org/project/sphericart/)
+Pre-built (https://pypi.org/project/sphericart/), no torch bindings for now
 
 ```bash
 pip sphericart
-```
-
-Torch bindings (from source only for now)
-
-```bash
-git clone https://github.com/lab-cosmo/sphericart
-cd shericart/torch
-pip install .
 ```
 
 ### C and C++ API
@@ -41,7 +37,7 @@ cd shericart
 
 mkdir build && cd build
 
-cmake ../sphericart <cmake configuration options>
+cmake .. <cmake configuration options>
 cmake --build . --target install
 ```
 
