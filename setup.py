@@ -84,4 +84,7 @@ if __name__ == "__main__":
                 "sphericart/include/*",
             ]
         },
+        extras_require={
+            "torch": ["sphericart_torch"],
+        },
     )

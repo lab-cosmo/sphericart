@@ -29,7 +29,7 @@ if (SPHERICART_TORCH_BUILD_FOR_PYTHON)
     set(SPHERICART_BUILD_TORCH OFF CACHE BOOL "" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     mark_as_advanced(SPHERICART_BUILD_TORCH)
-    add_subdirectory(sphericart)
+    add_subdirectory(sphericart EXCLUDE_FROM_ALL)
 
     # add path to the cmake configuration of the version of libtorch used
     # by the Python torch module. PYTHON_EXECUTABLE is provided by skbuild

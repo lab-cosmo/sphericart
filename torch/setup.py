@@ -27,7 +27,6 @@ class cmake_ext(build_ext):
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
-            # "-DCMAKE_FIND_DEBUG_MODE=ON",
         ]
 
         CMAKE_EXE = os.path.join(cmake.CMAKE_BIN_DIR, "cmake")
