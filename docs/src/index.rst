@@ -11,8 +11,7 @@ The library is natively available in Python, C and C++. Our PyTorch-based
 implementation also provides fast spherical harmonics evaluation on GPUs.
 
 This documentation contains two quick guides on how to install and use
-the library. A more comprehensive API showcase and examples are also
-included.
+the library. A more comprehensive API showcase is also included.
 
 .. toctree::
     :maxdepth: 1
@@ -20,4 +19,3 @@ included.
     installation
     using
     api
-    examples
