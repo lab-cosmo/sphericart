@@ -6,10 +6,21 @@
 #define SPHERICART_H
 
 #include "sphericart/exports.h"
+#include "stddef.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct sphericart_spherical_harmonics; 
+typedef struct sphericart_spherical_harmonics sphericart_spherical_harmonics;
+sphericart_spherical_harmonics *sphericart_new(size_t l_max, char normalize);
+sphericart_spherical_harmonics *sphericart_new_f(size_t l_max, char normalize);
+void sphericart_delete(sphericart_spherical_harmonics* spherical_harmonics);
+void sphericart_compute_array(sphericart_spherical_harmonics* spherical_harmonics, size_t n_samples, const double* xyz, double* sph, double* dsph);
+void sphericart_compute_sample(sphericart_spherical_harmonics* spherical_harmonics, const double* xyz, double* sph, double* dsph);
+void sphericart_compute_array_f(sphericart_spherical_harmonics* spherical_harmonics, size_t n_samples, const float* xyz, float* sph, float* dsph);
+void sphericart_compute_sample_f(sphericart_spherical_harmonics* spherical_harmonics, const float* xyz, float* sph, float* dsph);
 
 /**
  * This function calculates the prefactors needed for the computation of the

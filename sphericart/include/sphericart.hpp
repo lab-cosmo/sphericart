@@ -13,6 +13,7 @@
 #include "omp.h"
 #endif
 
+#include "sphericart.h"
 
 namespace sphericart {
 /**
@@ -34,6 +35,64 @@ void SPHERICART_EXPORT compute_sph_prefactors(int l_max, DTYPE* factors);
 // extern template definitions: these will be created and compiled in sphericart.cpp
 extern template void compute_sph_prefactors<float>(int, float*);
 extern template void compute_sph_prefactors<double>(int, double*);
+
+
+
+/**
+ * Wrapper class to compute spherical harmonics. 
+ * It handles initialization of the prefactors and of the buffers that 
+ * are necessary to compute efficiently the spherical harmonics. 
+*/
+template<typename DTYPE>
+class SphericalHarmonics{
+private:
+    int l_max, size_y, size_q;
+    bool normalize;
+    DTYPE *prefactors;
+    DTYPE *buffers;    
+
+    // function pointers are used to set up the right functions to be called
+    void (*_array_no_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, DTYPE*);
+    void (*_array_with_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, DTYPE*);
+    // these compute a single sample
+    
+    void (*_sample_no_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, const DTYPE*, DTYPE*, DTYPE*, DTYPE*);
+    void (*_sample_with_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, const DTYPE*, DTYPE*, DTYPE*, DTYPE*);
+
+    void compute_array(size_t n_samples, const DTYPE* xyz, DTYPE* sph) {
+        this->_array_no_derivatives(xyz, sph, nullptr, n_samples, this->l_max, this->prefactors, this->buffers);
+    }
+    void compute_array(size_t n_samples, const DTYPE* xyz, DTYPE* sph, [[maybe_unused]] DTYPE* dsph) {
+        this->_array_with_derivatives(xyz, sph, dsph, n_samples, this->l_max, this->prefactors, this->buffers);
+    }
+
+    void compute_sample(const DTYPE* xyz, DTYPE* sph) {
+        this->_sample_no_derivatives(xyz, sph, nullptr, this->l_max, this->size_y, this->prefactors, 
+            this->prefactors+this->size_q, this->buffers, this->buffers+this->size_q, this->buffers+2*this->size_q);
+    }    
+    void compute_sample(const DTYPE* xyz, DTYPE* sph, [[maybe_unused]] DTYPE* dsph) {
+        this->_sample_no_derivatives(xyz, sph, nullptr, this->l_max, this->size_y, this->prefactors, 
+            this->prefactors+this->size_q, this->buffers, this->buffers+this->size_q, this->buffers+2*this->size_q);
+    }
+
+    friend void ::sphericart_compute_array(sphericart_spherical_harmonics* spherical_harmonics, size_t n_samples, const double* xyz, double* sph, double* dsph);
+    friend void ::sphericart_compute_sample(sphericart_spherical_harmonics* spherical_harmonics, const double* xyz, double* sph, double* dsph);
+    friend void ::sphericart_compute_array_f(sphericart_spherical_harmonics* spherical_harmonics, size_t n_samples, const float* xyz, float* sph, float* dsph);
+    friend void ::sphericart_compute_sample_f(sphericart_spherical_harmonics* spherical_harmonics, const float* xyz, float* sph, float* dsph);
+
+public:     
+    SphericalHarmonics(size_t l_max, bool normalize=false); 
+    ~SphericalHarmonics(); 
+    
+    void compute(const std::vector<DTYPE>& xyz, std::vector<DTYPE>& sph);
+    void compute(const std::vector<DTYPE>& xyz, std::vector<DTYPE>& sph, std::vector<DTYPE>& dsph);
+}; // class SphericalHarmonics
+
+// extern template definitions: these will be created and compiled in sphericart.cpp
+extern template class SphericalHarmonics<float>;
+extern template class SphericalHarmonics<double>;
+
+// **** BEGINS LEGACY CODE **** 
 
 /**
  * This function calculates the spherical harmonics and, optionally, their
@@ -111,58 +170,6 @@ void SPHERICART_EXPORT normalized_spherical_harmonics(
     float *sph,
     float *dsph
 );
-
-
-
-/**
- * Wrapper class to compute spherical harmonics. 
- * It handles initialization of the prefactors and of the buffers that 
- * are necessary to compute efficiently the spherical harmonics. 
-*/
-template<typename DTYPE>
-class SphericalHarmonics{
-private:
-    int l_max, size_y, size_q;
-    bool normalize;
-    DTYPE *prefactors;
-    DTYPE *buffers;    
-
-    // function pointers are used to set up the right functions to be called
-    void (*_array_no_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, DTYPE*);
-    void (*_array_with_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, DTYPE*);
-    // these compute a single sample
-    
-    void (*_sample_no_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, const DTYPE*, DTYPE*, DTYPE*, DTYPE*);
-    void (*_sample_with_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, const DTYPE*, DTYPE*, DTYPE*, DTYPE*);
-
-    void compute_array(size_t n_samples, const DTYPE* xyz, DTYPE* sph) {
-        this->_array_no_derivatives(xyz, sph, nullptr, n_samples, this->l_max, this->prefactors, this->buffers);
-    }
-    void compute_array(size_t n_samples, const DTYPE* xyz, DTYPE* sph, DTYPE* dsph) {
-        this->_array_with_derivatives(xyz, sph, dsph, n_samples, this->l_max, this->prefactors, this->buffers);
-    }
-
-    void compute_sample(const DTYPE* xyz, DTYPE* sph) {
-        this->_sample_no_derivatives(xyz, sph, nullptr, this->l_max, this->size_y, this->prefactors, 
-            this->prefactors+this->size_q, this->buffers, this->buffers+this->size_q, this->buffers+2*this->size_q);
-    }    
-    void compute_sample(const DTYPE* xyz, DTYPE* sph, DTYPE* dsph) {
-        this->_sample_no_derivatives(xyz, sph, nullptr, this->l_max, this->size_y, this->prefactors, 
-            this->prefactors+this->size_q, this->buffers, this->buffers+this->size_q, this->buffers+2*this->size_q);
-    }
-
-
-public:     
-    SphericalHarmonics(size_t l_max, bool normalize=false); 
-    ~SphericalHarmonics(); 
-    
-    void compute(const std::vector<DTYPE>& xyz, std::vector<DTYPE>& sph);
-    void compute(const std::vector<DTYPE>& xyz, std::vector<DTYPE>& sph, std::vector<DTYPE>& dsph);
-}; // class SphericalHarmonics
-
-// extern template definitions: these will be created and compiled in sphericart.cpp
-extern template class SphericalHarmonics<float>;
-extern template class SphericalHarmonics<double>;
 
 } //namespace sphericart
 
