@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <vector>
 #include "sphericart/exports.h"
-
+#include<cstdio>
 #ifdef _OPENMP
 #include "omp.h"
 #endif
@@ -31,12 +31,7 @@ namespace sphericart {
  *        the second containing constansts that are needed to evaluate the \f$Q_l^m\f$.
  */
 template <typename DTYPE>
-void SPHERICART_EXPORT compute_sph_prefactors(int l_max, DTYPE* factors);
-// extern template definitions: these will be created and compiled in sphericart.cpp
-extern template void compute_sph_prefactors<float>(int, float*);
-extern template void compute_sph_prefactors<double>(int, double*);
-
-
+void compute_sph_prefactors(int l_max, DTYPE* factors);
 
 /**
  * Wrapper class to compute spherical harmonics. 
@@ -70,20 +65,63 @@ private:
         this->_sample_no_derivatives(xyz, sph, nullptr, this->l_max, this->size_y, this->prefactors, 
             this->prefactors+this->size_q, this->buffers, this->buffers+this->size_q, this->buffers+2*this->size_q);
     }    
-    void compute_sample(const DTYPE* xyz, DTYPE* sph, [[maybe_unused]] DTYPE* dsph) {
-        this->_sample_no_derivatives(xyz, sph, nullptr, this->l_max, this->size_y, this->prefactors, 
+    void compute_sample(const DTYPE* xyz, DTYPE* sph, DTYPE* dsph) {
+        this->_sample_with_derivatives(xyz, sph, dsph, this->l_max, this->size_y, this->prefactors, 
             this->prefactors+this->size_q, this->buffers, this->buffers+this->size_q, this->buffers+2*this->size_q);
     }
 
+    // we must befriend the C API functions so they can access the internal pointer-based calculators
     friend void ::sphericart_compute_array(sphericart_spherical_harmonics* spherical_harmonics, size_t n_samples, const double* xyz, double* sph, double* dsph);
     friend void ::sphericart_compute_sample(sphericart_spherical_harmonics* spherical_harmonics, const double* xyz, double* sph, double* dsph);
     friend void ::sphericart_compute_array_f(sphericart_spherical_harmonics* spherical_harmonics, size_t n_samples, const float* xyz, float* sph, float* dsph);
     friend void ::sphericart_compute_sample_f(sphericart_spherical_harmonics* spherical_harmonics, const float* xyz, float* sph, float* dsph);
 
-public:     
+public:
+
+    /** @brief: Initialize the SphericalHarmonics class setting maximum l and normalization
+     *  
+     *  @param l_max:
+     *      The maximum degree of the spherical harmonics to be calculated.
+     *  @param normalized:
+     *      If `false` (default) computes the scaled spherical harmonics, which are 
+     *      polynomials in the Cartesian coordinates of the input points. If `true`,
+     *      computes the normalized (spherical) spherical harmonics that are evaluated
+     *      on the unit sphere. In practice, this simply computes the scaled harmonics
+     *      at the normalized coordinates \f$(x/r, y/r, z/r)\f$, and adapts the derivatives
+     *      accordingly. 
+     */
     SphericalHarmonics(size_t l_max, bool normalized=false); 
+    
     ~SphericalHarmonics(); 
     
+    /** @brief: Computes the spherical harmonics for one or more 3D points.
+     * 
+     * @param xyz A `std::vector` array of size `(n_samples)*3`. It contains the 
+     *        Cartesian coordinates of the 3D points for which the spherical harmonics 
+     *        are to be computed, organized along two dimensions. The outer dimension is
+     *        `n_samples` long, accounting for different samples, while the inner
+     *        dimension has size 3 and it represents the x, y, and z coordinates
+     *        respectively. If `xyz` it contains a single point, the class will call
+     *        a simpler functions that directly evaluates the point, without a loop.
+      * @param sph On entry, a (possibly uninitialized) std::vector of size
+     *        `n_samples*(l_max+1)*(l_max+1)`. On exit, this array will contain
+     *        the spherical harmonics organized along two dimensions. The leading
+     *        dimension is `n_samples` long and it represents the different
+     *        samples, while the inner dimension is `(l_max+1)*(l_max+1)` long and
+     *        it contains the spherical harmonics. These are laid out in
+     *        lexicographic order. For example, if `l_max=2`, it will contain
+     *        `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1), (2, 0),
+     *        (2, 1), (2, 2)`, in this order.
+     * @param dsph On entry,  a (possibly uninitialized) std::vector of size
+     *        `n_samples*3*(l_max+1)*(l_max+1)`. On exit, this array will contain 
+     *        the spherical harmonics' derivatives organized along three dimensions. 
+     *        As for the `sph` parameter, the leading dimension represents the different 
+     *        samples, while the inner-most dimension is `(l_max+1)*(l_max+1)`, and it 
+     *        represents the degree and order of the spherical harmonics (again, organized 
+     *        in lexicographic order). The intermediate dimension corresponds to
+     *        different spatial derivatives of the spherical harmonics: x, y, and z,
+     *        respectively. 
+     */
     void compute(const std::vector<DTYPE>& xyz, std::vector<DTYPE>& sph);
     void compute(const std::vector<DTYPE>& xyz, std::vector<DTYPE>& sph, std::vector<DTYPE>& dsph);
 }; // class SphericalHarmonics
@@ -91,86 +129,6 @@ public:
 // extern template definitions: these will be created and compiled in sphericart.cpp
 extern template class SphericalHarmonics<float>;
 extern template class SphericalHarmonics<double>;
-
-// **** BEGINS LEGACY CODE **** 
-
-/**
- * This function calculates the spherical harmonics and, optionally, their
- * derivatives for a set of 3D points.
- *
- * @param n_samples The number of 3D points for which the spherical harmonics
- *        will be calculated.
- * @param l_max The maximum degree of the spherical harmonics to be calculated.
- * @param prefactors Prefactors for the spherical harmonics as computed by the
- *        compute_sph_prefactors() function.
- * @param xyz An array of size `(n_samples)*3`. It contains the Cartesian
- *        coordinates of the 3D points for which the spherical harmonics are to
- *        be computed, organized along two dimensions. The outer dimension is
- *        `n_samples` long, accounting for different samples, while the inner
- *        dimension has size 3 and it represents the x, y, and z coordinates
- *        respectively.
- * @param sph On entry, a (possibly uninitialized) array of size
- *        `n_samples*(l_max+1)*(l_max+1)`. On exit, this array will contain
- *        the spherical harmonics organized along two dimensions. The leading
- *        dimension is `n_samples` long and it represents the different
- *        samples, while the inner dimension is `(l_max+1)*(l_max+1)` long and
- *        it contains the spherical harmonics. These are laid out in
- *        lexicographic order. For example, if `l_max=2`, it will contain
- *        `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1), (2, 0),
- *        (2, 1), (2, 2)`, in this order.
- * @param dsph On entry, either `NULL` or a (possibly uninitialized) array of
- *        size `n_samples*3*(l_max+1)*(l_max+1)`. If `dsph` is `NULL`, the
- *        spherical harmonics' derivatives will not be calculated. Otherwise, on
- *        exit, this array will contain the spherical harmonics' derivatives
- *        organized along three dimensions. As for the `sph` parameter, the
- *        leading dimension represents the different samples, while the
- *        inner-most dimension is `(l_max+1)*(l_max+1)`, and it represents the
- *        degree and order of the spherical harmonics (again, organized in
- *        lexicographic order). The intermediate dimension corresponds to
- *        different spatial derivatives of the spherical harmonics: x, y, and z,
- *        respectively.
- */
-void SPHERICART_EXPORT cartesian_spherical_harmonics(
-    int n_samples,
-    int l_max,
-    const double* prefactors,
-    const double *xyz,
-    double *sph,
-    double *dsph
-);
-void SPHERICART_EXPORT cartesian_spherical_harmonics(
-    int n_samples,
-    int l_max,
-    const float* prefactors,
-    const float *xyz,
-    float *sph,
-    float *dsph
-);
-
-/**
- * This function calculates the conventional (normalized) spherical harmonics and, 
- * optionally, their derivatives for a set of 3D points. 
- * Takes the same arguments as cartesian_spherical_harmonics(), and simply returns
- * values evaluated for the normalized positions \f$(x/r, y/r, z/r)\f$, with the corresponding
- * derivatives.
- */
-void SPHERICART_EXPORT normalized_spherical_harmonics(
-    int n_samples,
-    int l_max,
-    const double* prefactors,
-    const double *xyz,
-    double *sph,
-    double *dsph
-);
-void SPHERICART_EXPORT normalized_spherical_harmonics(
-    int n_samples,
-    int l_max,
-    const float* prefactors,
-    const float *xyz,
-    float *sph,
-    float *dsph
-);
-
 } //namespace sphericart
 
 #endif

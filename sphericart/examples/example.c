@@ -8,7 +8,7 @@
 #include "math.h"
 
 int main(int argc, char *argv[]) {    
-    // hard-coded parameters for the call
+    // hard-coded parameters for the example
     size_t n_samples = 10000;
     size_t l_max = 10;
 
@@ -34,6 +34,7 @@ int main(int argc, char *argv[]) {
 
     sphericart_spherical_harmonics* my_sph_f = sphericart_new_f(l_max, 0);
 
+    // float versions
     float *xyz_f = (float*) malloc(n_samples*3*sizeof(float));
     for (size_t i=0; i<n_samples*3; ++i) {
         xyz_f[i] = xyz[i];
@@ -51,6 +52,7 @@ int main(int argc, char *argv[]) {
     }
     printf("Float vs double relative error: %12.8e\n", sqrt(sph_error/sph_norm));    
 
+    // frees up data arrays and sph object pointers
     sphericart_delete(my_sph);
     free(xyz);
     free(sph);

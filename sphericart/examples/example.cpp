@@ -7,7 +7,7 @@
 #include <cstdio>
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {    
-    // hard-coded parameters for the call
+    // hard-coded parameters for the example
     size_t n_samples = 10000;
     size_t l_max = 10;
 
@@ -50,8 +50,3 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
     }
     printf("Float vs double relative error: %12.8e\n", sqrt(sph_error/sph_norm));
 }
-
-
-
-
-

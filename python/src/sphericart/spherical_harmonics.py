@@ -1,4 +1,4 @@
-from .wrappers import c_sph_new, c_sph_new_f, c_sph_delete, c_sph_compute, c_get_prefactors, c_spherical_harmonics
+from .wrappers import c_sph_new, c_sph_delete, c_sph_compute
 import numpy as np
 
 class SphericalHarmonics:
@@ -7,8 +7,7 @@ class SphericalHarmonics:
 
     Upon initialization, this class returns a calculator. The ``l_max`` value is
     used to initialize the calculator, and, in particular, it is used to
-    calculate the relevant prefactors for the calculation of the spherical
-    harmonics.
+    calculate the relevant prefactors for the calculation of the spherical harmonics.
 
     :param l_max:
             the maximum degree of the spherical harmonics to be calculated
@@ -22,16 +21,13 @@ class SphericalHarmonics:
     """
 
     def __init__(self, l_max, normalized=False):
+        # this intializes both a double precision and a single-precision calculator.
+        # which one is called will be decided based on the type of the data passed
         self._sph = c_sph_new(l_max, normalized)
-        self._sph_f = c_sph_new_f(l_max, normalized)
-        
-        self._l_max = l_max
-        self._prefactors = c_get_prefactors(l_max)
-        self._normalized = normalized
 
     def __del__(self):
+        # calls the destructors
         c_sph_delete(self._sph)
-        c_sph_delete(self._sph_f)
         pass
 
     def compute(self, xyz, gradients=False):
@@ -44,9 +40,11 @@ class SphericalHarmonics:
         :param xyz: The Cartesian coordinates of the 3D points, as an array with
             shape ``(n_samples, 3)``.
         :type xyz: numpy.ndarray
+
         :param gradients: if ``True``, gradients of the spherical harmonics will
             be calculated and returned in addition to the spherical harmonics.
             ``False`` by default.
+
         :type gradients: bool
 
         :return: A tuple containing two values:
@@ -66,4 +64,4 @@ class SphericalHarmonics:
 
         """
 
-        return c_sph_compute([self._sph, self._sph_f], self._l_max, xyz, gradients)
+        return c_sph_compute(self._sph, self._l_max, xyz, gradients)

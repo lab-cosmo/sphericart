@@ -102,20 +102,16 @@ int main(int argc, char *argv[]) {
     });
     std::cout << std::endl;
 
-    SphericalHarmonics<DTYPE> SH(l_max, false);
-    benchmark("Class without derivatives", n_samples, n_tries, [&](){
-        SH.compute(xyz, sph);
-    });
-
-    benchmark("Class with derivatives", n_samples, n_tries, [&](){
-        SH.compute(xyz, sph, dsph);
-    });
-    std::cout << std::endl;
-    
     auto sxyz = std::vector<DTYPE>(3, 0.0);
     auto ssph = std::vector<DTYPE>((l_max+1)*(l_max+1), 0.0);
     auto sdsph = std::vector<DTYPE>(3*(l_max+1)*(l_max+1), 0.0);
+    auto sph1 = std::vector<DTYPE>(n_samples*(l_max+1)*(l_max+1), 0.0);
+    auto dsph1 = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
     
+    {
+    SphericalHarmonics<DTYPE> SH(l_max, false);
+    sxyz[0] = xyz[0]; sxyz[1] = xyz[1]; sxyz[2] = xyz[2]; 
+
     benchmark("Sample without derivatives", n_samples, n_tries, [&](){
         SH.compute(sxyz, ssph);
     });
@@ -125,19 +121,18 @@ int main(int argc, char *argv[]) {
     });
 
     std::cout << std::endl;
-
-    auto sph1 = std::vector<DTYPE>(n_samples*(l_max+1)*(l_max+1), 0.0);
-    auto dsph1 = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
-
+    
     benchmark("Call without derivatives (hybrid)", n_samples, n_tries, [&](){
-        cartesian_spherical_harmonics(n_samples, l_max, prefactors.data(), xyz.data(), sph1.data(), nullptr);
+        SH.compute(xyz, sph1);
     });
 
     benchmark("Call with derivatives (hybrid)", n_samples, n_tries, [&](){
-        cartesian_spherical_harmonics(n_samples, l_max, prefactors.data(), xyz.data(), sph1.data(), dsph1.data());
+        SH.compute(xyz, sph1, dsph1);
     });
-    std::cout << std::endl;
+    }
 
+    std::cout << std::endl;
+    
     int size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
     int size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
     for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
@@ -163,13 +158,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    {
+    SphericalHarmonics<DTYPE> SH(l_max, true);
     benchmark("Call without derivatives (hybrid, normalized)", n_samples, n_tries, [&](){
-        normalized_spherical_harmonics(n_samples, l_max, prefactors.data(), xyz.data(), sph1.data(), nullptr);
+        SH.compute(xyz, sph1);
     });
 
     benchmark("Call with derivatives (hybrid, normalized)", n_samples, n_tries, [&](){
-        normalized_spherical_harmonics(n_samples, l_max, prefactors.data(), xyz.data(), sph1.data(), dsph1.data());
+        SH.compute(xyz, sph1, dsph1);
     });
+    }
     std::cout << std::endl;
 
     std::cout << "================ Low-l timings ===========" << std::endl;

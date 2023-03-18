@@ -316,12 +316,11 @@ static inline void generic_sph_sample(const DTYPE *xyz_i,
     DTYPE *s,
     DTYPE *twomz    
 ) {
-
     [[maybe_unused]] DTYPE ir = 0.0;
     [[maybe_unused]] DTYPE* dxsph_i = nullptr;
     [[maybe_unused]] DTYPE* dysph_i = nullptr;
-    [[maybe_unused]] DTYPE* dzsph_i = nullptr;
-    
+    [[maybe_unused]] DTYPE* dzsph_i = nullptr;    
+
     /* k is a utility index to traverse lm arrays. we store sph in
     a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
     so we often write a nested loop on l and m and track where we
@@ -361,10 +360,13 @@ static inline void generic_sph_sample(const DTYPE *xyz_i,
     int m = 0;
     auto twoz = 2 * z;
     twomz[0] = twoz;
+    // also initialize the sine and cosine, even if these never change
+    c[0] = 1.0;
+    s[0] = 0.0;
     for (m = 1; m < HARDCODED_LMAX + 1; ++m) {
         c[m] = c[m - 1] * x - s[m - 1] * y;
         s[m] = c[m - 1] * y + s[m - 1] * x;
-        twomz[m] = twomz[m-1] + twoz; 
+        twomz[m] = twomz[m-1] + twoz;
     }
     for (; m < l_max + 1; m++) {
         c[m] = c[m - 1] * x - s[m - 1] * y;
@@ -394,11 +396,11 @@ static inline void generic_sph_sample(const DTYPE *xyz_i,
 
     auto pk = pylm+k;
     auto qlmk = pqlm+k;
+    int nk = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
         generic_sph_l_channel<DTYPE, DO_DERIVATIVES, HARDCODED_LMAX>(l, x, y, z, rxy, 
                     pk, qlmk, c, s, twomz,
                     sph_i, dxsph_i, dysph_i, dzsph_i);
-
         // shift pointers & indexes to the next l block
         qlmk += l+1; pk+=l+1;
         sph_i += 2*l + 2;
@@ -408,6 +410,7 @@ static inline void generic_sph_sample(const DTYPE *xyz_i,
             dysph_i += 2*l + 2;
             dzsph_i += 2*l + 2;
         }
+        nk += 2*l + 2;
     }
 
     if constexpr(DO_DERIVATIVES && NORMALIZED) {
@@ -457,7 +460,7 @@ void generic_sph(
     static_assert(HARDCODED_LMAX>=1, "Cannot call the generic Ylm calculator for l<=1.");
 
     const auto size_y = (l_max + 1) * (l_max + 1);
-    const auto size_q = (l_max + 1) * (l_max + 2)/2;
+    const auto size_q = (l_max + 1) * (l_max + 2) / 2;
     const DTYPE *qlmfactors = prefactors + size_q;
 
 #ifdef _OPENMP
@@ -475,11 +478,7 @@ void generic_sph(
         // for a given point
         DTYPE* sph_i = nullptr;
         DTYPE* dsph_i = nullptr;   
-        
-        // also initialize the sine and cosine, these never change
-        c[0] = 1.0;
-        s[0] = 0.0;
-
+                
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
             auto xyz_i = xyz+i_sample*3; 
