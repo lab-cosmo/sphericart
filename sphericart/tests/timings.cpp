@@ -17,9 +17,9 @@ using namespace sphericart;
 inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph) {
     DTYPE * buffers = new DTYPE[100000]; /// TODO remove all this shit
     if (dsph==nullptr) {
-        generic_sph<DTYPE, false, false, 1>(n_samples, l_max, prefactors, buffers, xyz, sph, dsph);
+        generic_sph<DTYPE, false, false, 1>(xyz, sph, dsph, n_samples, l_max, prefactors, buffers);
     } else {
-        generic_sph<DTYPE, true, false, 1>(n_samples, l_max, prefactors, buffers, xyz, sph, dsph);
+        generic_sph<DTYPE, true, false, 1>(xyz, sph, dsph, n_samples, l_max, prefactors, buffers);
     }
 }
 
@@ -104,11 +104,24 @@ int main(int argc, char *argv[]) {
 
     SphericalHarmonics<DTYPE> SH(l_max, false);
     benchmark("Class without derivatives", n_samples, n_tries, [&](){
-        SH.compute(n_samples, xyz, sph);
+        SH.compute(xyz, sph);
     });
 
     benchmark("Class with derivatives", n_samples, n_tries, [&](){
-        SH.compute(n_samples, xyz, sph, dsph);
+        SH.compute(xyz, sph, dsph);
+    });
+    std::cout << std::endl;
+    
+    auto sxyz = std::vector<DTYPE>(3, 0.0);
+    auto ssph = std::vector<DTYPE>((l_max+1)*(l_max+1), 0.0);
+    auto sdsph = std::vector<DTYPE>(3*(l_max+1)*(l_max+1), 0.0);
+    
+    benchmark("Sample without derivatives", n_samples, n_tries, [&](){
+        SH.compute(sxyz, ssph);
+    });
+
+    benchmark("Sample with derivatives", n_samples, n_tries, [&](){
+        SH.compute(sxyz, ssph, sdsph);
     });
 
     std::cout << std::endl;
@@ -171,11 +184,11 @@ int main(int argc, char *argv[]) {
     });
 
     benchmark("L=1 hardcoded values            ", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, false, false, 1>(n_samples,  0, nullptr, nullptr, xyz.data(), sph1.data(), nullptr);
+        hardcoded_sph<DTYPE, false, false, 1>(xyz.data(), sph1.data(), nullptr,n_samples,  0, nullptr, nullptr);
     });
 
     benchmark("L=1 hardcoded values+derivatives", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, true, false, 1>(n_samples,  0, nullptr, nullptr, xyz.data(), sph1.data(), dsph1.data());
+        hardcoded_sph<DTYPE, true, false, 1>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
 
@@ -190,11 +203,11 @@ int main(int argc, char *argv[]) {
     });
 
     benchmark("L=2 hardcoded values            ", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, false, false, 2>(n_samples,  0, nullptr, nullptr, xyz.data(), sph1.data(), nullptr);
+        hardcoded_sph<DTYPE, false, false, 2>(xyz.data(), sph1.data(), nullptr,n_samples,  0, nullptr, nullptr);
     });
 
     benchmark("L=2 hardcoded values+derivatives", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, true, false, 2>(n_samples,  0, nullptr, nullptr, xyz.data(), sph1.data(), dsph1.data());
+        hardcoded_sph<DTYPE, true, false, 2>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
 
@@ -209,11 +222,11 @@ int main(int argc, char *argv[]) {
     });
 
     benchmark("L=3 hardcoded values            ", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, false, false, 3>(n_samples,  0, nullptr, nullptr, xyz.data(), sph1.data(), nullptr);
+        hardcoded_sph<DTYPE, false, false, 3>(xyz.data(), sph1.data(), nullptr,n_samples,  0, nullptr, nullptr);
     });
 
     benchmark("L=3 hardcoded values+derivatives", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, true, false, 3>(n_samples,  0, nullptr, nullptr, xyz.data(), sph1.data(), dsph1.data());
+        hardcoded_sph<DTYPE, true, false, 3>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
 
@@ -228,11 +241,11 @@ int main(int argc, char *argv[]) {
     });
 
     benchmark("L=4 hardcoded values            ", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, false, false, 4>(n_samples, 0, nullptr, nullptr, xyz.data(), sph1.data(), nullptr);
+        hardcoded_sph<DTYPE, false, false, 4>(xyz.data(), sph1.data(), nullptr,n_samples,  0, nullptr, nullptr);
     });
 
     benchmark("L=4 hardcoded values+derivatives", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, true, false, 4>(n_samples, 0, nullptr, nullptr, xyz.data(), sph1.data(), dsph1.data());
+        hardcoded_sph<DTYPE, true, false, 4>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
 
@@ -247,11 +260,11 @@ int main(int argc, char *argv[]) {
     });
 
     benchmark("L=5 hardcoded values            ", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, false, false, 5>(n_samples, 0, nullptr, nullptr, xyz.data(), sph1.data(), nullptr);
+        hardcoded_sph<DTYPE, false, false, 5>(xyz.data(), sph1.data(), nullptr,n_samples,  0, nullptr, nullptr);
     });
 
     benchmark("L=5 hardcoded values+derivatives", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, true, false, 5>(n_samples, 0, nullptr, nullptr, xyz.data(), sph1.data(), dsph1.data());
+        hardcoded_sph<DTYPE, true, false, 5>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
 
@@ -266,11 +279,11 @@ int main(int argc, char *argv[]) {
     });
 
     benchmark("L=6 hardcoded values            ", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, false, false, 6>(n_samples, 0, nullptr, nullptr, xyz.data(), sph1.data(), nullptr);
+        hardcoded_sph<DTYPE, false, false, 6>(xyz.data(), sph1.data(), nullptr,n_samples,  0, nullptr, nullptr);
     });
 
     benchmark("L=6 hardcoded values+derivatives", n_samples, n_tries, [&](){
-        hardcoded_sph<DTYPE, true, false, 6>(n_samples, 0, nullptr, nullptr, xyz.data(), sph1.data(), dsph1.data());
+        hardcoded_sph<DTYPE, true, false, 6>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
 

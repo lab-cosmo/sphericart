@@ -105,7 +105,14 @@ inline void hardcoded_sph_derivative_template(
 }
 
 template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, [[maybe_unused]] DTYPE *dsph_i, int size_y) {
+inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, [[maybe_unused]] DTYPE *dsph_i, 
+    int size_y, 
+    [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface
+    [[maybe_unused]] const DTYPE *py_dummy=nullptr,
+    [[maybe_unused]] const DTYPE *qy_dummy=nullptr,
+    [[maybe_unused]] DTYPE *c_dummy=nullptr,
+    [[maybe_unused]] DTYPE *s_dummy=nullptr,
+    [[maybe_unused]] DTYPE *z_dummy=nullptr) {
 /* 
     Wrapper for the hardcoded derivatives that also allows to apply normalization. Computes a single
     sample, and uses a template to avoid branching. 
@@ -145,11 +152,11 @@ inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, [[maybe_unuse
 }
 
 template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-void hardcoded_sph(int n_samples,
-    [[maybe_unused]] int l_max_dummy,  // dummy variables to have a uniform interface
-    [[maybe_unused]] const DTYPE *prefactors_dummy,
-    [[maybe_unused]] DTYPE *buffers_dummy,
-    const DTYPE *xyz, DTYPE *sph, [[maybe_unused]] DTYPE *dsph) {
+void hardcoded_sph(const DTYPE *xyz, DTYPE *sph, [[maybe_unused]] DTYPE *dsph,
+    int n_samples,
+    [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface with generic_sph
+    [[maybe_unused]] const DTYPE *prefactors_dummy=nullptr,
+    [[maybe_unused]] DTYPE *buffers_dummy=nullptr) {
     /*
         Cartesian Ylm calculator using the hardcoded expressions.
         Templated version, just calls _compute_sph_templated and
@@ -298,16 +305,16 @@ static inline void generic_sph_l_channel(int l,
 }
 
 template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-static inline void generic_sph_sample(int l_max,    
+static inline void generic_sph_sample(const DTYPE *xyz_i,
+    DTYPE *sph_i,
+    [[maybe_unused]] DTYPE *dsph_i,
+    int l_max,    
     int size_y,
     const DTYPE *pylm,
     const DTYPE *pqlm,
     DTYPE *c,
     DTYPE *s,
-    DTYPE *twomz,
-    const DTYPE *xyz_i,
-    DTYPE *sph_i,
-    [[maybe_unused]] DTYPE *dsph_i
+    DTYPE *twomz    
 ) {
 
     [[maybe_unused]] DTYPE ir = 0.0;
@@ -421,13 +428,13 @@ static inline void generic_sph_sample(int l_max,
 
 template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 void generic_sph(
+    const DTYPE *xyz,
+    DTYPE *sph,
+    [[maybe_unused]] DTYPE *dsph,
     int n_samples,
     int l_max,
     const DTYPE *prefactors,
-    DTYPE *buffers,
-    const DTYPE *xyz,
-    DTYPE *sph,
-    [[maybe_unused]] DTYPE *dsph
+    DTYPE *buffers
 ) {
     /*
         Implementation of the general case, but start at HARDCODED_LMAX and use
@@ -483,8 +490,8 @@ void generic_sph(
                 dsph_i = dsph + i_sample * 3 * size_y;
             }            
             
-            generic_sph_sample<DTYPE, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(l_max, size_y,
-                prefactors, qlmfactors, c, s, twomz, xyz_i, sph_i, dsph_i);
+            generic_sph_sample<DTYPE, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, l_max, size_y,
+                prefactors, qlmfactors, c, s, twomz);
         }
 #ifdef _OPENMP        
     }
