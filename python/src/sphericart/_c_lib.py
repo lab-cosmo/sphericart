@@ -4,8 +4,45 @@ import sys
 
 _HERE = os.path.realpath(os.path.dirname(__file__))
 
+class c_sphericart_sph(ctypes.c_void_p):
+    pass
 
 def setup_functions(lib):
+    lib.sphericart_new.restype = c_sphericart_sph
+    lib.sphericart_new.argtypes = [
+        ctypes.c_int, 
+        ctypes.c_char,
+    ]
+
+    lib.sphericart_new_f.restype = c_sphericart_sph
+    lib.sphericart_new_f.argtypes = [
+        ctypes.c_int, 
+        ctypes.c_char,
+    ]
+
+    lib.sphericart_delete.restype = None
+    lib.sphericart_delete.argtypes = [
+        c_sphericart_sph
+    ]
+
+    lib.sphericart_compute_array.restype = None
+    lib.sphericart_compute_array.argtypes = [
+        c_sphericart_sph,
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+    ]
+
+    lib.sphericart_compute_array_f.restype = None
+    lib.sphericart_compute_array_f.argtypes = [
+        c_sphericart_sph,
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+    ]
+
     lib.sphericart_compute_sph_prefactors.restype = None
     lib.sphericart_compute_sph_prefactors.argtypes = [
         ctypes.c_int,

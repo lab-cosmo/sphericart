@@ -51,33 +51,6 @@ int main(int argc, char *argv[]) {
     }
     printf("Float vs double relative error: %12.8e\n", sqrt(sph_error/sph_norm));    
 
-    /*
-    // once initialized, the class can be called on arrays of points or on 
-    // individual samples - this is deduced from the size of the array
-    my_sph.compute(xyz, sph, dsph);
-    auto xyz_sample = std::vector<double>(3, 0.0);
-    auto sph_sample = std::vector<double>((l_max+1)*(l_max+1), 0.0);
-    auto dsph_sample = std::vector<double>(3*(l_max+1)*(l_max+1), 0.0);
-    my_sph.compute(xyz_sample, sph_sample, dsph_sample); 
-
-    // the class is templated, so one can also use 16-bit float operations
-    auto xyz_f = std::vector<float>(n_samples*3, 0.0);
-    for (size_t i=0; i<n_samples*3; ++i) {
-        xyz_f[i] = (float) xyz[i];
-    }
-    auto sph_f = std::vector<float>(n_samples*(l_max+1)*(l_max+1), 0.0);
-    auto dsph_f = std::vector<float>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
-    
-    auto my_sph_f = sphericart::SphericalHarmonics<float>(l_max, false);
-    my_sph_f.compute(xyz_f, sph_f, dsph_f); 
-
-    double sph_error = 0.0, sph_norm = 0.0;
-    for (size_t i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
-        sph_error += (sph_f[i] - sph[i])*(sph_f[i] - sph[i]);
-        sph_norm +=  sph[i]*sph[i];
-    }
-    printf("Float vs double relative error: %12.8e\n", sqrt(sph_error/sph_norm));
-    */
     sphericart_delete(my_sph);
     free(xyz);
     free(sph);

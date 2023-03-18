@@ -1,5 +1,5 @@
-from .wrappers import c_get_prefactors, c_spherical_harmonics
-
+from .wrappers import c_sph_new, c_sph_new_f, c_sph_delete, c_sph_compute, c_get_prefactors, c_spherical_harmonics
+import numpy as np
 
 class SphericalHarmonics:
     """
@@ -22,12 +22,16 @@ class SphericalHarmonics:
     """
 
     def __init__(self, l_max, normalized=False):
+        self._sph = c_sph_new(l_max, normalized)
+        self._sph_f = c_sph_new_f(l_max, normalized)
+        
         self._l_max = l_max
         self._prefactors = c_get_prefactors(l_max)
         self._normalized = normalized
 
     def __del__(self):
-        # TODO: free the prefactors
+        c_sph_delete(self._sph)
+        c_sph_delete(self._sph_f)
         pass
 
     def compute(self, xyz, gradients=False):
@@ -62,6 +66,4 @@ class SphericalHarmonics:
 
         """
 
-        return c_spherical_harmonics(
-            self._l_max, xyz, self._prefactors, gradients, self._normalized
-        )
+        return c_sph_compute([self._sph, self._sph_f], self._l_max, xyz, gradients)

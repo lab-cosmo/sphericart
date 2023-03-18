@@ -47,7 +47,7 @@ void sphericart::compute_sph_prefactors(int l_max, DTYPE *factors) {
 
 // macro to define different possible hardcoded function calls
 #define _HARCODED_SWITCH_CASE(L_MAX) \
-    if (this->normalize) { \
+    if (this->normalized) { \
         this->_array_no_derivatives = &hardcoded_sph<DTYPE, false, true, L_MAX>; \
         this->_array_with_derivatives = &hardcoded_sph<DTYPE, true, true, L_MAX>; \
         this->_sample_no_derivatives = &hardcoded_sph_sample<DTYPE, false, true, SPHERICART_LMAX_HARDCODED>; \
@@ -60,11 +60,11 @@ void sphericart::compute_sph_prefactors(int l_max, DTYPE *factors) {
     }
 
 template<typename DTYPE>
-sphericart::SphericalHarmonics<DTYPE>::SphericalHarmonics(size_t l_max, bool normalize) {
+sphericart::SphericalHarmonics<DTYPE>::SphericalHarmonics(size_t l_max, bool normalized) {
     this->l_max = (int) l_max;
     this->size_y = (int) (l_max + 1) * (l_max + 1);
     this->size_q = (int) (l_max + 1) * (l_max + 2)/2;
-    this->normalize = normalize;
+    this->normalized = normalized;
     this->prefactors = new DTYPE[(l_max+1)*(l_max+2)];
     
     // buffers for cos, sin, 2mz arrays
@@ -102,7 +102,7 @@ sphericart::SphericalHarmonics<DTYPE>::SphericalHarmonics(size_t l_max, bool nor
             break;
         }
     } else {
-        if (this->normalize) {
+        if (this->normalized) {
             this->_array_no_derivatives = &generic_sph<DTYPE, false, true, SPHERICART_LMAX_HARDCODED>;
             this->_array_with_derivatives = &generic_sph<DTYPE, true, true, SPHERICART_LMAX_HARDCODED>;
             this->_sample_no_derivatives = &generic_sph_sample<DTYPE, false, true, SPHERICART_LMAX_HARDCODED>;

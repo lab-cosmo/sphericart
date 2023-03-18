@@ -47,7 +47,7 @@ template<typename DTYPE>
 class SphericalHarmonics{
 private:
     int l_max, size_y, size_q;
-    bool normalize;
+    bool normalized;
     DTYPE *prefactors;
     DTYPE *buffers;    
 
@@ -81,7 +81,7 @@ private:
     friend void ::sphericart_compute_sample_f(sphericart_spherical_harmonics* spherical_harmonics, const float* xyz, float* sph, float* dsph);
 
 public:     
-    SphericalHarmonics(size_t l_max, bool normalize=false); 
+    SphericalHarmonics(size_t l_max, bool normalized=false); 
     ~SphericalHarmonics(); 
     
     void compute(const std::vector<DTYPE>& xyz, std::vector<DTYPE>& sph);

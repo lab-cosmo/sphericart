@@ -2,11 +2,11 @@
 #include "sphericart.h"
 
 extern "C" {    
-    sphericart_spherical_harmonics *sphericart_new(size_t l_max, char normalize) {
-        return reinterpret_cast<sphericart_spherical_harmonics*>(new sphericart::SphericalHarmonics<double>(l_max, (bool) normalize)); 
+    sphericart_spherical_harmonics *sphericart_new(size_t l_max, char normalized) {
+        return reinterpret_cast<sphericart_spherical_harmonics*>(new sphericart::SphericalHarmonics<double>(l_max, (bool) normalized)); 
     }
-    sphericart_spherical_harmonics *sphericart_new_f(size_t l_max, char normalize) {
-        return reinterpret_cast<sphericart_spherical_harmonics*>(new sphericart::SphericalHarmonics<float>(l_max, (bool) normalize)); 
+    sphericart_spherical_harmonics *sphericart_new_f(size_t l_max, char normalized) {
+        return reinterpret_cast<sphericart_spherical_harmonics*>(new sphericart::SphericalHarmonics<float>(l_max, (bool) normalized)); 
     }
     
     void sphericart_delete(sphericart_spherical_harmonics* spherical_harmonics) {
