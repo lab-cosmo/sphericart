@@ -54,10 +54,11 @@ private:
     void (*_sample_no_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, const DTYPE*, DTYPE*, DTYPE*, DTYPE*);
     void (*_sample_with_derivatives)(const DTYPE*, DTYPE*, DTYPE*, int, int, const DTYPE*, const DTYPE*, DTYPE*, DTYPE*, DTYPE*);
 
+public:
     void compute_array(size_t n_samples, const DTYPE* xyz, DTYPE* sph) {
         this->_array_no_derivatives(xyz, sph, nullptr, n_samples, this->l_max, this->prefactors, this->buffers);
     }
-    void compute_array(size_t n_samples, const DTYPE* xyz, DTYPE* sph, [[maybe_unused]] DTYPE* dsph) {
+    void compute_array(size_t n_samples, const DTYPE* xyz, DTYPE* sph, DTYPE* dsph) {
         this->_array_with_derivatives(xyz, sph, dsph, n_samples, this->l_max, this->prefactors, this->buffers);
     }
 
@@ -69,15 +70,7 @@ private:
         this->_sample_with_derivatives(xyz, sph, dsph, this->l_max, this->size_y, this->prefactors, 
             this->prefactors+this->size_q, this->buffers, this->buffers+this->size_q, this->buffers+2*this->size_q);
     }
-
-    // we must befriend the C API functions so they can access the internal pointer-based calculators
-    friend void ::sphericart_compute_array(sphericart_spherical_harmonics* spherical_harmonics, size_t n_samples, const double* xyz, double* sph, double* dsph);
-    friend void ::sphericart_compute_sample(sphericart_spherical_harmonics* spherical_harmonics, const double* xyz, double* sph, double* dsph);
-    friend void ::sphericart_compute_array_f(sphericart_spherical_harmonics* spherical_harmonics, size_t n_samples, const float* xyz, float* sph, float* dsph);
-    friend void ::sphericart_compute_sample_f(sphericart_spherical_harmonics* spherical_harmonics, const float* xyz, float* sph, float* dsph);
-
-public:
-
+    
     /** @brief: Initialize the SphericalHarmonics class setting maximum l and normalization
      *  
      *  @param l_max:

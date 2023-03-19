@@ -31,37 +31,22 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     }
     auto n_samples = xyz.sizes()[0];
 
-    auto prefactors = std::vector<double>((l_max + 1) * (l_max + 2), 0.0);
-    sphericart::compute_sph_prefactors(l_max, prefactors.data());
-
+    auto sph_calc = sphericart::SphericalHarmonics<double>(l_max, normalize);
+    
     auto options = torch::TensorOptions().device(xyz.device()).dtype(xyz.dtype());
     auto sph = torch::zeros({n_samples, (l_max + 1) * (l_max + 1)}, options);
 
-    double* dsph_ptr = nullptr;
     if (xyz.requires_grad()) {
         auto dsph = torch::zeros({n_samples, 3, (l_max + 1) * (l_max + 1)}, options);
-        dsph_ptr = dsph.data_ptr<double>();
+        sph_calc.compute_array(n_samples, 
+            xyz.data_ptr<double>(), 
+            sph.data_ptr<double>(),
+            dsph.data_ptr<double>());
         ctx->save_for_backward({xyz, dsph});
-    }
-
-    if (normalize) {
-        sphericart::normalized_spherical_harmonics(
-            n_samples,
-            l_max,
-            prefactors.data(),
-            xyz.data_ptr<double>(),
-            sph.data_ptr<double>(),
-            dsph_ptr
-        );
     } else {
-        sphericart::cartesian_spherical_harmonics(
-            n_samples,
-            l_max,
-            prefactors.data(),
-            xyz.data_ptr<double>(),
-            sph.data_ptr<double>(),
-            dsph_ptr
-        );
+        sph_calc.compute_array(n_samples, 
+            xyz.data_ptr<double>(), 
+            sph.data_ptr<double>());
     }
 
     return {sph};
