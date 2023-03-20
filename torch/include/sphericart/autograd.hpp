@@ -5,7 +5,7 @@
 #include <torch/autograd.h>
 
 namespace sphericart {
-
+    
 class SphericalHarmonicsAutograd : public torch::autograd::Function<SphericalHarmonicsAutograd> {
 public:
     static torch::autograd::variable_list forward(
