@@ -6,6 +6,8 @@ from datetime import datetime
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "python", "src"))
+sys.path.insert(0, os.path.join(ROOT, "torch", "python", "src"))
 
 
 # -- Project information -----------------------------------------------------
