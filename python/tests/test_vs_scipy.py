@@ -4,6 +4,7 @@ import scipy.special
 
 import sphericart
 
+
 L_MAX = 40
 N_SAMPLES = 100
 

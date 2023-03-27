@@ -2,17 +2,16 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-
-#include <c10/util/Half.h>
 #include <torch/torch.h>
 
-using namespace torch::indexing;
+// #include <c10/util/Half.h>
+
+#include "sphericart/cuda.hpp"
 
 #define HARDCODED_LMAX 6
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
-#define CHECK_SIMILARITY(x, y)                                                                                         \
-    TORCH_CHECK(x.type().scalarType() == y.type().scalarType(), #x " and " #y " must have the same dtype.")
+#define CHECK_SAME_DTYPE(x, y) TORCH_CHECK(x.scalar_type() == y.scalar_type(), #x " and " #y " must have the same dtype.")
 
 #define CHECK_INPUT(x)                                                                                                 \
     CHECK_CUDA(x);                                                                                                     \
@@ -651,7 +650,7 @@ __device__ inline void write_buffers(
 }
 
 template <typename scalar_t>
-__global__ void generic_spherical_harmonics_kernel(
+__global__ void spherical_harmonics_kernel(
     torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> xyz,
     torch::PackedTensorAccessor32<scalar_t, 1, torch::RestrictPtrTraits> prefactors,
     int lmax,
@@ -904,48 +903,57 @@ __global__ void generic_spherical_harmonics_kernel(
 
 #define GRIM_DIM_X 32
 
-void adjust_shared_memory(torch::Tensor xyz, int lmax, int GRID_DIM_Y, bool requires_grad) {
+static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_Y, size_t dtype_size, bool requires_grad) {
+    int nl = max(
+        static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
+        2 * l_max + 1
+    );
+
+    size_t total_buff_size = 0;
+
+    total_buff_size += GRIM_DIM_X * (l_max + 1) * dtype_size;      // buffer_c
+    total_buff_size += GRIM_DIM_X * (l_max + 1) * dtype_size;      // buffer_s
+    total_buff_size += (l_max + 1) * (l_max + 2) * dtype_size;     // buffer_prefactors
+    total_buff_size += GRID_DIM_Y * GRIM_DIM_X * nl * dtype_size;  // buffer_sph_out
+
+    if (requires_grad) {
+        total_buff_size += 3 * GRID_DIM_Y * GRIM_DIM_X * nl * dtype_size; // buffer_sph_derivs
+    }
+
+    return total_buff_size;
+}
+
+void sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_Y, bool requires_grad) {
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
 
-    int nl = max((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1), 2 * lmax + 1);
-
-    size_t total_buff_size = 0;
-    size_t dtype = torch::elementSize(torch::typeMetaToScalarType(xyz.dtype()));
-
-    total_buff_size += GRIM_DIM_X * (lmax + 1) * dtype;      // buffer_c
-    total_buff_size += GRIM_DIM_X * (lmax + 1) * dtype;      // buffer_s
-    total_buff_size += (lmax + 1) * (lmax + 2) * dtype;      // buffer_prefactors
-    total_buff_size += GRID_DIM_Y * GRIM_DIM_X * nl * dtype; // buffer_sph_out
-
-    if (requires_grad) {
-        total_buff_size += 3 * GRID_DIM_Y * GRIM_DIM_X * nl * dtype; // buffer_sph_derivs
-    }
+    size_t dtype = torch::elementSize(scalar_type);
+    auto required_buff_size = total_buffer_size(l_max, GRID_DIM_Y, dtype, requires_grad);
 
     TORCH_CHECK(
-        total_buff_size <= deviceProp.sharedMemPerBlock * 4,
-        "requested shared memory buffer (", total_buff_size, ") exceeds max ",
-        "available on device: ", deviceProp.name, " (", deviceProp.sharedMemPerBlock * 4, ")"
+        required_buff_size <= deviceProp.sharedMemPerBlock,
+        "requested shared memory buffer (", required_buff_size, ") exceeds max available ",
+        "on device: ", deviceProp.name, " (", deviceProp.sharedMemPerBlock, ")"
     );
 
-    switch (xyz.type().scalarType()) {
+    switch (scalar_type) {
     case torch::ScalarType::Double:
         cudaFuncSetAttribute(
-            generic_spherical_harmonics_kernel<double>,
+            spherical_harmonics_kernel<double>,
             cudaFuncAttributeMaxDynamicSharedMemorySize,
-            total_buff_size
+            required_buff_size
         );
         break;
     case torch::ScalarType::Float:
         cudaFuncSetAttribute(
-            generic_spherical_harmonics_kernel<float>,
+            spherical_harmonics_kernel<float>,
             cudaFuncAttributeMaxDynamicSharedMemorySize,
-            total_buff_size
+            required_buff_size
         );
         break;
     // case torch::ScalarType::Half:
     //     cudaFuncSetAttribute(
-    //         generic_spherical_harmonics_kernel<at::Half>,
+    //         spherical_harmonics_kernel<at::Half>,
     //         cudaFuncAttributeMaxDynamicSharedMemorySize,
     //         total_buff_size
     //     );
@@ -953,29 +961,29 @@ void adjust_shared_memory(torch::Tensor xyz, int lmax, int GRID_DIM_Y, bool requ
     }
 }
 
-std::vector<torch::Tensor> spherical_harmonics_cuda(
+std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     torch::Tensor xyz,
     torch::Tensor prefactors,
-    int lmax,
-    int GRID_DIM_Y
+    int64_t l_max,
+    bool normalize,
+    int64_t GRID_DIM_Y
 ) {
 
     CHECK_INPUT(xyz);
     CHECK_INPUT(prefactors);
-    CHECK_SIMILARITY(xyz, prefactors);
+    CHECK_SAME_DTYPE(xyz, prefactors);
 
-    int ntotal = (lmax + 1) * (lmax + 1);
+    int n_total = (l_max + 1) * (l_max + 1);
 
     auto sph = torch::zeros(
-        {ntotal, xyz.size(0)},
+        {n_total, xyz.size(0)},
         torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
     );
 
     torch::Tensor d_sph;
-
     if (xyz.requires_grad()) {
         d_sph = torch::zeros(
-            {ntotal, 3, xyz.size(0)},
+            {n_total, 3, xyz.size(0)},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
         );
     } else {
@@ -992,29 +1000,32 @@ std::vector<torch::Tensor> spherical_harmonics_cuda(
 
     dim3 block_dim(find_num_blocks(xyz.size(0), GRIM_DIM_X));
 
-    // to make computing hardcoded + generic easier, use a minimum amount of shared memory enough to store all hardcoded
-    // derivatives
-    int nl = max((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1), 2 * lmax + 1);
+    // to make computing hardcoded + generic easier, use a minimum amount of
+    // shared memory enough to store all hardcoded derivatives
+    int nl = max(
+        static_cast<int64_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
+        2 * l_max + 1
+    );
 
     AT_DISPATCH_FLOATING_TYPES(
         xyz.scalar_type(), "spherical_harmonics_cuda", ([&] {
             size_t total_buff_size = 0;
 
-            total_buff_size += GRIM_DIM_X * (lmax + 1) * sizeof(scalar_t);      // buffer_c
-            total_buff_size += GRIM_DIM_X * (lmax + 1) * sizeof(scalar_t);      // buffer_s
-            total_buff_size += (lmax + 1) * (lmax + 2) * sizeof(scalar_t);      // buffer_prefactors
+            total_buff_size += GRIM_DIM_X * (l_max + 1) * sizeof(scalar_t);     // buffer_c
+            total_buff_size += GRIM_DIM_X * (l_max + 1) * sizeof(scalar_t);     // buffer_s
+            total_buff_size += (l_max + 1) * (l_max + 2) * sizeof(scalar_t);    // buffer_prefactors
             total_buff_size += GRID_DIM_Y * GRIM_DIM_X * nl * sizeof(scalar_t); // buffer_sph_out
 
             if (xyz.requires_grad()) {
                 total_buff_size += 3 * GRID_DIM_Y * GRIM_DIM_X * nl * sizeof(scalar_t); // buffer_sph_derivs
             }
 
-            generic_spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
+            spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
                 xyz.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                 prefactors.packed_accessor32<scalar_t, 1, torch::RestrictPtrTraits>(),
-                lmax,
+                l_max,
                 xyz.requires_grad(),
-                true,
+                normalize,
                 sph.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                 d_sph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>());
         }));
@@ -1024,62 +1035,78 @@ std::vector<torch::Tensor> spherical_harmonics_cuda(
     if (xyz.requires_grad()) {
         return {sph.transpose(0, 1).contiguous(), d_sph.transpose(0, 2).contiguous()};
     } else {
-        return {sph.transpose(0, 1).contiguous()};
+        return {sph.transpose(0, 1).contiguous(), torch::Tensor()};
     }
 }
 
-// class SphericalHarmonics : public torch::autograd::Function<SphericalHarmonics> {
-//   public:
-//     static torch::Tensor forward(
-//         torch::autograd::AutogradContext *ctx,
-//         int lmax,
-//         torch::Tensor prefactors,
-//         torch::Tensor xyz
-//     ) {
+torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
+    torch::Tensor xyz,
+    torch::Tensor dsph,
+    torch::Tensor sph_grad
+) {
+    if (!xyz.device().is_cuda()) {
+        throw std::runtime_error("internal error: CUDA version called on non-CUDA tensor");
+    }
 
-//         vector<torch::Tensor> result;
-//         result = generic_spherical_harmonics_gpu(xyz, prefactors, lmax, 1);
+    auto xyz_grad = torch::Tensor();
 
-//         if (xyz.requires_grad()) {
-//             ctx->save_for_backward({xyz, result[1]}); // save derivative for backwards call
-//         }
+    if (xyz.requires_grad()) {
+        xyz_grad = torch::empty_like(xyz);
 
-//         return result[0];
-//     }
+        for (int spatial = 0; spatial < 3; spatial++) {
+            auto gradient_slice = dsph.index(
+                {torch::indexing::Slice(), spatial, torch::indexing::Slice()}
+            );
+            xyz_grad.index_put_(
+                {torch::indexing::Slice(), spatial},
+                torch::sum(sph_grad * gradient_slice, 1)
+            );
+        }
+    }
 
-//     static torch::autograd::tensor_list backward(
-//         torch::autograd::AutogradContext *ctx,
-//         torch::autograd::tensor_list d_loss_d_outputs
-//     ) {
+    return xyz_grad;
+}
 
-//         auto saved = ctx->get_saved_variables();
-//         torch::Tensor xyz = saved[0];
-//         torch::Tensor spherical_harmonics_gradients = saved[1];
+template<typename T>
+void compute_sph_prefactors(int l_max, T *factors) {
+    auto k = 0; // quick access index
+    for (int l = 0; l <= l_max; ++l) {
+        T factor = (2 * l + 1) / (2 * M_PI);
+        // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
+        factors[k] = sqrt(factor) * M_SQRT1_2;
+        for (int m = 1; m <= l; ++m) {
+            factor *= 1.0 / (l * (l + 1) + m * (1 - m));
+            if (m % 2 == 0) {
+                factors[k + m] = sqrt(factor);
+            } else {
+                factors[k + m] = -sqrt(factor);
+            }
+        }
+        k += l + 1;
+    }
 
-//         torch::Tensor d_loss_d_inputs = torch::empty_like(xyz);
+    // that are needed in the recursive calculation of Qlm.
+    // Xll is just Qll, Xlm is the factor that enters the alternative m recursion
+    factors[k] = 1.0; k += 1;
+    for (int l = 1; l < l_max + 1; l++) {
+        factors[k+l] = -(2 * l - 1) * factors[k - 1];
+        for (int m = l - 1; m >= 0; --m) {
+            factors[k + m] = -1.0 / ((l + m + 1) * (l - m));
+        }
+        k += l + 1;
+    }
+}
 
-//         for (int alpha = 0; alpha < 3; alpha++) {
-//             auto gradient_slice = spherical_harmonics_gradients.index(
-//                 {torch::indexing::Slice(), alpha, torch::indexing::Slice()}
-//             );
-//             d_loss_d_inputs.index_put_(
-//                 {torch::indexing::Slice(), alpha},
-//                 torch::sum(d_loss_d_outputs[0] * gradient_slice, 1)
-//             );
-//         }
+torch::Tensor sphericart_torch::prefactors_cuda(int64_t l_max, at::ScalarType dtype) {
+    auto result = torch::empty({(l_max + 1) * (l_max + 2)}, torch::TensorOptions().device("cpu").dtype(dtype));
 
-//         return {torch::Tensor(), torch::Tensor(), d_loss_d_inputs};
-//     }
-// };
+    if (dtype == c10::kDouble) {
+        compute_sph_prefactors(l_max, static_cast<double*>(result.data_ptr()));
+    } else if (dtype == c10::kFloat) {
+        compute_sph_prefactors(l_max, static_cast<float*>(result.data_ptr()));
+    } else {
+        throw std::runtime_error("this code only runs on float64 and float32 arrays");
+    }
 
-// torch::Tensor spherical_harmonics_cuda(int lmax, torch::Tensor prefactors, torch::Tensor xyz) {
-//     return SphericalHarmonics::apply(lmax, prefactors, xyz);
-// }
-
-// PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-//     m.def("adjust_shared_memory", &adjust_shared_memory,
-//           "check and change the allocation of shared memory to fit requirement");
-//     m.def("spherical_harmonics_cuda", &spherical_harmonics_cuda, "forwards computation for spherical harmonics (CUDA)");
-//     m.def("_generic_spherical_harmonics_gpu", &generic_spherical_harmonics_gpu,
-//           "generic function for spherical harmonics (CUDA)");
-// }
+    return result.to("cuda");
+}

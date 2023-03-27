@@ -1,6 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 
+if (POLICY CMP0076)
+    #  target_sources() converts relative paths to absolute
+    cmake_policy(SET CMP0076 NEW)
+endif()
+
 project(sphericart_torch CXX)
+
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
+else()
+    message(STATUS "Could not find a CUDA compiler")
+endif()
 
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
@@ -80,6 +94,10 @@ if (SPHERICART_TORCH_BUILD_FOR_PYTHON)
     unset(CUDNN_ROOT)
 
     mark_as_advanced(CUDNN_INCLUDE_DIR CUDNN_LIBRARY)
+else()
+    if (NOT TARGET sphericart)
+        message(FATAL_ERROR "missing sphericart target, you should build sphericart_torch as a sub-project of sphericart")
+    endif()
 endif()
 
 find_package(Torch 1.13 REQUIRED)
@@ -87,12 +105,19 @@ find_package(Torch 1.13 REQUIRED)
 add_library(sphericart_torch SHARED
     "include/sphericart/torch.hpp"
     "include/sphericart/autograd.hpp"
-    "src/torch.cpp"
     "src/autograd.cpp"
+    "src/torch.cpp"
 )
 
+if (CMAKE_CUDA_COMPILER)
+    target_sources(sphericart_torch PUBLIC "src/cuda.cu")
+else()
+    target_sources(sphericart_torch PUBLIC "src/cuda_stub.cpp")
+endif()
+
 target_link_libraries(sphericart_torch PUBLIC torch sphericart)
-target_compile_features(sphericart_torch PUBLIC cxx_std_17)
+target_compile_features(sphericart_torch PUBLIC cxx_std_14)
+
 target_include_directories(sphericart_torch PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>

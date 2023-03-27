@@ -7,6 +7,7 @@ from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
 from setuptools.command.build_ext import build_ext
 
+
 ROOT = os.path.realpath(os.path.dirname(__file__))
 
 
@@ -52,7 +53,8 @@ class bdist_egg_disabled(bdist_egg):
         sys.exit(
             "Aborting implicit building of eggs. "
             + "Use `pip install .` or `python setup.py bdist_wheel && pip "
-            + "install dist/equistore-*.whl` to install from source."
+            + "uninstall -y sphericart_torch && pip install "
+            + "dist/sphericart_torch-*.whl` to install from source."
         )
 
 
