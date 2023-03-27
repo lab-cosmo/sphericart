@@ -1,0 +1,1085 @@
+#include <cmath>
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+#include <c10/util/Half.h>
+#include <torch/torch.h>
+
+using namespace torch::indexing;
+
+#define HARDCODED_LMAX 6
+#define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
+#define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
+#define CHECK_SIMILARITY(x, y)                                                                                         \
+    TORCH_CHECK(x.type().scalarType() == y.type().scalarType(), #x " and " #y " must have the same dtype.")
+
+#define CHECK_INPUT(x)                                                                                                 \
+    CHECK_CUDA(x);                                                                                                     \
+    CHECK_CONTIGUOUS(x)
+
+/*
+Computes the index for buffer values which are threadIdx.x and threadIdx.y specific
+*/
+__device__ int get_index_(int i, int buff_size) { return threadIdx.y * buff_size + i * blockDim.x + threadIdx.x; }
+
+/*
+Computes the index for buffer values which are shared across GRID_DIM_Y
+*/
+__device__ int get_index(int i) { return i * blockDim.x + threadIdx.x; }
+template <typename scalar_t> __device__ void compute_sph_l0(scalar_t *sph) {
+    sph[get_index(0)] = 0.282094791773878;
+}
+
+template <typename scalar_t>
+__device__ void compute_dsph_l0(scalar_t *sph_i, scalar_t *dxsph_i, scalar_t *dysph_i, scalar_t *dzsph_i) {
+    dxsph_i[get_index(0)] = dysph_i[get_index(0)] = dzsph_i[get_index(0)] = 0.0;
+}
+
+template <typename scalar_t> __device__ void compute_sph_l1(scalar_t x, scalar_t y, scalar_t z, scalar_t *sph) {
+    sph[get_index(1)] = 0.48860251190292 * y;
+    sph[get_index(2)] = 0.48860251190292 * z;
+    sph[get_index(3)] = 0.48860251190292 * x;
+}
+
+template <typename scalar_t>
+__device__ void compute_dsph_l1(scalar_t *sph_i, scalar_t *dxsph_i, scalar_t *dysph_i, scalar_t *dzsph_i) {
+    dxsph_i[get_index(1)] = 0.0;
+    dxsph_i[get_index(2)] = 0.0;
+    dxsph_i[get_index(3)] = 0.48860251190292;
+
+    dysph_i[get_index(1)] = 0.48860251190292;
+    dysph_i[get_index(2)] = 0.0;
+    dysph_i[get_index(3)] = 0.0;
+
+    dzsph_i[get_index(1)] = 0.0;
+    dzsph_i[get_index(2)] = 0.48860251190292;
+    dzsph_i[get_index(3)] = 0.0;
+}
+
+template <typename scalar_t>
+__device__ void compute_sph_l2(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
+    scalar_t tmp;
+    tmp = 2.23606797749979 * x;
+    sph[get_index(4)] = tmp * sph[get_index(1)];
+    sph[get_index(7)] = tmp * sph[get_index(2)];
+    sph[get_index(5)] = 2.23606797749979 * z * sph[get_index(1)];
+    sph[get_index(6)] = -0.315391565252520 * (x2 + y2 - 2 * z2);
+    sph[get_index(8)] = 0.54627421529604 * (x2 - y2);
+}
+
+template <typename scalar_t>
+__device__ void compute_dsph_l2(
+    scalar_t x,
+    scalar_t y,
+    scalar_t z,
+    scalar_t x2,
+    scalar_t y2,
+    scalar_t z2,
+    scalar_t *sph_i,
+    scalar_t *dxsph_i,
+    scalar_t *dysph_i,
+    scalar_t *dzsph_i
+) {
+    dxsph_i[get_index(4)] = 2.23606797749979 * sph_i[get_index(1)];
+    dxsph_i[get_index(5)] = 0.0;
+    dxsph_i[get_index(6)] = -1.29099444873581 * sph_i[get_index(3)];
+    dxsph_i[get_index(7)] = 2.23606797749979 * sph_i[get_index(2)];
+    dxsph_i[get_index(8)] = 2.23606797749979 * sph_i[get_index(3)];
+
+    dysph_i[get_index(4)] = -1.73205080756888 * dxsph_i[get_index(6)];
+    dysph_i[get_index(5)] = dxsph_i[get_index(7)];
+    dysph_i[get_index(6)] = -0.577350269189626 * dxsph_i[get_index(4)];
+    dysph_i[get_index(7)] = 0.0;
+    dysph_i[get_index(8)] = -dxsph_i[get_index(4)];
+
+    dzsph_i[get_index(4)] = dzsph_i[get_index(8)] = 0.0;
+    dzsph_i[get_index(5)] = dxsph_i[get_index(4)];
+    dzsph_i[get_index(6)] = 1.15470053837925 * dxsph_i[get_index(7)];
+    dzsph_i[get_index(7)] = dysph_i[get_index(4)];
+}
+
+template <typename scalar_t>
+__device__ void compute_sph_l3(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
+    scalar_t tmp;
+    sph[get_index(9)] = -0.59004358992664 * y * (y2 - 3 * x2);
+    sph[get_index(10)] = 2.64575131106459 * z * sph[get_index(4)];
+    tmp = -0.457045799464466 * (x2 + y2 - 4 * z2);
+    sph[get_index(11)] = y * tmp;
+    sph[get_index(13)] = x * tmp;
+    sph[get_index(12)] = -1.49270533036046 * z * (z2 - 2.37799637856361 * sph[get_index(6)]);
+    sph[get_index(14)] = 1.44530572132028 * z * (x2 - y2);
+    sph[get_index(15)] = 0.59004358992664 * x * (x2 - 3 * y2);
+}
+
+template <typename scalar_t>
+__device__ void compute_dsph_l3(
+    scalar_t x,
+    scalar_t y,
+    scalar_t z,
+    scalar_t x2,
+    scalar_t y2,
+    scalar_t z2,
+    scalar_t *sph_i,
+    scalar_t *dxsph_i,
+    scalar_t *dysph_i,
+    scalar_t *dzsph_i
+) {
+    dxsph_i[get_index(9)] = 3.24037034920393 * sph_i[get_index(4)];
+    dxsph_i[get_index(10)] = 2.64575131106459 * sph_i[get_index(5)];
+    dxsph_i[get_index(11)] = -0.83666002653408 * sph_i[get_index(4)];
+    dxsph_i[get_index(12)] = -2.04939015319192 * sph_i[get_index(7)];
+    dxsph_i[get_index(13)] = 0.91409159892893 * (y2 - z2 + 4.75599275712721 * sph_i[get_index(6)]);
+    dxsph_i[get_index(14)] = 2.64575131106459 * sph_i[get_index(7)];
+    dxsph_i[get_index(15)] = 3.24037034920393 * sph_i[get_index(8)];
+
+    dysph_i[get_index(9)] = dxsph_i[get_index(15)];
+    dysph_i[get_index(10)] = dxsph_i[get_index(14)];
+    dysph_i[get_index(11)] = -0.91409159892893 * (y2 - z2 - 1.58533091904240 * sph_i[get_index(6)]);
+    dysph_i[get_index(12)] = -2.04939015319192 * sph_i[get_index(5)];
+    dysph_i[get_index(13)] = -0.83666002653408 * sph_i[get_index(4)];
+    dysph_i[get_index(14)] = -dxsph_i[get_index(10)];
+    dysph_i[get_index(15)] = -dxsph_i[get_index(9)];
+
+    dzsph_i[get_index(9)] = 0.0;
+    dzsph_i[get_index(10)] = 2.64575131106459 * sph_i[get_index(4)];
+    dzsph_i[get_index(11)] = 3.34664010613630 * sph_i[get_index(5)];
+    dzsph_i[get_index(12)] = 3.54964786985977 * sph_i[get_index(6)];
+    dzsph_i[get_index(13)] = 3.34664010613630 * sph_i[get_index(7)];
+    dzsph_i[get_index(14)] = 2.64575131106459 * sph_i[get_index(8)];
+    dzsph_i[get_index(15)] = 0.0;
+}
+
+template <typename scalar_t>
+__device__ void compute_sph_l4(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
+    scalar_t tmp;
+    sph[get_index(16)] = 4.194391357527674 * sph[get_index(4)] * sph[get_index(8)];
+    sph[get_index(17)] = 3 * z * sph[get_index(9)];
+    tmp = -0.866025403784439 * (x2 + y2 - 6 * z2);
+    sph[get_index(18)] = tmp * sph[get_index(4)];
+    sph[get_index(22)] = tmp * sph[get_index(8)];
+    sph[get_index(20)] = -0.69436507482941 * (
+        y * sph[get_index(11)]
+        - 1.6329931618554521 * z * sph[get_index(12)]
+        + x * sph[get_index(13)]
+    );
+    tmp = -1.224744871391589 * (z2 - 4.755992757127213 * sph[get_index(6)]);
+    sph[get_index(19)] = sph[get_index(5)] * tmp;
+    sph[get_index(21)] = sph[get_index(7)] * tmp;
+    sph[get_index(23)] = 3 * z * sph[get_index(15)];
+    sph[get_index(24)] = -1.060660171779821 * (y * sph[get_index(9)] - x * sph[get_index(15)]);
+}
+
+template <typename scalar_t>
+__device__ void compute_dsph_l4(
+    scalar_t x,
+    scalar_t y,
+    scalar_t z,
+    scalar_t x2,
+    scalar_t y2,
+    scalar_t z2,
+    scalar_t *sph_i,
+    scalar_t *dxsph_i,
+    scalar_t *dysph_i,
+    scalar_t *dzsph_i
+) {
+    dxsph_i[get_index(16)] = 4.242640687119285 * sph_i[get_index(9)];
+    dxsph_i[get_index(17)] = 3.674234614174767 * sph_i[get_index(10)];
+    dxsph_i[get_index(18)] = 1.892349391515120 * y * (y2 + 4.755992757127213 * sph_i[get_index(6)]);
+    dxsph_i[get_index(19)] = -1.388730149658827 * sph_i[get_index(10)];
+    dxsph_i[get_index(20)] = -2.777460299317654 * sph_i[get_index(13)];
+    dxsph_i[get_index(21)] = -1.338093087114578 * (
+        z * z2
+        - 2.745873698591307 * y * sph_i[get_index(5)]
+        - 4.019547514144073 * sph_i[get_index(12)]
+    );
+    dxsph_i[get_index(22)] = -1.892349391515120 * x * (x2 - 3 * z2);
+    dxsph_i[get_index(23)] = 3.674234614174767 * sph_i[get_index(14)];
+    dxsph_i[get_index(24)] = 4.242640687119285 * sph_i[get_index(15)];
+
+    dysph_i[get_index(16)] = dxsph_i[get_index(24)];
+    dysph_i[get_index(17)] = dxsph_i[get_index(23)];
+    dysph_i[get_index(18)] = -1.892349391515120 * x * (y2 - 2 * z2 - 1.585330919042404 * sph_i[get_index(6)]);
+    dysph_i[get_index(19)] = -1.338093087114578 * (z * (3 * y2 - z2) - 1.339849171381358 * sph_i[get_index(12)]);
+    dysph_i[get_index(20)] = -2.777460299317654 * sph_i[get_index(11)];
+    dysph_i[get_index(21)] = dxsph_i[get_index(19)];
+    dysph_i[get_index(22)] = 1.892349391515120 * y * (y2 - 3 * z2);
+    dysph_i[get_index(23)] = -dxsph_i[get_index(17)];
+    dysph_i[get_index(24)] = -dxsph_i[get_index(16)];
+
+    dzsph_i[get_index(16)] = 0.0;
+    dzsph_i[get_index(17)] = 3 * sph_i[get_index(9)];
+    dzsph_i[get_index(18)] = 3.927922024247863 * sph_i[get_index(10)];
+    dzsph_i[get_index(19)] = 4.391550328268399 * sph_i[get_index(11)];
+    dzsph_i[get_index(20)] = 4.535573676110727 * sph_i[get_index(12)];
+    dzsph_i[get_index(21)] = 4.391550328268399 * sph_i[get_index(13)];
+    dzsph_i[get_index(22)] = 3.927922024247863 * sph_i[get_index(14)];
+    dzsph_i[get_index(23)] = 3 * sph_i[get_index(15)];
+    dzsph_i[get_index(24)] = 0.0;
+}
+
+template <typename scalar_t>
+__device__ void compute_sph_l5(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
+    scalar_t tmp;
+    sph[get_index(25)] = 13.12764113680340 * y * (y2 * (x2 - 0.2 * y2) + 0.3994658435740642 * sph[get_index(24)]);
+    tmp = 3.316624790355400 * z;
+    sph[get_index(26)] = tmp * sph[get_index(16)];
+    sph[get_index(34)] = tmp * sph[get_index(24)];
+    tmp = 4.974937185533100 * (z2 + 0.5284436396808015 * sph[get_index(6)]);
+    sph[get_index(27)] = tmp * sph[get_index(9)];
+    sph[get_index(33)] = tmp * sph[get_index(15)];
+    tmp = 5.257947827012948 * sph[get_index(6)];
+    sph[get_index(28)] = tmp * sph[get_index(10)];
+    sph[get_index(32)] = tmp * sph[get_index(14)];
+    tmp = 0.6324555320336759 * z;
+    sph[get_index(29)] = 1.427248064296125 * (y * sph[get_index(20)] + tmp * sph[get_index(19)]);
+    sph[get_index(31)] = 1.427248064296125 * (x * sph[get_index(20)] + tmp * sph[get_index(21)]);
+    sph[get_index(30)] = 1.403403869441083 * (3.540173863740353 * sph[get_index(6)] * sph[get_index(12)] - z * z2 * z2);
+    sph[get_index(35)] = -1.048808848170152 * (y * sph[get_index(16)] - x * sph[get_index(24)]);
+}
+
+template <typename scalar_t>
+__device__ void compute_dsph_l5(
+    scalar_t x,
+    scalar_t y,
+    scalar_t z,
+    scalar_t x2,
+    scalar_t y2,
+    scalar_t z2,
+    scalar_t *sph_i,
+    scalar_t *dxsph_i,
+    scalar_t *dysph_i,
+    scalar_t *dzsph_i
+) {
+    dxsph_i[get_index(25)] = 5.244044240850758 * sph_i[get_index(16)];
+    dxsph_i[get_index(26)] = 4.690415759823430 * sph_i[get_index(17)];
+    dxsph_i[get_index(27)] =
+        3.582364210034113 * (y2 * sph_i[get_index(4)] + 3.58568582800318 * x * sph_i[get_index(11)]);
+    dxsph_i[get_index(28)] =
+        -8.774964387392122 * ((y2 - z2) * sph_i[get_index(5)] + 0.3086066999241838 * sph_i[get_index(17)]);
+    dxsph_i[get_index(29)] = -1.914854215512676 * sph_i[get_index(18)];
+    dxsph_i[get_index(30)] = -3.496029493900505 * sph_i[get_index(21)];
+    dxsph_i[get_index(31)] = -8.616843969807043 * (
+        0.2102610435016800 * z2 * z2
+        + 1.056887279361603 * sph_i[get_index(5)] * sph_i[get_index(5)]
+        + (y2 - z2) * sph_i[get_index(6)] + 0.555555555555556 * sph_i[get_index(22)]
+    );
+    dxsph_i[get_index(32)] = -8.774964387392122 * (x2 - z2) * sph_i[get_index(7)];
+    dxsph_i[get_index(33)] = -5.170697352496190 * (
+        0.106904496764970 * z * dxsph_i[get_index(23)]
+        - 0.320713490294909 * y * sph_i[get_index(9)]
+        - sph_i[get_index(22)]
+    );
+    dxsph_i[get_index(34)] = 4.690415759823430 * sph_i[get_index(23)];
+    dxsph_i[get_index(35)] = 5.24404424085076 * sph_i[get_index(24)];
+
+    dysph_i[get_index(25)] = dxsph_i[get_index(35)];
+    dysph_i[get_index(26)] = dxsph_i[get_index(34)];
+    dysph_i[get_index(27)] = -3.102418411497714 * (
+        0.534522483824849 * y * sph_i[get_index(9)]
+        - 0.654653670707977 * z * sph_i[get_index(14)]
+        - sph_i[get_index(22)]
+    );
+    dysph_i[get_index(28)] = -8.77496438739212 * (y2 - 1.585330919042404 * sph_i[get_index(6)]) * sph_i[get_index(7)];
+    dysph_i[get_index(29)] = 0.7237468644557459 * (
+        y * (2.12132034355964 * sph_i[get_index(9)]
+        - 8.21583836257749 * sph_i[get_index(11)])
+        +6.70820393249937 * z * sph_i[get_index(12)]
+        + sph_i[get_index(24)]
+    );
+    dysph_i[get_index(30)] = -3.496029493900505 * sph_i[get_index(19)];
+    dysph_i[get_index(31)] = dxsph_i[get_index(29)];
+    dysph_i[get_index(32)] = 8.77496438739212 * (y2 - z2) * sph_i[get_index(5)];
+    dysph_i[get_index(33)] = 3.582364210034113 * sph_i[get_index(4)] * (
+        y2
+        - 5 * z2
+        - 1.585330919042404 * sph_i[get_index(6)]
+    );
+    dysph_i[get_index(34)] = -dxsph_i[get_index(26)];
+    dysph_i[get_index(35)] = -dxsph_i[get_index(25)];
+
+    dzsph_i[get_index(25)] = 0.0;
+    dzsph_i[get_index(26)] = 3.316624790355400 * sph_i[get_index(16)];
+    dzsph_i[get_index(27)] = 4.422166387140533 * sph_i[get_index(17)];
+    dzsph_i[get_index(28)] = 5.066228051190221 * sph_i[get_index(18)];
+    dzsph_i[get_index(29)] = 5.416025603090640 * sph_i[get_index(19)];
+    dzsph_i[get_index(30)] = 5.527707983925666 * sph_i[get_index(20)];
+    dzsph_i[get_index(31)] = 5.416025603090640 * sph_i[get_index(21)];
+    dzsph_i[get_index(32)] = 5.066228051190221 * sph_i[get_index(22)];
+    dzsph_i[get_index(33)] = 4.422166387140533 * sph_i[get_index(23)];
+    dzsph_i[get_index(34)] = 3.316624790355400 * sph_i[get_index(24)];
+    dzsph_i[get_index(35)] = 0.0;
+}
+
+template <typename scalar_t>
+__device__ void compute_sph_l6(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
+    scalar_t tmp;
+    sph[get_index(36)] = 3.924637560539857 * sph[get_index(9)] * sph[get_index(15)];
+    tmp = 3.605551275463989 * z;
+    sph[get_index(37)] = tmp * sph[get_index(25)];
+    sph[get_index(47)] = tmp * sph[get_index(35)];
+    tmp = 6.4498061986388 * (z2 + 0.396332729760601 * sph[get_index(6)]);
+    sph[get_index(38)] = tmp * sph[get_index(16)];
+    sph[get_index(46)] = tmp * sph[get_index(24)];
+    tmp = 1.04083299973307 * (z2 + 4.75599275712721 * sph[get_index(6)]);
+    sph[get_index(39)] = tmp * sph[get_index(17)];
+    sph[get_index(45)] = tmp * sph[get_index(23)];
+    sph[get_index(40)] = 2.033805211017918 * (0.3779644730092272 * z * sph[get_index(28)] + x * sph[get_index(29)]);
+    tmp = -6.399218702310463 * (z2 * z2 - 4.188790204786391 * sph[get_index(6)] * sph[get_index(6)]);
+    sph[get_index(41)] = tmp * sph[get_index(5)];
+    sph[get_index(43)] = tmp * sph[get_index(7)];
+    sph[get_index(42)] = -1.087114613009218 * (
+        0.645497224367903 * y * sph[get_index(29)]
+        - z * sph[get_index(30)]
+        + 0.645497224367903 * x * sph[get_index(31)]
+    );
+    sph[get_index(44)] = -0.9414688716912718 * (
+        y * sph[get_index(27)]
+        - 1.63299316185545 * z * sph[get_index(32)]
+        + x * sph[get_index(33)]
+    );
+    sph[get_index(48)] = -1.040832999733066 * (y * sph[get_index(25)] - x * sph[get_index(35)]);
+}
+
+template <typename scalar_t>
+__device__ void compute_dsph_l6(
+    scalar_t x,
+    scalar_t y,
+    scalar_t z,
+    scalar_t x2,
+    scalar_t y2,
+    scalar_t z2,
+    scalar_t *sph_i,
+    scalar_t *dxsph_i,
+    scalar_t *dysph_i,
+    scalar_t *dzsph_i
+) {
+    scalar_t tmp;
+    dxsph_i[get_index(36)] = 6.244997998398398 * sph_i[get_index(25)];
+    dysph_i[get_index(48)] = -dxsph_i[get_index(36)];
+    dxsph_i[get_index(37)] = 5.700877125495690 * sph_i[get_index(26)];
+    dysph_i[get_index(47)] = -dxsph_i[get_index(37)];
+    dxsph_i[get_index(38)] = -8.07303841165959 * y * (
+        y2 * y2
+        - 4.188790204786391 * sph_i[get_index(5)] * sph_i[get_index(5)]
+        - 2.642218198404007 * sph_i[get_index(22)]
+    );
+    dxsph_i[get_index(39)] = -15.29705854077835 * (
+        (y2 - z2) * sph_i[get_index(10)]
+        + 0.2611164839335468 * sph_i[get_index(26)]
+    );
+    dxsph_i[get_index(40)] = 32.08092506951781 * (
+        sph_i[get_index(5)] * (0.577350269189626 * y * sph_i[get_index(5)] - z * sph_i[get_index(6)])
+        + 0.364182810197360 * y * y2 * sph_i[get_index(6)] + 0.3169804496925759 * sph_i[get_index(29)]
+    );
+    dxsph_i[get_index(41)] = -2.430862174021989 * sph_i[get_index(28)];
+    dysph_i[get_index(43)] = dxsph_i[get_index(41)];
+    dxsph_i[get_index(42)] = -4.210376791603422 * sph_i[get_index(31)];
+    dysph_i[get_index(42)] = -4.210376791603422 * sph_i[get_index(29)];
+    dxsph_i[get_index(43)] = 4.660970900149851 * (
+        z2 * z * (1.666666666666667 * y2 + z2 - 2.642218198404007 * sph_i[get_index(6)])
+        + 1.245553603643984 * y * sph_i[get_index(19)] + 1.781383145961857 * sph_i[get_index(30)]
+    );
+    dxsph_i[get_index(44)] = 14.73928415223878 * (x * (y2 - z2) * (2 * x2 - z2 - y2) + 0.2856568031469765 * sph_i[get_index(35)]);
+    dxsph_i[get_index(45)] = 3.122498999199199 * (
+        y * sph_i[get_index(17)]
+        - 1.224744871391589 * z2 * sph_i[get_index(14)]
+        + 1.846372364689991 * sph_i[get_index(32)]
+    );
+    tmp = 1.612451549659710 * (y * sph_i[get_index(16)] - 1.4142135623730950 * z * sph_i[get_index(23)]);
+    dxsph_i[get_index(46)] = tmp + 6.18796485857095 * sph_i[get_index(33)];
+    dysph_i[get_index(38)] = -tmp + 4.125309905713972 * sph_i[get_index(33)];
+    dxsph_i[get_index(47)] = 5.700877125495690 * sph_i[get_index(34)];
+    dxsph_i[get_index(48)] = 6.244997998398398 * sph_i[get_index(35)];
+    dysph_i[get_index(36)] = dxsph_i[get_index(48)];
+    dysph_i[get_index(37)] = dxsph_i[get_index(47)];
+    dysph_i[get_index(39)] = -3.122498999199199 * (
+        -1.22474487139159 * z2 * sph_i[get_index(14)]
+        + y * sph_i[get_index(17)]
+        - 1.10782341881399 * sph_i[get_index(32)]
+    );
+    dysph_i[get_index(40)] = 11.68332144554792 * (
+        x * (-1.585330919042404 * sph_i[get_index(5)] * sph_i[get_index(5)] + (z2 - y2) * sph_i[get_index(6)])
+        + 0.1740776559556978 * sph_i[get_index(31)]
+    );
+    dysph_i[get_index(41)] = -6.99145635022478 * z * (
+        z2 * z2
+        + (5.28443639680801 * y2 - 4.188790204786391 * sph_i[get_index(6)]) * sph_i[get_index(6)]
+    );
+    dysph_i[get_index(44)] = 13.49073756323204 * (
+        y2 * z * sph_i[get_index(5)]
+        + (-0.14940357616680 * x2 + 0.44821072850040 * y2 - 0.59761430466720 * z2) * sph_i[get_index(11)]
+    );
+    dysph_i[get_index(45)] = 7.648529270389177 * (y2 - z2 - 1.58533091904240 * sph_i[get_index(6)]) * sph_i[get_index(10)];
+    dysph_i[get_index(46)] = 11.40175425099138 * (
+        0.2360174359706574 * y2 * y2 * y
+        + (y2 - 3 * z2) * sph_i[get_index(9)]
+        + 0.1348399724926484 * sph_i[get_index(25)]
+    );
+    dzsph_i[get_index(36)] = 0.0;
+    dzsph_i[get_index(37)] = 3.605551275463989 * sph_i[get_index(25)];
+    dzsph_i[get_index(38)] = 4.861724348043977 * sph_i[get_index(26)];
+    dzsph_i[get_index(39)] = 5.64881323014763 * sph_i[get_index(27)];
+    dzsph_i[get_index(40)] = 6.14964891828646 * sph_i[get_index(28)];
+    dzsph_i[get_index(41)] = 6.43145678393600 * sph_i[get_index(29)];
+    dzsph_i[get_index(42)] = 6.52268767805531 * sph_i[get_index(30)];
+    dzsph_i[get_index(43)] = 6.43145678393600 * sph_i[get_index(31)];
+    dzsph_i[get_index(44)] = 6.14964891828646 * sph_i[get_index(32)];
+    dzsph_i[get_index(45)] = 5.64881323014763 * sph_i[get_index(33)];
+    dzsph_i[get_index(46)] = 4.861724348043977 * sph_i[get_index(34)];
+    dzsph_i[get_index(47)] = 3.605551275463989 * sph_i[get_index(35)];
+    dzsph_i[get_index(48)] = 0.0;
+}
+
+template <typename scalar_t>
+__device__ void generic_sph_l_channel_device(
+    int l,
+    scalar_t x,
+    scalar_t y,
+    scalar_t z,
+    scalar_t rxy,
+    scalar_t twoz,
+    scalar_t *sph,
+    scalar_t *dsph_x,
+    scalar_t *dsph_y,
+    scalar_t *dsph_z,
+    int sph_offset,
+    scalar_t *pk,
+    scalar_t *qlmk,
+    scalar_t *c,
+    scalar_t *s,
+    bool requires_grad
+) {
+    scalar_t qlm_2, qlm_1, qlm_0;
+    scalar_t ql1m_2, ql1m_1, ql1m_0;
+
+    qlm_2 = qlmk[l];
+
+    scalar_t pq = qlm_2 * pk[l];
+    scalar_t pdq = 0.0;
+    scalar_t pdqx = 0.0;
+    scalar_t pdqy = 0.0;
+
+    scalar_t s_l = s[get_index(l)];
+    scalar_t s_l_neg1 = s[get_index(l - 1)];
+    scalar_t c_l = c[get_index(l)];
+    scalar_t c_l_neg1 = c[get_index(l - 1)];
+
+    sph[get_index(sph_offset - l)] = pq * s_l;
+    sph[get_index(sph_offset + l)] = pq * c_l;
+
+    if (requires_grad) {
+        pq *= l;
+        dsph_x[get_index(sph_offset - l)] = pq * s_l_neg1;
+        dsph_y[get_index(sph_offset - l)] = dsph_x[get_index(sph_offset + l)] = pq * c_l_neg1;
+        dsph_y[get_index(sph_offset + l)] = -dsph_x[get_index(sph_offset - l)];
+        dsph_z[get_index(sph_offset - l)] = 0;
+        dsph_z[get_index(sph_offset + l)] = 0;
+        ql1m_2 = 0;
+    }
+
+    qlm_1 = -z * qlm_2;
+    pq = qlm_1 * pk[l - 1];
+    sph[get_index(sph_offset - l + 1)] = pq * s_l_neg1;
+    sph[get_index(sph_offset + l - 1)] = pq * c_l_neg1;
+
+    if (requires_grad) {
+        pq *= (l - 1);
+        dsph_x[get_index(sph_offset - l + 1)] = pq * s[get_index(l - 2)];
+        dsph_y[get_index(sph_offset + -l + 1)] = dsph_x[get_index(sph_offset + l - 1)] = pq * c[get_index(l - 2)];
+        dsph_y[get_index(sph_offset + l - 1)] = -dsph_x[get_index(sph_offset - l + 1)];
+
+        // uses Q(l-1)(l-1) to initialize the other recursion
+        ql1m_1 = qlmk[-1];
+        pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
+        dsph_z[get_index(sph_offset - l + 1)] = pdq * s_l_neg1;
+        dsph_z[get_index(sph_offset + l - 1)] = pdq * c[get_index(l - 1)];
+    }
+
+    // and now do the other m's, decrementally
+    auto twomz = l * twoz; // compute decrementally to hold 2(m+1)z
+    for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {
+        twomz -= twoz;
+        qlm_0 = qlmk[m] * (twomz * qlm_1 + rxy * qlm_2);
+        qlm_2 = qlm_1;
+        qlm_1 = qlm_0; // shift
+
+        pq = qlm_0 * pk[m];
+
+        auto s_m = s[get_index(m)];
+        auto c_m = c[get_index(m)];
+
+        auto s_m_neg1 = s[get_index(m - 1)];
+        auto c_m_neg1 = c[get_index(m - 1)];
+
+        sph[get_index(sph_offset - m)] = pq * s_m;
+        sph[get_index(sph_offset + m)] = pq * c_m;
+
+        if (requires_grad) {
+            pq *= m;
+            ql1m_0 = qlmk[m - l] * (twomz * ql1m_1 + rxy * ql1m_2);
+            ql1m_2 = ql1m_1;
+            ql1m_1 = ql1m_0; // shift
+
+            pdq = pk[m] * ql1m_2;
+            pdqx = pdq * x;
+            dsph_x[get_index(sph_offset - m)] = pdqx * s_m + pq * s_m_neg1;
+            dsph_x[get_index(sph_offset + m)] = pdqx * c_m + pq * c_m_neg1;
+            pdqy = pdq * y;
+            dsph_y[get_index(sph_offset - m)] = pdqy * s_m + pq * c_m_neg1;
+            dsph_y[get_index(sph_offset + m)] = pdqy * c_m - pq * s_m_neg1;
+            pdq = pk[m] * (l + m) * ql1m_1;
+            dsph_z[get_index(sph_offset - m)] = pdq * s_m;
+            dsph_z[get_index(sph_offset + m)] = pdq * c_m;
+        }
+    }
+
+    for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {
+        auto s_m = s[get_index(m)];
+        auto c_m = c[get_index(m)];
+
+        auto s_m_neg1 = s[get_index(m - 1)];
+        auto c_m_neg1 = c[get_index(m - 1)];
+
+        twomz -= twoz;
+        qlm_0 = qlmk[m] * (twomz * qlm_1 + rxy * qlm_2);
+        qlm_2 = qlm_1;
+        qlm_1 = qlm_0; // shift
+
+        pq = qlm_0 * pk[m];
+        sph[get_index(sph_offset - m)] = pq * s_m;
+        sph[get_index(sph_offset + m)] = pq * c_m;
+
+        if (requires_grad) {
+            pq *= m;
+            ql1m_0 = qlmk[m - l] * (twomz * ql1m_1 + rxy * ql1m_2);
+            ql1m_2 = ql1m_1;
+            ql1m_1 = ql1m_0; // shift
+
+            pdq = pk[m] * ql1m_2;
+            pdqx = pdq * x;
+            dsph_x[get_index(sph_offset - m)] = pdqx * s_m + pq * s_m_neg1;
+            dsph_x[get_index(sph_offset + m)] = pdqx * c_m + pq * c_m_neg1;
+            pdqy = pdq * y;
+            dsph_y[get_index(sph_offset - m)] = pdqy * s_m + pq * c_m_neg1;
+            dsph_y[get_index(sph_offset + m)] = pdqy * c_m - pq * s_m_neg1;
+            pdq = pk[m] * (l + m) * ql1m_1;
+            dsph_z[get_index(sph_offset - m)] = pdq * s_m;
+            dsph_z[get_index(sph_offset + m)] = pdq * c_m;
+        }
+    }
+
+    // m=0
+    qlm_0 = qlmk[0] * (twoz * qlm_1 + rxy * qlm_2);
+    sph[get_index(sph_offset)] = qlm_0 * pk[0];
+
+    if (requires_grad) {
+        ql1m_0 = qlmk[-l] * (twoz * ql1m_1 + rxy * ql1m_2);
+        ql1m_2 = ql1m_1;
+        ql1m_1 = ql1m_0; // shift
+        // derivatives
+        dsph_x[get_index(sph_offset)] = pk[0] * x * ql1m_2;
+        dsph_y[get_index(sph_offset)] = pk[0] * y * ql1m_2;
+        dsph_z[get_index(sph_offset)] = pk[0] * l * ql1m_1;
+    }
+}
+
+template <typename scalar_t>
+__device__ inline void clear_buffers(
+    int nelements,
+    scalar_t *sph,
+    scalar_t *dsph_x,
+    scalar_t *dsph_y,
+    scalar_t *dsph_z,
+    bool requires_grad
+) {
+    for (int i = 0; i < nelements; i++) {
+        sph[get_index(i)] = 0.0;
+
+        if (requires_grad) {
+            dsph_x[get_index(i)] = 0.0;
+            dsph_y[get_index(i)] = 0.0;
+            dsph_z[get_index(i)] = 0.0;
+        }
+    }
+    __syncthreads();
+}
+
+template <typename scalar_t>
+__device__ inline void write_buffers(
+    int atom_idx,
+    int natoms,
+    scalar_t x,
+    scalar_t y,
+    scalar_t z,
+    scalar_t ir,
+    int n_elements,
+    int offset,
+    scalar_t *buffer_sph,
+    scalar_t *buffer_dsph_x,
+    scalar_t *buffer_dsph_y,
+    scalar_t *buffer_dsph_z,
+    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> sph,
+    torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph,
+    bool requires_grad,
+    bool normalize
+) {
+    if (atom_idx < natoms) {
+        for (int i = 0; i < n_elements; i++) {
+            sph[offset + i][atom_idx] = buffer_sph[get_index(i)];
+
+            if (requires_grad) {
+                auto tmp_dx = buffer_dsph_x[get_index(i)];
+                auto tmp_dy = buffer_dsph_y[get_index(i)];
+                auto tmp_dz = buffer_dsph_z[get_index(i)];
+
+                // corrects derivatives for normalization
+                if (normalize) {
+                    auto tmp = (tmp_dx * x + tmp_dy * y + tmp_dz * z);
+
+                    tmp_dx = (tmp_dx - x * tmp) * ir;
+                    tmp_dy = (tmp_dy - y * tmp) * ir;
+                    tmp_dz = (tmp_dz - z * tmp) * ir;
+                }
+
+                dsph[offset + i][0][atom_idx] = tmp_dx;
+                dsph[offset + i][1][atom_idx] = tmp_dy;
+                dsph[offset + i][2][atom_idx] = tmp_dz;
+            }
+        }
+    }
+}
+
+template <typename scalar_t>
+__global__ void generic_spherical_harmonics_kernel(
+    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> xyz,
+    torch::PackedTensorAccessor32<scalar_t, 1, torch::RestrictPtrTraits> prefactors,
+    int lmax,
+    bool requires_grad,
+    bool normalize,
+    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> sph,
+    torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph
+) {
+    extern __shared__ char buffer[];
+
+    size_t offset = 0;
+
+    scalar_t *buffer_c = reinterpret_cast<scalar_t *>(buffer + offset);
+    offset += blockDim.x * (lmax + 1) * sizeof(scalar_t);
+    scalar_t *buffer_s = reinterpret_cast<scalar_t *>(buffer + offset);
+    offset += blockDim.x * (lmax + 1) * sizeof(scalar_t);
+    scalar_t *buffer_prefactors = reinterpret_cast<scalar_t *>(buffer + offset);
+    offset += prefactors.size(0) * sizeof(scalar_t);
+
+    int nl = max((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1), 2 * lmax + 1);
+    int mm = min(lmax, HARDCODED_LMAX);
+
+    scalar_t *buffer_sph = reinterpret_cast<scalar_t *>(buffer + offset);
+    offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
+
+    scalar_t *buffer_dsph_x;
+    scalar_t *buffer_dsph_y;
+    scalar_t *buffer_dsph_z;
+
+    if (requires_grad) {
+        buffer_dsph_x = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
+        buffer_dsph_y = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
+        buffer_dsph_z = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
+    }
+
+    int atom_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    int natoms = xyz.size(0);
+
+    scalar_t x = 0.0;
+    scalar_t y = 0.0;
+    scalar_t z = 0.0;
+
+    scalar_t x2 = 0.0;
+    scalar_t y2 = 0.0;
+    scalar_t z2 = 0.0;
+
+    for (int i = threadIdx.x; i < prefactors.size(0); i += blockDim.x) {
+        buffer_prefactors[i] = prefactors[i];
+    }
+
+    __syncthreads();
+
+    if (atom_idx < natoms) {
+        x = xyz[atom_idx][0];
+        y = xyz[atom_idx][1];
+        z = xyz[atom_idx][2];
+
+        x2 = x * x;
+        y2 = y * y;
+        z2 = z * z;
+    }
+
+    scalar_t ir = 0.0;
+
+    if (normalize) {
+        if (atom_idx < natoms) {
+            auto ir2 = 1.0 / (x2 + y2 + z2);
+            ir = sqrt(ir2);
+            x *= ir;
+            y *= ir;
+            z *= ir;
+            x2 *= ir2;
+            y2 *= ir2;
+            z2 *= ir2;
+        }
+    }
+
+    auto twoz = 2 * z;
+    auto rxy = x2 + y2;
+
+    if (threadIdx.y == 0) {
+        buffer_c[get_index(0)] = 1.0;
+        buffer_s[get_index(0)] = 0.0;
+
+        for (int m = 1; m < lmax + 1; m++) {
+            int m_in_idx = get_index(m - 1);
+            int m_out_idx = get_index(m);
+
+            scalar_t c = buffer_c[m_in_idx];
+            scalar_t s = buffer_s[m_in_idx];
+
+            buffer_c[m_out_idx] = c * x - s * y;
+            buffer_s[m_out_idx] = c * y + s * x;
+        }
+    }
+
+    __syncthreads();
+
+    // work through hardcoded parts first...
+    clear_buffers(
+        (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1),
+        buffer_sph,
+        buffer_dsph_x,
+        buffer_dsph_y,
+        buffer_dsph_z,
+        requires_grad
+    );
+
+    if (lmax >= 0) {
+        compute_sph_l0(buffer_sph);
+        if (requires_grad) {
+            compute_dsph_l0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+        }
+    }
+
+    if (lmax >= 1) {
+        compute_sph_l1(x, y, z, buffer_sph);
+        if (requires_grad) {
+            compute_dsph_l1(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+        }
+    }
+
+    if (lmax >= 2) {
+        compute_sph_l2(x, y, z, x2, y2, z2, buffer_sph);
+        if (requires_grad) {
+            compute_dsph_l2(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+        }
+    }
+
+    if (lmax >= 3) {
+        compute_sph_l3(x, y, z, x2, y2, z2, buffer_sph);
+        if (requires_grad) {
+            compute_dsph_l3(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+        }
+    }
+
+    if (lmax >= 4) {
+        compute_sph_l4(x, y, z, x2, y2, z2, buffer_sph);
+        if (requires_grad) {
+            compute_dsph_l4(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+        }
+    }
+
+    if (lmax >= 5) {
+        compute_sph_l5(x, y, z, x2, y2, z2, buffer_sph);
+        if (requires_grad) {
+            compute_dsph_l5(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+        }
+    }
+
+    if (lmax >= 6) {
+        compute_sph_l6(x, y, z, x2, y2, z2, buffer_sph);
+        if (requires_grad) {
+            compute_dsph_l6(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+        }
+    }
+
+    __syncthreads();
+
+    // write out all (min(HARDCODED_LMAX, lmax) +1)**2 hardcoded elements
+    write_buffers(
+        atom_idx,
+        natoms,
+        x,
+        y,
+        z,
+        ir,
+        (mm + 1) * (mm + 1),
+        0,
+        buffer_sph,
+        buffer_dsph_x,
+        buffer_dsph_y,
+        buffer_dsph_z,
+        sph,
+        dsph,
+        requires_grad,
+        normalize
+    );
+
+    // now lets do the generic terms...
+    int size_q = (lmax + 1) * (lmax + 2) / 2;
+    int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
+
+    scalar_t *qlmk = buffer_prefactors + size_q + k;
+
+    scalar_t *pk = buffer_prefactors + k;
+
+    int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
+
+    for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1) {
+        int sph_offset = l; // sph needs to point to Y[l, 0]
+
+        // sph 0 : 0
+        // sph 1: 0 1 2
+        // sph 2: 0 1 2 3 4
+        // sph 3: 0 1 2 3 4 5 6
+
+        // clear out temporary storage buffers
+        clear_buffers(2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+
+        // do some work
+        generic_sph_l_channel_device(
+            l,
+            x,
+            y,
+            z,
+            rxy,
+            twoz,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph_offset,
+            pk,
+            qlmk,
+            buffer_c,
+            buffer_s,
+            requires_grad
+        );
+
+        // write out temporary storage buffers
+        write_buffers(
+            atom_idx,
+            natoms,
+            x,
+            y,
+            z,
+            ir,
+            2 * l + 1,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph,
+            dsph,
+            requires_grad,
+            normalize
+        );
+
+        base_index += 2 * l + 1;
+        qlmk += l + 1;
+        pk += l + 1;
+    }
+}
+
+#define GRIM_DIM_X 32
+
+void adjust_shared_memory(torch::Tensor xyz, int lmax, int GRID_DIM_Y, bool requires_grad) {
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, 0);
+
+    int nl = max((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1), 2 * lmax + 1);
+
+    size_t total_buff_size = 0;
+    size_t dtype = torch::elementSize(torch::typeMetaToScalarType(xyz.dtype()));
+
+    total_buff_size += GRIM_DIM_X * (lmax + 1) * dtype;      // buffer_c
+    total_buff_size += GRIM_DIM_X * (lmax + 1) * dtype;      // buffer_s
+    total_buff_size += (lmax + 1) * (lmax + 2) * dtype;      // buffer_prefactors
+    total_buff_size += GRID_DIM_Y * GRIM_DIM_X * nl * dtype; // buffer_sph_out
+
+    if (requires_grad) {
+        total_buff_size += 3 * GRID_DIM_Y * GRIM_DIM_X * nl * dtype; // buffer_sph_derivs
+    }
+
+    TORCH_CHECK(
+        total_buff_size <= deviceProp.sharedMemPerBlock * 4,
+        "requested shared memory buffer (", total_buff_size, ") exceeds max ",
+        "available on device: ", deviceProp.name, " (", deviceProp.sharedMemPerBlock * 4, ")"
+    );
+
+    switch (xyz.type().scalarType()) {
+    case torch::ScalarType::Double:
+        cudaFuncSetAttribute(
+            generic_spherical_harmonics_kernel<double>,
+            cudaFuncAttributeMaxDynamicSharedMemorySize,
+            total_buff_size
+        );
+        break;
+    case torch::ScalarType::Float:
+        cudaFuncSetAttribute(
+            generic_spherical_harmonics_kernel<float>,
+            cudaFuncAttributeMaxDynamicSharedMemorySize,
+            total_buff_size
+        );
+        break;
+    // case torch::ScalarType::Half:
+    //     cudaFuncSetAttribute(
+    //         generic_spherical_harmonics_kernel<at::Half>,
+    //         cudaFuncAttributeMaxDynamicSharedMemorySize,
+    //         total_buff_size
+    //     );
+    //     break;
+    }
+}
+
+std::vector<torch::Tensor> spherical_harmonics_cuda(
+    torch::Tensor xyz,
+    torch::Tensor prefactors,
+    int lmax,
+    int GRID_DIM_Y
+) {
+
+    CHECK_INPUT(xyz);
+    CHECK_INPUT(prefactors);
+    CHECK_SIMILARITY(xyz, prefactors);
+
+    int ntotal = (lmax + 1) * (lmax + 1);
+
+    auto sph = torch::zeros(
+        {ntotal, xyz.size(0)},
+        torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
+    );
+
+    torch::Tensor d_sph;
+
+    if (xyz.requires_grad()) {
+        d_sph = torch::zeros(
+            {ntotal, 3, xyz.size(0)},
+            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
+        );
+    } else {
+        // just so accessor doesn't complain
+        d_sph = torch::zeros(
+            {1, 1, 1},
+            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
+        );
+    }
+
+    dim3 grid_dim(GRIM_DIM_X, GRID_DIM_Y);
+
+    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
+
+    dim3 block_dim(find_num_blocks(xyz.size(0), GRIM_DIM_X));
+
+    // to make computing hardcoded + generic easier, use a minimum amount of shared memory enough to store all hardcoded
+    // derivatives
+    int nl = max((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1), 2 * lmax + 1);
+
+    AT_DISPATCH_FLOATING_TYPES(
+        xyz.scalar_type(), "spherical_harmonics_cuda", ([&] {
+            size_t total_buff_size = 0;
+
+            total_buff_size += GRIM_DIM_X * (lmax + 1) * sizeof(scalar_t);      // buffer_c
+            total_buff_size += GRIM_DIM_X * (lmax + 1) * sizeof(scalar_t);      // buffer_s
+            total_buff_size += (lmax + 1) * (lmax + 2) * sizeof(scalar_t);      // buffer_prefactors
+            total_buff_size += GRID_DIM_Y * GRIM_DIM_X * nl * sizeof(scalar_t); // buffer_sph_out
+
+            if (xyz.requires_grad()) {
+                total_buff_size += 3 * GRID_DIM_Y * GRIM_DIM_X * nl * sizeof(scalar_t); // buffer_sph_derivs
+            }
+
+            generic_spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
+                xyz.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
+                prefactors.packed_accessor32<scalar_t, 1, torch::RestrictPtrTraits>(),
+                lmax,
+                xyz.requires_grad(),
+                true,
+                sph.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
+                d_sph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>());
+        }));
+
+    cudaDeviceSynchronize();
+
+    if (xyz.requires_grad()) {
+        return {sph.transpose(0, 1).contiguous(), d_sph.transpose(0, 2).contiguous()};
+    } else {
+        return {sph.transpose(0, 1).contiguous()};
+    }
+}
+
+// class SphericalHarmonics : public torch::autograd::Function<SphericalHarmonics> {
+//   public:
+//     static torch::Tensor forward(
+//         torch::autograd::AutogradContext *ctx,
+//         int lmax,
+//         torch::Tensor prefactors,
+//         torch::Tensor xyz
+//     ) {
+
+//         vector<torch::Tensor> result;
+//         result = generic_spherical_harmonics_gpu(xyz, prefactors, lmax, 1);
+
+//         if (xyz.requires_grad()) {
+//             ctx->save_for_backward({xyz, result[1]}); // save derivative for backwards call
+//         }
+
+//         return result[0];
+//     }
+
+//     static torch::autograd::tensor_list backward(
+//         torch::autograd::AutogradContext *ctx,
+//         torch::autograd::tensor_list d_loss_d_outputs
+//     ) {
+
+//         auto saved = ctx->get_saved_variables();
+//         torch::Tensor xyz = saved[0];
+//         torch::Tensor spherical_harmonics_gradients = saved[1];
+
+//         torch::Tensor d_loss_d_inputs = torch::empty_like(xyz);
+
+//         for (int alpha = 0; alpha < 3; alpha++) {
+//             auto gradient_slice = spherical_harmonics_gradients.index(
+//                 {torch::indexing::Slice(), alpha, torch::indexing::Slice()}
+//             );
+//             d_loss_d_inputs.index_put_(
+//                 {torch::indexing::Slice(), alpha},
+//                 torch::sum(d_loss_d_outputs[0] * gradient_slice, 1)
+//             );
+//         }
+
+//         return {torch::Tensor(), torch::Tensor(), d_loss_d_inputs};
+//     }
+// };
+
+// torch::Tensor spherical_harmonics_cuda(int lmax, torch::Tensor prefactors, torch::Tensor xyz) {
+//     return SphericalHarmonics::apply(lmax, prefactors, xyz);
+// }
+
+// PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+//     m.def("adjust_shared_memory", &adjust_shared_memory,
+//           "check and change the allocation of shared memory to fit requirement");
+//     m.def("spherical_harmonics_cuda", &spherical_harmonics_cuda, "forwards computation for spherical harmonics (CUDA)");
+//     m.def("_generic_spherical_harmonics_gpu", &generic_spherical_harmonics_gpu,
+//           "generic function for spherical harmonics (CUDA)");
+// }
