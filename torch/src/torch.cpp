@@ -3,7 +3,9 @@
 #include "sphericart/autograd.hpp"
 
 using namespace sphericart_torch;
-SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalized) : l_max(l_max), spherical_harmonics(l_max, normalized) {}
+SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalized) : l_max(l_max), 
+        spherical_harmonics_d(l_max, normalized), spherical_harmonics_f(l_max, normalized)
+         {}
 
 torch::Tensor SphericalHarmonics::compute(torch::Tensor xyz) {
     return SphericalHarmonicsAutograd::apply(*this, xyz)[0];

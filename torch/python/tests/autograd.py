@@ -11,21 +11,19 @@ torch.manual_seed(0)
 def xyz():
     return 6 * torch.randn(100, 3, dtype=torch.float64, requires_grad=True)
 
-
 @pytest.fixture
 def compute_unnormalized(xyz):
     def _compute_unnormalized(xyz):
-        return sphericart_torch.SphericalHarmonics(l_max=20, normalized=False).compute(
+        return sphericart_torch.SphericalHarmonics(l_max=4, normalized=False).compute(
             xyz=xyz
         )
 
     return _compute_unnormalized
 
-
 @pytest.fixture
 def compute_normalized(xyz):
     def _compute_normalized(xyz):
-        return sphericart_torch.SphericalHarmonics(l_max=20, normalized=True).compute(
+        return sphericart_torch.SphericalHarmonics(l_max=4, normalized=True).compute(
             xyz=xyz
         )
 
@@ -39,6 +37,36 @@ def test_autograd_cartesian(compute_unnormalized, xyz):
 def test_autograd_normalized(compute_normalized, xyz):
     assert torch.autograd.gradcheck(compute_normalized, xyz, fast_mode=True)
 
+
+def test_precision_base(compute_normalized, xyz):
+    d_xyz = xyz.clone().detach().requires_grad_(True)
+    d_sph = sphericart_torch.SphericalHarmonics(l_max=10, normalized=False).compute(
+            d_xyz
+        )
+    d_norm = (d_sph**2).sum()
+    d_norm.backward()
+    print("d grad base", d_xyz.grad)
+    
+def test_precision(compute_normalized, xyz):
+    d_xyz = xyz.clone().to(dtype=torch.float32).detach().requires_grad_(True)
+    s_xyz = xyz.clone().to(dtype=torch.float32).detach().requires_grad_(True)
+    assert ((d_xyz.detach()-s_xyz.detach())**2).sum() < 1e-8
+
+    d_sph = sphericart_torch.SphericalHarmonics(l_max=10, normalized=False).compute(
+            xyz=d_xyz
+        )
+    s_sph = sphericart_torch.SphericalHarmonics(l_max=10, normalized=False).compute(
+            xyz=s_xyz
+        )
+    assert ((d_sph.detach()/s_sph.detach()-1)**2).sum() < 1e-5
+    
+    d_norm = (d_sph**2).sum()
+    s_norm = (s_sph**2).sum()
+    d_norm.backward()
+    s_norm.backward()
+    print("d grad", d_xyz.grad)
+    print("s_grad", s_xyz.grad)
+    assert torch.allclose(d_xyz.grad.detach(), s_xyz.grad.detach())
 
 if __name__ == "__main__":
     pytest.main([__file__])

@@ -14,7 +14,8 @@ namespace sphericart_torch {
     friend class SphericalHarmonicsAutograd;
     private:
         int64_t l_max;
-        sphericart::SphericalHarmonics<double> spherical_harmonics;
+        sphericart::SphericalHarmonics<double> spherical_harmonics_d;
+        sphericart::SphericalHarmonics<float> spherical_harmonics_f;
     };
 } // sphericart_torch
 #endif
