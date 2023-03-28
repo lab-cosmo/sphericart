@@ -4,26 +4,26 @@ import sys
 
 _HERE = os.path.realpath(os.path.dirname(__file__))
 
+
 class c_sphericart_sph(ctypes.c_void_p):
     pass
+
 
 def setup_functions(lib):
     lib.sphericart_new.restype = c_sphericart_sph
     lib.sphericart_new.argtypes = [
-        ctypes.c_int, 
+        ctypes.c_int,
         ctypes.c_char,
     ]
 
     lib.sphericart_new_f.restype = c_sphericart_sph
     lib.sphericart_new_f.argtypes = [
-        ctypes.c_int, 
+        ctypes.c_int,
         ctypes.c_char,
     ]
 
     lib.sphericart_delete.restype = None
-    lib.sphericart_delete.argtypes = [
-        c_sphericart_sph
-    ]
+    lib.sphericart_delete.argtypes = [c_sphericart_sph]
 
     lib.sphericart_compute_array.restype = None
     lib.sphericart_compute_array.argtypes = [
@@ -42,6 +42,7 @@ def setup_functions(lib):
         ctypes.POINTER(ctypes.c_float),
         ctypes.POINTER(ctypes.c_float),
     ]
+
 
 class LibraryFinder(object):
     def __init__(self):

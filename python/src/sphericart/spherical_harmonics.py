@@ -1,6 +1,7 @@
 from .wrappers import c_sph_new, c_sph_delete, c_sph_compute
 import numpy as np
 
+
 class SphericalHarmonics:
     """
     The user-facing spherical harmonics class.
@@ -23,6 +24,7 @@ class SphericalHarmonics:
     def __init__(self, l_max, normalized=False):
         # this intializes both a double precision and a single-precision calculator.
         # which one is called will be decided based on the type of the data passed
+        self._l_max = l_max
         self._sph = c_sph_new(l_max, normalized)
 
     def __del__(self):
