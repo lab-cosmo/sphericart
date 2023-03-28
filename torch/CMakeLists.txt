@@ -102,6 +102,8 @@ endif()
 
 find_package(Torch 1.13 REQUIRED)
 
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERSION = '${Torch_VERSION}'")
+
 add_library(sphericart_torch SHARED
     "include/sphericart/torch.hpp"
     "include/sphericart/autograd.hpp"
@@ -126,3 +128,10 @@ target_include_directories(sphericart_torch PUBLIC
 install(TARGETS sphericart_torch
     LIBRARY DESTINATION "lib"
 )
+
+if (SPHERICART_TORCH_BUILD_FOR_PYTHON)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py
+        DESTINATION "."
+    )
+endif()
