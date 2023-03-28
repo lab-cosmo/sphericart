@@ -1,14 +1,12 @@
 #include "sphericart/autograd.hpp"
+#include "sphericart/torch.hpp"
 #include "sphericart.hpp"
 
-using namespace sphericart;
-
-
+using namespace sphericart_torch;
 torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     torch::autograd::AutogradContext *ctx,
-    int64_t l_max,
-    torch::Tensor xyz,
-    bool normalize
+    SphericalHarmonics& calculator,
+    torch::Tensor xyz
 ) {
     if (!xyz.is_contiguous()) {
         throw std::runtime_error("this code only runs with contiguous tensors");
@@ -30,9 +28,9 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         throw std::runtime_error("xyz tensor must be an `n_samples x 3` array");
     }
     auto n_samples = xyz.sizes()[0];
+    sphericart::SphericalHarmonics<double>& sph_calc = calculator.spherical_harmonics;
+    auto l_max = calculator.l_max;
 
-    auto sph_calc = sphericart::SphericalHarmonics<double>(l_max, normalize);
-    
     auto options = torch::TensorOptions().device(xyz.device()).dtype(xyz.dtype());
     auto sph = torch::zeros({n_samples, (l_max + 1) * (l_max + 1)}, options);
 

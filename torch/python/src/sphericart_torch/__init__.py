@@ -25,30 +25,16 @@ def _lib_path():
 
 
 # load the C++ operators and custom classes
-torch.ops.load_library(_lib_path())
+torch.classes.load_library(_lib_path())
 
 
-def spherical_harmonics(
-    l_max: int,
-    xyz: torch.Tensor,
-    normalize: bool = False,
-) -> torch.Tensor:
-    """
-    Compute spherical harmonics, taking the input directions as a torch Tensor
+class SphericalHarmonics:
+    def __init__(self, l_max, normalized=False):
+        self._l_max = l_max
+        self._sph = torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
 
-    By default, this computes un-normalized, cartesian spherical harmonics.
-
-    :param l_max: max L to use when computing spherical harmonics
-    :param xyz: torch tensor containing the directions
-    :param normalize: should we compute normalized or non-normalized cartesian
-        spherical harmonics
-    :return: Spherical harmonics corresponding to ``xyz``, up to order ``l_max``
-    """
-    return torch.ops.sphericart.spherical_harmonics(
-        l_max=l_max,
-        xyz=xyz,
-        normalize=normalize,
-    )
+    def compute(self, xyz):
+        return self._sph.compute(xyz)
 
 
-__all__ = ["spherical_harmonics"]
+__all__ = ["SphericalHarmonics"]

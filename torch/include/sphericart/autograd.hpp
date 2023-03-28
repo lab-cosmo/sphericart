@@ -4,24 +4,22 @@
 #include <torch/data.h>
 #include <torch/autograd.h>
 
-namespace sphericart {
-    
-class SphericalHarmonicsAutograd : public torch::autograd::Function<SphericalHarmonicsAutograd> {
-public:
-    static torch::autograd::variable_list forward(
-        torch::autograd::AutogradContext *ctx,
-        int64_t l_max,
-        torch::Tensor xyz,
-        bool normalize
-    );
+namespace sphericart_torch {
+    class SphericalHarmonics;
 
-    static torch::autograd::variable_list backward(
-        torch::autograd::AutogradContext *ctx,
-        torch::autograd::variable_list grad_outputs
-    );
-};
+    class SphericalHarmonicsAutograd : public torch::autograd::Function<SphericalHarmonicsAutograd> {
+    public:
+        static torch::autograd::variable_list forward(
+            torch::autograd::AutogradContext *ctx,
+            SphericalHarmonics& calculator,
+            torch::Tensor xyz
+        );
 
-
-}
+        static torch::autograd::variable_list backward(
+            torch::autograd::AutogradContext *ctx,
+            torch::autograd::variable_list grad_outputs
+        );
+    };
+} // namespace sphericart_torch
 
 #endif
