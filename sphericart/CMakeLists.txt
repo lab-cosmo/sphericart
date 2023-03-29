@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(sphericart CXX)
+project(sphericart LANGUAGES C CXX)
 
 file(READ ${PROJECT_SOURCE_DIR}/VERSION SPHERICART_VERSION)
 string(STRIP ${SPHERICART_VERSION} SPHERICART_VERSION)

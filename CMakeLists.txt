@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(sphericart_meta C CXX)
+project(sphericart_meta)
 
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
