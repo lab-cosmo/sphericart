@@ -149,14 +149,14 @@ template class sphericart::SphericalHarmonics<double>;
 
 
 template<typename DTYPE>
-std::tuple<std::vector<DTYPE>, std::vector<DTYPE> > sphericart::spherical_harmonics(size_t l_max, const std::vector<DTYPE>& xyz, bool normalized) {
+std::pair<std::vector<DTYPE>, std::vector<DTYPE> > sphericart::spherical_harmonics(size_t l_max, const std::vector<DTYPE>& xyz, bool normalized) {
     
     auto sph_class = sphericart::SphericalHarmonics<DTYPE>(l_max, normalized);
     std::vector<DTYPE> sph((xyz.size()/3)*(l_max+1)*(l_max+1));
     std::vector<DTYPE> dsph(xyz.size()*(l_max+1)*(l_max+1));
     sph_class.compute(xyz, sph, dsph);
-    return std::make_tuple(sph, dsph);
+    return std::make_pair(sph, dsph);
 }
 
-template std::tuple<std::vector<double>, std::vector<double> > sphericart::spherical_harmonics(size_t l_max, const std::vector<double>& xyz, bool normalized);
-template std::tuple<std::vector<float>, std::vector<float> > sphericart::spherical_harmonics(size_t l_max, const std::vector<float>& xyz, bool normalized);
+template std::pair<std::vector<double>, std::vector<double> > sphericart::spherical_harmonics(size_t l_max, const std::vector<double>& xyz, bool normalized);
+template std::pair<std::vector<float>, std::vector<float> > sphericart::spherical_harmonics(size_t l_max, const std::vector<float>& xyz, bool normalized);

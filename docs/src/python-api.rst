@@ -7,4 +7,4 @@ Python API
 Torch API
 ---------
 
-.. autoclass:: sphericart_torch.spherical_harmonics
+.. autoclass:: sphericart_torch.SphericalHarmonics
