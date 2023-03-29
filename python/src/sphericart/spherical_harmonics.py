@@ -1,5 +1,4 @@
-from .wrappers import c_sph_new, c_sph_delete, c_sph_compute
-import numpy as np
+from .wrappers import c_sph_compute, c_sph_delete, c_sph_new
 
 
 class SphericalHarmonics:

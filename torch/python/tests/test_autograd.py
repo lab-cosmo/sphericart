@@ -1,5 +1,4 @@
 import pytest
-
 import sphericart_torch
 
 import torch

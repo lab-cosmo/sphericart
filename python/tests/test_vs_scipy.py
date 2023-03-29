@@ -1,13 +1,14 @@
-import pytest
 import numpy as np
+import pytest
 import scipy.special
+
 import sphericart
 
 L_MAX = 20
 N_SAMPLES = 10
 
 
-def scipy_real_sph(xyz, l, m):
+def scipy_real_sph(xyz, l, m):  # noqa E741
     x = xyz[:, 0]
     y = xyz[:, 1]
     z = xyz[:, 2]
@@ -37,7 +38,7 @@ def xyz():
 
 
 def test_against_scipy(xyz):
-    for l in range(0, L_MAX + 1):
+    for l in range(0, L_MAX + 1):  # noqa E741
         for m in range(-l, l + 1):
             sh_scipy_l_m = scipy_real_sph(xyz, l, m)
 
