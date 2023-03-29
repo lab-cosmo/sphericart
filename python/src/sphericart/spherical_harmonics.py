@@ -1,5 +1,6 @@
 from .wrappers import c_sph_compute, c_sph_delete, c_sph_new
 
+
 class SphericalHarmonics:
     """
     The user-facing spherical harmonics class.
