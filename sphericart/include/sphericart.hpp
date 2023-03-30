@@ -25,20 +25,6 @@ namespace sphericart {
 */
 template<typename T>
 class SphericalHarmonics{
-private:
-    int l_max, size_y, size_q;
-    bool normalized;
-    T *prefactors;
-    T *buffers;
-
-    // function pointers are used to set up the right functions to be called
-    void (*_array_no_derivatives)(const T*, T*, T*, int, int, const T*, T*);
-    void (*_array_with_derivatives)(const T*, T*, T*, int, int, const T*, T*);
-    // these compute a single sample
-
-    void (*_sample_no_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
-    void (*_sample_with_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
-
 public:
     /** Initialize the SphericalHarmonics class setting maximum l and normalization
      *
@@ -89,21 +75,28 @@ public:
     void compute(const std::vector<T>& xyz, std::vector<T>& sph);
     void compute(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph);
 
-    void compute_array(size_t n_samples, const T* xyz, T* sph) {
-        this->_array_no_derivatives(xyz, sph, nullptr, n_samples, this->l_max, this->prefactors, this->buffers);
-    }
-    void compute_array(size_t n_samples, const T* xyz, T* sph, T* dsph) {
-        this->_array_with_derivatives(xyz, sph, dsph, n_samples, this->l_max, this->prefactors, this->buffers);
-    }
+    void compute_array(const T* xyz, size_t xyz_length, T* sph, size_t sph_length);
+    void compute_array(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length);
 
-    void compute_sample(const T* xyz, T* sph) {
-        this->_sample_no_derivatives(xyz, sph, nullptr, this->l_max, this->size_y, this->prefactors,
-            this->prefactors+this->size_q, this->buffers, this->buffers+this->size_q, this->buffers+2*this->size_q);
-    }
-    void compute_sample(const T* xyz, T* sph, T* dsph) {
-        this->_sample_with_derivatives(xyz, sph, dsph, this->l_max, this->size_y, this->prefactors,
-            this->prefactors+this->size_q, this->buffers, this->buffers+this->size_q, this->buffers+2*this->size_q);
-    }
+    void compute_sample(const T* xyz, size_t xyz_length, T* sph, size_t sph_length);
+    void compute_sample(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length);
+
+private:
+    size_t l_max;
+    size_t size_y;
+    size_t size_q;
+    bool normalized;
+    T *prefactors;
+    T *buffers;
+
+    // function pointers are used to set up the right functions to be called
+    void (*_array_no_derivatives)(const T*, T*, T*, int, int, const T*, T*);
+    void (*_array_with_derivatives)(const T*, T*, T*, int, int, const T*, T*);
+    // these compute a single sample
+
+    void (*_sample_no_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
+    void (*_sample_with_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
+
 };
 
 

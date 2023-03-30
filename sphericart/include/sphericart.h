@@ -59,49 +59,79 @@ SPHERICART_EXPORT void sphericart_delete(sphericart_calculator_t* calculator);
 SPHERICART_EXPORT void sphericart_delete_f(sphericart_calculator_f_t* calculator);
 
 /**
- * This function calculates the spherical harmonics and, optionally, their derivatives
- * for an array of 3D points.
+ * This function calculates the spherical harmonics and, optionally, their
+ * derivatives for an array of 3D points.
  *
- * @param spherical_harmonics
- *        A pointer to a `sphericart_calculator_t` struct that holds prefactors
- *        and options to compute the spherical harmonics.
- * @param n_samples
- *        The number of 3D points for which the spherical harmonics will be calculated.
- * @param xyz
- *        An array of size `(n_samples)*3`. It contains the Cartesian
+ * @param spherical_harmonics A pointer to a `sphericart_calculator_t` struct
+ *        that holds prefactors and options to compute the spherical harmonics.
+ * @param xyz An array of size `n_samples x 3`. It contains the Cartesian
  *        coordinates of the 3D points for which the spherical harmonics are to
  *        be computed, organized along two dimensions. The outer dimension is
  *        `n_samples` long, accounting for different samples, while the inner
  *        dimension has size 3 and it represents the x, y, and z coordinates
  *        respectively.
- * @param sph
- *        On entry, a (possibly uninitialized) array of size
- *        `n_samples*(l_max+1)*(l_max+1)`. On exit, this array will contain
+ * @param xyz_length size of the xyz allocation, i.e, `3 * n_samples`
+ * @param sph pointer to the first element of an array containing `n_samples *
+ *        (l_max + 1) * (l_max + 1)` elements. On exit, this array will contain
  *        the spherical harmonics organized along two dimensions. The leading
- *        dimension is `n_samples` long and it represents the different
- *        samples, while the inner dimension is `(l_max+1)*(l_max+1)` long and
+ *        dimension is `n_samples` long and it represents the different samples,
+ *        while the inner dimension size is `(l_max + 1) * (l_max + 1)` long and
  *        it contains the spherical harmonics. These are laid out in
- *        lexicographic order. For example, if `l_max=2`, it will contain
- *        `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1), (2, 0),
- *        (2, 1), (2, 2)`, in this order.
- * @param dsph
- *        On entry, either `NULL` or a (possibly uninitialized) array of
- *        size `n_samples*3*(l_max+1)*(l_max+1)`. If `dsph` is `NULL`, the
- *        spherical harmonics' derivatives will not be calculated. Otherwise, on
- *        exit, this array will contain the spherical harmonics' derivatives
- *        organized along three dimensions. As for the `sph` parameter, the
- *        leading dimension represents the different samples, while the
- *        inner-most dimension is `(l_max+1)*(l_max+1)`, and it represents the
- *        degree and order of the spherical harmonics (again, organized in
- *        lexicographic order). The intermediate dimension corresponds to
- *        different spatial derivatives of the spherical harmonics: x, y, and z,
- *        respectively.
+ *        lexicographic order. For example, if `l_max=2`, it will contain `(l,
+ *        m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1), (2, 0), (2,
+ *        1), (2, 2)`, in this order.
+ * @param sph_length size of the sph allocation, should be `n_samples * (l_max +
+ *        1) * (l_max + 1)`
+ * @param dsph pointer to the first element of an array containing `n_samples *
+ *         `n_samples * 3 * (l_max + 1) * (l_max + 1)` elements. On exit, this
+ *         array will contain the spherical harmonics' derivatives organized
+ *         along three dimensions. As for the `sph` parameter, the leading
+ *         dimension represents the different samples, while the inner-most
+ *         dimension size is `(l_max + 1) * (l_max + 1)`, and it represents the
+ *         degree and order of the spherical harmonics (again, organized in
+ *         lexicographic order). The intermediate dimension corresponds to
+ *         different spatial derivatives of the spherical harmonics: x, y, and
+ *         z, respectively.
+ * @param dsph_length size of the dsph allocation, should be `n_samples * 3 *
+ *        (l_max + 1) * (l_max + 1)`
  */
-SPHERICART_EXPORT void sphericart_compute_array(sphericart_calculator_t* calculator, size_t n_samples, const double* xyz, double* sph, double* dsph);
-SPHERICART_EXPORT void sphericart_compute_sample(sphericart_calculator_t* calculator, const double* xyz, double* sph, double* dsph);
+SPHERICART_EXPORT void sphericart_compute_array(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length
+);
+SPHERICART_EXPORT void sphericart_compute_sample(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length
+);
 
-SPHERICART_EXPORT void sphericart_compute_array_f(sphericart_calculator_f_t* calculator, size_t n_samples, const float* xyz, float* sph, float* dsph);
-SPHERICART_EXPORT void sphericart_compute_sample_f(sphericart_calculator_f_t* calculator, const float* xyz, float* sph, float* dsph);
+SPHERICART_EXPORT void sphericart_compute_array_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length
+);
+SPHERICART_EXPORT void sphericart_compute_sample_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length
+);
 
 #ifdef __cplusplus
 }

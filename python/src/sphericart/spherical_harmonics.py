@@ -76,12 +76,16 @@ class SphericalHarmonics:
         xyz = np.ascontiguousarray(xyz)
 
         n_samples = xyz.shape[0]
+        xyz_length = n_samples * 3
 
         sph = np.empty((n_samples, (self._l_max + 1) ** 2), dtype=xyz.dtype)
+        sph_length = n_samples * (self._l_max + 1) ** 2
         if gradients:
             dsph = np.empty((n_samples, 3, (self._l_max + 1) ** 2), dtype=xyz.dtype)
+            dsph_length = n_samples * 3 * (self._l_max + 1) ** 2
         else:
             dsph = None
+            dsph_length = 0
 
         if xyz.dtype == np.float64:
             xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
@@ -93,7 +97,13 @@ class SphericalHarmonics:
                 dsph_ptr = None
 
             self._lib.sphericart_compute_array(
-                self._calculator, n_samples, xyz_ptr, sph_ptr, dsph_ptr
+                self._calculator,
+                xyz_ptr,
+                xyz_length,
+                sph_ptr,
+                sph_length,
+                dsph_ptr,
+                dsph_length,
             )
         elif xyz.dtype == np.float32:
             xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
@@ -104,7 +114,13 @@ class SphericalHarmonics:
                 dsph_ptr = None
 
             self._lib.sphericart_compute_array(
-                self._calculator_f, n_samples, xyz_ptr, sph_ptr, dsph_ptr
+                self._calculator_f,
+                xyz_ptr,
+                xyz_length,
+                sph_ptr,
+                sph_length,
+                dsph_ptr,
+                dsph_length,
             )
 
         return sph, dsph

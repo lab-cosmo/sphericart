@@ -19,18 +19,23 @@ int main(int argc, char *argv[]) {
     }
 
     // to avoid unnecessary allocations, the class assumes pre-allocated arrays
-    double *sph = malloc(n_samples * (l_max + 1) * (l_max + 1) * sizeof(double));
-    double *dsph = malloc(n_samples * 3 * (l_max + 1) * (l_max + 1) * sizeof(double));
+    size_t sph_size = n_samples * (l_max + 1) * (l_max + 1);
+    double *sph = malloc(sph_size * sizeof(double));
+
+    size_t dsph_size = n_samples * 3 * (l_max + 1) * (l_max + 1);
+    double *dsph = malloc(dsph_size * sizeof(double));
 
     // the class declaration initializes buffers and numerical factors
     sphericart_calculator_t* calculator = sphericart_new(l_max, 0);
 
-    sphericart_compute_array(calculator, n_samples, xyz, sph, NULL); // without derivatives
-    sphericart_compute_array(calculator, n_samples, xyz, sph, dsph); // with derivatives
+    // do not compute derivatives
+    sphericart_compute_array(calculator, xyz, 3 * n_samples, sph, sph_size, NULL, 0);
+    // compute derivatives
+    sphericart_compute_array(calculator, xyz, 3 * n_samples, sph, sph_size, dsph, dsph_size);
 
-    // sample calculation - we reuse the same arrays, but only the first item is computed
-    sphericart_compute_sample(calculator, xyz, sph, NULL);
-    sphericart_compute_sample(calculator, xyz, sph, dsph);
+    // per-sample calculation - we reuse the same arrays, but only the first item is computed
+    sphericart_compute_sample(calculator, xyz, 3, sph, sph_size, NULL, 0);
+    sphericart_compute_sample(calculator, xyz, 3, sph, sph_size, dsph, dsph_size);
 
     sphericart_calculator_f_t* calculator_f = sphericart_new_f(l_max, 0);
 
@@ -39,18 +44,17 @@ int main(int argc, char *argv[]) {
     for (size_t i=0; i<n_samples*3; ++i) {
         xyz_f[i] = xyz[i];
     }
-    float *sph_f = malloc(n_samples * (l_max + 1) * (l_max + 1) * sizeof(float));
-    float *dsph_f = malloc(n_samples * 3 * (l_max + 1) * (l_max + 1) * sizeof(float));
+    float *sph_f = malloc(sph_size * sizeof(float));
+    float *dsph_f = malloc(dsph_size * sizeof(float));
 
-    sphericart_compute_array_f(calculator_f, n_samples, xyz_f, sph_f, NULL); // without derivatives
-    sphericart_compute_array_f(calculator_f, n_samples, xyz_f, sph_f, dsph_f); // with derivatives
+    sphericart_compute_array_f(calculator_f, xyz_f, 3 * n_samples, sph_f, sph_size, dsph_f, dsph_size);
 
     double sph_error = 0.0, sph_norm = 0.0;
     for (size_t i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
         sph_error += (sph_f[i] - sph[i]) * (sph_f[i] - sph[i]);
         sph_norm += sph[i]*sph[i];
     }
-    printf("Float vs double relative error: %12.8e\n", sqrt(sph_error/sph_norm));
+    printf("Float vs double relative error: %12.8e\n", sqrt(sph_error / sph_norm));
 
     // frees up data arrays and sph object pointers
     sphericart_delete(calculator);
