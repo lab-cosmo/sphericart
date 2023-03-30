@@ -5,29 +5,36 @@ import sys
 _HERE = os.path.realpath(os.path.dirname(__file__))
 
 
-class c_sphericart_sph(ctypes.c_void_p):
+class sphericart_calculator_t(ctypes.c_void_p):
+    pass
+
+
+class sphericart_calculator_f_t(ctypes.c_void_p):
     pass
 
 
 def setup_functions(lib):
-    lib.sphericart_new.restype = c_sphericart_sph
+    lib.sphericart_new.restype = sphericart_calculator_t
     lib.sphericart_new.argtypes = [
         ctypes.c_int,
-        ctypes.c_char,
+        ctypes.c_bool,
     ]
 
-    lib.sphericart_new_f.restype = c_sphericart_sph
+    lib.sphericart_new_f.restype = sphericart_calculator_f_t
     lib.sphericart_new_f.argtypes = [
         ctypes.c_int,
-        ctypes.c_char,
+        ctypes.c_bool,
     ]
 
     lib.sphericart_delete.restype = None
-    lib.sphericart_delete.argtypes = [c_sphericart_sph]
+    lib.sphericart_delete.argtypes = [sphericart_calculator_t]
+
+    lib.sphericart_delete_f.restype = None
+    lib.sphericart_delete_f.argtypes = [sphericart_calculator_f_t]
 
     lib.sphericart_compute_array.restype = None
     lib.sphericart_compute_array.argtypes = [
-        c_sphericart_sph,
+        sphericart_calculator_t,
         ctypes.c_int,
         ctypes.POINTER(ctypes.c_double),
         ctypes.POINTER(ctypes.c_double),
@@ -36,7 +43,7 @@ def setup_functions(lib):
 
     lib.sphericart_compute_array_f.restype = None
     lib.sphericart_compute_array_f.argtypes = [
-        c_sphericart_sph,
+        sphericart_calculator_f_t,
         ctypes.c_int,
         ctypes.POINTER(ctypes.c_float),
         ctypes.POINTER(ctypes.c_float),

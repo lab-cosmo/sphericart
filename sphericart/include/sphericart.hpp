@@ -14,7 +14,6 @@
 #include "omp.h"
 #endif
 
-#include "sphericart.h"
 
 namespace sphericart {
 /**

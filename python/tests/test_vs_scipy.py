@@ -4,8 +4,8 @@ import scipy.special
 
 import sphericart
 
-L_MAX = 20
-N_SAMPLES = 10
+L_MAX = 40
+N_SAMPLES = 100
 
 
 def scipy_real_sph(xyz, l, m):  # noqa E741
@@ -34,44 +34,45 @@ def scipy_real_sph(xyz, l, m):  # noqa E741
 
 @pytest.fixture
 def xyz():
+    np.random.seed(0)
     return np.random.rand(N_SAMPLES, 3)
 
 
 def test_against_scipy(xyz):
     for l in range(0, L_MAX + 1):  # noqa E741
         for m in range(-l, l + 1):
-            sh_scipy_l_m = scipy_real_sph(xyz, l, m)
+            sph_scipy_l_m = scipy_real_sph(xyz, l, m)
 
             x = xyz[:, 0]
             y = xyz[:, 1]
             z = xyz[:, 2]
             r = np.sqrt(x**2 + y**2 + z**2)
-            sh_calculator = sphericart.SphericalHarmonics(l)
-            sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
-            sh_sphericart_l_m = sh_sphericart[:, l * l + l + m] / r**l
+            calculator = sphericart.SphericalHarmonics(l)
+            sph_sphericart, _ = calculator.compute(xyz, gradients=False)
+            sph_sphericart_l_m = sph_sphericart[:, l * l + l + m] / r**l
 
-            assert np.allclose(sh_scipy_l_m, sh_sphericart_l_m)
+            assert np.allclose(sph_scipy_l_m, sph_sphericart_l_m)
 
-            sh_calculator = sphericart.SphericalHarmonics(l, normalized=True)
-            sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
-            sh_normalized_l_m = sh_sphericart[:, l * l + l + m]
+            calculator = sphericart.SphericalHarmonics(l, normalized=True)
+            sph_sphericart, _ = calculator.compute(xyz, gradients=False)
+            sph_normalized_l_m = sph_sphericart[:, l * l + l + m]
 
-            assert np.allclose(sh_scipy_l_m, sh_normalized_l_m)
+            assert np.allclose(sph_scipy_l_m, sph_normalized_l_m)
 
 
 def test_derivatives(xyz):
     delta = 1e-6
     for normalized in [False, True]:
-        sh_calculator = sphericart.SphericalHarmonics(L_MAX, normalized=normalized)
+        calculator = sphericart.SphericalHarmonics(L_MAX, normalized=normalized)
         for alpha in range(3):
-            xyzplus = xyz.copy()
-            xyzplus[:, alpha] += delta * np.ones_like(xyz[:, alpha])
-            xyzminus = xyz.copy()
-            xyzminus[:, alpha] -= delta * np.ones_like(xyz[:, alpha])
-            shplus, _ = sh_calculator.compute(xyzplus, gradients=False)
-            shminus, _ = sh_calculator.compute(xyzminus, gradients=False)
-            numerical_derivatives = (shplus - shminus) / (2.0 * delta)
-            sh, analytical_derivatives_all = sh_calculator.compute(xyz, gradients=True)
+            xyz_plus = xyz.copy()
+            xyz_plus[:, alpha] += delta * np.ones_like(xyz[:, alpha])
+            xyz_minus = xyz.copy()
+            xyz_minus[:, alpha] -= delta * np.ones_like(xyz[:, alpha])
+            sph_plus, _ = calculator.compute(xyz_plus, gradients=False)
+            sph_minus, _ = calculator.compute(xyz_minus, gradients=False)
+            numerical_derivatives = (sph_plus - sph_minus) / (2.0 * delta)
+            sph, analytical_derivatives_all = calculator.compute(xyz, gradients=True)
             analytical_derivatives = analytical_derivatives_all[:, alpha, :]
             assert np.allclose(numerical_derivatives, analytical_derivatives)
 
