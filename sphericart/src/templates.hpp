@@ -14,15 +14,15 @@
 
 #include "macros.hpp"
 
-template <typename DTYPE, int HARDCODED_LMAX>
+template <typename T, int HARDCODED_LMAX>
 inline void hardcoded_sph_template(
-    [[maybe_unused]] DTYPE x, // these are unused in some code pathways, hopefully the compiler will compile them away
-    [[maybe_unused]] DTYPE y, 
-    [[maybe_unused]] DTYPE z, 
-    [[maybe_unused]] DTYPE x2, 
-    [[maybe_unused]] DTYPE y2, 
-    [[maybe_unused]] DTYPE z2, 
-    DTYPE *sph_i) {
+    [[maybe_unused]] T x, // these are unused in some code pathways, hopefully the compiler will compile them away
+    [[maybe_unused]] T y,
+    [[maybe_unused]] T z,
+    [[maybe_unused]] T x2,
+    [[maybe_unused]] T y2,
+    [[maybe_unused]] T z2,
+    T *sph_i) {
     /*
         Combines the macro hard-coded Ylm calculators to get all the terms
         up to HC_LMAX.  This templated version evaluates the ifs at compile time
@@ -58,18 +58,18 @@ inline void hardcoded_sph_template(
     }
 }
 
-template <typename DTYPE, int HARDCODED_LMAX>
+template <typename T, int HARDCODED_LMAX>
 inline void hardcoded_sph_derivative_template(
-    [[maybe_unused]] DTYPE x,  // tell the compiler these may be unused in some code paths (namely for LMAX<3)
-    [[maybe_unused]] DTYPE y,
-    [[maybe_unused]] DTYPE z,
-    [[maybe_unused]] DTYPE x2,
-    [[maybe_unused]] DTYPE y2,
-    [[maybe_unused]] DTYPE z2,
-    [[maybe_unused]] DTYPE *sph_i,
-    DTYPE *dxsph_i,
-    DTYPE *dysph_i,
-    DTYPE *dzsph_i
+    [[maybe_unused]] T x,  // tell the compiler these may be unused in some code paths (namely for LMAX<3)
+    [[maybe_unused]] T y,
+    [[maybe_unused]] T z,
+    [[maybe_unused]] T x2,
+    [[maybe_unused]] T y2,
+    [[maybe_unused]] T z2,
+    [[maybe_unused]] T *sph_i,
+    T *dxsph_i,
+    T *dysph_i,
+    T *dzsph_i
 ) {
     /*
         Combines the macro hard-coded dYlm/d(x,y,z) calculators to get all the terms
@@ -104,18 +104,18 @@ inline void hardcoded_sph_derivative_template(
     }
 }
 
-template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, [[maybe_unused]] DTYPE *dsph_i, 
-    int size_y, 
+template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i,
+    int size_y,
     [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface
-    [[maybe_unused]] const DTYPE *py_dummy=nullptr,
-    [[maybe_unused]] const DTYPE *qy_dummy=nullptr,
-    [[maybe_unused]] DTYPE *c_dummy=nullptr,
-    [[maybe_unused]] DTYPE *s_dummy=nullptr,
-    [[maybe_unused]] DTYPE *z_dummy=nullptr) {
-/* 
+    [[maybe_unused]] const T *py_dummy=nullptr,
+    [[maybe_unused]] const T *qy_dummy=nullptr,
+    [[maybe_unused]] T *c_dummy=nullptr,
+    [[maybe_unused]] T *s_dummy=nullptr,
+    [[maybe_unused]] T *z_dummy=nullptr) {
+/*
     Wrapper for the hardcoded derivatives that also allows to apply normalization. Computes a single
-    sample, and uses a template to avoid branching. 
+    sample, and uses a template to avoid branching.
 */
 
     auto x  = xyz_i[0];
@@ -124,21 +124,21 @@ inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, [[maybe_unuse
     auto x2 = x * x;
     auto y2 = y * y;
     auto z2 = z * z;
-    [[maybe_unused]] DTYPE ir=0.0;
+    [[maybe_unused]] T ir=0.0;
 
     if constexpr(NORMALIZED) {
         ir = 1.0/sqrt(x2+y2+z2);
         x*=ir; y*=ir; z*=ir;
         x2 = x*x; y2=y*y; z2=z*z;
     }
-    
-    hardcoded_sph_template<DTYPE, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
+
+    hardcoded_sph_template<T, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
     if constexpr (DO_DERIVATIVES) {
-        DTYPE *dxsph_i = dsph_i;
-        DTYPE *dysph_i = dxsph_i + size_y;
-        DTYPE *dzsph_i = dysph_i + size_y;
-        hardcoded_sph_derivative_template<DTYPE, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        T *dxsph_i = dsph_i;
+        T *dysph_i = dxsph_i + size_y;
+        T *dzsph_i = dysph_i + size_y;
+        hardcoded_sph_derivative_template<T, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
         if constexpr(NORMALIZED) {
             // corrects derivatives for normalization
             for (int k=0; k<size_y; ++k) {
@@ -151,12 +151,12 @@ inline void hardcoded_sph_sample(const DTYPE *xyz_i, DTYPE *sph_i, [[maybe_unuse
     }
 }
 
-template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-void hardcoded_sph(const DTYPE *xyz, DTYPE *sph, [[maybe_unused]] DTYPE *dsph,
+template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
     int n_samples,
     [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface with generic_sph
-    [[maybe_unused]] const DTYPE *prefactors_dummy=nullptr,
-    [[maybe_unused]] DTYPE *buffers_dummy=nullptr) {
+    [[maybe_unused]] const T *prefactors_dummy=nullptr,
+    [[maybe_unused]] T *buffers_dummy=nullptr) {
     /*
         Cartesian Ylm calculator using the hardcoded expressions.
         Templated version, just calls _compute_sph_templated and
@@ -165,11 +165,11 @@ void hardcoded_sph(const DTYPE *xyz, DTYPE *sph, [[maybe_unused]] DTYPE *dsph,
     constexpr auto size_y = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
     #pragma omp parallel
-    {        
-        const DTYPE *xyz_i = nullptr;
-        DTYPE *sph_i = nullptr;
-        DTYPE *dsph_i = nullptr;
-        
+    {
+        const T *xyz_i = nullptr;
+        T *sph_i = nullptr;
+        T *dsph_i = nullptr;
+
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
             xyz_i = xyz + i_sample * 3;
@@ -177,42 +177,42 @@ void hardcoded_sph(const DTYPE *xyz, DTYPE *sph, [[maybe_unused]] DTYPE *dsph,
             if constexpr (DO_DERIVATIVES) {
                 dsph_i = dsph + i_sample * size_y * 3;
             }
-            hardcoded_sph_sample<DTYPE, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, size_y);
+            hardcoded_sph_sample<T, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, size_y);
         }
     }
 }
 
-template <typename DTYPE, bool DO_DERIVATIVES, int HARDCODED_LMAX>
-static inline void generic_sph_l_channel(int l, 
-    [[maybe_unused]] DTYPE x,  // these might be unused for low LMAX. not worth a full separate implementation
-    [[maybe_unused]] DTYPE y, 
-    [[maybe_unused]] DTYPE z, 
-    [[maybe_unused]] DTYPE rxy, 
-    const DTYPE *pk, const DTYPE *qlmk,
-    DTYPE *c,
-    DTYPE *s,
-    DTYPE *twomz,
-    DTYPE *sph_i,
-    [[maybe_unused]] DTYPE *dxsph_i, 
-    [[maybe_unused]] DTYPE *dysph_i, 
-    [[maybe_unused]] DTYPE *dzsph_i
+template <typename T, bool DO_DERIVATIVES, int HARDCODED_LMAX>
+static inline void generic_sph_l_channel(int l,
+    [[maybe_unused]] T x,  // these might be unused for low LMAX. not worth a full separate implementation
+    [[maybe_unused]] T y,
+    [[maybe_unused]] T z,
+    [[maybe_unused]] T rxy,
+    const T *pk, const T *qlmk,
+    T *c,
+    T *s,
+    T *twomz,
+    T *sph_i,
+    [[maybe_unused]] T *dxsph_i,
+    [[maybe_unused]] T *dysph_i,
+    [[maybe_unused]] T *dzsph_i
 )
-{    
+{
     // working space for the recursive evaluation of Qlm and Q(l-1)m
-    [[maybe_unused]] DTYPE qlm_2, qlm_1, qlm_0;
-    [[maybe_unused]] DTYPE ql1m_2, ql1m_1, ql1m_0;
-    
+    [[maybe_unused]] T qlm_2, qlm_1, qlm_0;
+    [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
+
     // l=+-m
-    qlm_2 = qlmk[l]; // fetches the pre-computed Qll    
-    auto pq = qlm_2 * pk[l];    
+    qlm_2 = qlmk[l]; // fetches the pre-computed Qll
+    auto pq = qlm_2 * pk[l];
     sph_i[-l] = pq * s[l];
-    sph_i[+l] = pq * c[l];    
+    sph_i[+l] = pq * c[l];
 
     if constexpr (DO_DERIVATIVES) {
         pq *= l;
         dxsph_i[-l] = pq * s[l - 1];
         dysph_i[-l] = dxsph_i[l] = pq * c[l - 1];
-        dysph_i[l] = -dxsph_i[-l]; 
+        dysph_i[l] = -dxsph_i[-l];
         dzsph_i[-l] = 0;
         dzsph_i[l] = 0;
         ql1m_2 = 0;
@@ -227,8 +227,8 @@ static inline void generic_sph_l_channel(int l,
     if constexpr (DO_DERIVATIVES) {
         pq *= (l - 1);
         dxsph_i[-l + 1] = pq * s[l - 2];
-        dysph_i[-l + 1] = dxsph_i[l - 1] = pq * c[l - 2];         
-        dysph_i[l - 1] = -dxsph_i[-l + 1]; 
+        dysph_i[-l + 1] = dxsph_i[l - 1] = pq * c[l - 2];
+        dysph_i[l - 1] = -dxsph_i[-l + 1];
 
         // uses Q(l-1)(l-1) to initialize the other recursion
         ql1m_1 = qlmk[-1];
@@ -238,10 +238,10 @@ static inline void generic_sph_l_channel(int l,
     }
 
     // and now do the other m's, decrementally
-    for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {        
+    for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {
         qlm_0 = qlmk[m] * (twomz[m] * qlm_1 + rxy * qlm_2);
         qlm_2 = qlm_1; qlm_1 = qlm_0; // shift
-        
+
         pq = qlm_0 * pk[m];
         sph_i[-m] = pq * s[m];
         sph_i[+m] = pq * c[m];
@@ -249,7 +249,7 @@ static inline void generic_sph_l_channel(int l,
         if constexpr (DO_DERIVATIVES) {
             ql1m_0 = qlmk[m-l] * (twomz[m] * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
-            
+
             pq *= m;
             auto pqs = pq*s[m-1], pqc=pq*c[m-1];
             auto pdq = pk[m] * ql1m_2;
@@ -261,13 +261,13 @@ static inline void generic_sph_l_channel(int l,
             dysph_i[m] = (pdqy * c[m] - pqs);
             pdq = pk[m] * (l + m) * ql1m_1;
             dzsph_i[-m] = pdq * s[m];
-            dzsph_i[m] = pdq * c[m];            
+            dzsph_i[m] = pdq * c[m];
         }
     }
-    for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {        
+    for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {
         qlm_0 = qlmk[m] * (twomz[m] * qlm_1 + rxy * qlm_2);
         qlm_2 = qlm_1; qlm_1 = qlm_0; // shift
-        
+
         pq = qlm_0 * pk[m];
         sph_i[-m] = pq * s[m];
         sph_i[+m] = pq * c[m];
@@ -275,11 +275,11 @@ static inline void generic_sph_l_channel(int l,
         if constexpr (DO_DERIVATIVES) {
             ql1m_0 = qlmk[m-l] * (twomz[m] * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
-            
+
             pq *= m;
             auto pqs = pq*s[m-1], pqc=pq*c[m-1];
             auto pdq = pk[m] * ql1m_2;
-            auto pdqx = pdq * x;            
+            auto pdqx = pdq * x;
             dxsph_i[-m] = (pdqx * s[m] + pqs);
             dxsph_i[+m] = (pdqx * c[m] + pqc);
             auto pdqy = pdq * y;
@@ -287,46 +287,46 @@ static inline void generic_sph_l_channel(int l,
             dysph_i[m] = (pdqy * c[m] - pqs);
             pdq = pk[m] * (l + m) * ql1m_1;
             dzsph_i[-m] = pdq * s[m];
-            dzsph_i[m] = pdq * c[m];            
+            dzsph_i[m] = pdq * c[m];
         }
     }
 
     // m=0
-    qlm_0 = qlmk[0] * (twomz[0] * qlm_1 + rxy * qlm_2);  
+    qlm_0 = qlmk[0] * (twomz[0] * qlm_1 + rxy * qlm_2);
     sph_i[0] = qlm_0 * pk[0];
 
     if constexpr (DO_DERIVATIVES) {
         ql1m_0 = qlmk[-l] * (twomz[0] * ql1m_1 + rxy * ql1m_2);
         // derivatives
-        dxsph_i[0] = pk[0] * x *ql1m_1; 
-        dysph_i[0] = pk[0] * y *ql1m_1; 
-        dzsph_i[0] = pk[0] * l *ql1m_0; 
+        dxsph_i[0] = pk[0] * x *ql1m_1;
+        dysph_i[0] = pk[0] * y *ql1m_1;
+        dzsph_i[0] = pk[0] * l *ql1m_0;
     }
 }
 
-template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-static inline void generic_sph_sample(const DTYPE *xyz_i,
-    DTYPE *sph_i,
-    [[maybe_unused]] DTYPE *dsph_i,
-    int l_max,    
+template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+static inline void generic_sph_sample(const T *xyz_i,
+    T *sph_i,
+    [[maybe_unused]] T *dsph_i,
+    int l_max,
     int size_y,
-    const DTYPE *pylm,
-    const DTYPE *pqlm,
-    DTYPE *c,
-    DTYPE *s,
-    DTYPE *twomz    
+    const T *pylm,
+    const T *pqlm,
+    T *c,
+    T *s,
+    T *twomz
 ) {
-    [[maybe_unused]] DTYPE ir = 0.0;
-    [[maybe_unused]] DTYPE* dxsph_i = nullptr;
-    [[maybe_unused]] DTYPE* dysph_i = nullptr;
-    [[maybe_unused]] DTYPE* dzsph_i = nullptr;    
+    [[maybe_unused]] T ir = 0.0;
+    [[maybe_unused]] T* dxsph_i = nullptr;
+    [[maybe_unused]] T* dysph_i = nullptr;
+    [[maybe_unused]] T* dzsph_i = nullptr;
 
     /* k is a utility index to traverse lm arrays. we store sph in
     a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
     so we often write a nested loop on l and m and track where we
     got by incrementing a separate index k. */
     int k = 0;
-    
+
     auto x = xyz_i[0];
     auto y = xyz_i[1];
     auto z = xyz_i[2];
@@ -339,9 +339,9 @@ static inline void generic_sph_sample(const DTYPE *xyz_i,
         x2 = x*x; y2=y*y; z2=z*z;
     }
     auto rxy = x2 + y2;
-    
+
     // these are the hard-coded, low-lmax sph
-    hardcoded_sph_template<DTYPE, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
+    hardcoded_sph_template<T, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
 
     if constexpr (DO_DERIVATIVES) {
         // updates the pointer to the derivative storage
@@ -350,7 +350,7 @@ static inline void generic_sph_sample(const DTYPE *xyz_i,
         dzsph_i = dysph_i + size_y;
 
         // these are the hard-coded, low-lmax sph
-        hardcoded_sph_derivative_template<DTYPE, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        hardcoded_sph_derivative_template<T, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
     }
 
     /* These are scaled version of cos(m phi) and sin(m phi).
@@ -371,7 +371,7 @@ static inline void generic_sph_sample(const DTYPE *xyz_i,
     for (; m < l_max + 1; m++) {
         c[m] = c[m - 1] * x - s[m - 1] * y;
         s[m] = c[m - 1] * y + s[m - 1] * x;
-        twomz[m] = twomz[m-1] + twoz; 
+        twomz[m] = twomz[m-1] + twoz;
     }
 
     /* compute recursively the "Cartesian" associated Legendre polynomials Qlm.
@@ -398,7 +398,7 @@ static inline void generic_sph_sample(const DTYPE *xyz_i,
     auto qlmk = pqlm+k;
     int nk = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
-        generic_sph_l_channel<DTYPE, DO_DERIVATIVES, HARDCODED_LMAX>(l, x, y, z, rxy, 
+        generic_sph_l_channel<T, DO_DERIVATIVES, HARDCODED_LMAX>(l, x, y, z, rxy,
                     pk, qlmk, c, s, twomz,
                     sph_i, dxsph_i, dysph_i, dzsph_i);
         // shift pointers & indexes to the next l block
@@ -429,15 +429,15 @@ static inline void generic_sph_sample(const DTYPE *xyz_i,
 }
 
 
-template <typename DTYPE, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 void generic_sph(
-    const DTYPE *xyz,
-    DTYPE *sph,
-    [[maybe_unused]] DTYPE *dsph,
+    const T *xyz,
+    T *sph,
+    [[maybe_unused]] T *dsph,
     int n_samples,
     int l_max,
-    const DTYPE *prefactors,
-    DTYPE *buffers
+    const T *prefactors,
+    T *buffers
 ) {
     /*
         Implementation of the general case, but start at HARDCODED_LMAX and use
@@ -461,40 +461,40 @@ void generic_sph(
 
     const auto size_y = (l_max + 1) * (l_max + 1);
     const auto size_q = (l_max + 1) * (l_max + 2) / 2;
-    const DTYPE *qlmfactors = prefactors + size_q;
+    const T *qlmfactors = prefactors + size_q;
 
 #ifdef _OPENMP
     #pragma omp parallel
     {
         auto c = buffers + omp_get_thread_num() * size_q *3;
 #else
-        auto c = buffers;        
-#endif 
+        auto c = buffers;
+#endif
         auto s = c+size_q;
-        auto twomz = s+size_q;        
+        auto twomz = s+size_q;
         // ^^^ thread-local storage arrays for terms corresponding to (scaled) cosine and sine of the azimuth, and 2mz
-        
+
         // pointers to the sections of the output arrays that hold Ylm and derivatives
         // for a given point
-        DTYPE* sph_i = nullptr;
-        DTYPE* dsph_i = nullptr;   
-                
+        T* sph_i = nullptr;
+        T* dsph_i = nullptr;
+
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
-            auto xyz_i = xyz+i_sample*3; 
+            auto xyz_i = xyz+i_sample*3;
             // pointer to the segment that should store the i_sample sph
             sph_i = sph + i_sample * size_y;
             if constexpr (DO_DERIVATIVES) {
                 // updates the pointer to the derivative storage
                 dsph_i = dsph + i_sample * 3 * size_y;
-            }            
-            
-            generic_sph_sample<DTYPE, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, l_max, size_y,
+            }
+
+            generic_sph_sample<T, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, l_max, size_y,
                 prefactors, qlmfactors, c, s, twomz);
         }
-#ifdef _OPENMP        
+#ifdef _OPENMP
     }
-#endif    
+#endif
 }
 
 #endif
