@@ -3,51 +3,6 @@
 #include "sphericart.hpp"
 #include "templates.hpp"
 
-template<typename T>
-void sphericart::compute_sph_prefactors(int l_max, T *factors) {
-    /*
-        Computes the prefactors for the spherical harmonics
-        (-1)^|m| sqrt((2l+1)/(2pi) (l-|m|)!/(l+|m}\|)!)
-        Use an iterative formula to avoid computing a ratio
-        of factorials, and incorporates the 1/sqrt(2) that
-        is associated with the Yl0's
-        Also computes a set of coefficients that are needed
-        in the iterative calculation of the Qlm, and just
-        stashes them at the end of factors, which should therefore
-        be (l_max+1)*(l_max+2) in size
-    */
-
-    auto k = 0; // quick access index
-    for (int l = 0; l <= l_max; ++l) {
-        T factor = (2 * l + 1) / (2 * M_PI);
-        // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
-        factors[k] = sqrt(factor) * M_SQRT1_2;
-        for (int m = 1; m <= l; ++m) {
-            factor *= 1.0 / (l * (l + 1) + m * (1 - m));
-            if (m % 2 == 0) {
-                factors[k + m] = sqrt(factor);
-            } else {
-                factors[k + m] = -sqrt(factor);
-            }
-        }
-        k += l + 1;
-    }
-
-    // that are needed in the recursive calculation of Qlm.
-    // Xll is just Qll, Xlm is the factor that enters the alternative m recursion
-    factors[k] = 1.0; k += 1;
-    for (int l = 1; l < l_max + 1; l++) {
-        factors[k+l] = -(2 * l - 1) * factors[k - 1];
-        for (int m = l - 1; m >= 0; --m) {
-            factors[k + m] = -1.0 / ((l + m + 1) * (l - m));
-        }
-        k += l + 1;
-    }
-}
-
-template void sphericart::compute_sph_prefactors<double>(int l_max, double *factors);
-template void sphericart::compute_sph_prefactors<float>(int l_max, float *factors);
-
 // macro to define different possible hardcoded function calls
 #define _HARCODED_SWITCH_CASE(L_MAX) \
     if (this->normalized) { \
@@ -127,19 +82,26 @@ sphericart::SphericalHarmonics<T>::~SphericalHarmonics() {
 
 template<typename T>
 void sphericart::SphericalHarmonics<T>::compute(const std::vector<T>& xyz, std::vector<T>& sph) {
-    if (xyz.size()==3) {
+    auto n_samples = xyz.size() / 3;
+    sph.resize(n_samples * (l_max + 1) * (l_max + 1));
+
+    if (xyz.size() == 3) {
         this->compute_sample(xyz.data(), sph.data());
     } else {
-        this->compute_array(xyz.size()/3, xyz.data(), sph.data());
+        this->compute_array(xyz.size() / 3, xyz.data(), sph.data());
     }
 }
 
 template<typename T>
 void sphericart::SphericalHarmonics<T>::compute(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph) {
-    if (xyz.size()==3) {
+    auto n_samples = xyz.size() / 3;
+    sph.resize(n_samples * (l_max + 1) * (l_max + 1));
+    dsph.resize(n_samples * 3 * (l_max + 1) * (l_max + 1));
+
+    if (xyz.size() == 3) {
         this->compute_sample(xyz.data(), sph.data(), dsph.data());
     } else {
-        this->compute_array(xyz.size()/3, xyz.data(), sph.data(), dsph.data());
+        this->compute_array(xyz.size() / 3, xyz.data(), sph.data(), dsph.data());
     }
 }
 
@@ -150,11 +112,11 @@ template class sphericart::SphericalHarmonics<double>;
 
 template<typename T>
 std::pair<std::vector<T>, std::vector<T> > sphericart::spherical_harmonics(size_t l_max, const std::vector<T>& xyz, bool normalized) {
+    auto calculator = sphericart::SphericalHarmonics<T>(l_max, normalized);
+    auto sph = std::vector<T>();
+    auto dsph = std::vector<T>();
 
-    auto sph_class = sphericart::SphericalHarmonics<T>(l_max, normalized);
-    std::vector<T> sph((xyz.size()/3)*(l_max+1)*(l_max+1));
-    std::vector<T> dsph(xyz.size()*(l_max+1)*(l_max+1));
-    sph_class.compute(xyz, sph, dsph);
+    calculator.compute(xyz, sph, dsph);
     return std::make_pair(sph, dsph);
 }
 

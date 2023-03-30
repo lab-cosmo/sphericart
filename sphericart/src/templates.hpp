@@ -14,6 +14,62 @@
 
 #include "macros.hpp"
 
+/**
+ * This function calculates the prefactors needed for the computation of the
+ * spherical harmonics.
+ *
+ * @param l_max The maximum degree of spherical harmonics for which the
+ *        prefactors will be calculated.
+ * @param factors On entry, a (possibly uninitialized) array of size
+ *        `(l_max+1) * (l_max+2)`. On exit, it will contain the prefactors for
+ *        the calculation of the spherical harmonics up to degree `l_max`, in
+ *        the order `(l, m) = (0, 0), (1, 0), (1, 1), (2, 0), (2, 1), ...`.
+ *        The array contains two blocks of size `(l_max+1) * (l_max+2) / 2`:
+ *        the first holds the numerical prefactors that enter the full \f$Y_l^m\f$,
+ *        the second containing constansts that are needed to evaluate the \f$Q_l^m\f$.
+ */
+template<typename T>
+void compute_sph_prefactors(int l_max, T *factors) {
+    /*
+        Computes the prefactors for the spherical harmonics
+        (-1)^|m| sqrt((2l+1)/(2pi) (l-|m|)!/(l+|m}\|)!)
+        Use an iterative formula to avoid computing a ratio
+        of factorials, and incorporates the 1/sqrt(2) that
+        is associated with the Yl0's
+        Also computes a set of coefficients that are needed
+        in the iterative calculation of the Qlm, and just
+        stashes them at the end of factors, which should therefore
+        be (l_max+1)*(l_max+2) in size
+    */
+
+    auto k = 0; // quick access index
+    for (int l = 0; l <= l_max; ++l) {
+        T factor = (2 * l + 1) / (2 * M_PI);
+        // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
+        factors[k] = sqrt(factor) * M_SQRT1_2;
+        for (int m = 1; m <= l; ++m) {
+            factor *= 1.0 / (l * (l + 1) + m * (1 - m));
+            if (m % 2 == 0) {
+                factors[k + m] = sqrt(factor);
+            } else {
+                factors[k + m] = -sqrt(factor);
+            }
+        }
+        k += l + 1;
+    }
+
+    // that are needed in the recursive calculation of Qlm.
+    // Xll is just Qll, Xlm is the factor that enters the alternative m recursion
+    factors[k] = 1.0; k += 1;
+    for (int l = 1; l < l_max + 1; l++) {
+        factors[k+l] = -(2 * l - 1) * factors[k - 1];
+        for (int m = l - 1; m >= 0; --m) {
+            factors[k + m] = -1.0 / ((l + m + 1) * (l - m));
+        }
+        k += l + 1;
+    }
+}
+
 template <typename T, int HARDCODED_LMAX>
 inline void hardcoded_sph_template(
     [[maybe_unused]] T x, // these are unused in some code pathways, hopefully the compiler will compile them away
