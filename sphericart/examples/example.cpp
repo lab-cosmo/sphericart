@@ -48,7 +48,7 @@ int main() {
     double sph_error = 0.0, sph_norm = 0.0;
     for (size_t i=0; i<n_samples*(l_max+1)*(l_max+1); ++i) {
         sph_error += (sph_f[i] - sph[i])*(sph_f[i] - sph[i]);
-        sph_norm +=  sph[i]*sph[i];
+        sph_norm += sph[i] * sph[i];
     }
     printf("Float vs double relative error: %12.8e\n", sqrt(sph_error/sph_norm));
 

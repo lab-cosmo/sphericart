@@ -12,6 +12,7 @@
 
 #include <vector>
 
+#include "omp_support.h"
 #include "macros.hpp"
 
 /**
@@ -519,13 +520,9 @@ void generic_sph(
     const auto size_q = (l_max + 1) * (l_max + 2) / 2;
     const T *qlmfactors = prefactors + size_q;
 
-#ifdef _OPENMP
     #pragma omp parallel
     {
         auto c = buffers + omp_get_thread_num() * size_q *3;
-#else
-        auto c = buffers;
-#endif
         auto s = c+size_q;
         auto twomz = s+size_q;
         // ^^^ thread-local storage arrays for terms corresponding to (scaled) cosine and sine of the azimuth, and 2mz
@@ -548,9 +545,7 @@ void generic_sph(
             generic_sph_sample<T, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, l_max, size_y,
                 prefactors, qlmfactors, c, s, twomz);
         }
-#ifdef _OPENMP
     }
-#endif
 }
 
 #endif

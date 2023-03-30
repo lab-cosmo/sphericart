@@ -1,9 +1,9 @@
 #include <cmath>
 #include <stdexcept>
 
-
 #include "sphericart.hpp"
 
+#include "omp_support.h"
 #include "templates.hpp"
 
 using namespace sphericart;
@@ -31,12 +31,9 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
     this->prefactors = new T[(l_max+1)*(l_max+2)];
 
     // buffers for cos, sin, 2mz arrays
-#ifdef _OPENMP
     // allocates buffers that are large enough to store thread-local data
     this->buffers = new T[this->size_q*3*omp_get_max_threads()];
-#else
-    this->buffers = new T[this->size_q*3];
-#endif
+
     compute_sph_prefactors<T>((int) l_max, this->prefactors);
 
     // sets the correct function pointers for the compute functions

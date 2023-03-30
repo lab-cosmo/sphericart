@@ -8,11 +8,8 @@
 #include <cstddef>
 #include <vector>
 #include <tuple>
+
 #include "sphericart/exports.h"
-#include<cstdio>
-#ifdef _OPENMP
-#include "omp.h"
-#endif
 
 
 namespace sphericart {
