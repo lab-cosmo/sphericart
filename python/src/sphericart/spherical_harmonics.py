@@ -1,5 +1,5 @@
 import ctypes
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -37,9 +37,9 @@ class SphericalHarmonics:
 
     def compute(
         self, xyz: np.ndarray, gradients: bool = False
-    ) -> (np.ndarray, Optional[np.ndarray]):
+    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Calculates the spherical harmonics for a set of 3D points, which
+        Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array.
 
         :param xyz: The Cartesian coordinates of the 3D points, as an array with
