@@ -15,22 +15,22 @@
 namespace sphericart {
 
 /**
- * Spherical harmonics calculator.
+ * A spherical harmonics calculator.
  *
- * It handles initialization of the prefactors and of the buffers that are
- * necessary to compute efficiently the spherical harmonics.
+ * It handles initialization of the prefactors upon initialization and it stores the 
+ * buffers that are necessary to compute the spherical harmonics efficiently.
 */
 template<typename T>
 class SphericalHarmonics{
 public:
-    /** Initialize the SphericalHarmonics class setting maximum l and normalization
+    /** Initialize the SphericalHarmonics class setting maximum degree and normalization
      *
      *  @param l_max
      *      The maximum degree of the spherical harmonics to be calculated.
      *  @param normalized
      *      If `false` (default) computes the scaled spherical harmonics, which are
      *      polynomials in the Cartesian coordinates of the input points. If `true`,
-     *      computes the normalized (spherical) spherical harmonics that are evaluated
+     *      computes the normalized spherical harmonics that are evaluated
      *      on the unit sphere. In practice, this simply computes the scaled harmonics
      *      at the normalized coordinates \f$(x/r, y/r, z/r)\f$, and adapts the derivatives
      *      accordingly.
@@ -58,7 +58,9 @@ public:
      *        harmonics. These are laid out in lexicographic order. For example,
      *        if `l_max=2`, it will contain `(l, m) = (0, 0), (1, -1), (1, 0),
      *        (1, 1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)`, in this order.
-     * @param dsph On entry, a (possibly uninitialized) `std::vector`, which
+     * @param dsph Optional `std::vector` for spherical harmonics derivatives.
+     *        If not provided, no derivatives will be calculated. 
+     *        If provided, it is a (possibly uninitialized) `std::vector`, which
      *        will be resized to `n_samples * 3 * (l_max + 1) * (l_max + 1)`. On
      *        exit, this array will contain the spherical harmonics' derivatives
      *        organized along three dimensions. As for the `sph` parameter, the
@@ -78,6 +80,7 @@ public:
     void compute_sample(const T* xyz, size_t xyz_length, T* sph, size_t sph_length);
     void compute_sample(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length);
 
+/* @cond */
 private:
     size_t l_max;
     size_t size_y;
@@ -93,6 +96,7 @@ private:
 
     void (*_sample_no_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
     void (*_sample_with_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
+/* @endcond */
 
 };
 

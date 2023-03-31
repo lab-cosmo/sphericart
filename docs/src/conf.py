@@ -49,6 +49,9 @@ breathe_domain_by_extension = {
     "h": "c",
 }
 
+breathe_default_members = ('members', 'undoc-members')
+cpp_private_member_specifier = ''
+
 intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
     "python": ("https://docs.python.org/3", None),
