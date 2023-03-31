@@ -214,17 +214,3 @@ void SphericalHarmonics<T>::compute_sample(const T* xyz, size_t xyz_length, T* s
 // instantiates the SphericalHarmonics class for basic floating point types
 template class sphericart::SphericalHarmonics<float>;
 template class sphericart::SphericalHarmonics<double>;
-
-
-template<typename T>
-std::pair<std::vector<T>, std::vector<T>> sphericart::spherical_harmonics(size_t l_max, const std::vector<T>& xyz, bool normalized) {
-    auto calculator = SphericalHarmonics<T>(l_max, normalized);
-    auto sph = std::vector<T>();
-    auto dsph = std::vector<T>();
-
-    calculator.compute(xyz, sph, dsph);
-    return std::make_pair(sph, dsph);
-}
-
-template std::pair<std::vector<double>, std::vector<double>> sphericart::spherical_harmonics(size_t l_max, const std::vector<double>& xyz, bool normalized);
-template std::pair<std::vector<float>, std::vector<float>> sphericart::spherical_harmonics(size_t l_max, const std::vector<float>& xyz, bool normalized);
