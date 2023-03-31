@@ -1,8 +1,3 @@
-C++ API
-=======
-
-.. doxygenfile:: sphericart.hpp
-
 C API
 =====
 
