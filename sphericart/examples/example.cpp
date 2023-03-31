@@ -52,8 +52,5 @@ int main() {
     }
     printf("Float vs double relative error: %12.8e\n", sqrt(sph_error/sph_norm));
 
-    // function call version
-    auto [r_sph, r_dsph] = sphericart::spherical_harmonics(l_max, xyz, true);
-
     return 0;
 }
