@@ -10,13 +10,13 @@ class SphericalHarmonics:
     """
     Spherical harmonics calculator, up to degree ``l_max``.
 
-    By default, this class computes cartesian reals spherical harmonics, i.e.
-    :math:`r^l Y^l_m(r)`. You can set ``normalize=True`` to only compute
-    :math:`Y^l_m(r)`.
+    By default, this class computes a non-normalized form of the real spherical 
+    harmonics, i.e. :math:`r^l Y^l_m(r)`. These scaled spherical harmonics
+    are polynomials in the Cartesian coordinates of the input points. 
+    ``normalize=True`` can be set to compute :math:`Y^l_m(r)`.
 
     :param l_max: the maximum degree of the spherical harmonics to be calculated
-    :param normalized: whether to compute normalized spherical harmonics or
-        cartesian spherical harmonics (default: False)
+    :param normalized: whether to normalize the spherical harmonics (default: False)
 
     :return: a calculator, in the form of a SphericalHarmonics object
     """

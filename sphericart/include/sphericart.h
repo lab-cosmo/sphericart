@@ -23,39 +23,58 @@ extern "C" {
  * Opaque type to hold a spherical harmonics calculator object, that contains
  * pre-computed factors and allocated buffer space for calculations.
  *
- * The `sphericart_calculator_t` does calculations with `double`, while
- * `sphericart_calculator_f_t` uses `float`
+ * The `sphericart_calculator_t` performs calculations with `double` data type.
 */
 struct sphericart_calculator_t;
+
+/**
+ * A type referring to the `sphericart_calculator_t` struct.
+*/
 typedef struct sphericart_calculator_t sphericart_calculator_t;
 
+/**
+ * Similar to `sphericart_calculator_t`, but operating on the `float` data type.
+*/
 struct sphericart_calculator_f_t;
+
+/**
+ * A type referring to the `sphericart_calculator_f_t` struct.
+*/
 typedef struct sphericart_calculator_f_t sphericart_calculator_f_t;
 #endif
 
 /**
- * Initialize a spherical harmonics calculator and returns a pointer that can
+ * Initializes a spherical harmonics calculator and returns a pointer that can
  * then be used by functions that evaluate spherical harmonics over arrays or
  * individual samples.
  *
  *  @param l_max The maximum degree of the spherical harmonics to be calculated.
- *  @param normalized If `false` computes the scaled spherical harmonics, which
+ *  @param normalized If `false`, computes the scaled spherical harmonics, which
  *      are polynomials in the Cartesian coordinates of the input points. If
- *      `true`, computes the normalized (spherical) spherical harmonics that are
+ *      `true`, computes the normalized spherical harmonics that are
  *      evaluated on the unit sphere. In practice, this simply computes the
  *      scaled harmonics at the normalized coordinates \f$(x/r, y/r, z/r)\f$,
  *      and adapts the derivatives accordingly.
  *
- * @return A pointer to a `sphericart_calculator_t` object
+ *  @return A pointer to a `sphericart_calculator_t` object
  *
 */
 SPHERICART_EXPORT sphericart_calculator_t* sphericart_new(size_t l_max, bool normalized);
+
+/**
+ * Similar to `sphericart_new`, but it returns a `sphericart_calculator_f_t`, which 
+ * performs calculations on the `float` type.
+*/
 SPHERICART_EXPORT sphericart_calculator_f_t* sphericart_new_f(size_t l_max, bool normalized);
 
 /**
- * Deletes a previously-allocated spherical harmonics calculator.
+ * Deletes a previously allocated `sphericart_calculator_t` calculator.
 */
 SPHERICART_EXPORT void sphericart_delete(sphericart_calculator_t* calculator);
+
+/**
+ * Deletes a previously allocated `sphericart_calculator_f_t` calculator.
+*/
 SPHERICART_EXPORT void sphericart_delete_f(sphericart_calculator_f_t* calculator);
 
 /**
@@ -92,7 +111,7 @@ SPHERICART_EXPORT void sphericart_delete_f(sphericart_calculator_f_t* calculator
  *         lexicographic order). The intermediate dimension corresponds to
  *         different spatial derivatives of the spherical harmonics: x, y, and
  *         z, respectively.
- * @param dsph_length size of the dsph allocation, should be `n_samples * 3 *
+ * @param dsph_length size of the dsph allocation, which should be `n_samples * 3 *
  *        (l_max + 1) * (l_max + 1)`
  */
 SPHERICART_EXPORT void sphericart_compute_array(
@@ -104,6 +123,11 @@ SPHERICART_EXPORT void sphericart_compute_array(
     double* dsph,
     size_t dsph_length
 );
+
+/**
+ * Similar to `sphericart_compute_array`, but it computes the spherical harmonics
+ * for a single 3D point in space.
+*/
 SPHERICART_EXPORT void sphericart_compute_sample(
     sphericart_calculator_t* calculator,
     const double* xyz,
@@ -114,6 +138,9 @@ SPHERICART_EXPORT void sphericart_compute_sample(
     size_t dsph_length
 );
 
+/**
+ * Similar to `sphericart_compute_array`, but using the `float` data type.
+*/
 SPHERICART_EXPORT void sphericart_compute_array_f(
     sphericart_calculator_f_t* calculator,
     const float* xyz,
@@ -123,6 +150,10 @@ SPHERICART_EXPORT void sphericart_compute_array_f(
     float* dsph,
     size_t dsph_length
 );
+
+/**
+ * Similar to `sphericart_compute_sample`, but using the `float` data type.
+*/
 SPHERICART_EXPORT void sphericart_compute_sample_f(
     sphericart_calculator_f_t* calculator,
     const float* xyz,
