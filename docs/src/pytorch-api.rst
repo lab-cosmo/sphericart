@@ -1,4 +1,4 @@
 PyTorch API
 ===========
 
-.. autoclass:: sphericart_torch.spherical_harmonics
+.. autoclass:: sphericart_torch.SphericalHarmonics
