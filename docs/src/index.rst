@@ -8,11 +8,11 @@ derivatives in Cartesian coordinates. The theory behind this efficient
 implementation is detailed in this `paper <https://arxiv.org/abs/2302.08381>`_. 
 
 The library is natively available in Python, C and C++. In addition, our 
-PyTorch-based implementation also provides fast spherical harmonics evaluation 
+PyTorch-based implementation provides fast spherical harmonics evaluation 
 on GPUs.
 
 This documentation contains two quick guides on how to install and use
-the library, as well as a more comprehensive display of the API.
+the library, as well as a more comprehensive display of its API.
 
 .. toctree::
     :maxdepth: 1

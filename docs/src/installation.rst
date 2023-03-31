@@ -39,8 +39,7 @@ After that, default installation of the C/C++ library can be achieved as
     make install
 
 This will attempt to install a static library inside the ``/usr/local/lib/`` folder, 
-which will almost certainly cause a permission error. This can be solved by using 
-higher privileges (e.g., ``sudo make install``). Alternatively, the destination 
-folder can be changed by adding ``-DCMAKE_INSTALL_PREFIX=...`` to the ``cmake ..`` command.
-In practice, we recommend ``cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local``, which
-will be appropriate in the vast majority of cases.
+which might cause a permission error. This can be solved by using 
+higher privileges (e.g., ``sudo make install``) or, alternatively, by changing the destination 
+folder. For example, ``cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local``
+will be appropriate in the majority of cases.
