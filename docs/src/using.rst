@@ -8,7 +8,7 @@ factors that are used in the calculation. Then, spherical harmonics and their de
 can be computed for an array of 3D Cartesian points. 
 
 All these examples perform the same task: computing Cartesian spherical harmonics for 
-a random array of Cartesian coordinates, using both 32-bit and 64-bit floating points
+a random array of Cartesian coordinates, using either 32-bit or 64-bit floating-point
 arithmetics, and compute the mean relative error. 
 
 C++
@@ -33,6 +33,8 @@ Python
 
 PyTorch
 -------
+
+The `PyTorch` implementation also supports backpropagation.
 
 .. literalinclude:: ../../examples/pytorch/example.py
     :language: python

@@ -29,14 +29,68 @@ torch.classes.load_library(_lib_path())
 
 
 class SphericalHarmonics:
+    """
+    Spherical harmonics calculator, up to degree ``l_max``.
+
+    By default, this class computes a non-normalized form of the real spherical
+    harmonics, i.e. :math:`r^l Y^l_m(r)`. These scaled spherical harmonics
+    are polynomials in the Cartesian coordinates of the input points.
+    ``normalize=True`` can be set to compute :math:`Y^l_m(r)`.
+
+    :param l_max: the maximum degree of the spherical harmonics to be calculated
+    :param normalized: whether to normalize the spherical harmonics (default: False)
+
+    :return: a calculator, in the form of a SphericalHarmonics object
+    """
+
     def __init__(self, l_max, normalized=False):
         self._l_max = l_max
         self._sph = torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
 
     def compute(self, xyz):
+        """
+        Calculates the spherical harmonics for a set of 3D points, whose
+        coordinates are in the ``xyz`` array. If ``xyz`` has `requires_grad = True`
+        it stores the forward derivatives which are then used in the backward
+        pass.
+
+        :param xyz:
+            The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
+            shape ``(n_samples, 3)``.
+
+        :return:
+            An array of shape ``(n_samples, (l_max+1)**2)`` containing all the
+            spherical harmonics up to degree `l_max` in lexicographic order.
+            For example, if ``l_max = 2``, The last axis will correspond to
+            spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
+            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
+        """
         return self._sph.compute(xyz)
 
     def compute_with_gradients(self, xyz):
+        """
+        Calculates the spherical harmonics for a set of 3D points, whose
+        coordinates are in the ``xyz`` array. If ``xyz`` has `requires_grad = True`
+        it stores the forward derivatives which are then used in the backward
+        pass. In addition, it also returns directly the forward derivatives.
+
+        :param xyz:
+            The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
+            shape ``(n_samples, 3)``.
+
+        :return:
+            A tuple ``(sph, d_sph)``, where the two entries are:
+            * An array of shape ``(n_samples, (l_max+1)**2)`` containing all the
+            spherical harmonics up to degree `l_max` in lexicographic order.
+            For example, if ``l_max = 2``, The last axis will correspond to
+            spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1, 1),
+            (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
+            * An array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
+            the spherical harmonics' derivatives up to degree ``l_max``. The
+            last axis is organized in the same way as in the spherical
+            harmonics return array, while the second-to-last axis refers to
+            derivatives in the the x, y, and z directions, respectively.
+        """
         return self._sph.compute_with_gradients(xyz)
 
 

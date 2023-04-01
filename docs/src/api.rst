@@ -6,7 +6,8 @@ This section contains a description of the interface of the ``sphericart`` libra
 .. toctree::
     :maxdepth: 1
 
-    pytorch-api
-    python-api
     cpp-api
     c-api
+    python-api
+    pytorch-api    
+    

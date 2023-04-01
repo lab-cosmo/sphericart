@@ -23,7 +23,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # initializes the Cartesian coordinates of points
     xyz = torch.randn((n_samples, 3), dtype=torch.float64, device="cpu")
 
-    # the interface allows to return directly the forward derivatives, 
+    # the interface allows to return directly the forward derivatives,
     # similar to the Python version
     sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
 
@@ -44,11 +44,10 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     sph_norm = torch.sum(sh_sphericart**2)
     sph_norm.backward()
-    delta = torch.norm(xyz.grad- 2*torch.einsum("iaj,ij->ia",dsh_sphericart,sh_sphericart))
-    print(f"Check derivative difference: {delta}" )
-
-
-    
+    delta = torch.norm(
+        xyz.grad - 2 * torch.einsum("iaj,ij->ia", dsh_sphericart, sh_sphericart)
+    )
+    print(f"Check derivative difference: {delta}")
 
 
 if __name__ == "__main__":
