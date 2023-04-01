@@ -34,7 +34,7 @@ Python
 PyTorch
 -------
 
-? _ ?
-
+.. literalinclude:: ../../examples/pytorch/example.py
+    :language: python
 
 
