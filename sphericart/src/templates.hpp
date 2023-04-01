@@ -88,30 +88,30 @@ inline void hardcoded_sph_template(
 
     static_assert(HARDCODED_LMAX <= SPHERICART_LMAX_HARDCODED, "Computing hardcoded sph beyond what is currently implemented.");
 
-    COMPUTE_SPH_L0(sph_i);
+    COMPUTE_SPH_L0(sph_i, SPH_IDX_IDEN);
 
     if constexpr (HARDCODED_LMAX > 0) {
-        COMPUTE_SPH_L1(x, y, z, sph_i);
+        COMPUTE_SPH_L1(x, y, z, sph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 1) {
-        COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i);
+        COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 2) {
-        COMPUTE_SPH_L3(x, y, z, x2, y2, z2, sph_i);
+        COMPUTE_SPH_L3(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 3) {
-        COMPUTE_SPH_L4(x, y, z, x2, y2, z2, sph_i);
+        COMPUTE_SPH_L4(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 4) {
-        COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i);
+        COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 5) {
-        COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i);
+        COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
     }
 }
 
@@ -134,30 +134,30 @@ inline void hardcoded_sph_derivative_template(
         avoiding unnecessary in-loop branching.
     */
 
-    COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i);
+    COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
 
     if constexpr (HARDCODED_LMAX > 0) {
-        COMPUTE_SPH_DERIVATIVE_L1(sph_i, dxsph_i, dysph_i, dzsph_i);
+        COMPUTE_SPH_DERIVATIVE_L1(sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 1) {
-        COMPUTE_SPH_DERIVATIVE_L2(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        COMPUTE_SPH_DERIVATIVE_L2(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 2) {
-        COMPUTE_SPH_DERIVATIVE_L3(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        COMPUTE_SPH_DERIVATIVE_L3(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 3) {
-        COMPUTE_SPH_DERIVATIVE_L4(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        COMPUTE_SPH_DERIVATIVE_L4(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 4) {
-        COMPUTE_SPH_DERIVATIVE_L5(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        COMPUTE_SPH_DERIVATIVE_L5(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
     }
 
     if constexpr (HARDCODED_LMAX > 5) {
-        COMPUTE_SPH_DERIVATIVE_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        COMPUTE_SPH_DERIVATIVE_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
     }
 }
 
