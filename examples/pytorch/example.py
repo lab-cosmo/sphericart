@@ -25,10 +25,10 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # the interface allows to return directly the forward derivatives,
     # similar to the Python version
-    sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
+    sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
 
     xyz_f = xyz.clone().detach().type(torch.float32).to("cpu")
-    sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute_with_gradients(xyz_f)
+    sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute(xyz_f, gradients=True)
 
     print(
         "Float vs double relative error: %12.8e\n"
@@ -40,7 +40,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # however, the implementation also supports backpropagation
     xyz = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
-    sh_sphericart = sh_calculator.compute(xyz)
+    sh_sphericart, _ = sh_calculator.compute(xyz)
 
     sph_norm = torch.sum(sh_sphericart**2)
     sph_norm.backward()
