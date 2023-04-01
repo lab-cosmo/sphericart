@@ -113,7 +113,7 @@ class SphericalHarmonics:
             else:
                 dsph_ptr = None
 
-            self._lib.sphericart_compute_array(
+            self._lib.sphericart_compute_array_f(
                 self._calculator_f,
                 xyz_ptr,
                 xyz_length,

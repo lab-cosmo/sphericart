@@ -11,9 +11,7 @@ string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_PA
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 
 OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" ON) # TODO: change default to OFF
-OPTION(SPHERICART_BUILD_EXAMPLES "Build and run examples for Sphericart" ON) 
 OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
-OPTION(SPHERICART_BUILD_TORCH "Build the torch bindings" OFF)
 
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install DLL/binaries")
@@ -107,14 +105,6 @@ endif()
 enable_testing()
 if (SPHERICART_BUILD_TESTS)
     add_subdirectory(tests)
-endif()
-
-if (SPHERICART_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-
-if (SPHERICART_BUILD_TORCH)
-    add_subdirectory(../torch torch)
 endif()
 
 #------------------------------------------------------------------------------#
