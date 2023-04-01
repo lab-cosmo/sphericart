@@ -36,5 +36,8 @@ class SphericalHarmonics:
     def compute(self, xyz):
         return self._sph.compute(xyz)
 
+    def compute_with_gradients(self, xyz):
+        return self._sph.compute_with_gradients(xyz)
+
 
 __all__ = ["SphericalHarmonics"]

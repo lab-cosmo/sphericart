@@ -6,7 +6,8 @@ using namespace sphericart_torch;
 torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     torch::autograd::AutogradContext *ctx,
     SphericalHarmonics& calculator,
-    torch::Tensor xyz
+    torch::Tensor xyz,
+    bool gradients
 ) {
     if (!xyz.is_contiguous()) {
         throw std::runtime_error("this code only runs with contiguous tensors");
@@ -35,7 +36,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     if (xyz.dtype() == c10::kDouble) {
         auto & sph_calc = calculator.spherical_harmonics_d;
 
-        if (xyz.requires_grad()) {
+        if (gradients || xyz.requires_grad()) {
             auto dsph = torch::zeros({n_samples, 3, (l_max + 1) * (l_max + 1)}, options);
 
             sph_calc.compute_array(
@@ -46,7 +47,10 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
                 dsph.data_ptr<double>(),
                 dsph_length
             );
-            ctx->save_for_backward({xyz, dsph});
+            if (xyz.requires_grad()) {
+                ctx->save_for_backward({xyz, dsph});
+            }
+            return {sph, dsph};
         } else {
             sph_calc.compute_array(
                 xyz.data_ptr<double>(),
@@ -54,11 +58,12 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
                 sph.data_ptr<double>(),
                 sph_length
             );
+            return {sph};
         }
     } else if (xyz.dtype() == c10::kFloat) {
         auto & sph_calc = calculator.spherical_harmonics_f;
 
-        if (xyz.requires_grad()) {
+        if (gradients || xyz.requires_grad()) {
             auto dsph = torch::zeros({n_samples, 3, (l_max + 1) * (l_max + 1)}, options);
             sph_calc.compute_array(
                 xyz.data_ptr<float>(),
@@ -68,7 +73,10 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
                 dsph.data_ptr<float>(),
                 dsph_length
             );
-            ctx->save_for_backward({xyz, dsph});
+            if (xyz.requires_grad()) {
+                ctx->save_for_backward({xyz, dsph});
+            }
+            return {sph, dsph};
         } else {
             sph_calc.compute_array(
                 xyz.data_ptr<float>(),
@@ -76,12 +84,11 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
                 sph.data_ptr<float>(),
                 sph_length
             );
+            return {sph};
         }
     } else {
         throw std::runtime_error("this code only runs on float64 and float32 arrays");
     }
-
-    return {sph};
 }
 
 torch::autograd::variable_list SphericalHarmonicsAutograd::backward(

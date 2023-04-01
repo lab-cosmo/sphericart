@@ -12,7 +12,8 @@ namespace sphericart_torch {
         static torch::autograd::variable_list forward(
             torch::autograd::AutogradContext *ctx,
             SphericalHarmonics& calculator,
-            torch::Tensor xyz
+            torch::Tensor xyz,
+            bool gradients=false
         );
 
         static torch::autograd::variable_list backward(

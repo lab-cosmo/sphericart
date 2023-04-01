@@ -11,8 +11,8 @@ class SphericalHarmonics: public torch::CustomClassHolder {
 public:
     SphericalHarmonics(int64_t l_max, bool normalized);
 
-    torch::Tensor compute(torch::Tensor xyz);
-
+    torch::Tensor compute(torch::Tensor& xyz);
+    std::vector<torch::Tensor> compute_with_gradients(torch::Tensor& xyz);
 
 private:
     friend class SphericalHarmonicsAutograd;

@@ -21,11 +21,14 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     sh_calculator = sphericart_torch.SphericalHarmonics(l_max, normalized=normalized)
 
     # initializes the Cartesian coordinates of points
-    xyz = torch.randn((n_samples, 3), dtype=torch.float64, device="cpu", requires_grad=True)
-    sh_sphericart = sh_calculator.compute(xyz)
+    xyz = torch.randn((n_samples, 3), dtype=torch.float64, device="cpu")
+
+    # the interface allows to return directly the forward derivatives, 
+    # similar to the Python version
+    sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
 
     xyz_f = xyz.clone().detach().type(torch.float32).to("cpu")
-    sh_sphericart_f = sh_calculator.compute(xyz_f)
+    sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute_with_gradients(xyz_f)
 
     print(
         "Float vs double relative error: %12.8e\n"
@@ -34,6 +37,18 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
             / np.linalg.norm(sh_sphericart.detach())
         )
     )
+
+    # however, the implementation also supports backpropagation
+    xyz = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
+    sh_sphericart = sh_calculator.compute(xyz)
+
+    sph_norm = torch.sum(sh_sphericart**2)
+    sph_norm.backward()
+    delta = torch.norm(xyz.grad- 2*torch.einsum("iaj,ij->ia",dsh_sphericart,sh_sphericart))
+    print(f"Check derivative difference: {delta}" )
+
+
+    
 
 
 if __name__ == "__main__":
