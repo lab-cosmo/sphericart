@@ -17,17 +17,32 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # calculation and then can be called on any n x 3 arrays of Cartesian
     # coordinates. It computes _all_ SPH up to a given l_max, and can compute
     # scaled (default) and normalized (standard Ylm) harmonics.
-    sh_calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
 
+    # ===== set up the calculation =====
+    
     # initializes the Cartesian coordinates of points
     xyz = np.random.rand(n_samples, 3)
+
+    # float32 version
+    xyz_f = np.array(xyz, dtype=np.float32)
+    
+    # ===== API calls =====
+    
+    sh_calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
+
+    # without gradients
+    sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=False)
+
+    # with gradients
     sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
 
-    xyz_f = np.array(xyz, dtype=np.float32)
+    # the same calculator automatically chooses between float64 and float32
     sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute(xyz_f, gradients=True)
 
+    # ===== check results =====
+
     print(
-        "Float vs double relative error: %12.8e\n"
+        "Float vs double relative error: %12.8e"
         % (
             np.linalg.norm(sh_sphericart - sh_sphericart_f)
             / np.linalg.norm(sh_sphericart)

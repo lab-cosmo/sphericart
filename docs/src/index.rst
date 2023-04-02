@@ -1,5 +1,5 @@
-sphericart documentation!
-======================================
+sphericart documentation
+========================
 
 
 ``sphericart`` is a multi-language library for the efficient calculation of 
