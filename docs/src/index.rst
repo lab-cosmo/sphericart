@@ -1,18 +1,19 @@
-Welcome to sphericart's documentation!
+sphericart documentation!
 ======================================
 
 
-This is the documentation for ``sphericart``, a multi-language library 
-for the efficient calculation of spherical harmonics and their 
-derivatives in Cartesian coordinates. The theory behind this efficient 
-implementation is detailed in this `paper <https://arxiv.org/abs/2302.08381>`_. 
+``sphericart`` is a multi-language library for the efficient calculation of 
+spherical harmonics and their derivatives in Cartesian coordinates. 
 
-The library is natively available in Python, C and C++. In addition, our 
-PyTorch-based implementation provides fast spherical harmonics evaluation 
-on GPUs.
+The theory behind this efficient implementation is detailed in this 
+`paper <https://arxiv.org/abs/2302.08381>`_. 
+
+The core library is implemented in C++, and provides APIs for C, Python and
+Pytorch, with OpenMPI parallelism. In addition, the PyTorch-based implementation 
+provides fast spherical harmonics evaluation on GPUs using CUDA.
 
 This documentation contains two quick guides on how to install and use
-the library, as well as a more comprehensive display of its API.
+the library, as well as a more comprehensive overview of the different APIs.
 
 .. toctree::
     :maxdepth: 1
@@ -20,3 +21,4 @@ the library, as well as a more comprehensive display of its API.
     installation
     using
     api
+    maths
