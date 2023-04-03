@@ -198,6 +198,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         );
         sph = results[0];
         dsph = results[1];
+	printf("Computed CUDA with derivatives %f\n", dsph[5]);
     } else {
         throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
     }
@@ -230,7 +231,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
         if (xyz.device().is_cpu()) {
             xyz_grad = backward_cpu(xyz, dsph, sph_grad);
         } else if (xyz.device().is_cuda()) {
-            // TODO
+            xyz_grad = spherical_harmonics_backward_cuda(xyz, dsph, sph_grad);
         } else {
             throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
         }
