@@ -176,7 +176,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             xyz.scalar_type(),
             calculator.l_max_,
             GRID_DIM_Y,
-            xyz.requires_grad()
+            xyz.requires_grad()||gradients
         );
 
         auto prefactors = torch::Tensor();
@@ -194,7 +194,8 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             prefactors,
             calculator.l_max_,
             calculator.normalize_,
-            GRID_DIM_Y
+            GRID_DIM_Y,
+	    gradients
         );
         sph = results[0];
         dsph = results[1];

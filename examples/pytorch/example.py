@@ -70,9 +70,8 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     xyz_cuda = xyz.clone().detach().type(torch.float64).to("cuda")
     
-    #sh_sphericart_cuda, dsh_sphericart_cuda = sh_calculator.compute(xyz_cuda, gradients=True)
-
-    #print(f"Check fw derivative difference CPU vs CUDA: {torch.norm(dsh_sphericart_cuda.to('cpu')-dsh_sphericart)}")
+    sh_sphericart_cuda, dsh_sphericart_cuda = sh_calculator.compute(xyz_cuda, gradients=True)
+    print(f"Check fw derivative difference CPU vs CUDA: {torch.norm(dsh_sphericart_cuda.to('cpu')-dsh_sphericart)}")
 
     xyz_cuda = xyz.clone().detach().type(torch.float64).to("cuda").requires_grad_()
     sh_sphericart_cuda, _ = sh_calculator.compute(xyz_cuda)

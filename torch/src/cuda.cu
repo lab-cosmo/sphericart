@@ -966,7 +966,8 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     torch::Tensor prefactors,
     int64_t l_max,
     bool normalize,
-    int64_t GRID_DIM_Y
+    int64_t GRID_DIM_Y,
+    bool gradients
 ) {
 
     CHECK_INPUT(xyz);
@@ -981,7 +982,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     );
 
     torch::Tensor d_sph;
-    if (xyz.requires_grad()) {
+    if (xyz.requires_grad() || gradients) {
         d_sph = torch::zeros(
             {n_total, 3, xyz.size(0)},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
@@ -1016,7 +1017,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
             total_buff_size += (l_max + 1) * (l_max + 2) * sizeof(scalar_t);    // buffer_prefactors
             total_buff_size += GRID_DIM_Y * GRIM_DIM_X * nl * sizeof(scalar_t); // buffer_sph_out
 
-            if (xyz.requires_grad()) {
+            if (xyz.requires_grad() || gradients) {
                 total_buff_size += 3 * GRID_DIM_Y * GRIM_DIM_X * nl * sizeof(scalar_t); // buffer_sph_derivs
             }
 
@@ -1024,7 +1025,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
                 xyz.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                 prefactors.packed_accessor32<scalar_t, 1, torch::RestrictPtrTraits>(),
                 l_max,
-                xyz.requires_grad(),
+                xyz.requires_grad() || gradients,
                 normalize,
                 sph.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                 d_sph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>());
@@ -1032,7 +1033,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     cudaDeviceSynchronize();
 
-    if (xyz.requires_grad()) {
+    if (xyz.requires_grad() || gradients) {
         return {sph.transpose(0, 1).contiguous(), d_sph.transpose(0, 2).contiguous()};
     } else {
         return {sph.transpose(0, 1).contiguous(), torch::Tensor()};
