@@ -901,7 +901,7 @@ __global__ void spherical_harmonics_kernel(
     }
 }
 
-#define GRIM_DIM_X 32
+#define GRIM_DIM_X 16
 
 static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_Y, size_t dtype_size, bool requires_grad) {
     int nl = max(
