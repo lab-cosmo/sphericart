@@ -1,14 +1,13 @@
 #include "sphericart/autograd.hpp"
+#include "sphericart/torch.hpp"
 #include "sphericart.hpp"
 
-using namespace sphericart;
-
-
+using namespace sphericart_torch;
 torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     torch::autograd::AutogradContext *ctx,
-    int64_t l_max,
+    SphericalHarmonics& calculator,
     torch::Tensor xyz,
-    bool normalize
+    bool gradients
 ) {
     if (!xyz.is_contiguous()) {
         throw std::runtime_error("this code only runs with contiguous tensors");
@@ -18,10 +17,6 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         throw std::runtime_error("this code only runs on CPU for now");
     }
 
-    if (xyz.dtype() != c10::kDouble) {
-        throw std::runtime_error("this code only support float64 for now");
-    }
-
     if (xyz.sizes().size() != 2) {
         throw std::runtime_error("xyz tensor must be a 2D array");
     }
@@ -29,42 +24,71 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     if (xyz.sizes()[1] != 3) {
         throw std::runtime_error("xyz tensor must be an `n_samples x 3` array");
     }
+
     auto n_samples = xyz.sizes()[0];
-
-    auto prefactors = std::vector<double>((l_max + 1) * (l_max + 2), 0.0);
-    sphericart::compute_sph_prefactors(l_max, prefactors.data());
-
+    auto l_max = calculator.l_max;
     auto options = torch::TensorOptions().device(xyz.device()).dtype(xyz.dtype());
+
+    auto sph_length = n_samples * (l_max + 1) * (l_max + 1);
+    auto dsph_length = n_samples * 3 * (l_max + 1) * (l_max + 1);
     auto sph = torch::zeros({n_samples, (l_max + 1) * (l_max + 1)}, options);
 
-    double* dsph_ptr = nullptr;
-    if (xyz.requires_grad()) {
-        auto dsph = torch::zeros({n_samples, 3, (l_max + 1) * (l_max + 1)}, options);
-        dsph_ptr = dsph.data_ptr<double>();
-        ctx->save_for_backward({xyz, dsph});
-    }
+    if (xyz.dtype() == c10::kDouble) {
+        auto & sph_calc = calculator.spherical_harmonics_d;
 
-    if (normalize) {
-        sphericart::normalized_spherical_harmonics(
-            n_samples,
-            l_max,
-            prefactors.data(),
-            xyz.data_ptr<double>(),
-            sph.data_ptr<double>(),
-            dsph_ptr
-        );
+        if (gradients || xyz.requires_grad()) {
+            auto dsph = torch::zeros({n_samples, 3, (l_max + 1) * (l_max + 1)}, options);
+
+            sph_calc.compute_array(
+                xyz.data_ptr<double>(),
+                n_samples * 3,
+                sph.data_ptr<double>(),
+                sph_length,
+                dsph.data_ptr<double>(),
+                dsph_length
+            );
+            if (xyz.requires_grad()) {
+                ctx->save_for_backward({xyz, dsph});
+            }
+            return {sph, dsph};
+        } else {
+            sph_calc.compute_array(
+                xyz.data_ptr<double>(),
+                n_samples * 3,
+                sph.data_ptr<double>(),
+                sph_length
+            );
+            return {sph};
+        }
+    } else if (xyz.dtype() == c10::kFloat) {
+        auto & sph_calc = calculator.spherical_harmonics_f;
+
+        if (gradients || xyz.requires_grad()) {
+            auto dsph = torch::zeros({n_samples, 3, (l_max + 1) * (l_max + 1)}, options);
+            sph_calc.compute_array(
+                xyz.data_ptr<float>(),
+                n_samples * 3,
+                sph.data_ptr<float>(),
+                sph_length,
+                dsph.data_ptr<float>(),
+                dsph_length
+            );
+            if (xyz.requires_grad()) {
+                ctx->save_for_backward({xyz, dsph});
+            }
+            return {sph, dsph};
+        } else {
+            sph_calc.compute_array(
+                xyz.data_ptr<float>(),
+                n_samples * 3,
+                sph.data_ptr<float>(),
+                sph_length
+            );
+            return {sph};
+        }
     } else {
-        sphericart::cartesian_spherical_harmonics(
-            n_samples,
-            l_max,
-            prefactors.data(),
-            xyz.data_ptr<double>(),
-            sph.data_ptr<double>(),
-            dsph_ptr
-        );
+        throw std::runtime_error("this code only runs on float64 and float32 arrays");
     }
-
-    return {sph};
 }
 
 torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
@@ -93,18 +117,34 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
             throw std::runtime_error("internal error: xyz_grad or dsph are not contiguous");
         }
 
-        auto xyz_grad_p = xyz_grad.accessor<double, 2>();
-        auto sph_grad_p = sph_grad.accessor<double, 2>();
-        auto dsph_p = dsph.accessor<double, 3>();
-
         auto n_samples = xyz.sizes()[0];
         auto n_sph = sph_grad.sizes()[1];
-        for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
-            for (size_t spatial=0; spatial<3; spatial++) {
-                for (int i_sph=0; i_sph<n_sph; i_sph++) {
-                    xyz_grad_p[i_sample][spatial] += sph_grad_p[i_sample][i_sph] * dsph_p[i_sample][spatial][i_sph];
+        if (xyz.dtype() == c10::kDouble) {
+            auto xyz_grad_p = xyz_grad.accessor<double, 2>();
+            auto sph_grad_p = sph_grad.accessor<double, 2>();
+            auto dsph_p = dsph.accessor<double, 3>();
+
+            for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
+                for (size_t spatial=0; spatial<3; spatial++) {
+                    for (int i_sph=0; i_sph<n_sph; i_sph++) {
+                        xyz_grad_p[i_sample][spatial] += sph_grad_p[i_sample][i_sph] * dsph_p[i_sample][spatial][i_sph];
+                    }
                 }
             }
+        } else if (xyz.dtype() == c10::kFloat) {
+            auto xyz_grad_p = xyz_grad.accessor<float, 2>();
+            auto sph_grad_p = sph_grad.accessor<float, 2>();
+            auto dsph_p = dsph.accessor<float, 3>();
+
+            for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
+                for (size_t spatial=0; spatial<3; spatial++) {
+                    for (int i_sph=0; i_sph<n_sph; i_sph++) {
+                        xyz_grad_p[i_sample][spatial] += sph_grad_p[i_sample][i_sph] * dsph_p[i_sample][spatial][i_sph];
+                    }
+                }
+            }
+         } else {
+            throw std::runtime_error("this code only runs on float64 and float32 arrays");
         }
     }
 

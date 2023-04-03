@@ -14,3 +14,14 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
 endif()
 
 add_subdirectory(sphericart)
+
+OPTION(SPHERICART_BUILD_TORCH "Build the torch bindings" OFF)
+OPTION(SPHERICART_BUILD_EXAMPLES "Build and run examples for Sphericart" ON) 
+
+if (SPHERICART_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
+if (SPHERICART_BUILD_TORCH)
+    add_subdirectory(torch torch)
+endif()

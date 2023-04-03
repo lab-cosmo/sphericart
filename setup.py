@@ -39,6 +39,8 @@ class cmake_ext(build_ext):
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DBUILD_SHARED_LIBS=ON",
+            "-DSPHERICART_BUILD_EXAMPLES=OFF",
+            "-DSPHERICART_BUILD_TESTS=OFF",
         ]
 
         subprocess.run(

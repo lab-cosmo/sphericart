@@ -1,10 +1,25 @@
-API documentation
------------------
+API documentation 
+=================
 
-This section contains a description of the interface of the ``sphericart`` library.
+The core implementation of ``sphericart`` is written in C++. It relies on templates and 
+C++17 features such as ``if constexpr`` to reduce the runtime overhead of implementing
+different normalization styles, and providing both a version with and without derivatives.
+
+Spherical harmonics and their derivatives are computed with optimized hard-coded expressions 
+for low values of the principal angular momentum number :math:`l`, then switch to an efficient
+recursive evaluation. The API involves initializing a calculator that allocates buffer space
+and computes some constant factors, and then using it to compute :math:`Y_l^m` for one or more
+points in 3D.
+
+This core C++ library is then made available to different environments through a C API.
+This section contains a description of the interface of the ``sphericart`` library for the
+different languages it supports.
 
 .. toctree::
     :maxdepth: 1
 
-    python-api
+    cpp-api
     c-api
+    python-api
+    pytorch-api    
+    

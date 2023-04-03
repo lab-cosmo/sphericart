@@ -1,12 +1,26 @@
 #ifndef SPHERICART_TORCH_HPP
 #define SPHERICART_TORCH_HPP
+#include "sphericart.hpp"
+#include <torch/script.h>
 
-#include <ATen/Tensor.h>
+namespace sphericart_torch {
 
-namespace sphericart {
+class SphericalHarmonicsAutograd;
 
-at::Tensor spherical_harmonics(int64_t l_max, at::Tensor xyz, bool normalize);
+class SphericalHarmonics: public torch::CustomClassHolder {
+public:
+    SphericalHarmonics(int64_t l_max, bool normalized);
 
-}
+    torch::Tensor compute(torch::Tensor& xyz);
+    std::vector<torch::Tensor> compute_with_gradients(torch::Tensor& xyz);
 
+private:
+    friend class SphericalHarmonicsAutograd;
+
+    int64_t l_max;
+    sphericart::SphericalHarmonics<double> spherical_harmonics_d;
+    sphericart::SphericalHarmonics<float> spherical_harmonics_f;
+};
+
+} // sphericart_torch
 #endif

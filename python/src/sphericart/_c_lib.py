@@ -5,31 +5,53 @@ import sys
 _HERE = os.path.realpath(os.path.dirname(__file__))
 
 
+class sphericart_calculator_t(ctypes.c_void_p):
+    pass
+
+
+class sphericart_calculator_f_t(ctypes.c_void_p):
+    pass
+
+
 def setup_functions(lib):
-    lib.sphericart_compute_sph_prefactors.restype = None
-    lib.sphericart_compute_sph_prefactors.argtypes = [
-        ctypes.c_int,
-        ctypes.POINTER(ctypes.c_double),
+    lib.sphericart_new.restype = sphericart_calculator_t
+    lib.sphericart_new.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_bool,
     ]
 
-    lib.sphericart_cartesian_spherical_harmonics.restype = None
-    lib.sphericart_cartesian_spherical_harmonics.argtypes = [
-        ctypes.c_int,
-        ctypes.c_int,
-        ctypes.POINTER(ctypes.c_double),
-        ctypes.POINTER(ctypes.c_double),
-        ctypes.POINTER(ctypes.c_double),
-        ctypes.POINTER(ctypes.c_double),
+    lib.sphericart_new_f.restype = sphericart_calculator_f_t
+    lib.sphericart_new_f.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_bool,
     ]
 
-    lib.sphericart_normalized_spherical_harmonics.restype = None
-    lib.sphericart_normalized_spherical_harmonics.argtypes = [
-        ctypes.c_int,
-        ctypes.c_int,
+    lib.sphericart_delete.restype = None
+    lib.sphericart_delete.argtypes = [sphericart_calculator_t]
+
+    lib.sphericart_delete_f.restype = None
+    lib.sphericart_delete_f.argtypes = [sphericart_calculator_f_t]
+
+    lib.sphericart_compute_array.restype = None
+    lib.sphericart_compute_array.argtypes = [
+        sphericart_calculator_t,
         ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
         ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
         ctypes.POINTER(ctypes.c_double),
-        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+    ]
+
+    lib.sphericart_compute_array_f.restype = None
+    lib.sphericart_compute_array_f.argtypes = [
+        sphericart_calculator_f_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
     ]
 
 
