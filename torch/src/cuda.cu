@@ -763,76 +763,226 @@ __global__ void spherical_harmonics_kernel(
         requires_grad
     );
 
+    int base_index = 0;
+
     if (lmax >= 0) {
+
+        clear_buffers(1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+
         compute_sph_l0(buffer_sph);
+
         if (requires_grad) {
             compute_dsph_l0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
+
+        write_buffers(
+            atom_idx,
+            natoms,
+            x,
+            y,
+            z,
+            ir,
+            1,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph,
+            dsph,
+            requires_grad,
+            normalize
+        );
+        base_index += 1;
     }
 
     if (lmax >= 1) {
+
+        clear_buffers(3, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+
         compute_sph_l1(x, y, z, buffer_sph);
+
         if (requires_grad) {
             compute_dsph_l1(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
+
+        write_buffers(
+            atom_idx,
+            natoms,
+            x,
+            y,
+            z,
+            ir,
+            3,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph,
+            dsph,
+            requires_grad,
+            normalize
+        );
+
+        base_index +=3;
     }
 
     if (lmax >= 2) {
+        clear_buffers(5, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+
         compute_sph_l2(x, y, z, x2, y2, z2, buffer_sph);
         if (requires_grad) {
             compute_dsph_l2(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
+
+        write_buffers(
+            atom_idx,
+            natoms,
+            x,
+            y,
+            z,
+            ir,
+            5,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph,
+            dsph,
+            requires_grad,
+            normalize
+        );
+
+        base_index +=5;
     }
 
     if (lmax >= 3) {
+
+        clear_buffers(7, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+
         compute_sph_l3(x, y, z, x2, y2, z2, buffer_sph);
         if (requires_grad) {
             compute_dsph_l3(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
+
+        write_buffers(
+            atom_idx,
+            natoms,
+            x,
+            y,
+            z,
+            ir,
+            7,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph,
+            dsph,
+            requires_grad,
+            normalize
+        );
+
+        base_index +=7;
     }
 
     if (lmax >= 4) {
+
+        clear_buffers(9, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+
         compute_sph_l4(x, y, z, x2, y2, z2, buffer_sph);
         if (requires_grad) {
             compute_dsph_l4(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
+
+        write_buffers(
+            atom_idx,
+            natoms,
+            x,
+            y,
+            z,
+            ir,
+            9,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph,
+            dsph,
+            requires_grad,
+            normalize
+        );
+
+        base_index +=9;
     }
 
     if (lmax >= 5) {
+
+        clear_buffers(11, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+
         compute_sph_l5(x, y, z, x2, y2, z2, buffer_sph);
         if (requires_grad) {
             compute_dsph_l5(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
+
+        write_buffers(
+            atom_idx,
+            natoms,
+            x,
+            y,
+            z,
+            ir,
+            11,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph,
+            dsph,
+            requires_grad,
+            normalize
+        );
+
+        base_index +=11;
     }
 
     if (lmax >= 6) {
+
+        clear_buffers(13, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+
         compute_sph_l6(x, y, z, x2, y2, z2, buffer_sph);
         if (requires_grad) {
             compute_dsph_l6(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
+
+        write_buffers(
+            atom_idx,
+            natoms,
+            x,
+            y,
+            z,
+            ir,
+            13,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph,
+            dsph,
+            requires_grad,
+            normalize
+        );
+
+        base_index +=13;
     }
 
     __syncthreads();
-
-    // write out all (min(HARDCODED_LMAX, lmax) +1)**2 hardcoded elements
-    write_buffers(
-        atom_idx,
-        natoms,
-        x,
-        y,
-        z,
-        ir,
-        (mm + 1) * (mm + 1),
-        0,
-        buffer_sph,
-        buffer_dsph_x,
-        buffer_dsph_y,
-        buffer_dsph_z,
-        sph,
-        dsph,
-        requires_grad,
-        normalize
-    );
 
     // now lets do the generic terms...
     int size_q = (lmax + 1) * (lmax + 2) / 2;
@@ -842,7 +992,7 @@ __global__ void spherical_harmonics_kernel(
 
     scalar_t *pk = buffer_prefactors + k;
 
-    int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
+    //int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
     for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1) {
         int sph_offset = l; // sph needs to point to Y[l, 0]
@@ -901,13 +1051,16 @@ __global__ void spherical_harmonics_kernel(
     }
 }
 
-#define GRIM_DIM_X 16
+#define GRIM_DIM_X 32
 
 static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_Y, size_t dtype_size, bool requires_grad) {
-    int nl = max(
-        static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
-        2 * l_max + 1
-    );
+
+    // int nl = max(
+    //     static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
+    //     2 * l_max + 1
+    // );
+
+    int nl = 2 * l_max + 1;
 
     size_t total_buff_size = 0;
 
@@ -1001,12 +1154,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     dim3 block_dim(find_num_blocks(xyz.size(0), GRIM_DIM_X));
 
-    // to make computing hardcoded + generic easier, use a minimum amount of
-    // shared memory enough to store all hardcoded derivatives
-    int nl = max(
-        static_cast<int64_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
-        2 * l_max + 1
-    );
+    int nl = 2 * l_max + 1;
 
     AT_DISPATCH_FLOATING_TYPES(
         xyz.scalar_type(), "spherical_harmonics_cuda", ([&] {
