@@ -6,13 +6,14 @@
 
 namespace sphericart_torch {
 
-void adjust_cuda_shared_memory(at::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_Y, bool requires_grad);
+bool adjust_cuda_shared_memory(at::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool requires_grad);
 
 std::vector<at::Tensor> spherical_harmonics_cuda(
     at::Tensor xyz,
     at::Tensor prefactors,
     int64_t l_max,
     bool normalize,
+    int64_t GRID_DIM_X,
     int64_t GRID_DIM_Y,
     bool gradients
 );

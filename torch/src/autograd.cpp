@@ -121,28 +121,34 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph, torch::
 
 /* ===========================================================================*/
 
-void CudaSharedMemorySettings::update_if_required(
+bool CudaSharedMemorySettings::update_if_required(
     torch::ScalarType scalar_type,
     int64_t l_max,
+    int64_t GRID_DIM_X,
     int64_t GRID_DIM_Y,
     bool gradients
 ) {
     auto scalar_size = torch::elementSize(scalar_type);
     if (this->l_max_ >= l_max &&
+        this->grid_dim_x_ >= GRID_DIM_X &&
         this->grid_dim_y_ >= GRID_DIM_Y &&
         this->scalar_size_ >= scalar_size &&
         (this->requires_grad_ || !gradients)
     ) {
         // no need to adjust shared memory
-        return;
+        return true;
     }
 
-    adjust_cuda_shared_memory(scalar_type, l_max, GRID_DIM_Y, gradients);
+    bool result = adjust_cuda_shared_memory(scalar_type, l_max, GRID_DIM_X, GRID_DIM_Y, gradients);
 
-    this->l_max_ = l_max;
-    this->grid_dim_y_ = GRID_DIM_Y;
-    this->requires_grad_ = gradients;
-    this->scalar_size_ = scalar_size;
+    if (result){
+        this->l_max_ = l_max;
+        this->grid_dim_x_ = GRID_DIM_X;
+        this->grid_dim_y_ = GRID_DIM_Y;
+        this->requires_grad_ = gradients;
+        this->scalar_size_ = scalar_size;
+    }
+    return result;
 }
 
 /* ===========================================================================*/
@@ -170,14 +176,41 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         dsph = results[1];
     } else if (xyz.device().is_cuda()) {
         // re-do the shared memory update in case `requires_grad` changed
-        const auto GRID_DIM_Y = 1;
+        const int GRID_DIM_Y = 1;
+        int GRID_DIM_X = 32;
+
+        int dtype = torch::elementSize(xyz.scalar_type());
+
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
-        calculator.cuda_shmem_.update_if_required(
+        
+        bool shm_result = calculator.cuda_shmem_.update_if_required(
             xyz.scalar_type(),
             calculator.l_max_,
+            GRID_DIM_X,
             GRID_DIM_Y,
             xyz.requires_grad()||gradients
         );
+        
+        if (!shm_result){
+            printf("Warning: Failed to update shared memory specification with element_size = %d, GRID_DIM_X = %d, GRID_DIM_Y = %d, xyz.requires_grad() || gradients = %s\n",
+                    dtype, GRID_DIM_X, GRID_DIM_Y, xyz.requires_grad()||gradients ? "true" : "false");
+            printf ("Re-attempting with GRID_DIM_X= 16\n");
+
+            GRID_DIM_X = 16;
+            shm_result = calculator.cuda_shmem_.update_if_required(
+                xyz.scalar_type(),
+                calculator.l_max_,
+                GRID_DIM_X,
+                GRID_DIM_Y,
+                xyz.requires_grad()||gradients
+            );
+
+            if (!shm_result) {
+                throw std::runtime_error("Insufficient shared memory available to compute spherical_harmonics with requested parameters.");
+            } else {
+                printf("shared memory update OK.\n");
+            }
+        }
 
         auto prefactors = torch::Tensor();
         if (xyz.dtype() == c10::kDouble) {
@@ -188,22 +221,21 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             throw std::runtime_error("this code only runs on float64 and float32 arrays");
         }
 
-
         auto results = spherical_harmonics_cuda(
             xyz,
             prefactors,
             calculator.l_max_,
             calculator.normalize_,
+            GRID_DIM_X,
             GRID_DIM_Y,
 	    gradients
         );
         sph = results[0];
         dsph = results[1];
-	printf("Computed CUDA with derivatives %f\n", dsph[5]);
+	//printf("Computed CUDA with derivatives %f\n", dsph[5]);
     } else {
         throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
     }
-
 
     if (xyz.requires_grad()) {
         ctx->save_for_backward({xyz, dsph});

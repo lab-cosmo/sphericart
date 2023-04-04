@@ -8,7 +8,7 @@
 
 #include "sphericart/cuda.hpp"
 
-#define HARDCODED_LMAX 6
+#define HARDCODED_LMAX 3
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_SAME_DTYPE(x, y) TORCH_CHECK(x.scalar_type() == y.scalar_type(), #x " and " #y " must have the same dtype.")
@@ -670,8 +670,12 @@ __global__ void spherical_harmonics_kernel(
     scalar_t *buffer_prefactors = reinterpret_cast<scalar_t *>(buffer + offset);
     offset += prefactors.size(0) * sizeof(scalar_t);
 
-    int nl = max((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1), 2 * lmax + 1);
-    int mm = min(lmax, HARDCODED_LMAX);
+    //int nl = 2 * lmax + 1;
+
+    int nl = max(
+        static_cast<int>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
+         2 * lmax + 1
+     );
 
     scalar_t *buffer_sph = reinterpret_cast<scalar_t *>(buffer + offset);
     offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
@@ -754,6 +758,7 @@ __global__ void spherical_harmonics_kernel(
     __syncthreads();
 
     // work through hardcoded parts first...
+
     clear_buffers(
         (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1),
         buffer_sph,
@@ -761,228 +766,63 @@ __global__ void spherical_harmonics_kernel(
         buffer_dsph_y,
         buffer_dsph_z,
         requires_grad
-    );
-
-    int base_index = 0;
+    ); 
 
     if (lmax >= 0) {
 
-        clear_buffers(1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+        //clear_buffers(1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
 
         compute_sph_l0(buffer_sph);
 
         if (requires_grad) {
             compute_dsph_l0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
-
-        write_buffers(
-            atom_idx,
-            natoms,
-            x,
-            y,
-            z,
-            ir,
-            1,
-            base_index,
-            buffer_sph,
-            buffer_dsph_x,
-            buffer_dsph_y,
-            buffer_dsph_z,
-            sph,
-            dsph,
-            requires_grad,
-            normalize
-        );
-        base_index += 1;
     }
 
     if (lmax >= 1) {
-
-        clear_buffers(3, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
 
         compute_sph_l1(x, y, z, buffer_sph);
 
         if (requires_grad) {
             compute_dsph_l1(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
-
-        write_buffers(
-            atom_idx,
-            natoms,
-            x,
-            y,
-            z,
-            ir,
-            3,
-            base_index,
-            buffer_sph,
-            buffer_dsph_x,
-            buffer_dsph_y,
-            buffer_dsph_z,
-            sph,
-            dsph,
-            requires_grad,
-            normalize
-        );
-
-        base_index +=3;
     }
 
     if (lmax >= 2) {
-        clear_buffers(5, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
 
         compute_sph_l2(x, y, z, x2, y2, z2, buffer_sph);
         if (requires_grad) {
             compute_dsph_l2(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
-
-        write_buffers(
-            atom_idx,
-            natoms,
-            x,
-            y,
-            z,
-            ir,
-            5,
-            base_index,
-            buffer_sph,
-            buffer_dsph_x,
-            buffer_dsph_y,
-            buffer_dsph_z,
-            sph,
-            dsph,
-            requires_grad,
-            normalize
-        );
-
-        base_index +=5;
     }
 
     if (lmax >= 3) {
-
-        clear_buffers(7, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
 
         compute_sph_l3(x, y, z, x2, y2, z2, buffer_sph);
         if (requires_grad) {
             compute_dsph_l3(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
         }
-
-        write_buffers(
-            atom_idx,
-            natoms,
-            x,
-            y,
-            z,
-            ir,
-            7,
-            base_index,
-            buffer_sph,
-            buffer_dsph_x,
-            buffer_dsph_y,
-            buffer_dsph_z,
-            sph,
-            dsph,
-            requires_grad,
-            normalize
-        );
-
-        base_index +=7;
     }
-
-    if (lmax >= 4) {
-
-        clear_buffers(9, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
-
-        compute_sph_l4(x, y, z, x2, y2, z2, buffer_sph);
-        if (requires_grad) {
-            compute_dsph_l4(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
-        }
-
-        write_buffers(
-            atom_idx,
-            natoms,
-            x,
-            y,
-            z,
-            ir,
-            9,
-            base_index,
-            buffer_sph,
-            buffer_dsph_x,
-            buffer_dsph_y,
-            buffer_dsph_z,
-            sph,
-            dsph,
-            requires_grad,
-            normalize
-        );
-
-        base_index +=9;
-    }
-
-    if (lmax >= 5) {
-
-        clear_buffers(11, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
-
-        compute_sph_l5(x, y, z, x2, y2, z2, buffer_sph);
-        if (requires_grad) {
-            compute_dsph_l5(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
-        }
-
-        write_buffers(
-            atom_idx,
-            natoms,
-            x,
-            y,
-            z,
-            ir,
-            11,
-            base_index,
-            buffer_sph,
-            buffer_dsph_x,
-            buffer_dsph_y,
-            buffer_dsph_z,
-            sph,
-            dsph,
-            requires_grad,
-            normalize
-        );
-
-        base_index +=11;
-    }
-
-    if (lmax >= 6) {
-
-        clear_buffers(13, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
-
-        compute_sph_l6(x, y, z, x2, y2, z2, buffer_sph);
-        if (requires_grad) {
-            compute_dsph_l6(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
-        }
-
-        write_buffers(
-            atom_idx,
-            natoms,
-            x,
-            y,
-            z,
-            ir,
-            13,
-            base_index,
-            buffer_sph,
-            buffer_dsph_x,
-            buffer_dsph_y,
-            buffer_dsph_z,
-            sph,
-            dsph,
-            requires_grad,
-            normalize
-        );
-
-        base_index +=13;
-    }
-
     __syncthreads();
+
+    write_buffers(
+        atom_idx,
+        natoms,
+        x,
+        y,
+        z,
+        ir,
+        (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1),
+        0,
+        buffer_sph,
+        buffer_dsph_x,
+        buffer_dsph_y,
+        buffer_dsph_z,
+        sph,
+        dsph,
+        requires_grad,
+        normalize
+    );
 
     // now lets do the generic terms...
     int size_q = (lmax + 1) * (lmax + 2) / 2;
@@ -992,7 +832,7 @@ __global__ void spherical_harmonics_kernel(
 
     scalar_t *pk = buffer_prefactors + k;
 
-    //int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
+    int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
     for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1) {
         int sph_offset = l; // sph needs to point to Y[l, 0]
@@ -1051,67 +891,72 @@ __global__ void spherical_harmonics_kernel(
     }
 }
 
-#define GRIM_DIM_X 32
 
-static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_Y, size_t dtype_size, bool requires_grad) {
+static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X, size_t GRID_DIM_Y, size_t dtype_size, bool requires_grad) {
 
-    // int nl = max(
-    //     static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
-    //     2 * l_max + 1
-    // );
-
-    int nl = 2 * l_max + 1;
+    int nl = max(
+        static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
+         2 * l_max + 1
+     );
 
     size_t total_buff_size = 0;
 
-    total_buff_size += GRIM_DIM_X * (l_max + 1) * dtype_size;      // buffer_c
-    total_buff_size += GRIM_DIM_X * (l_max + 1) * dtype_size;      // buffer_s
+    total_buff_size += GRID_DIM_X * (l_max + 1) * dtype_size;      // buffer_c
+    total_buff_size += GRID_DIM_X * (l_max + 1) * dtype_size;      // buffer_s
     total_buff_size += (l_max + 1) * (l_max + 2) * dtype_size;     // buffer_prefactors
-    total_buff_size += GRID_DIM_Y * GRIM_DIM_X * nl * dtype_size;  // buffer_sph_out
+    total_buff_size += GRID_DIM_Y * GRID_DIM_X * nl * dtype_size;  // buffer_sph_out
 
     if (requires_grad) {
-        total_buff_size += 3 * GRID_DIM_Y * GRIM_DIM_X * nl * dtype_size; // buffer_sph_derivs
+        total_buff_size += 3 * GRID_DIM_Y * GRID_DIM_X * nl * dtype_size; // buffer_sph_derivs
     }
 
     return total_buff_size;
 }
 
-void sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_Y, bool requires_grad) {
+bool sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool requires_grad) {
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
 
     size_t dtype = torch::elementSize(scalar_type);
-    auto required_buff_size = total_buffer_size(l_max, GRID_DIM_Y, dtype, requires_grad);
+    auto required_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, dtype, requires_grad);
 
-    TORCH_CHECK(
-        required_buff_size <= deviceProp.sharedMemPerBlock,
-        "requested shared memory buffer (", required_buff_size, ") exceeds max available ",
-        "on device: ", deviceProp.name, " (", deviceProp.sharedMemPerBlock, ")"
-    );
+    bool accepted = required_buff_size <= deviceProp.sharedMemPerBlock;
 
-    switch (scalar_type) {
-    case torch::ScalarType::Double:
-        cudaFuncSetAttribute(
-            spherical_harmonics_kernel<double>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize,
-            required_buff_size
-        );
-        break;
-    case torch::ScalarType::Float:
-        cudaFuncSetAttribute(
-            spherical_harmonics_kernel<float>,
-            cudaFuncAttributeMaxDynamicSharedMemorySize,
-            required_buff_size
-        );
-        break;
-    // case torch::ScalarType::Half:
-    //     cudaFuncSetAttribute(
-    //         spherical_harmonics_kernel<at::Half>,
-    //         cudaFuncAttributeMaxDynamicSharedMemorySize,
-    //         total_buff_size
-    //     );
-    //     break;
+    // TORCH_CHECK(
+    //     required_buff_size <= deviceProp.sharedMemPerBlock,
+    //     "requested shared memory buffer (", required_buff_size, ") exceeds max available ",
+    //     "on device: ", deviceProp.name, " (", deviceProp.sharedMemPerBlock, ")"
+    // );
+
+    if (!accepted){
+        printf("Warning: requested shared memory buffer (%d) exceeds max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlock, deviceProp.name );
+    } else {
+        printf("Accepted shared memory buffer (%d) max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlock, deviceProp.name );
+        switch (scalar_type) {
+        case torch::ScalarType::Double:
+            cudaFuncSetAttribute(
+                spherical_harmonics_kernel<double>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize,
+                required_buff_size
+            );
+            break;
+        case torch::ScalarType::Float:
+            cudaFuncSetAttribute(
+                spherical_harmonics_kernel<float>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize,
+                required_buff_size
+            );
+            break;
+        // case torch::ScalarType::Half:
+        //     cudaFuncSetAttribute(
+        //         spherical_harmonics_kernel<at::Half>,
+        //         cudaFuncAttributeMaxDynamicSharedMemorySize,
+        //         total_buff_size
+        //     );
+        //     break;
+        }
     }
+    return accepted;
 }
 
 std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
@@ -1119,6 +964,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     torch::Tensor prefactors,
     int64_t l_max,
     bool normalize,
+    int64_t GRID_DIM_X,
     int64_t GRID_DIM_Y,
     bool gradients
 ) {
@@ -1148,26 +994,33 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
         );
     }
 
-    dim3 grid_dim(GRIM_DIM_X, GRID_DIM_Y);
+    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
 
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
 
-    dim3 block_dim(find_num_blocks(xyz.size(0), GRIM_DIM_X));
+    dim3 block_dim(find_num_blocks(xyz.size(0), GRID_DIM_X));
 
-    int nl = 2 * l_max + 1;
+    int nl = max(
+        static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
+         2 * l_max + 1
+     );
+
+    //int nl = 2 * l_max + 1;
 
     AT_DISPATCH_FLOATING_TYPES(
         xyz.scalar_type(), "spherical_harmonics_cuda", ([&] {
             size_t total_buff_size = 0;
 
-            total_buff_size += GRIM_DIM_X * (l_max + 1) * sizeof(scalar_t);     // buffer_c
-            total_buff_size += GRIM_DIM_X * (l_max + 1) * sizeof(scalar_t);     // buffer_s
+            total_buff_size += GRID_DIM_X * (l_max + 1) * sizeof(scalar_t);     // buffer_c
+            total_buff_size += GRID_DIM_X * (l_max + 1) * sizeof(scalar_t);     // buffer_s
             total_buff_size += (l_max + 1) * (l_max + 2) * sizeof(scalar_t);    // buffer_prefactors
-            total_buff_size += GRID_DIM_Y * GRIM_DIM_X * nl * sizeof(scalar_t); // buffer_sph_out
+            total_buff_size += GRID_DIM_Y * GRID_DIM_X * nl * sizeof(scalar_t); // buffer_sph_out
 
             if (xyz.requires_grad() || gradients) {
-                total_buff_size += 3 * GRID_DIM_Y * GRIM_DIM_X * nl * sizeof(scalar_t); // buffer_sph_derivs
+                total_buff_size += 3 * GRID_DIM_Y * GRID_DIM_X * nl * sizeof(scalar_t); // buffer_sph_derivs
             }
+
+            //printf("total buff size: %d\n", total_buff_size);
 
             spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
                 xyz.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),

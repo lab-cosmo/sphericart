@@ -13,11 +13,12 @@ class SphericalHarmonicsAutograd;
 
 class CudaSharedMemorySettings {
 public:
-    CudaSharedMemorySettings(): scalar_size_(0), l_max_(-1), grid_dim_y_(-1), requires_grad_(false) {}
+    CudaSharedMemorySettings(): scalar_size_(0), l_max_(-1), grid_dim_x_(-1), grid_dim_y_(-1), requires_grad_(false) {}
 
-    void update_if_required(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_Y, bool gradients);
+    bool update_if_required(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool gradients);
 private:
     int64_t l_max_;
+    int64_t grid_dim_x_;
     int64_t grid_dim_y_;
     bool requires_grad_;
     size_t scalar_size_;
