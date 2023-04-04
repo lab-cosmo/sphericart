@@ -19,7 +19,8 @@ except ImportError:
     _HAS_E3NN = False
 
 def sphericart_benchmark(l_max=10, n_samples=10000, n_tries=100, normalized=False, device="cpu", dtype=torch.float64):
-    
+
+    print(f" ** Timing for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, dtype={dtype}, device={device}")    
     xyz = torch.randn((n_samples, 3), dtype=dtype, device=device)
     sh_calculator = sphericart_torch.SphericalHarmonics(l_max, normalized=normalized)
     
@@ -33,6 +34,8 @@ def sphericart_benchmark(l_max=10, n_samples=10000, n_tries=100, normalized=Fals
         elapsed += time.time()
         time_noderi[i] = elapsed
 
+    print(f" No derivatives: {time_noderi.mean()/n_samples*1e9} ns")
+        
     sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
 
     time_deri = np.zeros(n_tries)
@@ -41,6 +44,8 @@ def sphericart_benchmark(l_max=10, n_samples=10000, n_tries=100, normalized=Fals
         sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
         elapsed += time.time()
         time_deri[i] = elapsed
+
+    print(f" Derivatives:    {time_deri.mean()/n_samples*1e9} ns")
 
     # autograd
     xyz = xyz.clone().detach().type(dtype).to(device).requires_grad_()
@@ -64,11 +69,31 @@ def sphericart_benchmark(l_max=10, n_samples=10000, n_tries=100, normalized=Fals
         elapsed += time.time()
         time_bw[i] = elapsed
 
-    print(f" ** Timing for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, dtype={dtype}, device={device}")
-    print(f" No derivatives: {time_noderi.mean()/n_samples*1e9} ns")
-    print(f" Derivatives:    {time_deri.mean()/n_samples*1e9} ns")
     print(f" Autograd:       {time_fw.mean()/n_samples*1e9} ns")
     print(f" Backprop:       {time_bw.mean()/n_samples*1e9} ns")
+
+
+    if _HAS_E3NN:
+        xyz_tensor = xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
+        sh = e3nn.o3.spherical_harmonics(
+            list(range(l_max + 1)), xyz_tensor, normalize=normalized
+        )  # allow compilation (??)
+        start = time.time()
+        for i in range(n_tries):
+            elapsed = -time.time()
+            sh_e3nn = e3nn.o3.spherical_harmonics(
+                list(range(l_max + 1)), xyz_tensor, normalize=normalized
+            )
+            elapsed += time.time()
+            time_fw[i] = elapsed
+            sph_norm = torch.sum(sh_e3nn**2)
+            elapsed = -time.time()
+            sph_norm.backward()
+            elapsed += time.time()
+            time_bw[i] = elapsed        
+        
+        print(f" E3NN-FW:        {time_fw.mean()/n_samples*1e9} ns")
+        print(f" E3NN-BW:        {time_bw.mean()/n_samples*1e9} ns")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=docstring)
@@ -89,7 +114,8 @@ if __name__ == "__main__":
     sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cpu", dtype=torch.float64)
     sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cpu", dtype=torch.float32)
 
-    sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float64)
-    sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float32)
+    if torch.cuda.is_available():
+        sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float64)
+        sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float32)
 
 
