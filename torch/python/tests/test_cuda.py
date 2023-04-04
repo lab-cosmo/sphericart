@@ -23,8 +23,8 @@ def test_cpu_vs_cuda():
         calculator = sphericart_torch.SphericalHarmonics(l_max=20, normalized=True)
         sph, _ = calculator.compute(xyz)
         sph_cuda, _ = calculator.compute(xyz_cuda)
-        
-        
+
         assert torch.allclose(sph, sph_cuda.to("cpu"))
+
 
 test_cpu_vs_cuda()
