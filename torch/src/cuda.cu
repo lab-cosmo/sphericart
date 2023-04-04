@@ -920,18 +920,18 @@ bool sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, 
     size_t dtype = torch::elementSize(scalar_type);
     auto required_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, dtype, requires_grad);
 
-    bool accepted = required_buff_size <= deviceProp.sharedMemPerBlock;
+    bool accepted = required_buff_size <= deviceProp.sharedMemPerBlockOptin;
 
     // TORCH_CHECK(
-    //     required_buff_size <= deviceProp.sharedMemPerBlock,
+    //     required_buff_size <= deviceProp.sharedMemPerBlockOptin,
     //     "requested shared memory buffer (", required_buff_size, ") exceeds max available ",
-    //     "on device: ", deviceProp.name, " (", deviceProp.sharedMemPerBlock, ")"
+    //     "on device: ", deviceProp.name, " (", deviceProp.sharedMemPerBlockOptin, ")"
     // );
 
     if (!accepted){
-        printf("Warning: requested shared memory buffer (%d) exceeds max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlock, deviceProp.name );
+        printf("Warning: requested shared memory buffer (%d) exceeds max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlockOptin, deviceProp.name );
     } else {
-        printf("Accepted shared memory buffer (%d) max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlock, deviceProp.name );
+        printf("Accepted shared memory buffer (%d) max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlockOptin, deviceProp.name );
         switch (scalar_type) {
         case torch::ScalarType::Double:
             cudaFuncSetAttribute(
