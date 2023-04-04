@@ -85,5 +85,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Process everything.
+    # Run benchmarks
     sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cpu", dtype=torch.float64)
+    sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cpu", dtype=torch.float32)
+
+    sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float64)
+    sphericart_benchmark(args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float32)
+
+
