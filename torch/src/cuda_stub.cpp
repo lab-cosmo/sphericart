@@ -2,11 +2,11 @@
 
 #include <stdexcept>
 
-void sphericart_torch::adjust_cuda_shared_memory(at::ScalarType, int64_t, int64_t, int64_t, bool) {
+bool sphericart_torch::adjust_cuda_shared_memory(at::ScalarType, int64_t, int64_t, int64_t, bool) {
     throw std::runtime_error("sphericart_torch was not compiled with CUDA support");
 }
 
-std::vector<at::Tensor> sphericart_torch::spherical_harmonics_cuda(at::Tensor, at::Tensor, int64_t, bool, int64_t, int64_t) {
+std::vector<at::Tensor> sphericart_torch::spherical_harmonics_cuda(at::Tensor, at::Tensor, int64_t, bool, int64_t, int64_t, bool) {
     throw std::runtime_error("sphericart_torch was not compiled with CUDA support");
 }
 
