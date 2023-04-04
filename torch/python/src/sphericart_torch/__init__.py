@@ -2,19 +2,21 @@ import os
 import sys
 from typing import Optional, Tuple
 
-from importlib.metadata import version as get_version
 
 import torch
+
 
 from ._build_torch_version import BUILD_TORCH_VERSION
 import re
 
+
 def parse_version_string(version_string):
-    match = re.match(r'(\d+)\.(\d+)\.(\d+)', version_string)
+    match = re.match(r"(\d+)\.(\d+)\.(\d+)", version_string)
     if match:
         return tuple(map(int, match.groups()))
     else:
         raise ValueError("Invalid version string format")
+
 
 def torch_version_compatible(actual, required):
     actual_version_tuple = parse_version_string(actual)
@@ -26,6 +28,7 @@ def torch_version_compatible(actual, required):
         return False
     else:
         return True
+
 
 if not torch_version_compatible(torch.__version__, BUILD_TORCH_VERSION):
     raise ImportError(
