@@ -16,10 +16,9 @@
 #include "../../sphericart/src/templates.hpp"
 
 #define _SPH_TOL 1e-6
-#define DTYPE double
 using namespace sphericart;
-
 // shorthand for all-past-1 generic sph only
+template<typename DTYPE>
 inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph, DTYPE* buffers) {    
     if (dsph==nullptr) {
         generic_sph<DTYPE, false, false, 1>(xyz, sph, dsph, n_samples, l_max, prefactors, buffers);
@@ -50,43 +49,8 @@ inline void benchmark(std::string context, size_t n_samples, size_t n_tries, Fn 
     std::cout << " ± " << std << " ns / sample" << std::endl;
 }
 
-
-int main(int argc, char *argv[]) {
-    size_t n_samples = 10000;
-    size_t n_tries = 100;
-    size_t l_max = 10;
-
-    // parse command line options
-    int c;
-    while ((c = getopt (argc, argv, "l:s:t:")) != -1) {
-        switch (c) {
-        case 'l':
-            sscanf(optarg, "%zu", &l_max);
-            break;
-        case 's':
-            sscanf(optarg, "%zu", &n_samples);
-            break;
-        case 't':
-            sscanf(optarg, "%zu", &n_tries);
-            break;
-        case '?':
-            if (optopt == 'c')
-                fprintf (stderr, "Option -%c requires an argument.\n", optopt);
-            else if (isprint (optopt))
-                fprintf (stderr, "Unknown option `-%c'.\n", optopt);
-            else
-                fprintf (stderr,
-                    "Unknown option character `\\x%x'.\n",
-                    optopt);
-            return 1;
-        default:
-            abort ();
-        }
-    }
-
-    std::cout << "Running with n_tries=" << n_tries << ", n_samples=" << n_samples << std::endl;
-    std::cout << "\n============= l_max = " << l_max << " ==============" << std::endl;
-
+template<typename DTYPE>
+void run_timings(int l_max, int n_tries, int n_samples) {
     auto *buffers = new DTYPE[ (l_max + 1) * (l_max + 2) / 2 * 3 * omp_get_max_threads()];
     auto prefactors = std::vector<DTYPE>((l_max+1)*(l_max+2), 0.0);
     compute_sph_prefactors(l_max, prefactors.data());
@@ -100,11 +64,11 @@ int main(int argc, char *argv[]) {
     auto dsph = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
     
     benchmark("Call without derivatives (no hardcoding)", n_samples, n_tries, [&](){
-        compute_generic(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
+        compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
     benchmark("Call with derivatives (no hardcoding)", n_samples, n_tries, [&](){
-        compute_generic(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
+        compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
     std::cout << std::endl;
 
@@ -154,11 +118,11 @@ int main(int argc, char *argv[]) {
 
     compute_sph_prefactors(1, prefactors.data());
     benchmark("L=1 (no h-c) values             ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
+        compute_generic<DTYPE>(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
     benchmark("L=1 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
+        compute_generic<DTYPE>(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=1 hardcoded values            ", n_samples, n_tries, [&](){
@@ -173,11 +137,11 @@ int main(int argc, char *argv[]) {
     //========================================================================//
     compute_sph_prefactors(2, prefactors.data());
     benchmark("L=2 (no h-c) values             ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
+        compute_generic<DTYPE>(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
     benchmark("L=2 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
+        compute_generic<DTYPE>(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=2 hardcoded values            ", n_samples, n_tries, [&](){
@@ -192,11 +156,11 @@ int main(int argc, char *argv[]) {
     //========================================================================//
     compute_sph_prefactors(3, prefactors.data());
     benchmark("L=3 (no h-c) values             ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
+        compute_generic<DTYPE>(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
     benchmark("L=3 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
+        compute_generic<DTYPE>(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=3 hardcoded values            ", n_samples, n_tries, [&](){
@@ -211,11 +175,11 @@ int main(int argc, char *argv[]) {
     //========================================================================//
     compute_sph_prefactors(4, prefactors.data());
     benchmark("L=4 (no h-c) values             ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
+        compute_generic<DTYPE>(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
     benchmark("L=4 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
+        compute_generic<DTYPE>(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=4 hardcoded values            ", n_samples, n_tries, [&](){
@@ -230,11 +194,11 @@ int main(int argc, char *argv[]) {
     //========================================================================//
     compute_sph_prefactors(5, prefactors.data());
     benchmark("L=5 (no h-c) values             ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
+        compute_generic<DTYPE>(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
     benchmark("L=5 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
+        compute_generic<DTYPE>(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=5 hardcoded values            ", n_samples, n_tries, [&](){
@@ -249,11 +213,11 @@ int main(int argc, char *argv[]) {
     //========================================================================//
     compute_sph_prefactors(6, prefactors.data());
     benchmark("L=6 (no h-c) values             ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
+        compute_generic<DTYPE>(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
     benchmark("L=6 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
+        compute_generic<DTYPE>(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=6 hardcoded values            ", n_samples, n_tries, [&](){
@@ -266,5 +230,50 @@ int main(int argc, char *argv[]) {
     std::cout << std::endl;
 
     free(buffers);
+}
+
+
+int main(int argc, char *argv[]) {
+    size_t n_samples = 10000;
+    size_t n_tries = 100;
+    size_t l_max = 10;
+
+    // parse command line options
+    int c;
+    while ((c = getopt (argc, argv, "l:s:t:")) != -1) {
+        switch (c) {
+        case 'l':
+            sscanf(optarg, "%zu", &l_max);
+            break;
+        case 's':
+            sscanf(optarg, "%zu", &n_samples);
+            break;
+        case 't':
+            sscanf(optarg, "%zu", &n_tries);
+            break;
+        case '?':
+            if (optopt == 'c')
+                fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+            else if (isprint (optopt))
+                fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+            else
+                fprintf (stderr,
+                    "Unknown option character `\\x%x'.\n",
+                    optopt);
+            return 1;
+        default:
+            abort ();
+        }
+    }
+
+    std::cout << "Running with n_tries=" << n_tries << ", n_samples=" << n_samples << std::endl;
+    std::cout << "\n============= l_max = " << l_max << " ==============" << std::endl;
+
+    std::cout << "****************** DOUBLE PRECISION ******************" << std::endl;
+    run_timings<double>(l_max, n_tries, n_samples);
+
+    std::cout << "****************** SINGLE PRECISION ******************" << std::endl;
+    run_timings<float>(l_max, n_tries, n_samples);
+
     return 0;
 }
