@@ -1,3 +1,9 @@
+/** @file benchmarks.cpp
+ *  @brief benchmarks for the C++ (CPU) API
+ * 
+ * Compares cost of evaluation with and without hardcoding, and with and without normalization
+*/
+
 #include <unistd.h>
 #include <sys/time.h>
 
@@ -6,21 +12,20 @@
 #include <iostream>
 
 #include "sphericart.hpp"
-
-#include "../src/templates.hpp"
+#include "../../sphericart/src/omp_support.h"
+#include "../../sphericart/src/templates.hpp"
 
 #define _SPH_TOL 1e-6
 #define DTYPE double
 using namespace sphericart;
 
 // shorthand for all-past-1 generic sph only
-inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph) {
-    DTYPE * buffers = new DTYPE[100000]; /// TODO remove all this shit
+inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph, DTYPE* buffers) {    
     if (dsph==nullptr) {
         generic_sph<DTYPE, false, false, 1>(xyz, sph, dsph, n_samples, l_max, prefactors, buffers);
     } else {
         generic_sph<DTYPE, true, false, 1>(xyz, sph, dsph, n_samples, l_max, prefactors, buffers);
-    }
+    }    
 }
 
 template<typename Fn>
@@ -82,6 +87,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Running with n_tries=" << n_tries << ", n_samples=" << n_samples << std::endl;
     std::cout << "\n============= l_max = " << l_max << " ==============" << std::endl;
 
+    auto *buffers = new DTYPE[ (l_max + 1) * (l_max + 2) / 2 * 3 * omp_get_max_threads()];
     auto prefactors = std::vector<DTYPE>((l_max+1)*(l_max+2), 0.0);
     compute_sph_prefactors(l_max, prefactors.data());
 
@@ -93,12 +99,12 @@ int main(int argc, char *argv[]) {
     auto sph = std::vector<DTYPE>(n_samples*(l_max+1)*(l_max+1), 0.0);
     auto dsph = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
     
-    benchmark("Call without derivatives", n_samples, n_tries, [&](){
-        compute_generic(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    benchmark("Call without derivatives (no hardcoding)", n_samples, n_tries, [&](){
+        compute_generic(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
-    benchmark("Call with derivatives", n_samples, n_tries, [&](){
-        compute_generic(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    benchmark("Call with derivatives (no hardcoding)", n_samples, n_tries, [&](){
+        compute_generic(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
     std::cout << std::endl;
 
@@ -112,59 +118,33 @@ int main(int argc, char *argv[]) {
     SphericalHarmonics<DTYPE> SH(l_max, false);
     sxyz[0] = xyz[0]; sxyz[1] = xyz[1]; sxyz[2] = xyz[2]; 
 
-    benchmark("Sample without derivatives", n_samples, n_tries, [&](){
+    // single-sample evaluation    
+    benchmark("Sample without derivatives", 1, n_tries, [&](){
         SH.compute(sxyz, ssph);
     });
 
-    benchmark("Sample with derivatives", n_samples, n_tries, [&](){
+    benchmark("Sample with derivatives", 1, n_tries, [&](){
         SH.compute(sxyz, ssph, sdsph);
     });
 
     std::cout << std::endl;
     
-    benchmark("Call without derivatives (hybrid)", n_samples, n_tries, [&](){
+    benchmark("Call without derivatives", n_samples, n_tries, [&](){
         SH.compute(xyz, sph1);
     });
 
-    benchmark("Call with derivatives (hybrid)", n_samples, n_tries, [&](){
+    benchmark("Call with derivatives", n_samples, n_tries, [&](){
         SH.compute(xyz, sph1, dsph1);
     });
     }
-
-    std::cout << std::endl;
     
-    int size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
-    int size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
-    for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
-        for (size_t l=0; l<(l_max+1); l++) {
-            for (int m=-static_cast<int>(l); m<=static_cast<int>(l); m++) {
-                if (fabs(sph[size2*i_sample+l*l+l+m]/sph1[size2*i_sample+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
-                    printf("SPH: %e, %e\n", sph[size2*i_sample+l*l+l+m], sph1[size2*i_sample+l*l+l+m]);
-                }
-                if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
-                    printf("DxSPH: %e, %e\n", dsph[size3*i_sample+size2*0+l*l+l+m], dsph1[size3*i_sample+size2*0+l*l+l+m]);
-                }
-                if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
-                    printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
-                }
-                if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
-                    printf("DzSPH: %e, %e\n", dsph[size3*i_sample+size2*2+l*l+l+m], dsph1[size3*i_sample+size2*2+l*l+l+m]);
-                }
-            }
-        }
-    }
-
     {
     SphericalHarmonics<DTYPE> SH(l_max, true);
-    benchmark("Call without derivatives (hybrid, normalized)", n_samples, n_tries, [&](){
+    benchmark("Call without derivatives (normalized)", n_samples, n_tries, [&](){
         SH.compute(xyz, sph1);
     });
 
-    benchmark("Call with derivatives (hybrid, normalized)", n_samples, n_tries, [&](){
+    benchmark("Call with derivatives (normalized)", n_samples, n_tries, [&](){
         SH.compute(xyz, sph1, dsph1);
     });
     }
@@ -173,12 +153,12 @@ int main(int argc, char *argv[]) {
     std::cout << "================ Low-l timings ===========" << std::endl;
 
     compute_sph_prefactors(1, prefactors.data());
-    benchmark("L=1 values                      ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    benchmark("L=1 (no h-c) values             ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
-    benchmark("L=1 values+derivatives          ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    benchmark("L=1 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 1, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=1 hardcoded values            ", n_samples, n_tries, [&](){
@@ -192,12 +172,12 @@ int main(int argc, char *argv[]) {
 
     //========================================================================//
     compute_sph_prefactors(2, prefactors.data());
-    benchmark("L=2 values                      ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    benchmark("L=2 (no h-c) values             ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
-    benchmark("L=2 values+derivatives          ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    benchmark("L=2 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 2, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=2 hardcoded values            ", n_samples, n_tries, [&](){
@@ -211,12 +191,12 @@ int main(int argc, char *argv[]) {
 
     //========================================================================//
     compute_sph_prefactors(3, prefactors.data());
-    benchmark("L=3 values                      ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    benchmark("L=3 (no h-c) values             ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
-    benchmark("L=3 values+derivatives          ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    benchmark("L=3 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 3, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=3 hardcoded values            ", n_samples, n_tries, [&](){
@@ -230,12 +210,12 @@ int main(int argc, char *argv[]) {
 
     //========================================================================//
     compute_sph_prefactors(4, prefactors.data());
-    benchmark("L=4 values                      ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    benchmark("L=4 (no h-c) values             ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
-    benchmark("L=4 values+derivatives          ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    benchmark("L=4 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 4, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=4 hardcoded values            ", n_samples, n_tries, [&](){
@@ -249,12 +229,12 @@ int main(int argc, char *argv[]) {
 
     //========================================================================//
     compute_sph_prefactors(5, prefactors.data());
-    benchmark("L=5 values                      ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    benchmark("L=5 (no h-c) values             ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
-    benchmark("L=5 values+derivatives          ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    benchmark("L=5 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 5, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=5 hardcoded values            ", n_samples, n_tries, [&](){
@@ -268,12 +248,12 @@ int main(int argc, char *argv[]) {
 
     //========================================================================//
     compute_sph_prefactors(6, prefactors.data());
-    benchmark("L=6 values                      ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), nullptr);
+    benchmark("L=6 (no h-c) values             ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
 
-    benchmark("L=6 values+derivatives          ", n_samples, n_tries, [&](){
-        compute_generic(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), dsph.data());
+    benchmark("L=6 (no h-c) values+derivatives ", n_samples, n_tries, [&](){
+        compute_generic(n_samples, 6, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
     });
 
     benchmark("L=6 hardcoded values            ", n_samples, n_tries, [&](){
@@ -285,31 +265,6 @@ int main(int argc, char *argv[]) {
     });
     std::cout << std::endl;
 
-    l_max=6;
-    size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
-    size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
-    for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
-        for (size_t l=0; l<(l_max+1); l++) {
-            for (int m=-static_cast<int>(l); m<=static_cast<int>(l); m++) {
-                if (fabs(sph[size2*i_sample+l*l+l+m]/sph1[size2*i_sample+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
-                    printf("SPH: %e, %e\n", sph[size2*i_sample+l*l+l+m], sph1[size2*i_sample+l*l+l+m]);
-                }
-                if (fabs(dsph[size3*i_sample+size2*0+l*l+l+m]/dsph1[size3*i_sample+size2*0+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
-                    printf("DxSPH: %e, %e\n", dsph[size3*i_sample+size2*0+l*l+l+m], dsph1[size3*i_sample+size2*0+l*l+l+m]);
-                }
-                if (fabs(dsph[size3*i_sample+size2*1+l*l+l+m]/dsph1[size3*i_sample+size2*1+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
-                    printf("DySPH: %e, %e\n", dsph[size3*i_sample+size2*1+l*l+l+m],dsph1[size3*i_sample+size2*1+l*l+l+m]);
-                }
-                if (fabs(dsph[size3*i_sample+size2*2+l*l+l+m]/dsph1[size3*i_sample+size2*2+l*l+l+m]-1)>_SPH_TOL) {
-                    printf("Problem detected at i_sample = %zu, L = %zu, m = %d \n", i_sample, l, m);
-                    printf("DzSPH: %e, %e\n", dsph[size3*i_sample+size2*2+l*l+l+m], dsph1[size3*i_sample+size2*2+l*l+l+m]);
-                }
-            }
-        }
-    }
-
+    free(buffers);
     return 0;
 }
