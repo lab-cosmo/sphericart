@@ -34,7 +34,7 @@ def sphericart_benchmark(l_max=10, n_samples=10000, n_tries=100, normalized=Fals
         elapsed += time.time()
         time_noderi[i] = elapsed
 
-    print(f" No derivatives: {time_noderi.mean()/n_samples*1e9} ns")
+    print(f" No derivatives: {time_noderi.mean()/n_samples*1e9: 10.1f} ns/sample")
         
     sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
 
@@ -45,7 +45,7 @@ def sphericart_benchmark(l_max=10, n_samples=10000, n_tries=100, normalized=Fals
         elapsed += time.time()
         time_deri[i] = elapsed
 
-    print(f" Derivatives:    {time_deri.mean()/n_samples*1e9} ns")
+    print(f" Derivatives:    {time_deri.mean()/n_samples*1e9: 10.1f} ns/sample")
 
     # autograd
     xyz = xyz.clone().detach().type(dtype).to(device).requires_grad_()
@@ -69,8 +69,8 @@ def sphericart_benchmark(l_max=10, n_samples=10000, n_tries=100, normalized=Fals
         elapsed += time.time()
         time_bw[i] = elapsed
 
-    print(f" Autograd:       {time_fw.mean()/n_samples*1e9} ns")
-    print(f" Backprop:       {time_bw.mean()/n_samples*1e9} ns")
+    print(f" Autograd:       {time_fw.mean()/n_samples*1e9: 10.1f} ns/sample")
+    print(f" Backprop:       {time_bw.mean()/n_samples*1e9: 10.1f} ns/sample")
 
 
     if _HAS_E3NN:
@@ -92,15 +92,16 @@ def sphericart_benchmark(l_max=10, n_samples=10000, n_tries=100, normalized=Fals
             elapsed += time.time()
             time_bw[i] = elapsed        
         
-        print(f" E3NN-FW:        {time_fw.mean()/n_samples*1e9} ns")
-        print(f" E3NN-BW:        {time_bw.mean()/n_samples*1e9} ns")
+        print(f" E3NN-FW:        {time_fw.mean()/n_samples*1e9: 10.1f} ns/sample")
+        print(f" E3NN-BW:        {time_bw.mean()/n_samples*1e9: 10.1f} ns/sample")
+    print("****************************************************************")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=docstring)
 
     parser.add_argument("-l", type=int, default=10, help="maximum angular momentum")
     parser.add_argument("-s", type=int, default=1000, help="number of samples")
-    parser.add_argument("-t", type=int, default=100, help="number of runs")
+    parser.add_argument("-t", type=int, default=100, help="number of runs/sample")
     parser.add_argument(
         "--normalized",
         action="store_true",
