@@ -1072,7 +1072,7 @@ __global__ void backward_kernel(
     }
 
     // reduce across the sub-warp
-    for (int offset = 2; offset > 0; offset /= 2)
+    for (int offset = blockDim.x/2; offset > 0; offset /= 2)
         sum += __shfl_down_sync(FULL_MASK, sum, offset);
 
     if (threadIdx.x == 0) {
