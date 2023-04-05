@@ -89,26 +89,28 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph, torch::
     auto n_samples = xyz.sizes()[0];
     auto n_sph = sph_grad.sizes()[1];
     if (xyz.dtype() == c10::kDouble) {
-        auto xyz_grad_p = xyz_grad.accessor<double, 2>();
-        auto sph_grad_p = sph_grad.accessor<double, 2>();
-        auto dsph_p = dsph.accessor<double, 3>();
+        auto xyz_grad_p = xyz_grad.data_ptr<double>();
+        auto sph_grad_p = sph_grad.data_ptr<double>();
+        auto dsph_p = dsph.data_ptr<double>();
 
+        #pragma omp parallel for
         for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
             for (size_t spatial=0; spatial<3; spatial++) {
                 for (int i_sph=0; i_sph<n_sph; i_sph++) {
-                    xyz_grad_p[i_sample][spatial] += sph_grad_p[i_sample][i_sph] * dsph_p[i_sample][spatial][i_sph];
+                    xyz_grad_p[3*i_sample+spatial] += sph_grad_p[n_sph*i_sample+i_sph] * dsph_p[n_sph*3*i_sample+n_sph*spatial+i_sph];
                 }
             }
         }
     } else if (xyz.dtype() == c10::kFloat) {
-        auto xyz_grad_p = xyz_grad.accessor<float, 2>();
-        auto sph_grad_p = sph_grad.accessor<float, 2>();
-        auto dsph_p = dsph.accessor<float, 3>();
+        auto xyz_grad_p = xyz_grad.data_ptr<float>();
+        auto sph_grad_p = sph_grad.data_ptr<float>();
+        auto dsph_p = dsph.data_ptr<float>();
 
+        #pragma omp parallel for
         for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
             for (size_t spatial=0; spatial<3; spatial++) {
                 for (int i_sph=0; i_sph<n_sph; i_sph++) {
-                    xyz_grad_p[i_sample][spatial] += sph_grad_p[i_sample][i_sph] * dsph_p[i_sample][spatial][i_sph];
+                    xyz_grad_p[3*i_sample+spatial] += sph_grad_p[n_sph*i_sample+i_sph] * dsph_p[n_sph*3*i_sample+n_sph*spatial+i_sph];
                 }
             }
         }

@@ -7,6 +7,13 @@ endif()
 
 project(sphericart_torch CXX)
 
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(sphericart_torch PUBLIC OpenMP::OpenMP_CXX)
+endif()
+if(COMPILER_SUPPORTS_WPRAGMAS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+endif()
+
 include(CheckLanguage)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
