@@ -26,6 +26,7 @@ def sphericart_benchmark(
     normalized=False,
     device="cpu",
     dtype=torch.float64,
+    compare=False,
 ):
     print(
         f" ** Timing for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, dtype={dtype}, device={device}"
@@ -81,7 +82,8 @@ def sphericart_benchmark(
     print(f" Autograd:       {time_fw.mean()/n_samples*1e9: 10.1f} ns/sample")
     print(f" Backprop:       {time_bw.mean()/n_samples*1e9: 10.1f} ns/sample")
 
-    if _HAS_E3NN:
+    
+    if compare and _HAS_E3NN:
         xyz_tensor = (
             xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
         )
@@ -119,21 +121,32 @@ if __name__ == "__main__":
         default=False,
         help="compute normalized spherical harmonics",
     )
+    parser.add_argument(
+        "--compare",
+        action="store_true",
+        default=False,
+        help="compare timings with other codes, if installed",
+    )
+
 
     args = parser.parse_args()
 
     # Run benchmarks
     sphericart_benchmark(
-        args.l, args.s, args.t, args.normalized, device="cpu", dtype=torch.float64
+        args.l, args.s, args.t, args.normalized, device="cpu", dtype=torch.float64, 
+        compare=args.compare
     )
     sphericart_benchmark(
-        args.l, args.s, args.t, args.normalized, device="cpu", dtype=torch.float32
+        args.l, args.s, args.t, args.normalized, device="cpu", dtype=torch.float32,
+        compare=args.compare
     )
 
     if torch.cuda.is_available():
         sphericart_benchmark(
-            args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float64
+            args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float64,
+            compare=args.compare
         )
         sphericart_benchmark(
-            args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float32
+            args.l, args.s, args.t, args.normalized, device="cuda", dtype=torch.float32,
+            compare=args.compare
         )
