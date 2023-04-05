@@ -19,15 +19,15 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # scaled (default) and normalized (standard Ylm) harmonics.
 
     # ===== set up the calculation =====
-    
+
     # initializes the Cartesian coordinates of points
     xyz = np.random.rand(n_samples, 3)
 
     # float32 version
     xyz_f = np.array(xyz, dtype=np.float32)
-    
+
     # ===== API calls =====
-    
+
     sh_calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
 
     # without gradients

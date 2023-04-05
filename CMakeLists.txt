@@ -16,10 +16,11 @@ endif()
 add_subdirectory(sphericart)
 
 OPTION(SPHERICART_BUILD_TORCH "Build the torch bindings" OFF)
-OPTION(SPHERICART_BUILD_EXAMPLES "Build and run examples for Sphericart" ON) 
+OPTION(SPHERICART_BUILD_EXAMPLES "Build and run examples and benchmarks for Sphericart" ON) 
 
 if (SPHERICART_BUILD_EXAMPLES)
     add_subdirectory(examples)
+    add_subdirectory(benchmarks)
 endif()
 
 if (SPHERICART_BUILD_TORCH)
