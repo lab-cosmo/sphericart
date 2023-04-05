@@ -1041,11 +1041,52 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     }
 }
 
+#define FULL_MASK 0xffffffff
+
+template <typename scalar_t>
+__global__ void backward_kernel(
+    torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph,
+    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> sph_grad,
+    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> xyz_grad
+) {
+
+        /*
+        for (int spatial = 0; spatial < 3; spatial++) {
+            auto gradient_slice = dsph.index(
+                {torch::indexing::Slice(), spatial, torch::indexing::Slice()}
+            );
+            xyz_grad.index_put_(
+                {torch::indexing::Slice(), spatial},
+                torch::sum(sph_grad * gradient_slice, 1)
+            );
+        }*/
+    
+    int atom_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    
+    int spatial = blockIdx.y;
+
+    scalar_t sum = 0.0;
+
+    for (int j = threadIdx.x; j < sph_grad.size(1); j +=blockDim.x){
+        sum +=  dsph[atom_idx][spatial][j] * sph_grad[atom_idx][j];
+    }
+
+    // reduce across the sub-warp
+    for (int offset = 2; offset > 0; offset /= 2)
+        sum += __shfl_down_sync(FULL_MASK, sum, offset);
+
+    if (threadIdx.x == 0) {
+        xyz_grad[atom_idx][spatial]  = sum;
+    }
+
+}
+
 torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     torch::Tensor xyz,
     torch::Tensor dsph,
     torch::Tensor sph_grad
 ) {
+
     if (!xyz.device().is_cuda()) {
         throw std::runtime_error("internal error: CUDA version called on non-CUDA tensor");
     }
@@ -1055,6 +1096,24 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     if (xyz.requires_grad()) {
         xyz_grad = torch::empty_like(xyz);
 
+        dim3 grid_dim(4, 32);
+
+        auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
+
+        dim3 block_dim(find_num_blocks(xyz.size(0), 32), 3);
+
+        AT_DISPATCH_FLOATING_TYPES(
+        xyz.scalar_type(), "spherical_harmonics_backward_cuda", ([&] {
+           
+            backward_kernel<<<block_dim, grid_dim>>>(
+                dsph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>(),
+                sph_grad.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
+                xyz_grad.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>());
+        }));
+
+    cudaDeviceSynchronize();
+
+        /*
         for (int spatial = 0; spatial < 3; spatial++) {
             auto gradient_slice = dsph.index(
                 {torch::indexing::Slice(), spatial, torch::indexing::Slice()}
@@ -1063,7 +1122,7 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
                 {torch::indexing::Slice(), spatial},
                 torch::sum(sph_grad * gradient_slice, 1)
             );
-        }
+        }*/
     }
 
     return xyz_grad;

@@ -257,6 +257,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     auto saved_variables = ctx->get_saved_variables();
     auto xyz = saved_variables[0];
     auto dsph = saved_variables[1];
+
     auto sph_grad = grad_outputs[0];
 
     auto xyz_grad = torch::Tensor();
