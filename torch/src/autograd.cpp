@@ -20,11 +20,11 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(torch::Tensor xyz
 
     auto sph_length = n_samples * (l_max_ + 1) * (l_max_ + 1);
     auto dsph_length = n_samples * 3 * (l_max_ + 1) * (l_max_ + 1);
-    auto sph = torch::zeros({n_samples, (l_max_ + 1) * (l_max_ + 1)}, options);
+    auto sph = torch::empty({n_samples, (l_max_ + 1) * (l_max_ + 1)}, options);
 
     if (xyz.dtype() == c10::kDouble) {
         if (do_gradients) {
-            auto dsph = torch::zeros({n_samples, 3, (l_max_ + 1) * (l_max_ + 1)}, options);
+            auto dsph = torch::empty({n_samples, 3, (l_max_ + 1) * (l_max_ + 1)}, options);
 
             calculator_double_.compute_array(
                 xyz.data_ptr<double>(),
@@ -47,7 +47,7 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(torch::Tensor xyz
         }
     } else if (xyz.dtype() == c10::kFloat) {
         if (do_gradients) {
-            auto dsph = torch::zeros({n_samples, 3, (l_max_ + 1) * (l_max_ + 1)}, options);
+            auto dsph = torch::empty({n_samples, 3, (l_max_ + 1) * (l_max_ + 1)}, options);
             calculator_float_.compute_array(
                 xyz.data_ptr<float>(),
                 n_samples * 3,
