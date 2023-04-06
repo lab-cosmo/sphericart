@@ -1,7 +1,7 @@
 import math
 import os
 import sys
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import torch
 
@@ -83,32 +83,45 @@ class SphericalHarmonics:
         else:
             return self._sph.compute(xyz), None
 
-def e3nn_wrapper(l_list, x, normalize, normalization='integral'):
-    """ Provides an interface that is similar to `e3nn.o3.spherical_harmonics()`
-    that actually calls SphericalHarmonics.compute() """
+
+def e3nn_wrapper(
+    l_list: Union[List[int], int],
+    x: torch.Tensor,
+    normalize: Optional[bool] = False,
+    normalization: Optional[str] = "integral",
+) -> torch.Tensor:
+    """Provides an interface that is similar to `e3nn.o3.spherical_harmonics()`
+    but uses SphericalHarmonics.compute(). Uses the same ordering of the
+    [x,y,z] axes, and supports the same options for input and harmonics
+    normalization. However,
+    """
 
     if not hasattr(l_list, "__len__"):
         l_list = [l_list]
     l_max = max(l_list)
-    sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:,[2,0,1]])[0]
-    
+    sh = SphericalHarmonics(l_max, normalized=normalize).compute(
+        x[:, [2, 0, 1]]
+    )[0]
+
     if normalization != "integral":
-        sh *= math.sqrt(4*math.pi)
+        sh *= math.sqrt(4 * math.pi)
 
     sh_list = []
     for l in l_list:
-        shl = sh[:,l*l:(l+1)*(l+1)]
+        shl = sh[:, l * l : (l + 1) * (l + 1)]
         if normalization == "norm":
-            shl *= math.sqrt(1/(2*l+1))
+            shl *= math.sqrt(1 / (2 * l + 1))
         sh_list.append(shl)
     sh = torch.cat(sh_list, dim=-1)
 
     return sh
-  
+
+
 def patch_e3nn(e3nn_module):
-    """ Patches the e3nn module so that our wrapper is called in lieu of the 
-    built-in function. """
-    
+    """Patches the e3nn module so that `sphericart_torch.e3nn_wrapper`
+    is called in lieu of the built-in function."""
+
     e3nn_module.o3.spherical_harmonics = e3nn_wrapper
+
 
 __all__ = ["SphericalHarmonics", "patch_e3nn"]
