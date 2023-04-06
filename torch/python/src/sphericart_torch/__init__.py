@@ -1,3 +1,4 @@
+import math
 import os
 import sys
 from typing import Optional, Tuple
@@ -82,5 +83,30 @@ class SphericalHarmonics:
         else:
             return self._sph.compute(xyz), None
 
+def e3nn_wrapper(l_list, x, normalize, normalization='integral'):
+    """ Provides an interface that is similar to `e3nn.o3.spherical_harmonics()`
+    that actually calls SphericalHarmonics.compute() """
 
-__all__ = ["SphericalHarmonics"]
+    if not hasattr(l_list, "__len__"):
+        l_list = [l_list]
+    l_max = max(l_list)
+    sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:,[2,0,1]])[0]
+    
+    if normalization == "integral":
+        sh /= math.sqrt(4*math.pi)
+    sh_list = []
+    for l in l_list:
+        shl = sh[:,l*l:(l+1)*(l+1)]
+        if normalization == "norm":
+            shl *= math.sqrt(2*l+1)
+        sh_list.append(shl)
+        sh = torch.cat(sh_list, dim=-1)
+    return sh
+  
+def patch_e3nn(e3nn_module):
+    """ Patches the e3nn module so that our wrapper is called in lieu of the 
+    built-in function. """
+    
+    e3nn_module.o3.spherical_harmonics = e3nn_wrapper
+
+__all__ = ["SphericalHarmonics", "patch_e3nn"]
