@@ -92,15 +92,17 @@ def e3nn_wrapper(l_list, x, normalize, normalization='integral'):
     l_max = max(l_list)
     sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:,[2,0,1]])[0]
     
-    if normalization == "integral":
-        sh /= math.sqrt(4*math.pi)
+    if normalization != "integral":
+        sh *= math.sqrt(4*math.pi)
+
     sh_list = []
     for l in l_list:
         shl = sh[:,l*l:(l+1)*(l+1)]
         if normalization == "norm":
-            shl *= math.sqrt(2*l+1)
+            shl *= math.sqrt(1/(2*l+1))
         sh_list.append(shl)
-        sh = torch.cat(sh_list, dim=-1)
+    sh = torch.cat(sh_list, dim=-1)
+
     return sh
   
 def patch_e3nn(e3nn_module):
