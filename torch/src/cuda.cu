@@ -975,20 +975,20 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     int n_total = (l_max + 1) * (l_max + 1);
 
-    auto sph = torch::zeros(
+    auto sph = torch::empty(
         {n_total, xyz.size(0)},
         torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
     );
 
     torch::Tensor d_sph;
     if (xyz.requires_grad() || gradients) {
-        d_sph = torch::zeros(
+        d_sph = torch::empty(
             {n_total, 3, xyz.size(0)},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
         );
     } else {
         // just so accessor doesn't complain
-        d_sph = torch::zeros(
+        d_sph = torch::empty(
             {1, 1, 1},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
         );
