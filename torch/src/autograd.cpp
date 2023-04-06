@@ -72,7 +72,7 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(torch::Tensor xyz
 }
 
 static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad) {
-    auto xyz_grad = torch::zeros_like(xyz);
+    auto xyz_grad = torch::empty_like(xyz);
 
     if (!sph_grad.device().is_cpu() || !xyz.device().is_cpu() || !dsph.device().is_cpu()) {
         throw std::runtime_error("internal error: called CPU version on non-CPU tensor");
@@ -96,9 +96,11 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph, torch::
         #pragma omp parallel for
         for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
             for (size_t spatial=0; spatial<3; spatial++) {
+                double accumulated_value = 0.0;
                 for (int i_sph=0; i_sph<n_sph; i_sph++) {
-                    xyz_grad_p[3*i_sample+spatial] += sph_grad_p[n_sph*i_sample+i_sph] * dsph_p[n_sph*3*i_sample+n_sph*spatial+i_sph];
+                    accumulated_value += sph_grad_p[n_sph*i_sample+i_sph] * dsph_p[n_sph*3*i_sample+n_sph*spatial+i_sph];
                 }
+                xyz_grad_p[3*i_sample+spatial] = accumulated_value;
             }
         }
     } else if (xyz.dtype() == c10::kFloat) {
@@ -109,9 +111,11 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph, torch::
         #pragma omp parallel for
         for (size_t i_sample=0; i_sample<n_samples; i_sample++) {
             for (size_t spatial=0; spatial<3; spatial++) {
+                float accumulated_value = 0.0f;
                 for (int i_sph=0; i_sph<n_sph; i_sph++) {
-                    xyz_grad_p[3*i_sample+spatial] += sph_grad_p[n_sph*i_sample+i_sph] * dsph_p[n_sph*3*i_sample+n_sph*spatial+i_sph];
+                    accumulated_value += sph_grad_p[n_sph*i_sample+i_sph] * dsph_p[n_sph*3*i_sample+n_sph*spatial+i_sph];
                 }
+                xyz_grad_p[3*i_sample+spatial] = accumulated_value;
             }
         }
     } else {
