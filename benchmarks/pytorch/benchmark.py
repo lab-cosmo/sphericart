@@ -8,15 +8,24 @@ import torch
 
 docstring = """
 Benchmarks for the torch implementation of ``sphericart``.
-Compares with E3NN if present.
+Compares with e3nn and e3nn_jax if those are present 
+and if the comparison is requested.
 """
 
 try:
     import e3nn
-
     _HAS_E3NN = True
 except ImportError:
     _HAS_E3NN = False
+
+try:
+    import jax
+    jax.config.update("jax_enable_x64", True)  # enable float64 for jax
+    import jax.numpy as jnp
+    import e3nn_jax
+    _HAS_E3NN_JAX = True
+except ImportError:
+    _HAS_E3NN_JAX = False
 
 
 def sphericart_benchmark(
@@ -109,6 +118,46 @@ def sphericart_benchmark(
         # print("First-calls timings / sec.: \n", time_fw[:10])
         print(
             f" E3NN-BW:        {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        )
+        # print("First-calls timings / sec.: \n", time_bw[:10])
+
+    if compare and _HAS_E3NN_JAX:
+        dtype = (np.float64 if dtype == torch.float64 else np.float32)
+        xyz_tensor = jnp.asarray(
+            xyz[:, [1, 2, 0]].clone().detach().cpu().numpy(), dtype=dtype
+        )  # Automatically goes to gpu if present
+        if device == "cpu": xyz_tensor = jax.device_put(xyz_tensor, jax.devices("cpu")[0])  # Force back to cpu
+
+        irreps = e3nn_jax.Irreps([e3nn_jax.Irrep(l, 1) for l in range(l_max+1)])
+
+        def loss_fn(xyz_tensor):
+            sh_e3nn = e3nn_jax.spherical_harmonics(
+                irreps, xyz_tensor, normalize=normalized
+            )
+            loss = jnp.sum(sh_e3nn.array)
+            return loss
+        
+        loss_grad_fn = jax.grad(loss_fn)
+
+        for i in range(n_tries+10):
+            elapsed = -time.time()
+            loss = loss_fn(xyz_tensor)
+            elapsed += time.time()
+            time_fw[i] = elapsed
+
+            elapsed = -time.time()
+            loss_grad = loss_grad_fn(xyz_tensor)
+            elapsed += time.time()
+            time_bw[i] = elapsed
+
+        print(
+            f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        )
+        # print("First-calls timings / sec.: \n", time_fw[:10])
+        print(
+            f" E3NN-JAX-BW:    {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
         # print("First-calls timings / sec.: \n", time_bw[:10])
