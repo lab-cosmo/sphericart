@@ -12,7 +12,9 @@ Compares with E3NN if present.
 """
 
 try:
-    import e3nn
+    import jax
+    import jax.numpy as jnp
+    import e3nn_jax
 
     _HAS_E3NN = True
 except ImportError:
@@ -86,32 +88,36 @@ def sphericart_benchmark(
     )
 
     if compare and _HAS_E3NN:
-        xyz_tensor = (
-            xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
+        xyz_tensor = jnp.asarray(
+            xyz[:, [1, 2, 0]].clone().detach().type(dtype).cpu().numpy()
         )
-        for i in range(n_tries+10):
-            elapsed = -time.time()
-            sh_e3nn = e3nn.o3.spherical_harmonics(
-                list(range(l_max + 1)), xyz_tensor, normalize=normalized
-            )
-            elapsed += time.time()
-            time_fw[i] = elapsed
-            sph_sum = torch.sum(sh_e3nn)
-            elapsed = -time.time()
-            sph_sum.backward()
-            elapsed += time.time()
-            time_bw[i] = elapsed
+        """
+        irreps = [f"1x{l}e + " for l in range(l_max+1)]
+        total_irreps = ""
+        for irrep in irreps:
+            total_irreps += irrep
+        irreps = e3nn_jax.Irreps(
+            total_irreps[:-3]
+        )
+        """
+        # Output only highest SH to be nice to e3nn, slower otherwise (uncomment above)
+        irreps = e3nn_jax.Irreps(f"1x{l_max}e")
 
-        print(
-            f" E3NN-FW:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+        if device == "cpu":
+            for i in range(n_tries+10):
+                elapsed = -time.time()
+                sh_e3nn = e3nn_jax.spherical_harmonics(
+                    irreps, xyz_tensor, normalize=normalized
+                )
+                elapsed += time.time()
+                time_fw[i] = elapsed
+
+            print(
+                f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
-        )
-        # print("First-calls timings / sec.: \n", time_fw[:10])
-        print(
-            f" E3NN-BW:        {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
-        )
-        # print("First-calls timings / sec.: \n", time_bw[:10])
+            )
+        else:
+            pass
     print("*********************************************************************************************")
 
 
