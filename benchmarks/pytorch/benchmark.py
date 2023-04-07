@@ -103,7 +103,7 @@ def sphericart_benchmark(
         for i in range(n_tries+10):
             elapsed = -time.time()
             sh_e3nn = e3nn.o3.spherical_harmonics(
-                list(range(l_max + 1)), xyz_tensor, normalize=normalized
+                list(range(l_max + 1)), xyz_tensor, normalize=normalized, normalization="integral"
             )
             elapsed += time.time()
             time_fw[i] = elapsed
@@ -137,12 +137,12 @@ def sphericart_benchmark(
 
         def loss_fn(xyz_tensor):
             sh_e3nn = e3nn_jax.spherical_harmonics(
-                irreps, xyz_tensor, normalize=normalized
+                irreps, xyz_tensor, normalize=normalized, normalization="integral"
             )
             loss = jnp.sum(sh_e3nn.array)
             return loss
         
-        loss_grad_fn = jax.grad(loss_fn)
+        # loss_grad_fn = jax.grad(loss_fn)
 
         for i in range(n_tries+10):
             elapsed = -time.time()
@@ -155,7 +155,7 @@ def sphericart_benchmark(
             elapsed += time.time()
             time_bw[i] = elapsed
 
-        # print(loss_grad)
+        print(loss_grad)
 
         print(
             f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
