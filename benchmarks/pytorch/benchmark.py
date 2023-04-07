@@ -142,7 +142,7 @@ def sphericart_benchmark(
             loss = jnp.sum(sh_e3nn.array)
             return loss
         
-        # loss_grad_fn = jax.grad(loss_fn)
+        loss_grad_fn = jax.grad(loss_fn)
 
         for i in range(n_tries+10):
             elapsed = -time.time()
@@ -155,7 +155,7 @@ def sphericart_benchmark(
             elapsed += time.time()
             time_bw[i] = elapsed
 
-        print(loss_grad)
+        # print(loss_grad)
 
         print(
             f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
