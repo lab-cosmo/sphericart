@@ -90,34 +90,41 @@ def sphericart_benchmark(
     if compare and _HAS_E3NN:
         xyz_tensor = jnp.asarray(
             xyz[:, [1, 2, 0]].clone().detach().type(dtype).cpu().numpy()
-        )
-        """
-        irreps = [f"1x{l}e + " for l in range(l_max+1)]
-        total_irreps = ""
-        for irrep in irreps:
-            total_irreps += irrep
-        irreps = e3nn_jax.Irreps(
-            total_irreps[:-3]
-        )
-        """
-        # Output only highest SH to be nice to e3nn, slower otherwise (uncomment above)
-        irreps = e3nn_jax.Irreps(f"1x{l_max}e")
+        )  # Automatically goes to cuda if present
+        if device == "cpu": xyz_tensor = jax.device_put(xyz_tensor, jax.devices("cpu")[0])  # Force back to cpu
 
-        if device == "cpu":
-            for i in range(n_tries+10):
-                elapsed = -time.time()
-                sh_e3nn = e3nn_jax.spherical_harmonics(
-                    irreps, xyz_tensor, normalize=normalized
-                )
-                elapsed += time.time()
-                time_fw[i] = elapsed
+        irreps = e3nn_jax.Irreps([e3nn_jax.Irrep(l, 1) for l in range(l_max+1)])
 
-            print(
-                f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        def loss_fn(xyz_tensor):
+            sh_e3nn = e3nn_jax.spherical_harmonics(
+                irreps, xyz_tensor, normalize=normalized
             )
-        else:
-            pass
+            loss = jnp.sum(sh_e3nn.array)
+            return loss
+        
+        loss_grad_fn = jax.grad(loss_fn)
+
+        for i in range(n_tries+10):
+            elapsed = -time.time()
+            loss = loss_fn(xyz_tensor)
+            elapsed += time.time()
+            time_fw[i] = elapsed
+
+            elapsed = -time.time()
+            loss_grad = loss_grad_fn(xyz_tensor)
+            elapsed += time.time()
+            time_bw[i] = elapsed
+
+        print(
+            f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        )
+        # print("First-calls timings / sec.: \n", time_fw[:10])
+        print(
+            f" E3NN-JAX-BW:    {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        )
+        # print("First-calls timings / sec.: \n", time_bw[:10])
     print("*********************************************************************************************")
 
 
