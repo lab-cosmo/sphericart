@@ -931,7 +931,7 @@ bool sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, 
     if (!accepted){
         printf("Warning: requested shared memory buffer (%d) exceeds max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlockOptin, deviceProp.name );
     } else {
-        printf("Accepted shared memory buffer (%d) max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlockOptin, deviceProp.name );
+        // printf("Accepted shared memory buffer (%d) max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlockOptin, deviceProp.name );
         switch (scalar_type) {
         case torch::ScalarType::Double:
             cudaFuncSetAttribute(

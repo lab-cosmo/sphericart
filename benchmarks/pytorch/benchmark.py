@@ -29,7 +29,7 @@ def sphericart_benchmark(
     compare=False,
 ):
     print(
-        f" ** Timing for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, dtype={dtype}, device={device}"
+        f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, dtype={dtype}, device={device} ****"
     )
     xyz = torch.randn((n_samples, 3), dtype=dtype, device=device)
     sh_calculator = sphericart_torch.SphericalHarmonics(l_max, normalized=normalized)
@@ -37,30 +37,30 @@ def sphericart_benchmark(
     # one call to compile the kernels
     sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
 
-    time_noderi = np.zeros(n_tries)
-    for i in range(n_tries):
+    time_noderi = np.zeros(n_tries+10)
+    for i in range(n_tries+10):
         elapsed = -time.time()
         sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
         elapsed += time.time()
         time_noderi[i] = elapsed
 
     print(
-        f" No derivatives: {time_noderi.mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_noderi.std()/n_samples*1e9: 10.1f} (std)"
+        f" No derivatives: {time_noderi[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_noderi[10:].std()/n_samples*1e9: 10.1f} (std)"
     )
 
     sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
 
-    time_deri = np.zeros(n_tries)
-    for i in range(n_tries):
+    time_deri = np.zeros(n_tries+10)
+    for i in range(n_tries+10):
         elapsed = -time.time()
         sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
         elapsed += time.time()
         time_deri[i] = elapsed
 
     print(
-        f" Derivatives:    {time_deri.mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_deri.std()/n_samples*1e9: 10.1f} (std)"
+        f" Derivatives:    {time_deri[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_deri[10:].std()/n_samples*1e9: 10.1f} (std)"
     )
 
     # autograd
@@ -70,10 +70,10 @@ def sphericart_benchmark(
     sph_sum = torch.sum(sh_sphericart)
     sph_sum.backward()
 
-    time_fw = np.zeros(n_tries)
-    time_bw = np.zeros(n_tries)
+    time_fw = np.zeros(n_tries+10)
+    time_bw = np.zeros(n_tries+10)
 
-    for i in range(n_tries):
+    for i in range(n_tries+10):
         elapsed = -time.time()
         sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
         elapsed += time.time()
@@ -86,22 +86,19 @@ def sphericart_benchmark(
         time_bw[i] = elapsed
 
     print(
-        f" Autograd:       {time_fw.mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw.std()/n_samples*1e9: 10.1f} (std)"
+        f" Autograd:       {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
     )
     print(
-        f" Backprop:       {time_bw.mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw.std()/n_samples*1e9: 10.1f} (std)"
+        f" Backprop:       {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
     )
 
     if compare and _HAS_E3NN:
         xyz_tensor = (
             xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
         )
-        sh = e3nn.o3.spherical_harmonics(
-            list(range(l_max + 1)), xyz_tensor, normalize=normalized
-        )
-        for i in range(n_tries):
+        for i in range(n_tries+10):
             elapsed = -time.time()
             sh_e3nn = e3nn.o3.spherical_harmonics(
                 list(range(l_max + 1)), xyz_tensor, normalize=normalized
@@ -115,16 +112,16 @@ def sphericart_benchmark(
             time_bw[i] = elapsed
 
         print(
-            f" E3NN-FW:        {time_fw.mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw.std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-FW:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        print("First-calls timings / sec.: \n", time_fw[:4])
+        # print("First-calls timings / sec.: \n", time_fw[:10])
         print(
-            f" E3NN-BW:        {time_bw.mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw.std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-BW:        {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        print("First-calls timings / sec.: \n", time_bw[:4])
-    print("****************************************************************")
+        # print("First-calls timings / sec.: \n", time_bw[:10])
+    print("*********************************************************************************************")
 
 
 if __name__ == "__main__":
