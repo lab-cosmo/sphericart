@@ -85,6 +85,8 @@ def sphericart_benchmark(
         elapsed += time.time()
         time_bw[i] = elapsed
 
+    # print(xyz.grad)
+
     print(
         f" Autograd:       {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
@@ -110,6 +112,8 @@ def sphericart_benchmark(
             sph_sum.backward()
             elapsed += time.time()
             time_bw[i] = elapsed
+
+        # print(xyz_tensor.grad)
 
         print(
             f" E3NN-FW:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
@@ -150,6 +154,8 @@ def sphericart_benchmark(
             loss_grad = loss_grad_fn(xyz_tensor)
             elapsed += time.time()
             time_bw[i] = elapsed
+
+        # print(loss_grad)
 
         print(
             f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
