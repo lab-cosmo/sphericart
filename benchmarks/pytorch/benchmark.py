@@ -88,11 +88,11 @@ def sphericart_benchmark(
     # print(xyz.grad)
 
     print(
-        f" Autograd:       {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+        f" Forward:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
     )
     print(
-        f" Backprop:       {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+        f" Backward:       {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
     )
 
