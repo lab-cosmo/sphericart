@@ -7,6 +7,7 @@ from setuptools.command.bdist_egg import bdist_egg
 from setuptools.command.build_ext import build_ext
 from wheel.bdist_wheel import bdist_wheel
 
+
 ROOT = os.path.realpath(os.path.dirname(__file__))
 
 
@@ -65,7 +66,7 @@ class bdist_egg_disabled(bdist_egg):
         sys.exit(
             "Aborting implicit building of eggs. "
             + "Use `pip install .` or `python setup.py bdist_wheel && pip "
-            + "install dist/equistore-*.whl` to install from source."
+            + "install dist/sphericart-*.whl` to install from source."
         )
 
 

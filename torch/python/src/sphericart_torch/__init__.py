@@ -2,7 +2,41 @@ import os
 import sys
 from typing import Optional, Tuple
 
+
 import torch
+
+
+from ._build_torch_version import BUILD_TORCH_VERSION
+import re
+
+
+def parse_version_string(version_string):
+    match = re.match(r"(\d+)\.(\d+)\.(\d+)", version_string)
+    if match:
+        return tuple(map(int, match.groups()))
+    else:
+        raise ValueError("Invalid version string format")
+
+
+def torch_version_compatible(actual, required):
+    actual_version_tuple = parse_version_string(actual)
+    required_version_tuple = parse_version_string(required)
+
+    if actual_version_tuple[0] != required_version_tuple[0]:
+        return False
+    elif actual_version_tuple[1] != required_version_tuple[1]:
+        return False
+    else:
+        return True
+
+
+if not torch_version_compatible(torch.__version__, BUILD_TORCH_VERSION):
+    raise ImportError(
+        f"Trying to load sphericart_torch with torch v{torch.__version__}, "
+        f"but it was compiled against torch v{BUILD_TORCH_VERSION}, which "
+        "is not ABI compatible"
+    )
+
 
 _HERE = os.path.realpath(os.path.dirname(__file__))
 
