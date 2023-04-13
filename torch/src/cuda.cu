@@ -1033,11 +1033,16 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
         }));
 
     cudaDeviceSynchronize();
+    
+    sph = sph.transpose(0, 1).contiguous();
+    d_sph = d_sph.transpose(0, 2).contiguous();
+
+    cudaDeviceSynchronize();
 
     if (xyz.requires_grad() || gradients) {
-        return {sph.transpose(0, 1).contiguous(), d_sph.transpose(0, 2).contiguous()};
+        return {sph, d_sph};
     } else {
-        return {sph.transpose(0, 1).contiguous(), torch::Tensor()};
+        return {sph, torch::Tensor()};
     }
 }
 

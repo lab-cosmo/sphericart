@@ -59,6 +59,7 @@ def sphericart_benchmark(
     for i in range(n_tries+10):
         elapsed = -time.time()
         sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
+        torch.cuda.synchronize()
         elapsed += time.time()
         time_deri[i] = elapsed
 
@@ -76,6 +77,7 @@ def sphericart_benchmark(
     for i in range(n_tries+10):
         elapsed = -time.time()
         sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
+        #torch.cuda.synchronize()
         elapsed += time.time()
         time_fw[i] = elapsed
 
