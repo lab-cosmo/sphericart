@@ -625,7 +625,7 @@ __device__ inline void write_buffers(
 ) {
     if (atom_idx < natoms) {
         for (int i = 0; i < n_elements; i++) {
-            sph[offset + i][atom_idx] = buffer_sph[get_index(i)];
+            sph[atom_idx][offset + i] = buffer_sph[get_index(i)];
 
             if (requires_grad) {
                 auto tmp_dx = buffer_dsph_x[get_index(i)];
@@ -641,9 +641,9 @@ __device__ inline void write_buffers(
                     tmp_dz = (tmp_dz - z * tmp) * ir;
                 }
 
-                dsph[offset + i][0][atom_idx] = tmp_dx;
-                dsph[offset + i][1][atom_idx] = tmp_dy;
-                dsph[offset + i][2][atom_idx] = tmp_dz;
+                dsph[atom_idx][offset + i][0] = tmp_dx;
+                dsph[atom_idx][offset + i][1] = tmp_dy;
+                dsph[atom_idx][offset + i][2] = tmp_dz;
             }
         }
     }
@@ -976,14 +976,14 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     int n_total = (l_max + 1) * (l_max + 1);
 
     auto sph = torch::empty(
-        {n_total, xyz.size(0)},
+        {xyz.size(0), n_total},
         torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
     );
 
     torch::Tensor d_sph;
     if (xyz.requires_grad() || gradients) {
         d_sph = torch::empty(
-            {n_total, 3, xyz.size(0)},
+            {xyz.size(0), n_total, 3},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
         );
     } else {
@@ -1031,11 +1031,9 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
                 sph.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                 d_sph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>());
         }));
-
-    cudaDeviceSynchronize();
     
-    sph = sph.transpose(0, 1).contiguous();
-    d_sph = d_sph.transpose(0, 2).contiguous();
+    //sph = sph.transpose(0, 1).contiguous();
+    //d_sph = d_sph.transpose(0, 2).contiguous();
 
     cudaDeviceSynchronize();
 
