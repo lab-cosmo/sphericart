@@ -1032,9 +1032,6 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
                 d_sph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>());
         }));
     
-    //sph = sph.transpose(0, 1).contiguous();
-    //d_sph = d_sph.transpose(0, 2).contiguous();
-
     cudaDeviceSynchronize();
 
     if (xyz.requires_grad() || gradients) {
@@ -1117,16 +1114,6 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
 
     cudaDeviceSynchronize();
 
-        /*
-        for (int spatial = 0; spatial < 3; spatial++) {
-            auto gradient_slice = dsph.index(
-                {torch::indexing::Slice(), spatial, torch::indexing::Slice()}
-            );
-            xyz_grad.index_put_(
-                {torch::indexing::Slice(), spatial},
-                torch::sum(sph_grad * gradient_slice, 1)
-            );
-        }*/
     }
 
     return xyz_grad;
