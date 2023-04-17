@@ -19,6 +19,9 @@ pip install .
 
 # if you also want the torch bindings
 pip install ./torch
+
+# torch bindings, CPU-only version
+pip install --extra-index-url https://download.pytorch.org/whl/cpu ./torch
 ```
 
 Pre-built (https://pypi.org/project/sphericart/), no torch bindings for now
