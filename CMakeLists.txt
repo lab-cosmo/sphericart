@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(sphericart_meta)
+enable_testing()
 
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
@@ -16,7 +17,7 @@ endif()
 add_subdirectory(sphericart)
 
 OPTION(SPHERICART_BUILD_TORCH "Build the torch bindings" OFF)
-OPTION(SPHERICART_BUILD_EXAMPLES "Build and run examples and benchmarks for Sphericart" ON) 
+OPTION(SPHERICART_BUILD_EXAMPLES "Build and run examples and benchmarks for Sphericart" OFF)
 
 if (SPHERICART_BUILD_EXAMPLES)
     add_subdirectory(examples)

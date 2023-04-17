@@ -1,5 +1,5 @@
 /** @file test_hardcoding.cpp
- *  @brief Checks consistency of generic and hardcoded implementations  
+ *  @brief Checks consistency of generic and hardcoded implementations
 */
 
 #include <unistd.h>
@@ -9,6 +9,7 @@
 #include <chrono>
 #include <iostream>
 
+#define _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "sphericart.hpp"
 #include "../src/templates.hpp"
 
@@ -17,12 +18,12 @@
 using namespace sphericart;
 
 // shorthand for all-past-1 generic sph only
-inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph, DTYPE* buffers) {    
+inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph, DTYPE* buffers) {
     if (dsph==nullptr) {
         generic_sph<DTYPE, false, false, 1>(xyz, sph, dsph, n_samples, l_max, prefactors, buffers);
     } else {
         generic_sph<DTYPE, true, false, 1>(xyz, sph, dsph, n_samples, l_max, prefactors, buffers);
-    }    
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -46,14 +47,14 @@ int main(int argc, char *argv[]) {
                     "Unknown option character `\\x%x'.\n",
                     optopt);
             return 1;
-        default:            
+        default:
             abort ();
         }
     }
 
     std::cout << "\n============= l_max_hardcoded = " << l_max << " ==============" << std::endl;
 
-    auto *buffers = new DTYPE[ (l_max + 1) * (l_max + 2) / 2 * 3 * omp_get_max_threads()];    
+    auto *buffers = new DTYPE[ (l_max + 1) * (l_max + 2) / 2 * 3 * omp_get_max_threads()];
     auto prefactors = std::vector<DTYPE>((l_max+1)*(l_max+2), 0.0);
     compute_sph_prefactors(l_max, prefactors.data());
 
@@ -64,15 +65,15 @@ int main(int argc, char *argv[]) {
 
     auto sph = std::vector<DTYPE>(n_samples*(l_max+1)*(l_max+1), 0.0);
     auto dsph = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
-    
+
     compute_generic(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data(), buffers);
-    
+
     auto sph1 = std::vector<DTYPE>(n_samples*(l_max+1)*(l_max+1), 0.0);
     auto dsph1 = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
-    
-    SphericalHarmonics<DTYPE> SH(l_max, false);    
-    SH.compute(xyz, sph1, dsph1);    
-    
+
+    SphericalHarmonics<DTYPE> SH(l_max, false);
+    SH.compute(xyz, sph1, dsph1);
+
     int size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
     int size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays
     bool test_passed = true;

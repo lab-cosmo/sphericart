@@ -1,6 +1,7 @@
 #include <cmath>
 #include <stdexcept>
 
+#define _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "sphericart.hpp"
 
 #include "omp_support.h"

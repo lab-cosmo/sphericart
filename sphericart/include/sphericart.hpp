@@ -11,13 +11,17 @@
 
 #include "sphericart/exports.h"
 
+#ifdef _SPHERICART_INTERNAL_IMPLEMENTATION
+    #include "macros.hpp"
+#endif
+
 
 namespace sphericart {
 
 /**
  * A spherical harmonics calculator.
  *
- * It handles initialization of the prefactors upon initialization and it stores the 
+ * It handles initialization of the prefactors upon initialization and it stores the
  * buffers that are necessary to compute the spherical harmonics efficiently.
 */
 template<typename T>
@@ -41,7 +45,7 @@ public:
     ~SphericalHarmonics();
     /* @endcond */
 
-    /** Computes the spherical harmonics for one or more 3D points, using 
+    /** Computes the spherical harmonics for one or more 3D points, using
      *  `std::vector`s.
      *
      * @param xyz A `std::vector` array of size `n_samples x 3`. It contains the
@@ -62,7 +66,7 @@ public:
      *        if `l_max=2`, it will contain `(l, m) = (0, 0), (1, -1), (1, 0),
      *        (1, 1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)`, in this order.
      * @param dsph Optional `std::vector` for spherical harmonics derivatives.
-     *        If not provided, no derivatives will be calculated. 
+     *        If not provided, no derivatives will be calculated.
      *        If provided, it is a (possibly uninitialized) `std::vector`, which
      *        will be resized to `n_samples * 3 * (l_max + 1) * (l_max + 1)`. On
      *        exit, this array will contain the spherical harmonics' derivatives
@@ -90,7 +94,7 @@ public:
      *        samples, while the inner dimension has size 3 and it represents
      *        the x, y, and z coordinates respectively.
      * @param xyz_length Total length of the `xyz` array: `n_samples * 3`.
-     * @param sph On entry, an array of size `n_samples * (l_max + 1) * (l_max + 1)`. 
+     * @param sph On entry, an array of size `n_samples * (l_max + 1) * (l_max + 1)`.
      *        On exit, this array will contain the spherical harmonics organized along
      *        two dimensions. The leading dimension is `n_samples` long and it
      *        represents the different samples, while the inner dimension size
@@ -100,8 +104,8 @@ public:
      *        (1, 1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)`, in this order.
      * @param sph_length Total length of the `sph` array: `n_samples * (l_max + 1) * (l_max + 1)`.
      * @param dsph Optional array for spherical harmonics derivatives.
-     *        If not provided, no derivatives will be calculated. 
-     *        If provided, it is an array of size `n_samples * 3 * (l_max + 1) * (l_max + 1)`. 
+     *        If not provided, no derivatives will be calculated.
+     *        If provided, it is an array of size `n_samples * 3 * (l_max + 1) * (l_max + 1)`.
      *        On exit, this array will contain the spherical harmonics' derivatives
      *        organized along three dimensions. As for the `sph` parameter, the
      *        leading dimension represents the different samples, while the
@@ -126,16 +130,16 @@ public:
      *        Cartesian coordinates of the 3D point for which the spherical
      *        harmonics are to be computed. x, y, and z coordinates respectively.
      * @param xyz_length Length of the `xyz` array: 3.
-     * @param sph On entry, an array of size `(l_max + 1) * (l_max + 1)`. 
-     *        On exit, this array will contain the spherical harmonics laid out 
+     * @param sph On entry, an array of size `(l_max + 1) * (l_max + 1)`.
+     *        On exit, this array will contain the spherical harmonics laid out
      *        in lexicographic order. For example,
      *        if `l_max=2`, it will contain the spherical harmonics in the following
      *        order: `(l, m) = (0, 0), (1, -1), (1, 0),
      *        (1, 1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)`.
      * @param sph_length Total length of the `sph` array: `(l_max + 1) * (l_max + 1)`.
      * @param dsph Optional array for spherical harmonics derivatives.
-     *        If not provided, no derivatives will be calculated. 
-     *        If provided, it is an array of size `3 * (l_max + 1) * (l_max + 1)`. 
+     *        If not provided, no derivatives will be calculated.
+     *        If provided, it is an array of size `3 * (l_max + 1) * (l_max + 1)`.
      *        On exit, this array will contain the spherical harmonics' derivatives
      *        organized along two dimensions. The second
      *        dimension's size is `(l_max + 1) * (l_max + 1)`, and it

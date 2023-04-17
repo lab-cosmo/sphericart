@@ -18,8 +18,6 @@
 
 #define SPHERICART_LMAX_HARDCODED 6
 
-#define SPH_IDX_IDEN 
-
 #define COMPUTE_SPH_L0(sph_i, SPH_IDX) \
     (sph_i)[SPH_IDX(0)] = 0.282094791773878;
 
