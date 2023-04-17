@@ -125,9 +125,11 @@ def e3nn_wrapper(
     normalization: Optional[str] = "integral",
 ) -> torch.Tensor:
     """Provides an interface that is similar to `e3nn.o3.spherical_harmonics()`
-    but uses SphericalHarmonics.compute(). Uses the same ordering of the
+    but uses `SphericalHarmonics.compute()`. Uses the same ordering of the
     [x,y,z] axes, and supports the same options for input and harmonics
-    normalization. However,
+    normalization as `e3nn`. However, it does not support defining the irreps
+    through a `e3nn.o3._irreps.Irreps` or a string specification, but just
+    as a single integer or a list of integers.
     """
 
     if not hasattr(l_list, "__len__"):
