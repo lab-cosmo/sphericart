@@ -43,7 +43,7 @@ set_target_properties(sphericart PROPERTIES
 )
 
 # we need to compile sphericart with C++17 for if constexpr
-target_compile_features(sphericart PUBLIC cxx_std_17)
+target_compile_features(sphericart PRIVATE cxx_std_17)
 
 target_include_directories(sphericart PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
