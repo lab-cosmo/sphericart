@@ -59,7 +59,6 @@ def sphericart_benchmark(
     for i in range(n_tries+10):
         elapsed = -time.time()
         sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
-        torch.cuda.synchronize()
         elapsed += time.time()
         time_deri[i] = elapsed
 
@@ -77,7 +76,6 @@ def sphericart_benchmark(
     for i in range(n_tries+10):
         elapsed = -time.time()
         sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
-        #torch.cuda.synchronize()
         elapsed += time.time()
         time_fw[i] = elapsed
 
@@ -176,7 +174,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=docstring)
 
     parser.add_argument("-l", type=int, default=10, help="maximum angular momentum")
-    parser.add_argument("-s", type=int, default=1000, help="number of samples")
+    parser.add_argument("-s", type=int, default=10000, help="number of samples")
     parser.add_argument("-t", type=int, default=100, help="number of runs/sample")
     parser.add_argument(
         "--normalized",
