@@ -133,15 +133,13 @@ def e3nn_wrapper(
     if not hasattr(l_list, "__len__"):
         l_list = [l_list]
     l_max = max(l_list)
-    sh = SphericalHarmonics(l_max, normalized=normalize).compute(
-        x[:, [2, 0, 1]]
-    )[0]
+    sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:, [2, 0, 1]])[0]
 
     if normalization != "integral":
         sh *= math.sqrt(4 * math.pi)
 
     sh_list = []
-    for l in l_list:
+    for l in l_list:  # noqa E741
         shl = sh[:, l * l : (l + 1) * (l + 1)]
         if normalization == "norm":
             shl *= math.sqrt(1 / (2 * l + 1))
