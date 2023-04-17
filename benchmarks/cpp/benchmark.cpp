@@ -1,6 +1,6 @@
 /** @file benchmarks.cpp
  *  @brief benchmarks for the C++ (CPU) API
- * 
+ *
  * Compares cost of evaluation with and without hardcoding, and with and without normalization
 */
 
@@ -11,6 +11,7 @@
 #include <chrono>
 #include <iostream>
 
+#define _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "sphericart.hpp"
 #include "../../sphericart/src/omp_support.h"
 #include "../../sphericart/src/templates.hpp"
@@ -19,12 +20,12 @@
 using namespace sphericart;
 // shorthand for all-past-1 generic sph only
 template<typename DTYPE>
-inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph, DTYPE* buffers) {    
+inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph, DTYPE* buffers) {
     if (dsph==nullptr) {
         generic_sph<DTYPE, false, false, 1>(xyz, sph, dsph, n_samples, l_max, prefactors, buffers);
     } else {
         generic_sph<DTYPE, true, false, 1>(xyz, sph, dsph, n_samples, l_max, prefactors, buffers);
-    }    
+    }
 }
 
 template<typename Fn>
@@ -62,7 +63,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
 
     auto sph = std::vector<DTYPE>(n_samples*(l_max+1)*(l_max+1), 0.0);
     auto dsph = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
-    
+
     benchmark("Call without derivatives (no hardcoding)", n_samples, n_tries, [&](){
         compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), nullptr, buffers);
     });
@@ -77,12 +78,12 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     auto sdsph = std::vector<DTYPE>(3*(l_max+1)*(l_max+1), 0.0);
     auto sph1 = std::vector<DTYPE>(n_samples*(l_max+1)*(l_max+1), 0.0);
     auto dsph1 = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
-    
+
     {
     SphericalHarmonics<DTYPE> SH(l_max, false);
-    sxyz[0] = xyz[0]; sxyz[1] = xyz[1]; sxyz[2] = xyz[2]; 
+    sxyz[0] = xyz[0]; sxyz[1] = xyz[1]; sxyz[2] = xyz[2];
 
-    // single-sample evaluation    
+    // single-sample evaluation
     benchmark("Sample without derivatives", 1, n_tries, [&](){
         SH.compute(sxyz, ssph);
     });
@@ -92,7 +93,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
 
     std::cout << std::endl;
-    
+
     benchmark("Call without derivatives", n_samples, n_tries, [&](){
         SH.compute(xyz, sph1);
     });
@@ -101,7 +102,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
         SH.compute(xyz, sph1, dsph1);
     });
     }
-    
+
     {
     SphericalHarmonics<DTYPE> SH(l_max, true);
     benchmark("Call without derivatives (normalized)", n_samples, n_tries, [&](){

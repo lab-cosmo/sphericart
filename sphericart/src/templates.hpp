@@ -13,7 +13,9 @@
 #include <vector>
 
 #include "omp_support.h"
-#include "macros.hpp"
+
+// a SPH_IDX that does nothing
+#define DUMMY_SPH_IDX
 
 /**
  * This function calculates the prefactors needed for the computation of the
@@ -88,30 +90,30 @@ inline void hardcoded_sph_template(
 
     static_assert(HARDCODED_LMAX <= SPHERICART_LMAX_HARDCODED, "Computing hardcoded sph beyond what is currently implemented.");
 
-    COMPUTE_SPH_L0(sph_i, SPH_IDX_IDEN);
+    COMPUTE_SPH_L0(sph_i, DUMMY_SPH_IDX);
 
     if constexpr (HARDCODED_LMAX > 0) {
-        COMPUTE_SPH_L1(x, y, z, sph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_L1(x, y, z, sph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 1) {
-        COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 2) {
-        COMPUTE_SPH_L3(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_L3(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 3) {
-        COMPUTE_SPH_L4(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_L4(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 4) {
-        COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 5) {
-        COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
     }
 }
 
@@ -134,30 +136,30 @@ inline void hardcoded_sph_derivative_template(
         avoiding unnecessary in-loop branching.
     */
 
-    COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
+    COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
 
     if constexpr (HARDCODED_LMAX > 0) {
-        COMPUTE_SPH_DERIVATIVE_L1(sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_DERIVATIVE_L1(sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 1) {
-        COMPUTE_SPH_DERIVATIVE_L2(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_DERIVATIVE_L2(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 2) {
-        COMPUTE_SPH_DERIVATIVE_L3(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_DERIVATIVE_L3(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 3) {
-        COMPUTE_SPH_DERIVATIVE_L4(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_DERIVATIVE_L4(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 4) {
-        COMPUTE_SPH_DERIVATIVE_L5(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_DERIVATIVE_L5(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
     }
 
     if constexpr (HARDCODED_LMAX > 5) {
-        COMPUTE_SPH_DERIVATIVE_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX_IDEN);
+        COMPUTE_SPH_DERIVATIVE_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
     }
 }
 
@@ -453,11 +455,24 @@ static inline void generic_sph_sample(const T *xyz_i,
 
     auto pk = pylm+k;
     auto qlmk = pqlm+k;
-    int nk = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
-        generic_sph_l_channel<T, DO_DERIVATIVES, HARDCODED_LMAX>(l, x, y, z, rxy,
-                    pk, qlmk, c, s, twomz,
-                    sph_i, dxsph_i, dysph_i, dzsph_i);
+        generic_sph_l_channel<T, DO_DERIVATIVES, HARDCODED_LMAX>(
+            l,
+            x,
+            y,
+            z,
+            rxy,
+            pk,
+            qlmk,
+            c,
+            s,
+            twomz,
+            sph_i,
+            dxsph_i,
+            dysph_i,
+            dzsph_i
+        );
+
         // shift pointers & indexes to the next l block
         qlmk += l+1; pk+=l+1;
         sph_i += 2*l + 2;
@@ -467,7 +482,6 @@ static inline void generic_sph_sample(const T *xyz_i,
             dysph_i += 2*l + 2;
             dzsph_i += 2*l + 2;
         }
-        nk += 2*l + 2;
     }
 
     if constexpr(DO_DERIVATIVES && NORMALIZED) {
@@ -542,8 +556,18 @@ void generic_sph(
                 dsph_i = dsph + i_sample * 3 * size_y;
             }
 
-            generic_sph_sample<T, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, l_max, size_y,
-                prefactors, qlmfactors, c, s, twomz);
+            generic_sph_sample<T, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(
+                xyz_i,
+                sph_i,
+                dsph_i,
+                l_max,
+                size_y,
+                prefactors,
+                qlmfactors,
+                c,
+                s,
+                twomz
+            );
         }
     }
 }
