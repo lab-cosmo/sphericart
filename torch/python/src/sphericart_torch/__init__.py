@@ -1,6 +1,7 @@
 import math
 import os
 import sys
+from types import ModuleType
 from typing import List, Optional, Tuple, Union
 
 
@@ -73,8 +74,10 @@ class SphericalHarmonics:
     are polynomials in the Cartesian coordinates of the input points.
     ``normalize=True`` can be set to compute :math:`Y^l_m(r)`.
 
-    :param l_max: the maximum degree of the spherical harmonics to be calculated
-    :param normalized: whether to normalize the spherical harmonics (default: False)
+    :param l_max:
+        the maximum degree of the spherical harmonics to be calculated
+    :param normalized:
+        whether to normalize the spherical harmonics (default: False)
 
     :return: a calculator, in the form of a SphericalHarmonics object
     """
@@ -87,10 +90,14 @@ class SphericalHarmonics:
         self, xyz: torch.Tensor, gradients: bool = False
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
-        Calculates the spherical harmonics for a set of 3D points, whose
-        coordinates are in the ``xyz`` array. If ``xyz`` has `requires_grad = True`
-        it stores the forward derivatives which are then used in the backward
-        pass.
+        Calculates the spherical harmonics for a set of 3D points.
+
+        The coordinates should be stored in the ``xyz`` array. If ``xyz``
+        has `requires_grad = True` it stores the forward derivatives which
+        are then used in the backward pass.
+        The type of the entries of `xyz` determines the precision used,
+        and the device the tensor is stored on determines whether the
+        CPU or CUDA implementation is used for the calculation backend.
 
         :param xyz:
             The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
@@ -118,18 +125,38 @@ class SphericalHarmonics:
             return self._sph.compute(xyz), None
 
 
-def e3nn_wrapper(
+def e3nn_spherical_harmonics(
     l_list: Union[List[int], int],
     x: torch.Tensor,
     normalize: Optional[bool] = False,
     normalization: Optional[str] = "integral",
 ) -> torch.Tensor:
-    """Provides an interface that is similar to `e3nn.o3.spherical_harmonics()`
-    but uses `SphericalHarmonics.compute()`. Uses the same ordering of the
+    """
+    Computes spherical harmonics with an interface similar to the e3nn package.
+
+    Provides an interface that is similar to :py:func:`e3nn.o3.spherical_harmonics`
+    but uses :py:class:`SphericalHarmonics`. Uses the same ordering of the
     [x,y,z] axes, and supports the same options for input and harmonics
-    normalization as `e3nn`. However, it does not support defining the irreps
-    through a `e3nn.o3._irreps.Irreps` or a string specification, but just
+    normalization as :py:mod:`e3nn`. However, it does not support defining the irreps
+    through a :py:class:`e3nn.o3._irreps.Irreps` or a string specification, but just
     as a single integer or a list of integers.
+
+    :param l_list:
+        Either a single integer or a list of integers specifying which
+        :math:`Y^l_m` should be computed. All values up to the maximum
+        l value are computed, so this may be inefficient for use cases
+        requiring a single, or few, angular momentum channels.
+    :param x:
+        A `torch.Tensor` containing the coordinates, in the same format
+        expected by the `e3nn` function.
+    :param normalize:
+        Flag specifying whether the input positions should be normalized,
+        or whether the function should compute scaled :math:`\tilde{Y}^l_m`
+    :param normalization:
+        String that can be "integral", "norm", "component", that controls
+        a further scaling of the :math:`Y_m^l`. See the
+        documentation of :py:func:`e3nn.o3.spherical_harmonics()`
+        for a detailed explanation of the different conventions.
     """
 
     if not hasattr(l_list, "__len__"):
@@ -151,11 +178,12 @@ def e3nn_wrapper(
     return sh
 
 
-def patch_e3nn(e3nn_module):
-    """Patches the e3nn module so that `sphericart_torch.e3nn_wrapper`
+def patch_e3nn(e3nn_module: ModuleType) -> None:
+    """Patches the e3nn module so that
+    :py:func:`sphericart_torch.e3nn_spherical_harmonics`
     is called in lieu of the built-in function."""
 
-    e3nn_module.o3.spherical_harmonics = e3nn_wrapper
+    e3nn_module.o3.spherical_harmonics = e3nn_spherical_harmonics
 
 
-__all__ = ["SphericalHarmonics", "patch_e3nn"]
+__all__ = ["SphericalHarmonics", "e3nn_spherical_harmonics", "patch_e3nn"]
