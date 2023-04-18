@@ -89,8 +89,6 @@ def sphericart_benchmark(
         time_bw[i] = elapsed
         xyz.grad.zero_()
 
-    # print(xyz.grad)
-
     print(
         f" Forward:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
@@ -119,18 +117,18 @@ def sphericart_benchmark(
             sph_sum.backward()
             elapsed += time.time()
             time_bw[i] = elapsed
-            xyz.grad.zero_()
+            xyz_tensor.grad.zero_()
 
         print(
             f" E3NN-FW:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_fw[:10])
+        # print("Warm-up timings / sec.: \n", time_fw[:10])
         print(
             f" E3NN-BW:        {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_bw[:10])
+        # print("Warm-up timings / sec.: \n", time_bw[:10])
 
         # check the timing with the patch
         sphericart_torch.patch_e3nn(e3nn)
@@ -158,12 +156,12 @@ def sphericart_benchmark(
             f" PATCH-FW:       {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_fw[:10])
+        # print("Warm-up timings / sec.: \n", time_fw[:10])
         print(
             f" PATCH-BW:       {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_bw[:10])
+        # print("Warm-up timings / sec.: \n", time_bw[:10])
         sphericart_torch.unpatch_e3nn(e3nn)
 
     if compare and _HAS_E3NN_JAX:
@@ -198,18 +196,16 @@ def sphericart_benchmark(
             elapsed += time.time()
             time_bw[i] = elapsed
 
-        # print(loss_grad)
-
         print(
             f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_fw[:10])
+        # print("Warm-up timings / sec.: \n", time_fw[:10])
         print(
             f" E3NN-JAX-BW:    {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_bw[:10])
+        # print("Warm-up timings / sec.: \n", time_bw[:10])
     print(
         "*********************************************************************************************"
     )
