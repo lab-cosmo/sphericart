@@ -32,12 +32,15 @@ public:
     torch::Tensor compute(torch::Tensor xyz);
     std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz);
 
+    int64_t get_omp_num_threads() const;
+
 private:
     friend class SphericalHarmonicsAutograd;
 
     // Raw calculation, without autograd support, running on CPU
     std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients);
 
+    int64_t omp_num_threads;
     int64_t l_max_;
     bool normalize_;
 

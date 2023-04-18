@@ -85,6 +85,7 @@ class SphericalHarmonics:
     def __init__(self, l_max: int, normalized: bool = False):
         self._l_max = l_max
         self._sph = torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
+        self._omp_num_threads = self._sph.get_omp_num_threads()
 
     def compute(
         self, xyz: torch.Tensor, gradients: bool = False

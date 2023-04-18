@@ -152,12 +152,20 @@ public:
     */
     void compute_sample(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length);
 
+    /**
+    Returns the number of threads used in the calculation
+    */
+    int get_omp_num_threads() {
+        return this->omp_num_threads;
+    }
+
 /* @cond */
 private:
     size_t l_max;
     size_t size_y;
     size_t size_q;
     bool normalized;
+    int omp_num_threads;
     T *prefactors;
     T *buffers;
 

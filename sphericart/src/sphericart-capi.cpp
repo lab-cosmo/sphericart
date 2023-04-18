@@ -136,3 +136,15 @@ extern "C" void sphericart_compute_sample_f(
         abort();
     }
 }
+
+extern "C"  int sphericart_omp_num_threads(
+    sphericart_calculator_t* calculator
+) {
+    return calculator->get_omp_num_threads();
+}
+
+extern "C"  int sphericart_omp_num_threads_f(
+    sphericart_calculator_f_t* calculator
+) {
+    return calculator->get_omp_num_threads();
+}

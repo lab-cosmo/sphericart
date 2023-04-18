@@ -29,10 +29,11 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
     this->size_q = (int) (l_max + 1) * (l_max + 2) / 2;
     this->normalized = normalized;
     this->prefactors = new T[(l_max+1)*(l_max+2)];
-
+    this ->omp_num_threads = omp_get_max_threads();
+    
     // buffers for cos, sin, 2mz arrays
     // allocates buffers that are large enough to store thread-local data
-    this->buffers = new T[this->size_q*3*omp_get_max_threads()];
+    this->buffers = new T[this->size_q*3*this->omp_num_threads];
 
     compute_sph_prefactors<T>((int) l_max, this->prefactors);
 

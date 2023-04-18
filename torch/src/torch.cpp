@@ -12,8 +12,13 @@ SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalize):
     calculator_double_(l_max, normalize),
     calculator_float_(l_max, normalize),
     prefactors_cuda_double_(prefactors_cuda(l_max, c10::kDouble)),
-    prefactors_cuda_float_(prefactors_cuda(l_max, c10::kFloat))
-{}
+    prefactors_cuda_float_(prefactors_cuda(l_max, c10::kFloat)) {
+    this->omp_num_threads = calculator_double_.get_omp_num_threads();
+}
+
+int64_t SphericalHarmonics::get_omp_num_threads() const {
+    return this->omp_num_threads;
+}
 
 torch::Tensor SphericalHarmonics::compute(torch::Tensor xyz) {
     return SphericalHarmonicsAutograd::apply(*this, xyz, false)[0];
@@ -27,5 +32,6 @@ TORCH_LIBRARY(sphericart_torch, m) {
     m.class_<SphericalHarmonics>("SphericalHarmonics")
         .def(torch::init<int64_t, bool>())
         .def("compute", &SphericalHarmonics::compute)
-        .def("compute_with_gradients", &SphericalHarmonics::compute_with_gradients);
+        .def("compute_with_gradients", &SphericalHarmonics::compute_with_gradients)
+        .def("get_omp_num_threads", &SphericalHarmonics::get_omp_num_threads);
 }
