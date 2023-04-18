@@ -15,7 +15,7 @@ except ModuleNotFoundError:
     _HAS_E3NN = False
 
 torch.manual_seed(0)
-_PRECISION = 1e-8
+TOLERANCE = 1e-10
 
 
 @pytest.fixture
@@ -26,18 +26,21 @@ def xyz():
 # only include tests if e3nn is available
 if _HAS_E3NN:
 
+    def relative_mse(a, b):
+        return ((a - b) ** 2).sum() / ((a + b) ** 2).sum()
+
     def test_e3nn_inputs(xyz):
         """Checks that the wrapper accepts the arguments it can accept."""
 
         e3nn_reference = e3nn.o3.spherical_harmonics([1, 3, 5], xyz, True)
         sh = sphericart_torch.e3nn_spherical_harmonics([1, 3, 5], xyz, True)
 
-        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < _PRECISION
+        assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE
 
         e3nn_reference = e3nn.o3.spherical_harmonics(8, xyz, False)
         sh = sphericart_torch.e3nn_spherical_harmonics(8, xyz, False)
 
-        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < _PRECISION
+        assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE
 
     @pytest.mark.parametrize(
         "normalize, normalization",
@@ -54,7 +57,7 @@ if _HAS_E3NN:
             l_list, xyz, normalize, normalization
         )
 
-        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < _PRECISION
+        assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE
 
     def test_e3nn_patch(xyz):
         """Tests the patch function."""
@@ -67,5 +70,7 @@ if _HAS_E3NN:
         sh = e3nn.o3.spherical_harmonics([1, 3, 5], xyz, True)
 
         # restore spherical_harmonics
-        e3nn.o3.spherical_harmonics = e3nn_builtin
-        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < _PRECISION
+        sphericart_torch.unpatch_e3nn(e3nn)
+        assert e3nn.o3.spherical_harmonics is e3nn_builtin
+
+        assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE

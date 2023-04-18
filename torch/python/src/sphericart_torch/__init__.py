@@ -178,6 +178,9 @@ def e3nn_spherical_harmonics(
     return sh
 
 
+_E3NN_SPH = None
+
+
 def patch_e3nn(e3nn_module: ModuleType) -> None:
     """Patches the :py:mod:`e3nn` module so that
     :py:func:`sphericart_torch.e3nn_spherical_harmonics`
@@ -188,7 +191,29 @@ def patch_e3nn(e3nn_module: ModuleType) -> None:
         usually just ``e3nn``.
     """
 
+    global _E3NN_SPH
+    if _E3NN_SPH is not None:
+        raise RuntimeError("It appears that e3nn has already been patched")
+
+    _E3NN_SPH = e3nn_module.o3.spherical_harmonics
     e3nn_module.o3.spherical_harmonics = e3nn_spherical_harmonics
 
 
-__all__ = ["SphericalHarmonics", "e3nn_spherical_harmonics", "patch_e3nn"]
+def unpatch_e3nn(e3nn_module: ModuleType) -> None:
+    """Restore the original ``spherical_harmonics`` function
+    in the :py:mod:`e3nn` module."""
+
+    global _E3NN_SPH
+    if _E3NN_SPH is None:
+        raise RuntimeError("It appears that e3nn has not been patched")
+
+    e3nn_module.o3.spherical_harmonics = _E3NN_SPH
+    _E3NN_SPH = None
+
+
+__all__ = [
+    "SphericalHarmonics",
+    "e3nn_spherical_harmonics",
+    "patch_e3nn",
+    "unpatch_e3nn",
+]
