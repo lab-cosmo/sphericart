@@ -163,7 +163,7 @@ def e3nn_spherical_harmonics(
         l_list = [l_list]
     l_max = max(l_list)
     sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:, [2, 0, 1]])[0]
-
+    assert normalization in ["integral", "norm", "component"]
     if normalization != "integral":
         sh *= math.sqrt(4 * math.pi)
 
