@@ -641,9 +641,9 @@ __device__ inline void write_buffers(
                     tmp_dz = (tmp_dz - z * tmp) * ir;
                 }
 
-                dsph[atom_idx][offset + i][0] = tmp_dx;
-                dsph[atom_idx][offset + i][1] = tmp_dy;
-                dsph[atom_idx][offset + i][2] = tmp_dz;
+                dsph[atom_idx][0][offset + i] = tmp_dx;
+                dsph[atom_idx][1][offset + i] = tmp_dy;
+                dsph[atom_idx][2][offset + i]= tmp_dz;
             }
         }
     }
@@ -983,7 +983,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     torch::Tensor d_sph;
     if (xyz.requires_grad() || gradients) {
         d_sph = torch::empty(
-            {xyz.size(0), n_total, 3},
+            {xyz.size(0), 3, n_total},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device())
         );
     } else {
