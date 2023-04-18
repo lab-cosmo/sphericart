@@ -49,3 +49,16 @@ The following cmake configuration options are available:
 - `-DSPHERICART_BUILD_TESTS=ON/OFF`: build C++ unit tests
 - `-DSPHERICART_OPENMP=ON/OFF`: enable OpenMP parallelism
 - `-DCMAKE_INSTALL_PREFIX=<where/you/want/to/install>` set the root path for installation
+
+
+### Running tests and documentation
+
+Tests and local documentations can be run with `tox`. 
+To run tests in a CPU-only environment you can set the environment variable
+`PIP_EXTRA_INDEX_URL` before calling tox, e.g. 
+
+```bash
+PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu tox -e docs
+```
+
+will build the documentation in a CPU-only environment. 

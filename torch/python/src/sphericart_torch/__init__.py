@@ -135,11 +135,11 @@ def e3nn_spherical_harmonics(
     Computes spherical harmonics with an interface similar to the e3nn package.
 
     Provides an interface that is similar to :py:func:`e3nn.o3.spherical_harmonics`
-    but uses :py:class:`SphericalHarmonics`. Uses the same ordering of the
-    [x,y,z] axes, and supports the same options for input and harmonics
-    normalization as :py:mod:`e3nn`. However, it does not support defining the irreps
-    through a :py:class:`e3nn.o3._irreps.Irreps` or a string specification, but just
-    as a single integer or a list of integers.
+    but uses :py:class:`SphericalHarmonics` for the actual calculation.
+    Uses the same ordering of the [x,y,z] axes, and supports the same options for
+    input and harmonics normalization as :py:mod:`e3nn`. However, it does not support
+    defining the irreps through a :py:class:`e3nn.o3._irreps.Irreps` or a string
+    specification, but just as a single integer or a list of integers.
 
     :param l_list:
         Either a single integer or a list of integers specifying which
@@ -179,9 +179,14 @@ def e3nn_spherical_harmonics(
 
 
 def patch_e3nn(e3nn_module: ModuleType) -> None:
-    """Patches the e3nn module so that
+    """Patches the :py:mod:`e3nn` module so that
     :py:func:`sphericart_torch.e3nn_spherical_harmonics`
-    is called in lieu of the built-in function."""
+    is called in lieu of the built-in function.
+
+    :param e3nn_module:
+        The alias that has been chosen for the e3nn module,
+        usually just ``e3nn``.
+    """
 
     e3nn_module.o3.spherical_harmonics = e3nn_spherical_harmonics
 
