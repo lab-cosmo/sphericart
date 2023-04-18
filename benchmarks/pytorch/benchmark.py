@@ -14,15 +14,18 @@ and if the comparison is requested.
 
 try:
     import e3nn
+
     _HAS_E3NN = True
 except ImportError:
     _HAS_E3NN = False
 
 try:
     import jax
+
     jax.config.update("jax_enable_x64", True)  # enable float64 for jax
     import jax.numpy as jnp
     import e3nn_jax
+
     _HAS_E3NN_JAX = True
 except ImportError:
     _HAS_E3NN_JAX = False
@@ -37,14 +40,16 @@ def sphericart_benchmark(
     dtype=torch.float64,
     compare=False,
 ):
-    print(
-        f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, dtype={dtype}, device={device} ****"
-    )
     xyz = torch.randn((n_samples, 3), dtype=dtype, device=device)
     sh_calculator = sphericart_torch.SphericalHarmonics(l_max, normalized=normalized)
+    omp_threads = sh_calculator._omp_num_threads
+    print(
+        f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries},"
+        + f"dtype={dtype}, device={device}, omp_num_threads={omp_threads} ****"
+    )
 
-    time_noderi = np.zeros(n_tries+10)
-    for i in range(n_tries+10):
+    time_noderi = np.zeros(n_tries + 10)
+    for i in range(n_tries + 10):
         elapsed = -time.time()
         sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
         elapsed += time.time()
@@ -55,8 +60,8 @@ def sphericart_benchmark(
 {time_noderi[10:].std()/n_samples*1e9: 10.1f} (std)"
     )
 
-    time_deri = np.zeros(n_tries+10)
-    for i in range(n_tries+10):
+    time_deri = np.zeros(n_tries + 10)
+    for i in range(n_tries + 10):
         elapsed = -time.time()
         sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
         elapsed += time.time()
@@ -70,10 +75,10 @@ def sphericart_benchmark(
     # autograd
     xyz = xyz.clone().detach().type(dtype).to(device).requires_grad_()
 
-    time_fw = np.zeros(n_tries+10)
-    time_bw = np.zeros(n_tries+10)
+    time_fw = np.zeros(n_tries + 10)
+    time_bw = np.zeros(n_tries + 10)
 
-    for i in range(n_tries+10):
+    for i in range(n_tries + 10):
         elapsed = -time.time()
         sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
         elapsed += time.time()
@@ -84,8 +89,7 @@ def sphericart_benchmark(
         sph_sum.backward()
         elapsed += time.time()
         time_bw[i] = elapsed
-
-    # print(xyz.grad)
+        xyz.grad.zero_()
 
     print(
         f" Forward:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
@@ -100,10 +104,13 @@ def sphericart_benchmark(
         xyz_tensor = (
             xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
         )
-        for i in range(n_tries+10):
+        for i in range(n_tries + 10):
             elapsed = -time.time()
             sh_e3nn = e3nn.o3.spherical_harmonics(
-                list(range(l_max + 1)), xyz_tensor, normalize=normalized, normalization="integral"
+                list(range(l_max + 1)),
+                xyz_tensor,
+                normalize=normalized,
+                normalization="integral",
             )
             elapsed += time.time()
             time_fw[i] = elapsed
@@ -112,28 +119,64 @@ def sphericart_benchmark(
             sph_sum.backward()
             elapsed += time.time()
             time_bw[i] = elapsed
-
-        # print(xyz_tensor.grad)
+            xyz_tensor.grad.zero_()
 
         print(
             f" E3NN-FW:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_fw[:10])
+        # print("Warm-up timings / sec.: \n", time_fw[:10])
         print(
             f" E3NN-BW:        {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_bw[:10])
+        # print("Warm-up timings / sec.: \n", time_bw[:10])
+
+        # check the timing with the patch
+        sphericart_torch.patch_e3nn(e3nn)
+        xyz_tensor = (
+            xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
+        )
+        for i in range(n_tries + 10):
+            elapsed = -time.time()
+            sh_e3nn = e3nn.o3.spherical_harmonics(
+                list(range(l_max + 1)),
+                xyz_tensor,
+                normalize=normalized,
+                normalization="integral",
+            )
+            elapsed += time.time()
+            time_fw[i] = elapsed
+            sph_sum = torch.sum(sh_e3nn)
+            elapsed = -time.time()
+            sph_sum.backward()
+            elapsed += time.time()
+            time_bw[i] = elapsed
+            xyz.grad.zero_()
+
+        print(
+            f" PATCH-FW:       {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        )
+        # print("Warm-up timings / sec.: \n", time_fw[:10])
+        print(
+            f" PATCH-BW:       {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        )
+        # print("Warm-up timings / sec.: \n", time_bw[:10])
+        sphericart_torch.unpatch_e3nn(e3nn)
 
     if compare and _HAS_E3NN_JAX:
-        dtype = (np.float64 if dtype == torch.float64 else np.float32)
+        dtype = np.float64 if dtype == torch.float64 else np.float32
         xyz_tensor = jnp.asarray(
             xyz[:, [1, 2, 0]].clone().detach().cpu().numpy(), dtype=dtype
         )  # Automatically goes to gpu if present
-        if device == "cpu": xyz_tensor = jax.device_put(xyz_tensor, jax.devices("cpu")[0])  # Force back to cpu
+        if device == "cpu":
+            xyz_tensor = jax.device_put(
+                xyz_tensor, jax.devices("cpu")[0]
+            )  # Force back to cpu
 
-        irreps = e3nn_jax.Irreps([e3nn_jax.Irrep(l, 1) for l in range(l_max+1)])
+        irreps = e3nn_jax.Irreps([e3nn_jax.Irrep(l, 1) for l in range(l_max + 1)])
 
         def loss_fn(xyz_tensor):
             sh_e3nn = e3nn_jax.spherical_harmonics(
@@ -141,10 +184,10 @@ def sphericart_benchmark(
             )
             loss = jnp.sum(sh_e3nn.array)
             return loss
-        
+
         loss_grad_fn = jax.grad(loss_fn)
 
-        for i in range(n_tries+10):
+        for i in range(n_tries + 10):
             elapsed = -time.time()
             loss = loss_fn(xyz_tensor)
             elapsed += time.time()
@@ -155,19 +198,19 @@ def sphericart_benchmark(
             elapsed += time.time()
             time_bw[i] = elapsed
 
-        # print(loss_grad)
-
         print(
             f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_fw[:10])
+        # print("Warm-up timings / sec.: \n", time_fw[:10])
         print(
             f" E3NN-JAX-BW:    {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
 {time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("First-calls timings / sec.: \n", time_bw[:10])
-    print("*********************************************************************************************")
+        # print("Warm-up timings / sec.: \n", time_bw[:10])
+    print(
+        "*********************************************************************************************"
+    )
 
 
 if __name__ == "__main__":

@@ -55,6 +55,16 @@ def setup_functions(lib):
         ctypes.c_size_t,
     ]
 
+    lib.sphericart_omp_num_threads.restype = int
+    lib.sphericart_omp_num_threads.argtypes = [
+        sphericart_calculator_t,
+    ]
+
+    lib.sphericart_omp_num_threads_f.restype = int
+    lib.sphericart_omp_num_threads_f.argtypes = [
+        sphericart_calculator_f_t,
+    ]
+
 
 class LibraryFinder(object):
     def __init__(self):

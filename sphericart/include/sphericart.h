@@ -164,6 +164,18 @@ SPHERICART_EXPORT void sphericart_compute_sample_f(
     size_t dsph_length
 );
 
+/**
+ * Get the number of OpenMP threads used by a calculator. 
+ * If `sphericart` is computed without OpenMP support returns 1.
+*/
+SPHERICART_EXPORT int sphericart_omp_num_threads(
+    sphericart_calculator_t* calculator
+);
+
+SPHERICART_EXPORT int sphericart_omp_num_threads_f(
+    sphericart_calculator_f_t* calculator
+);
+
 #ifdef __cplusplus
 }
 #endif

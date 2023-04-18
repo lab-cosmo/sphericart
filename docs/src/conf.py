@@ -55,4 +55,6 @@ cpp_private_member_specifier = ""
 intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
     "python": ("https://docs.python.org/3", None),
+    "torch": ("https://pytorch.org/docs/stable/", None),
+    "e3nn": ("https://docs.e3nn.org/en/latest/", None),
 }

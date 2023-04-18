@@ -31,6 +31,10 @@ class SphericalHarmonics:
         self._calculator = self._lib.sphericart_new(l_max, normalized)
         self._calculator_f = self._lib.sphericart_new_f(l_max, normalized)
 
+        # this allows to check the number of threads that are used
+        # it is 1 if there is no OpenMP available
+        self._omp_num_threads = self._lib.sphericart_omp_num_threads(self._calculator)
+
     def __del__(self):
         self._lib.sphericart_delete(self._calculator)
         self._lib.sphericart_delete_f(self._calculator_f)
