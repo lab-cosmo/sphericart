@@ -1,434 +1,24 @@
 #include <cmath>
+#include <iostream>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <torch/torch.h>
 
-// #include <c10/util/Half.h>
-
 #include "sphericart/cuda.hpp"
+
+#define _SPHERICART_INTERNAL_IMPLEMENTATION
+#include "sphericart.hpp"
 
 #define HARDCODED_LMAX 3
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_SAME_DTYPE(x, y) TORCH_CHECK(x.scalar_type() == y.scalar_type(), #x " and " #y " must have the same dtype.")
 
-#define CHECK_INPUT(x)                                                                                                 \
-    CHECK_CUDA(x);                                                                                                     \
-    CHECK_CONTIGUOUS(x)
+#define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
-/*
-Computes the index for buffer values which are threadIdx.x and threadIdx.y specific
-*/
-__device__ int get_index_(int i, int buff_size) { return threadIdx.y * buff_size + i * blockDim.x + threadIdx.x; }
-
-/*
-Computes the index for buffer values which are shared across GRID_DIM_Y
-*/
+/* Computes the index for buffer values which are shared across GRID_DIM_Y */
 __device__ int get_index(int i) { return i * blockDim.x + threadIdx.x; }
-template <typename scalar_t> __device__ void compute_sph_l0(scalar_t *sph) {
-    sph[get_index(0)] = 0.282094791773878;
-}
-
-template <typename scalar_t>
-__device__ void compute_dsph_l0(scalar_t *sph_i, scalar_t *dxsph_i, scalar_t *dysph_i, scalar_t *dzsph_i) {
-    dxsph_i[get_index(0)] = dysph_i[get_index(0)] = dzsph_i[get_index(0)] = 0.0;
-}
-
-template <typename scalar_t> __device__ void compute_sph_l1(scalar_t x, scalar_t y, scalar_t z, scalar_t *sph) {
-    sph[get_index(1)] = 0.48860251190292 * y;
-    sph[get_index(2)] = 0.48860251190292 * z;
-    sph[get_index(3)] = 0.48860251190292 * x;
-}
-
-template <typename scalar_t>
-__device__ void compute_dsph_l1(scalar_t *sph_i, scalar_t *dxsph_i, scalar_t *dysph_i, scalar_t *dzsph_i) {
-    dxsph_i[get_index(1)] = 0.0;
-    dxsph_i[get_index(2)] = 0.0;
-    dxsph_i[get_index(3)] = 0.48860251190292;
-
-    dysph_i[get_index(1)] = 0.48860251190292;
-    dysph_i[get_index(2)] = 0.0;
-    dysph_i[get_index(3)] = 0.0;
-
-    dzsph_i[get_index(1)] = 0.0;
-    dzsph_i[get_index(2)] = 0.48860251190292;
-    dzsph_i[get_index(3)] = 0.0;
-}
-
-template <typename scalar_t>
-__device__ void compute_sph_l2(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
-    scalar_t tmp;
-    tmp = 2.23606797749979 * x;
-    sph[get_index(4)] = tmp * sph[get_index(1)];
-    sph[get_index(7)] = tmp * sph[get_index(2)];
-    sph[get_index(5)] = 2.23606797749979 * z * sph[get_index(1)];
-    sph[get_index(6)] = -0.315391565252520 * (x2 + y2 - 2 * z2);
-    sph[get_index(8)] = 0.54627421529604 * (x2 - y2);
-}
-
-template <typename scalar_t>
-__device__ void compute_dsph_l2(
-    scalar_t x,
-    scalar_t y,
-    scalar_t z,
-    scalar_t x2,
-    scalar_t y2,
-    scalar_t z2,
-    scalar_t *sph_i,
-    scalar_t *dxsph_i,
-    scalar_t *dysph_i,
-    scalar_t *dzsph_i
-) {
-    dxsph_i[get_index(4)] = 2.23606797749979 * sph_i[get_index(1)];
-    dxsph_i[get_index(5)] = 0.0;
-    dxsph_i[get_index(6)] = -1.29099444873581 * sph_i[get_index(3)];
-    dxsph_i[get_index(7)] = 2.23606797749979 * sph_i[get_index(2)];
-    dxsph_i[get_index(8)] = 2.23606797749979 * sph_i[get_index(3)];
-
-    dysph_i[get_index(4)] = -1.73205080756888 * dxsph_i[get_index(6)];
-    dysph_i[get_index(5)] = dxsph_i[get_index(7)];
-    dysph_i[get_index(6)] = -0.577350269189626 * dxsph_i[get_index(4)];
-    dysph_i[get_index(7)] = 0.0;
-    dysph_i[get_index(8)] = -dxsph_i[get_index(4)];
-
-    dzsph_i[get_index(4)] = dzsph_i[get_index(8)] = 0.0;
-    dzsph_i[get_index(5)] = dxsph_i[get_index(4)];
-    dzsph_i[get_index(6)] = 1.15470053837925 * dxsph_i[get_index(7)];
-    dzsph_i[get_index(7)] = dysph_i[get_index(4)];
-}
-
-template <typename scalar_t>
-__device__ void compute_sph_l3(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
-    scalar_t tmp;
-    sph[get_index(9)] = -0.59004358992664 * y * (y2 - 3 * x2);
-    sph[get_index(10)] = 2.64575131106459 * z * sph[get_index(4)];
-    tmp = -0.457045799464466 * (x2 + y2 - 4 * z2);
-    sph[get_index(11)] = y * tmp;
-    sph[get_index(13)] = x * tmp;
-    sph[get_index(12)] = -1.49270533036046 * z * (z2 - 2.37799637856361 * sph[get_index(6)]);
-    sph[get_index(14)] = 1.44530572132028 * z * (x2 - y2);
-    sph[get_index(15)] = 0.59004358992664 * x * (x2 - 3 * y2);
-}
-
-template <typename scalar_t>
-__device__ void compute_dsph_l3(
-    scalar_t x,
-    scalar_t y,
-    scalar_t z,
-    scalar_t x2,
-    scalar_t y2,
-    scalar_t z2,
-    scalar_t *sph_i,
-    scalar_t *dxsph_i,
-    scalar_t *dysph_i,
-    scalar_t *dzsph_i
-) {
-    dxsph_i[get_index(9)] = 3.24037034920393 * sph_i[get_index(4)];
-    dxsph_i[get_index(10)] = 2.64575131106459 * sph_i[get_index(5)];
-    dxsph_i[get_index(11)] = -0.83666002653408 * sph_i[get_index(4)];
-    dxsph_i[get_index(12)] = -2.04939015319192 * sph_i[get_index(7)];
-    dxsph_i[get_index(13)] = 0.91409159892893 * (y2 - z2 + 4.75599275712721 * sph_i[get_index(6)]);
-    dxsph_i[get_index(14)] = 2.64575131106459 * sph_i[get_index(7)];
-    dxsph_i[get_index(15)] = 3.24037034920393 * sph_i[get_index(8)];
-
-    dysph_i[get_index(9)] = dxsph_i[get_index(15)];
-    dysph_i[get_index(10)] = dxsph_i[get_index(14)];
-    dysph_i[get_index(11)] = -0.91409159892893 * (y2 - z2 - 1.58533091904240 * sph_i[get_index(6)]);
-    dysph_i[get_index(12)] = -2.04939015319192 * sph_i[get_index(5)];
-    dysph_i[get_index(13)] = -0.83666002653408 * sph_i[get_index(4)];
-    dysph_i[get_index(14)] = -dxsph_i[get_index(10)];
-    dysph_i[get_index(15)] = -dxsph_i[get_index(9)];
-
-    dzsph_i[get_index(9)] = 0.0;
-    dzsph_i[get_index(10)] = 2.64575131106459 * sph_i[get_index(4)];
-    dzsph_i[get_index(11)] = 3.34664010613630 * sph_i[get_index(5)];
-    dzsph_i[get_index(12)] = 3.54964786985977 * sph_i[get_index(6)];
-    dzsph_i[get_index(13)] = 3.34664010613630 * sph_i[get_index(7)];
-    dzsph_i[get_index(14)] = 2.64575131106459 * sph_i[get_index(8)];
-    dzsph_i[get_index(15)] = 0.0;
-}
-
-template <typename scalar_t>
-__device__ void compute_sph_l4(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
-    scalar_t tmp;
-    sph[get_index(16)] = 4.194391357527674 * sph[get_index(4)] * sph[get_index(8)];
-    sph[get_index(17)] = 3 * z * sph[get_index(9)];
-    tmp = -0.866025403784439 * (x2 + y2 - 6 * z2);
-    sph[get_index(18)] = tmp * sph[get_index(4)];
-    sph[get_index(22)] = tmp * sph[get_index(8)];
-    sph[get_index(20)] = -0.69436507482941 * (
-        y * sph[get_index(11)]
-        - 1.6329931618554521 * z * sph[get_index(12)]
-        + x * sph[get_index(13)]
-    );
-    tmp = -1.224744871391589 * (z2 - 4.755992757127213 * sph[get_index(6)]);
-    sph[get_index(19)] = sph[get_index(5)] * tmp;
-    sph[get_index(21)] = sph[get_index(7)] * tmp;
-    sph[get_index(23)] = 3 * z * sph[get_index(15)];
-    sph[get_index(24)] = -1.060660171779821 * (y * sph[get_index(9)] - x * sph[get_index(15)]);
-}
-
-template <typename scalar_t>
-__device__ void compute_dsph_l4(
-    scalar_t x,
-    scalar_t y,
-    scalar_t z,
-    scalar_t x2,
-    scalar_t y2,
-    scalar_t z2,
-    scalar_t *sph_i,
-    scalar_t *dxsph_i,
-    scalar_t *dysph_i,
-    scalar_t *dzsph_i
-) {
-    dxsph_i[get_index(16)] = 4.242640687119285 * sph_i[get_index(9)];
-    dxsph_i[get_index(17)] = 3.674234614174767 * sph_i[get_index(10)];
-    dxsph_i[get_index(18)] = 1.892349391515120 * y * (y2 + 4.755992757127213 * sph_i[get_index(6)]);
-    dxsph_i[get_index(19)] = -1.388730149658827 * sph_i[get_index(10)];
-    dxsph_i[get_index(20)] = -2.777460299317654 * sph_i[get_index(13)];
-    dxsph_i[get_index(21)] = -1.338093087114578 * (
-        z * z2
-        - 2.745873698591307 * y * sph_i[get_index(5)]
-        - 4.019547514144073 * sph_i[get_index(12)]
-    );
-    dxsph_i[get_index(22)] = -1.892349391515120 * x * (x2 - 3 * z2);
-    dxsph_i[get_index(23)] = 3.674234614174767 * sph_i[get_index(14)];
-    dxsph_i[get_index(24)] = 4.242640687119285 * sph_i[get_index(15)];
-
-    dysph_i[get_index(16)] = dxsph_i[get_index(24)];
-    dysph_i[get_index(17)] = dxsph_i[get_index(23)];
-    dysph_i[get_index(18)] = -1.892349391515120 * x * (y2 - 2 * z2 - 1.585330919042404 * sph_i[get_index(6)]);
-    dysph_i[get_index(19)] = -1.338093087114578 * (z * (3 * y2 - z2) - 1.339849171381358 * sph_i[get_index(12)]);
-    dysph_i[get_index(20)] = -2.777460299317654 * sph_i[get_index(11)];
-    dysph_i[get_index(21)] = dxsph_i[get_index(19)];
-    dysph_i[get_index(22)] = 1.892349391515120 * y * (y2 - 3 * z2);
-    dysph_i[get_index(23)] = -dxsph_i[get_index(17)];
-    dysph_i[get_index(24)] = -dxsph_i[get_index(16)];
-
-    dzsph_i[get_index(16)] = 0.0;
-    dzsph_i[get_index(17)] = 3 * sph_i[get_index(9)];
-    dzsph_i[get_index(18)] = 3.927922024247863 * sph_i[get_index(10)];
-    dzsph_i[get_index(19)] = 4.391550328268399 * sph_i[get_index(11)];
-    dzsph_i[get_index(20)] = 4.535573676110727 * sph_i[get_index(12)];
-    dzsph_i[get_index(21)] = 4.391550328268399 * sph_i[get_index(13)];
-    dzsph_i[get_index(22)] = 3.927922024247863 * sph_i[get_index(14)];
-    dzsph_i[get_index(23)] = 3 * sph_i[get_index(15)];
-    dzsph_i[get_index(24)] = 0.0;
-}
-
-template <typename scalar_t>
-__device__ void compute_sph_l5(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
-    scalar_t tmp;
-    sph[get_index(25)] = 13.12764113680340 * y * (y2 * (x2 - 0.2 * y2) + 0.3994658435740642 * sph[get_index(24)]);
-    tmp = 3.316624790355400 * z;
-    sph[get_index(26)] = tmp * sph[get_index(16)];
-    sph[get_index(34)] = tmp * sph[get_index(24)];
-    tmp = 4.974937185533100 * (z2 + 0.5284436396808015 * sph[get_index(6)]);
-    sph[get_index(27)] = tmp * sph[get_index(9)];
-    sph[get_index(33)] = tmp * sph[get_index(15)];
-    tmp = 5.257947827012948 * sph[get_index(6)];
-    sph[get_index(28)] = tmp * sph[get_index(10)];
-    sph[get_index(32)] = tmp * sph[get_index(14)];
-    tmp = 0.6324555320336759 * z;
-    sph[get_index(29)] = 1.427248064296125 * (y * sph[get_index(20)] + tmp * sph[get_index(19)]);
-    sph[get_index(31)] = 1.427248064296125 * (x * sph[get_index(20)] + tmp * sph[get_index(21)]);
-    sph[get_index(30)] = 1.403403869441083 * (3.540173863740353 * sph[get_index(6)] * sph[get_index(12)] - z * z2 * z2);
-    sph[get_index(35)] = -1.048808848170152 * (y * sph[get_index(16)] - x * sph[get_index(24)]);
-}
-
-template <typename scalar_t>
-__device__ void compute_dsph_l5(
-    scalar_t x,
-    scalar_t y,
-    scalar_t z,
-    scalar_t x2,
-    scalar_t y2,
-    scalar_t z2,
-    scalar_t *sph_i,
-    scalar_t *dxsph_i,
-    scalar_t *dysph_i,
-    scalar_t *dzsph_i
-) {
-    dxsph_i[get_index(25)] = 5.244044240850758 * sph_i[get_index(16)];
-    dxsph_i[get_index(26)] = 4.690415759823430 * sph_i[get_index(17)];
-    dxsph_i[get_index(27)] =
-        3.582364210034113 * (y2 * sph_i[get_index(4)] + 3.58568582800318 * x * sph_i[get_index(11)]);
-    dxsph_i[get_index(28)] =
-        -8.774964387392122 * ((y2 - z2) * sph_i[get_index(5)] + 0.3086066999241838 * sph_i[get_index(17)]);
-    dxsph_i[get_index(29)] = -1.914854215512676 * sph_i[get_index(18)];
-    dxsph_i[get_index(30)] = -3.496029493900505 * sph_i[get_index(21)];
-    dxsph_i[get_index(31)] = -8.616843969807043 * (
-        0.2102610435016800 * z2 * z2
-        + 1.056887279361603 * sph_i[get_index(5)] * sph_i[get_index(5)]
-        + (y2 - z2) * sph_i[get_index(6)] + 0.555555555555556 * sph_i[get_index(22)]
-    );
-    dxsph_i[get_index(32)] = -8.774964387392122 * (x2 - z2) * sph_i[get_index(7)];
-    dxsph_i[get_index(33)] = -5.170697352496190 * (
-        0.106904496764970 * z * dxsph_i[get_index(23)]
-        - 0.320713490294909 * y * sph_i[get_index(9)]
-        - sph_i[get_index(22)]
-    );
-    dxsph_i[get_index(34)] = 4.690415759823430 * sph_i[get_index(23)];
-    dxsph_i[get_index(35)] = 5.24404424085076 * sph_i[get_index(24)];
-
-    dysph_i[get_index(25)] = dxsph_i[get_index(35)];
-    dysph_i[get_index(26)] = dxsph_i[get_index(34)];
-    dysph_i[get_index(27)] = -3.102418411497714 * (
-        0.534522483824849 * y * sph_i[get_index(9)]
-        - 0.654653670707977 * z * sph_i[get_index(14)]
-        - sph_i[get_index(22)]
-    );
-    dysph_i[get_index(28)] = -8.77496438739212 * (y2 - 1.585330919042404 * sph_i[get_index(6)]) * sph_i[get_index(7)];
-    dysph_i[get_index(29)] = 0.7237468644557459 * (
-        y * (2.12132034355964 * sph_i[get_index(9)]
-        - 8.21583836257749 * sph_i[get_index(11)])
-        +6.70820393249937 * z * sph_i[get_index(12)]
-        + sph_i[get_index(24)]
-    );
-    dysph_i[get_index(30)] = -3.496029493900505 * sph_i[get_index(19)];
-    dysph_i[get_index(31)] = dxsph_i[get_index(29)];
-    dysph_i[get_index(32)] = 8.77496438739212 * (y2 - z2) * sph_i[get_index(5)];
-    dysph_i[get_index(33)] = 3.582364210034113 * sph_i[get_index(4)] * (
-        y2
-        - 5 * z2
-        - 1.585330919042404 * sph_i[get_index(6)]
-    );
-    dysph_i[get_index(34)] = -dxsph_i[get_index(26)];
-    dysph_i[get_index(35)] = -dxsph_i[get_index(25)];
-
-    dzsph_i[get_index(25)] = 0.0;
-    dzsph_i[get_index(26)] = 3.316624790355400 * sph_i[get_index(16)];
-    dzsph_i[get_index(27)] = 4.422166387140533 * sph_i[get_index(17)];
-    dzsph_i[get_index(28)] = 5.066228051190221 * sph_i[get_index(18)];
-    dzsph_i[get_index(29)] = 5.416025603090640 * sph_i[get_index(19)];
-    dzsph_i[get_index(30)] = 5.527707983925666 * sph_i[get_index(20)];
-    dzsph_i[get_index(31)] = 5.416025603090640 * sph_i[get_index(21)];
-    dzsph_i[get_index(32)] = 5.066228051190221 * sph_i[get_index(22)];
-    dzsph_i[get_index(33)] = 4.422166387140533 * sph_i[get_index(23)];
-    dzsph_i[get_index(34)] = 3.316624790355400 * sph_i[get_index(24)];
-    dzsph_i[get_index(35)] = 0.0;
-}
-
-template <typename scalar_t>
-__device__ void compute_sph_l6(scalar_t x, scalar_t y, scalar_t z, scalar_t x2, scalar_t y2, scalar_t z2, scalar_t *sph) {
-    scalar_t tmp;
-    sph[get_index(36)] = 3.924637560539857 * sph[get_index(9)] * sph[get_index(15)];
-    tmp = 3.605551275463989 * z;
-    sph[get_index(37)] = tmp * sph[get_index(25)];
-    sph[get_index(47)] = tmp * sph[get_index(35)];
-    tmp = 6.4498061986388 * (z2 + 0.396332729760601 * sph[get_index(6)]);
-    sph[get_index(38)] = tmp * sph[get_index(16)];
-    sph[get_index(46)] = tmp * sph[get_index(24)];
-    tmp = 1.04083299973307 * (z2 + 4.75599275712721 * sph[get_index(6)]);
-    sph[get_index(39)] = tmp * sph[get_index(17)];
-    sph[get_index(45)] = tmp * sph[get_index(23)];
-    sph[get_index(40)] = 2.033805211017918 * (0.3779644730092272 * z * sph[get_index(28)] + x * sph[get_index(29)]);
-    tmp = -6.399218702310463 * (z2 * z2 - 4.188790204786391 * sph[get_index(6)] * sph[get_index(6)]);
-    sph[get_index(41)] = tmp * sph[get_index(5)];
-    sph[get_index(43)] = tmp * sph[get_index(7)];
-    sph[get_index(42)] = -1.087114613009218 * (
-        0.645497224367903 * y * sph[get_index(29)]
-        - z * sph[get_index(30)]
-        + 0.645497224367903 * x * sph[get_index(31)]
-    );
-    sph[get_index(44)] = -0.9414688716912718 * (
-        y * sph[get_index(27)]
-        - 1.63299316185545 * z * sph[get_index(32)]
-        + x * sph[get_index(33)]
-    );
-    sph[get_index(48)] = -1.040832999733066 * (y * sph[get_index(25)] - x * sph[get_index(35)]);
-}
-
-template <typename scalar_t>
-__device__ void compute_dsph_l6(
-    scalar_t x,
-    scalar_t y,
-    scalar_t z,
-    scalar_t x2,
-    scalar_t y2,
-    scalar_t z2,
-    scalar_t *sph_i,
-    scalar_t *dxsph_i,
-    scalar_t *dysph_i,
-    scalar_t *dzsph_i
-) {
-    scalar_t tmp;
-    dxsph_i[get_index(36)] = 6.244997998398398 * sph_i[get_index(25)];
-    dysph_i[get_index(48)] = -dxsph_i[get_index(36)];
-    dxsph_i[get_index(37)] = 5.700877125495690 * sph_i[get_index(26)];
-    dysph_i[get_index(47)] = -dxsph_i[get_index(37)];
-    dxsph_i[get_index(38)] = -8.07303841165959 * y * (
-        y2 * y2
-        - 4.188790204786391 * sph_i[get_index(5)] * sph_i[get_index(5)]
-        - 2.642218198404007 * sph_i[get_index(22)]
-    );
-    dxsph_i[get_index(39)] = -15.29705854077835 * (
-        (y2 - z2) * sph_i[get_index(10)]
-        + 0.2611164839335468 * sph_i[get_index(26)]
-    );
-    dxsph_i[get_index(40)] = 32.08092506951781 * (
-        sph_i[get_index(5)] * (0.577350269189626 * y * sph_i[get_index(5)] - z * sph_i[get_index(6)])
-        + 0.364182810197360 * y * y2 * sph_i[get_index(6)] + 0.3169804496925759 * sph_i[get_index(29)]
-    );
-    dxsph_i[get_index(41)] = -2.430862174021989 * sph_i[get_index(28)];
-    dysph_i[get_index(43)] = dxsph_i[get_index(41)];
-    dxsph_i[get_index(42)] = -4.210376791603422 * sph_i[get_index(31)];
-    dysph_i[get_index(42)] = -4.210376791603422 * sph_i[get_index(29)];
-    dxsph_i[get_index(43)] = 4.660970900149851 * (
-        z2 * z * (1.666666666666667 * y2 + z2 - 2.642218198404007 * sph_i[get_index(6)])
-        + 1.245553603643984 * y * sph_i[get_index(19)] + 1.781383145961857 * sph_i[get_index(30)]
-    );
-    dxsph_i[get_index(44)] = 14.73928415223878 * (x * (y2 - z2) * (2 * x2 - z2 - y2) + 0.2856568031469765 * sph_i[get_index(35)]);
-    dxsph_i[get_index(45)] = 3.122498999199199 * (
-        y * sph_i[get_index(17)]
-        - 1.224744871391589 * z2 * sph_i[get_index(14)]
-        + 1.846372364689991 * sph_i[get_index(32)]
-    );
-    tmp = 1.612451549659710 * (y * sph_i[get_index(16)] - 1.4142135623730950 * z * sph_i[get_index(23)]);
-    dxsph_i[get_index(46)] = tmp + 6.18796485857095 * sph_i[get_index(33)];
-    dysph_i[get_index(38)] = -tmp + 4.125309905713972 * sph_i[get_index(33)];
-    dxsph_i[get_index(47)] = 5.700877125495690 * sph_i[get_index(34)];
-    dxsph_i[get_index(48)] = 6.244997998398398 * sph_i[get_index(35)];
-    dysph_i[get_index(36)] = dxsph_i[get_index(48)];
-    dysph_i[get_index(37)] = dxsph_i[get_index(47)];
-    dysph_i[get_index(39)] = -3.122498999199199 * (
-        -1.22474487139159 * z2 * sph_i[get_index(14)]
-        + y * sph_i[get_index(17)]
-        - 1.10782341881399 * sph_i[get_index(32)]
-    );
-    dysph_i[get_index(40)] = 11.68332144554792 * (
-        x * (-1.585330919042404 * sph_i[get_index(5)] * sph_i[get_index(5)] + (z2 - y2) * sph_i[get_index(6)])
-        + 0.1740776559556978 * sph_i[get_index(31)]
-    );
-    dysph_i[get_index(41)] = -6.99145635022478 * z * (
-        z2 * z2
-        + (5.28443639680801 * y2 - 4.188790204786391 * sph_i[get_index(6)]) * sph_i[get_index(6)]
-    );
-    dysph_i[get_index(44)] = 13.49073756323204 * (
-        y2 * z * sph_i[get_index(5)]
-        + (-0.14940357616680 * x2 + 0.44821072850040 * y2 - 0.59761430466720 * z2) * sph_i[get_index(11)]
-    );
-    dysph_i[get_index(45)] = 7.648529270389177 * (y2 - z2 - 1.58533091904240 * sph_i[get_index(6)]) * sph_i[get_index(10)];
-    dysph_i[get_index(46)] = 11.40175425099138 * (
-        0.2360174359706574 * y2 * y2 * y
-        + (y2 - 3 * z2) * sph_i[get_index(9)]
-        + 0.1348399724926484 * sph_i[get_index(25)]
-    );
-    dzsph_i[get_index(36)] = 0.0;
-    dzsph_i[get_index(37)] = 3.605551275463989 * sph_i[get_index(25)];
-    dzsph_i[get_index(38)] = 4.861724348043977 * sph_i[get_index(26)];
-    dzsph_i[get_index(39)] = 5.64881323014763 * sph_i[get_index(27)];
-    dzsph_i[get_index(40)] = 6.14964891828646 * sph_i[get_index(28)];
-    dzsph_i[get_index(41)] = 6.43145678393600 * sph_i[get_index(29)];
-    dzsph_i[get_index(42)] = 6.52268767805531 * sph_i[get_index(30)];
-    dzsph_i[get_index(43)] = 6.43145678393600 * sph_i[get_index(31)];
-    dzsph_i[get_index(44)] = 6.14964891828646 * sph_i[get_index(32)];
-    dzsph_i[get_index(45)] = 5.64881323014763 * sph_i[get_index(33)];
-    dzsph_i[get_index(46)] = 4.861724348043977 * sph_i[get_index(34)];
-    dzsph_i[get_index(47)] = 3.605551275463989 * sph_i[get_index(35)];
-    dzsph_i[get_index(48)] = 0.0;
-}
 
 template <typename scalar_t>
 __device__ void generic_sph_l_channel_device(
@@ -670,8 +260,6 @@ __global__ void spherical_harmonics_kernel(
     scalar_t *buffer_prefactors = reinterpret_cast<scalar_t *>(buffer + offset);
     offset += prefactors.size(0) * sizeof(scalar_t);
 
-    //int nl = 2 * lmax + 1;
-
     int nl = max(
         static_cast<int>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
          2 * lmax + 1
@@ -766,41 +354,53 @@ __global__ void spherical_harmonics_kernel(
         buffer_dsph_y,
         buffer_dsph_z,
         requires_grad
-    ); 
+    );
 
     if (lmax >= 0) {
-
-        //clear_buffers(1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
-
-        compute_sph_l0(buffer_sph);
+        COMPUTE_SPH_L0(buffer_sph, get_index);
 
         if (requires_grad) {
-            compute_dsph_l0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+            COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
         }
     }
 
     if (lmax >= 1) {
-
-        compute_sph_l1(x, y, z, buffer_sph);
+        COMPUTE_SPH_L1(x, y, z, buffer_sph, get_index);
 
         if (requires_grad) {
-            compute_dsph_l1(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+            COMPUTE_SPH_DERIVATIVE_L1(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
         }
     }
 
     if (lmax >= 2) {
+        COMPUTE_SPH_L2(x, y, z, x2, y2, z2, buffer_sph, get_index);
 
-        compute_sph_l2(x, y, z, x2, y2, z2, buffer_sph);
         if (requires_grad) {
-            compute_dsph_l2(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+            COMPUTE_SPH_DERIVATIVE_L2(
+                x, y, z,
+                x2, y2, z2,
+                buffer_sph,
+                buffer_dsph_x,
+                buffer_dsph_y,
+                buffer_dsph_z,
+                get_index
+            );
         }
     }
 
     if (lmax >= 3) {
+        COMPUTE_SPH_L3(x, y, z, x2, y2, z2, buffer_sph, get_index);
 
-        compute_sph_l3(x, y, z, x2, y2, z2, buffer_sph);
         if (requires_grad) {
-            compute_dsph_l3(x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z);
+            COMPUTE_SPH_DERIVATIVE_L3(
+                x, y, z,
+                x2, y2, z2,
+                buffer_sph,
+                buffer_dsph_x,
+                buffer_dsph_y,
+                buffer_dsph_z,
+                get_index
+            );
         }
     }
     __syncthreads();
@@ -922,16 +522,11 @@ bool sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, 
 
     bool accepted = required_buff_size <= deviceProp.sharedMemPerBlockOptin;
 
-    // TORCH_CHECK(
-    //     required_buff_size <= deviceProp.sharedMemPerBlockOptin,
-    //     "requested shared memory buffer (", required_buff_size, ") exceeds max available ",
-    //     "on device: ", deviceProp.name, " (", deviceProp.sharedMemPerBlockOptin, ")"
-    // );
-
     if (!accepted){
-        printf("Warning: requested shared memory buffer (%d) exceeds max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlockOptin, deviceProp.name );
+        std::cerr << "Warning: requested shared memory buffer (" << required_buff_size;
+        std::cerr << ") exceeds max available (" << deviceProp.sharedMemPerBlockOptin;
+        std::cerr << ") on device " << deviceProp.name << std::endl;
     } else {
-        // printf("Accepted shared memory buffer (%d) max available (%d) on device (%s)\n", required_buff_size, deviceProp.sharedMemPerBlockOptin, deviceProp.name );
         switch (scalar_type) {
         case torch::ScalarType::Double:
             cudaFuncSetAttribute(
@@ -1020,8 +615,6 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
                 total_buff_size += 3 * GRID_DIM_Y * GRID_DIM_X * nl * sizeof(scalar_t); // buffer_sph_derivs
             }
 
-            //printf("total buff size: %d\n", total_buff_size);
-
             spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
                 xyz.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                 prefactors.packed_accessor32<scalar_t, 1, torch::RestrictPtrTraits>(),
@@ -1031,7 +624,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
                 sph.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                 d_sph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>());
         }));
-    
+
     cudaDeviceSynchronize();
 
     if (xyz.requires_grad() || gradients) {
@@ -1060,9 +653,9 @@ __global__ void backward_kernel(
                 torch::sum(sph_grad * gradient_slice, 1)
             );
         }*/
-    
+
     int atom_idx = blockIdx.x * blockDim.y + threadIdx.y;
-    
+
     int spatial = blockIdx.y;
 
     scalar_t sum = 0.0;
@@ -1105,7 +698,7 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
 
         AT_DISPATCH_FLOATING_TYPES(
         xyz.scalar_type(), "spherical_harmonics_backward_cuda", ([&] {
-           
+
             backward_kernel<<<block_dim, grid_dim>>>(
                 dsph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>(),
                 sph_grad.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
