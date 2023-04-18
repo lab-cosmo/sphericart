@@ -19,3 +19,5 @@ to facilitate the integration of `sphericart` into code using
 .. autofunction:: sphericart_torch.e3nn_spherical_harmonics
 
 .. autofunction:: sphericart_torch.patch_e3nn
+
+.. autofunction:: sphericart_torch.unpatch_e3nn    

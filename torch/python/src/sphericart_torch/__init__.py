@@ -162,18 +162,24 @@ def e3nn_spherical_harmonics(
     if not hasattr(l_list, "__len__"):
         l_list = [l_list]
     l_max = max(l_list)
+    is_range_lmax = list(l_list) == list(range(l_max + 1))
+
     sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:, [2, 0, 1]])[0]
     assert normalization in ["integral", "norm", "component"]
     if normalization != "integral":
         sh *= math.sqrt(4 * math.pi)
 
-    sh_list = []
-    for l in l_list:  # noqa E741
-        shl = sh[:, l * l : (l + 1) * (l + 1)]
-        if normalization == "norm":
-            shl *= math.sqrt(1 / (2 * l + 1))
-        sh_list.append(shl)
-    sh = torch.cat(sh_list, dim=-1)
+    if not is_range_lmax:
+        sh_list = []
+        for l in l_list:  # noqa E741
+            shl = sh[:, l * l : (l + 1) * (l + 1)]
+            if normalization == "norm":
+                shl *= math.sqrt(1 / (2 * l + 1))
+            sh_list.append(shl)
+        sh = torch.cat(sh_list, dim=-1)
+    elif normalization == "norm":
+        for l in l_list:  # noqa E741
+            sh[:, l * l : (l + 1) * (l + 1)] *= math.sqrt(1 / (2 * l + 1))
 
     return sh
 

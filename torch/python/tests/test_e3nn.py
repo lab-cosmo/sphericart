@@ -32,15 +32,28 @@ if _HAS_E3NN:
     def test_e3nn_inputs(xyz):
         """Checks that the wrapper accepts the arguments it can accept."""
 
-        e3nn_reference = e3nn.o3.spherical_harmonics([1, 3, 5], xyz, True)
-        sh = sphericart_torch.e3nn_spherical_harmonics([1, 3, 5], xyz, True)
-
-        assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE
+        # clone so we can backward without messing up xyz
+        xyz_sh = xyz.clone().detach().requires_grad_()
+        xyz_e3nn = xyz.clone().detach().requires_grad_()
 
         e3nn_reference = e3nn.o3.spherical_harmonics(8, xyz, False)
         sh = sphericart_torch.e3nn_spherical_harmonics(8, xyz, False)
 
         assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE
+
+        e3nn_reference = e3nn.o3.spherical_harmonics([1, 3, 5], xyz_e3nn, True)
+        sh = sphericart_torch.e3nn_spherical_harmonics([1, 3, 5], xyz_sh, True)
+
+        assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE
+
+        # now test autograd
+        e3nn_sum = torch.sum(e3nn_reference)
+        sh_sum = torch.sum(sh)
+
+        e3nn_sum.backward()
+        sh_sum.backward()
+
+        assert relative_mse(xyz_e3nn.grad.detach(), xyz_sh.grad.detach()) < TOLERANCE
 
     @pytest.mark.parametrize(
         "normalize, normalization",
