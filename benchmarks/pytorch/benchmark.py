@@ -87,6 +87,7 @@ def sphericart_benchmark(
         sph_sum.backward()
         elapsed += time.time()
         time_bw[i] = elapsed
+        xyz.grad.zero_()
 
     # print(xyz.grad)
 
@@ -118,8 +119,7 @@ def sphericart_benchmark(
             sph_sum.backward()
             elapsed += time.time()
             time_bw[i] = elapsed
-
-        # print(xyz_tensor.grad)
+            xyz.grad.zero_()
 
         print(
             f" E3NN-FW:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
@@ -131,6 +131,40 @@ def sphericart_benchmark(
 {time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
         # print("First-calls timings / sec.: \n", time_bw[:10])
+
+        # check the timing with the patch
+        sphericart_torch.patch_e3nn(e3nn)
+        xyz_tensor = (
+            xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
+        )
+        for i in range(n_tries + 10):
+            elapsed = -time.time()
+            sh_e3nn = e3nn.o3.spherical_harmonics(
+                list(range(l_max + 1)),
+                xyz_tensor,
+                normalize=normalized,
+                normalization="integral",
+            )
+            elapsed += time.time()
+            time_fw[i] = elapsed
+            sph_sum = torch.sum(sh_e3nn)
+            elapsed = -time.time()
+            sph_sum.backward()
+            elapsed += time.time()
+            time_bw[i] = elapsed
+            xyz.grad.zero_()
+
+        print(
+            f" PATCH-FW:       {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        )
+        # print("First-calls timings / sec.: \n", time_fw[:10])
+        print(
+            f" PATCH-BW:       {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        )
+        # print("First-calls timings / sec.: \n", time_bw[:10])
+        sphericart_torch.unpatch_e3nn(e3nn)
 
     if compare and _HAS_E3NN_JAX:
         dtype = np.float64 if dtype == torch.float64 else np.float32
