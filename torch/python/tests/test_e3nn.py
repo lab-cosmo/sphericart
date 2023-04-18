@@ -17,6 +17,7 @@ except ModuleNotFoundError:
 torch.manual_seed(0)
 _PRECISION = 1e-8
 
+
 @pytest.fixture
 def xyz():
     return 6 * torch.randn(100, 3, dtype=torch.float64, requires_grad=True)
