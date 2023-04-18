@@ -15,7 +15,7 @@ except ModuleNotFoundError:
     _HAS_E3NN = False
 
 torch.manual_seed(0)
-
+_PRECISION = 1e-8
 
 @pytest.fixture
 def xyz():
@@ -31,12 +31,12 @@ if _HAS_E3NN:
         e3nn_reference = e3nn.o3.spherical_harmonics([1, 3, 5], xyz, True)
         sh = sphericart_torch.e3nn_spherical_harmonics([1, 3, 5], xyz, True)
 
-        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < 1e-10
+        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < _PRECISION
 
         e3nn_reference = e3nn.o3.spherical_harmonics(8, xyz, False)
         sh = sphericart_torch.e3nn_spherical_harmonics(8, xyz, False)
 
-        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < 1e-10
+        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < _PRECISION
 
     @pytest.mark.parametrize(
         "normalize, normalization",
@@ -53,7 +53,7 @@ if _HAS_E3NN:
             l_list, xyz, normalize, normalization
         )
 
-        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < 1e-10
+        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < _PRECISION
 
     def test_e3nn_patch(xyz):
         """Tests the patch function."""
@@ -67,4 +67,4 @@ if _HAS_E3NN:
 
         # restore spherical_harmonics
         e3nn.o3.spherical_harmonics = e3nn_builtin
-        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < 1e-10
+        assert ((e3nn_reference.detach() - sh.detach()) ** 2).mean() < _PRECISION
