@@ -356,16 +356,11 @@ __global__ void spherical_harmonics_kernel(
         requires_grad
     );
 
-    if (requires_grad) {
-        COMPUTE_SPH_L0(buffer_sph, get_index);  
-        COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
-        if (lmax >=3) {
-            COMPUTE_SPH_L1(x, y, z, buffer_sph, get_index);
-            COMPUTE_SPH_L2(x, y, z, x2, y2, z2, buffer_sph, get_index);
-            COMPUTE_SPH_L3(x, y, z, x2, y2, z2, buffer_sph, get_index);
-
-            COMPUTE_SPH_DERIVATIVE_L1(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
-            COMPUTE_SPH_DERIVATIVE_L2(
+    if (lmax>=3) {
+        HARCODED_SPH_MACRO(3, x, y, z, x2, y2, z2, buffer_sph, get_index);
+        if (requires_grad) {
+            HARDCODED_SPH_DERIVATIVE_MACRO(
+                3,
                 x, y, z,
                 x2, y2, z2,
                 buffer_sph,
@@ -374,7 +369,12 @@ __global__ void spherical_harmonics_kernel(
                 buffer_dsph_z,
                 get_index
             );
-            COMPUTE_SPH_DERIVATIVE_L3(
+        }
+    } else if (lmax>=2) {
+        HARCODED_SPH_MACRO(2, x, y, z, x2, y2, z2, buffer_sph, get_index);
+        if (requires_grad) {
+            HARDCODED_SPH_DERIVATIVE_MACRO(
+                2,
                 x, y, z,
                 x2, y2, z2,
                 buffer_sph,
@@ -383,40 +383,26 @@ __global__ void spherical_harmonics_kernel(
                 buffer_dsph_z,
                 get_index
             );
-        } else {
-            if (lmax>=1) {
-                COMPUTE_SPH_L1(x, y, z, buffer_sph, get_index);
-                COMPUTE_SPH_DERIVATIVE_L1(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
-            }
-            if (lmax>=2) {
-                COMPUTE_SPH_L2(x, y, z, x2, y2, z2, buffer_sph, get_index);
-                COMPUTE_SPH_DERIVATIVE_L2(
-                    x, y, z,
-                    x2, y2, z2,
-                    buffer_sph,
-                    buffer_dsph_x,
-                    buffer_dsph_y,
-                    buffer_dsph_z,
-                    get_index
-                );
-            }
+        }
+    } else if (lmax>=1) {
+        HARCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
+        if (requires_grad) {
+            HARDCODED_SPH_DERIVATIVE_MACRO(
+                2,
+                x, y, z,
+                x2, y2, z2,
+                buffer_sph,
+                buffer_dsph_x,
+                buffer_dsph_y,
+                buffer_dsph_z,
+                get_index
+            );
         }
     } else {
-        COMPUTE_SPH_L0(buffer_sph, get_index);
-        if (lmax >=3) {            
-            COMPUTE_SPH_L1(x, y, z, buffer_sph, get_index);
-            COMPUTE_SPH_L2(x, y, z, x2, y2, z2, buffer_sph, get_index);
-            COMPUTE_SPH_L3(x, y, z, x2, y2, z2, buffer_sph, get_index);
-        } else {
-            if (lmax >= 1) {
-                COMPUTE_SPH_L1(x, y, z, buffer_sph, get_index);
-            }
-            if (lmax >= 2) {
-                COMPUTE_SPH_L2(x, y, z, x2, y2, z2, buffer_sph, get_index);
-            }
-        }
+        COMPUTE_SPH_L0(buffer_sph, get_index);  
+        COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);    
     }
-    
+
     __syncthreads();
 
     write_buffers(
