@@ -16,7 +16,7 @@ which includes GPU support, can be installed with
 
 .. code-block:: bash
 
-    pip install sphericart?????????????????
+    pip install sphericart[torch]
 
 
 C/C++ library

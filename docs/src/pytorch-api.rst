@@ -1,23 +1,23 @@
 PyTorch API
 ===========
 
-The main class for computing spherical harmonics using a 
-`PyTorch`-compatible framework follows the same syntax as 
-the Python version :py:class:`sphericart.SphericalHarmonics`. 
-Depending on the device the tensor is 
+The main class for computing spherical harmonics using a
+`PyTorch`-compatible framework follows the same syntax as
+the Python version :py:class:`sphericart.SphericalHarmonics`.
+Depending on the device the tensor is
 stored on, and its `dtype`, the calculations will be performed
-using 32- or 64- bits floating point arythmetics, and 
+using 32- or 64- bits floating point arythmetics, and
 using the CPU or CUDA implementation.
 
-.. autoclass:: sphericart_torch.SphericalHarmonics
+.. autoclass:: sphericart.torch.SphericalHarmonics
     :members:
 
 The implementation also contains a couple of utility functions
 to facilitate the integration of `sphericart` into code using
-`e3nn`. 
+`e3nn`.
 
-.. autofunction:: sphericart_torch.e3nn_spherical_harmonics
+.. autofunction:: sphericart.torch.e3nn_spherical_harmonics
 
-.. autofunction:: sphericart_torch.patch_e3nn
+.. autofunction:: sphericart.torch.patch_e3nn
 
-.. autofunction:: sphericart_torch.unpatch_e3nn    
+.. autofunction:: sphericart.torch.unpatch_e3nn

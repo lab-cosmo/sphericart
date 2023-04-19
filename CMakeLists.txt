@@ -25,5 +25,5 @@ if (SPHERICART_BUILD_EXAMPLES)
 endif()
 
 if (SPHERICART_BUILD_TORCH)
-    add_subdirectory(torch torch)
+    add_subdirectory(sphericart-torch)
 endif()

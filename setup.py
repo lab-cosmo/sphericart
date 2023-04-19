@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import uuid
 
 from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
@@ -32,10 +33,7 @@ class cmake_ext(build_ext):
         build_dir = os.path.join(ROOT, "build", "cmake-build")
         install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart")
 
-        try:
-            os.mkdir(build_dir)
-        except OSError:
-            pass
+        os.makedirs(build_dir, exist_ok=True)
 
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
@@ -71,6 +69,19 @@ class bdist_egg_disabled(bdist_egg):
 
 
 if __name__ == "__main__":
+    SPHERICART_TORCH = os.path.realpath(os.path.join(ROOT, "sphericart-torch"))
+    extras_require = {"torch": []}
+    if os.path.exists(SPHERICART_TORCH):
+        # we are building from a checkout
+
+        # add a random uuid to the file url to prevent pip from using a cached
+        # wheel for sphericart-torch, and force it to re-build from scratch
+        uuid = uuid.uuid4()
+        extras_require["torch"] = f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid}"
+    else:
+        # installing wheel/sdist
+        extras_require["torch"] = "sphericart-torch"
+
     setup(
         version=open(os.path.join("sphericart", "VERSION")).readline().strip(),
         ext_modules=[
@@ -87,7 +98,5 @@ if __name__ == "__main__":
                 "sphericart/include/*",
             ]
         },
-        extras_require={
-            "torch": ["sphericart_torch"],
-        },
+        extras_require=extras_require,
     )

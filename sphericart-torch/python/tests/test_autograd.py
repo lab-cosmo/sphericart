@@ -1,7 +1,7 @@
 import pytest
-
-import sphericart_torch
 import torch
+
+import sphericart.torch
 
 
 torch.manual_seed(0)
@@ -13,7 +13,7 @@ def xyz():
 
 
 def test_autograd_cartesian(xyz):
-    calculator = sphericart_torch.SphericalHarmonics(l_max=4, normalized=False)
+    calculator = sphericart.torch.SphericalHarmonics(l_max=4, normalized=False)
 
     def compute(xyz):
         sph, _ = calculator.compute(xyz=xyz)
@@ -28,7 +28,7 @@ def test_autograd_cartesian(xyz):
 
 
 def test_autograd_normalized(xyz):
-    calculator = sphericart_torch.SphericalHarmonics(l_max=4, normalized=True)
+    calculator = sphericart.torch.SphericalHarmonics(l_max=4, normalized=True)
 
     def compute(xyz):
         sph, _ = calculator.compute(xyz=xyz)
