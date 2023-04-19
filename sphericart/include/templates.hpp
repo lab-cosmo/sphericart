@@ -12,7 +12,22 @@
 
 #include <vector>
 
-#include "omp_support.h"
+#ifdef _OPENMP
+
+    #include <omp.h>
+
+#else
+    // define dummy versions of the functions we need
+
+    static inline int omp_get_max_threads() {
+        return 1;
+    }
+
+    static inline int omp_get_thread_num() {
+        return 0;
+    }
+
+#endif
 
 // a SPH_IDX that does nothing
 #define DUMMY_SPH_IDX

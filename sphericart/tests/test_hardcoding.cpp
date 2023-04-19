@@ -11,7 +11,6 @@
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "sphericart.hpp"
-#include "../src/templates.hpp"
 
 #define _SPH_TOL 1e-6
 #define DTYPE double

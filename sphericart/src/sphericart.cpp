@@ -4,9 +4,6 @@
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "sphericart.hpp"
 
-#include "omp_support.h"
-#include "templates.hpp"
-
 using namespace sphericart;
 
 // macro to define different possible hardcoded function calls
