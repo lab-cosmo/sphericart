@@ -13,6 +13,7 @@
 
 #ifdef _SPHERICART_INTERNAL_IMPLEMENTATION
     #include "macros.hpp"
+    #include "templates.hpp"
 #endif
 
 
