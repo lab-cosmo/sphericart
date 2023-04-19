@@ -13,8 +13,6 @@
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "sphericart.hpp"
-#include "../../sphericart/src/omp_support.h"
-#include "../../sphericart/src/templates.hpp"
 
 #define _SPH_TOL 1e-6
 using namespace sphericart;
