@@ -17,12 +17,9 @@ class cmake_ext(build_ext):
     def run(self):
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
-        install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart_torch")
+        install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart/torch")
 
-        try:
-            os.mkdir(build_dir)
-        except OSError:
-            pass
+        os.makedirs(build_dir, exist_ok=True)
 
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
@@ -53,8 +50,8 @@ class bdist_egg_disabled(bdist_egg):
         sys.exit(
             "Aborting implicit building of eggs. "
             + "Use `pip install .` or `python setup.py bdist_wheel && pip "
-            + "uninstall -y sphericart_torch && pip install "
-            + "dist/sphericart_torch-*.whl` to install from source."
+            + "uninstall -y sphericart-torch && pip install "
+            + "dist/sphericart-torch-*.whl` to install from source."
         )
 
 
@@ -69,9 +66,9 @@ if __name__ == "__main__":
             "bdist_egg": bdist_egg if "bdist_egg" in sys.argv else bdist_egg_disabled,
         },
         package_data={
-            "sphericart_torch": [
-                "sphericart_torch/lib/*",
-                "sphericart_torch/include/*",
+            "sphericart-torch": [
+                "sphericart/torch/lib/*",
+                "sphericart/torch/include/*",
             ]
         },
     )

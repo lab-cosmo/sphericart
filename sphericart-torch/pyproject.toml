@@ -1,12 +1,12 @@
 [project]
-name = "sphericart"
-dynamic = ["version", "optional-dependencies"]
+name = "sphericart-torch"
+dynamic = ["version"]
 requires-python = ">=3.7"
-dependencies = ["numpy"]
+dependencies = ["torch >= 1.13"]
 
 readme = "README.md"
 license = {text = "Apache-2.0"}
-description = "Fast calculation of spherical harmonics"
+description = "TorchScript bindings to sphericart"
 authors = [
     {name = "Filippo Bigi"},
     {name = "Guillaume Fraux"},
@@ -14,13 +14,14 @@ authors = [
     {name = "Michele Ceriotti"},
 ]
 
-keywords = ["spherical harmonics"]
+keywords = ["spherical harmonics", "torch"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: BSD License",
     "Operating System :: POSIX",
     "Operating System :: MacOS :: MacOS X",
+    "Environment :: GPU :: NVIDIA CUDA",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
@@ -41,24 +42,15 @@ requires = [
     "setuptools >=44",
     "wheel >=0.36",
     "cmake",
+    "torch >= 1.13",
 ]
 build-backend = "setuptools.build_meta"
+
 
 [tool.setuptools]
 zip-safe = false
 
 [tool.setuptools.packages.find]
-where = ["python/src"]
+where = ["python"]
 include = ["sphericart*"]
-namespaces = false
-
-### ======================================================================== ###
-
-[tool.isort]
-skip = "__init__.py"
-profile = "black"
-line_length = 88
-indent = 4
-include_trailing_comma = true
-lines_after_imports = 2
-known_first_party = ["sphericart"]
+namespaces = true

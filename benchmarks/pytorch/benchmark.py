@@ -2,14 +2,16 @@ import argparse
 import time
 
 import numpy as np
-
-import sphericart_torch
 import torch
 
+import sphericart.torch
+
+
 docstring = """
-Benchmarks for the torch implementation of ``sphericart``.
-Compares with e3nn and e3nn_jax if those are present 
-and if the comparison is requested.
+Benchmarks for the torch implementation of `sphericart`.
+
+Compares with e3nn and e3nn_jax if those are present and if the comparison is
+requested.
 """
 
 try:
@@ -23,8 +25,8 @@ try:
     import jax
 
     jax.config.update("jax_enable_x64", True)  # enable float64 for jax
-    import jax.numpy as jnp
     import e3nn_jax
+    import jax.numpy as jnp
 
     _HAS_E3NN_JAX = True
 except ImportError:
@@ -41,7 +43,7 @@ def sphericart_benchmark(
     compare=False,
 ):
     xyz = torch.randn((n_samples, 3), dtype=dtype, device=device)
-    sh_calculator = sphericart_torch.SphericalHarmonics(l_max, normalized=normalized)
+    sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized)
     omp_threads = sh_calculator._omp_num_threads
     print(
         f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries},"
@@ -133,7 +135,7 @@ def sphericart_benchmark(
         # print("Warm-up timings / sec.: \n", time_bw[:10])
 
         # check the timing with the patch
-        sphericart_torch.patch_e3nn(e3nn)
+        sphericart.torch.patch_e3nn(e3nn)
         xyz_tensor = (
             xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
         )
@@ -164,7 +166,7 @@ def sphericart_benchmark(
 {time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
         )
         # print("Warm-up timings / sec.: \n", time_bw[:10])
-        sphericart_torch.unpatch_e3nn(e3nn)
+        sphericart.torch.unpatch_e3nn(e3nn)
 
     if compare and _HAS_E3NN_JAX:
         dtype = np.float64 if dtype == torch.float64 else np.float32
@@ -189,12 +191,12 @@ def sphericart_benchmark(
 
         for i in range(n_tries + 10):
             elapsed = -time.time()
-            loss = loss_fn(xyz_tensor)
+            _ = loss_fn(xyz_tensor)
             elapsed += time.time()
             time_fw[i] = elapsed
 
             elapsed = -time.time()
-            loss_grad = loss_grad_fn(xyz_tensor)
+            _ = loss_grad_fn(xyz_tensor)
             elapsed += time.time()
             time_bw[i] = elapsed
 
@@ -209,7 +211,7 @@ def sphericart_benchmark(
         )
         # print("Warm-up timings / sec.: \n", time_bw[:10])
     print(
-        "*********************************************************************************************"
+        "******************************************************************************"
     )
 
 

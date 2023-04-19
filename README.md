@@ -18,16 +18,17 @@ git clone https://github.com/lab-cosmo/sphericart
 pip install .
 
 # if you also want the torch bindings
-pip install ./torch
+pip install .[torch]
 
 # torch bindings, CPU-only version
-pip install --extra-index-url https://download.pytorch.org/whl/cpu ./torch
+pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 ```
 
-Pre-built (https://pypi.org/project/sphericart/), no torch bindings for now
+Pre-built (https://pypi.org/project/sphericart/).
 
 ```bash
-pip sphericart
+pip install sphericart             # numpy version
+pip install sphericart[torch]      # including also the torch bindings
 ```
 
 ### C and C++ API
@@ -36,7 +37,7 @@ From source
 
 ```bash
 git clone https://github.com/lab-cosmo/sphericart
-cd shericart
+cd sphericart
 
 mkdir build && cd build
 

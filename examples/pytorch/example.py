@@ -3,13 +3,14 @@ import argparse
 import numpy as np
 import torch
 
-import sphericart_torch
+import sphericart.torch
+
 
 docstring = """
 An example of the use of the PyTorch interface of the `sphericart` library.
 
 Simply computes Cartesian spherical harmonics for the given parameters, for an
-array of random 3D points, using both 32-bit and 64-bit arithmetics. 
+array of random 3D points, using both 32-bit and 64-bit arithmetics.
 """
 
 
@@ -29,7 +30,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # ===== API calls =====
 
-    sh_calculator = sphericart_torch.SphericalHarmonics(l_max, normalized=normalized)
+    sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized)
 
     # the interface allows to return directly the forward derivatives,
     # similar to the Python version
@@ -73,9 +74,9 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     sh_sphericart_cuda, dsh_sphericart_cuda = sh_calculator.compute(
         xyz_cuda, gradients=True
     )
-    print(
-        f"Check fw derivative difference CPU vs CUDA: {torch.norm(dsh_sphericart_cuda.to('cpu')-dsh_sphericart)}"
-    )
+
+    norm_dsph = torch.norm(dsh_sphericart_cuda.to("cpu") - dsh_sphericart)
+    print(f"Check fw derivative difference CPU vs CUDA: {norm_dsph}")
 
     xyz_cuda = xyz.clone().detach().type(torch.float64).to("cuda").requires_grad_()
     sh_sphericart_cuda, _ = sh_calculator.compute(xyz_cuda)

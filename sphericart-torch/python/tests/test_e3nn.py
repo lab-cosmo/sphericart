@@ -1,9 +1,9 @@
 import itertools
 
 import pytest
-
-import sphericart_torch
 import torch
+
+import sphericart.torch
 
 
 # only run e3nn tests if e3nn is present
@@ -37,12 +37,12 @@ if _HAS_E3NN:
         xyz_e3nn = xyz.clone().detach().requires_grad_()
 
         e3nn_reference = e3nn.o3.spherical_harmonics(8, xyz, False)
-        sh = sphericart_torch.e3nn_spherical_harmonics(8, xyz, False)
+        sh = sphericart.torch.e3nn_spherical_harmonics(8, xyz, False)
 
         assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE
 
         e3nn_reference = e3nn.o3.spherical_harmonics([1, 3, 5], xyz_e3nn, True)
-        sh = sphericart_torch.e3nn_spherical_harmonics([1, 3, 5], xyz_sh, True)
+        sh = sphericart.torch.e3nn_spherical_harmonics([1, 3, 5], xyz_sh, True)
 
         assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE
 
@@ -66,7 +66,7 @@ if _HAS_E3NN:
         e3nn_reference = e3nn.o3.spherical_harmonics(
             l_list, xyz, normalize, normalization
         )
-        sh = sphericart_torch.e3nn_spherical_harmonics(
+        sh = sphericart.torch.e3nn_spherical_harmonics(
             l_list, xyz, normalize, normalization
         )
 
@@ -77,13 +77,13 @@ if _HAS_E3NN:
         e3nn_reference = e3nn.o3.spherical_harmonics([1, 3, 5], xyz, True)
         e3nn_builtin = e3nn.o3.spherical_harmonics
 
-        sphericart_torch.patch_e3nn(e3nn)
+        sphericart.torch.patch_e3nn(e3nn)
 
-        assert e3nn.o3.spherical_harmonics is sphericart_torch.e3nn_spherical_harmonics
+        assert e3nn.o3.spherical_harmonics is sphericart.torch.e3nn_spherical_harmonics
         sh = e3nn.o3.spherical_harmonics([1, 3, 5], xyz, True)
 
         # restore spherical_harmonics
-        sphericart_torch.unpatch_e3nn(e3nn)
+        sphericart.torch.unpatch_e3nn(e3nn)
         assert e3nn.o3.spherical_harmonics is e3nn_builtin
 
         assert relative_mse(e3nn_reference.detach(), sh.detach()) < TOLERANCE

@@ -34,7 +34,7 @@ def torch_version_compatible(actual, required):
 
 if not torch_version_compatible(torch.__version__, BUILD_TORCH_VERSION):
     raise ImportError(
-        f"Trying to load sphericart_torch with torch v{torch.__version__}, "
+        f"Trying to load sphericart-torch with torch v{torch.__version__}, "
         f"but it was compiled against torch v{BUILD_TORCH_VERSION}, which "
         "is not ABI compatible"
     )
