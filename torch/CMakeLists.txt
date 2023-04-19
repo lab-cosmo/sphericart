@@ -125,7 +125,7 @@ else()
 endif()
 
 target_link_libraries(sphericart_torch PUBLIC torch sphericart)
-target_compile_features(sphericart_torch PUBLIC cxx_std_14)
+target_compile_features(sphericart_torch PUBLIC cxx_std_17)
 
 target_include_directories(sphericart_torch PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
