@@ -20,7 +20,7 @@
 /* Computes the index for buffer values which are shared across GRID_DIM_Y */
 __device__ int get_index(int i) { return i * blockDim.x + threadIdx.x; }
 
-template <typename scalar_t>
+template <typename scalar_t, bool requires_grad>
 __device__ void generic_sph_l_channel_device(
     int l,
     scalar_t x,
@@ -36,8 +36,7 @@ __device__ void generic_sph_l_channel_device(
     scalar_t *pk,
     scalar_t *qlmk,
     scalar_t *c,
-    scalar_t *s,
-    bool requires_grad
+    scalar_t *s
 ) {
     scalar_t qlm_2, qlm_1, qlm_0;
     scalar_t ql1m_2, ql1m_1, ql1m_0;
@@ -57,7 +56,7 @@ __device__ void generic_sph_l_channel_device(
     sph[get_index(sph_offset - l)] = pq * s_l;
     sph[get_index(sph_offset + l)] = pq * c_l;
 
-    if (requires_grad) {
+    if constexpr(requires_grad) {
         pq *= l;
         dsph_x[get_index(sph_offset - l)] = pq * s_l_neg1;
         dsph_y[get_index(sph_offset - l)] = dsph_x[get_index(sph_offset + l)] = pq * c_l_neg1;
@@ -72,7 +71,7 @@ __device__ void generic_sph_l_channel_device(
     sph[get_index(sph_offset - l + 1)] = pq * s_l_neg1;
     sph[get_index(sph_offset + l - 1)] = pq * c_l_neg1;
 
-    if (requires_grad) {
+    if constexpr(requires_grad) {
         pq *= (l - 1);
         dsph_x[get_index(sph_offset - l + 1)] = pq * s[get_index(l - 2)];
         dsph_y[get_index(sph_offset + -l + 1)] = dsph_x[get_index(sph_offset + l - 1)] = pq * c[get_index(l - 2)];
@@ -104,7 +103,7 @@ __device__ void generic_sph_l_channel_device(
         sph[get_index(sph_offset - m)] = pq * s_m;
         sph[get_index(sph_offset + m)] = pq * c_m;
 
-        if (requires_grad) {
+        if constexpr(requires_grad) {
             pq *= m;
             ql1m_0 = qlmk[m - l] * (twomz * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1;
@@ -139,7 +138,7 @@ __device__ void generic_sph_l_channel_device(
         sph[get_index(sph_offset - m)] = pq * s_m;
         sph[get_index(sph_offset + m)] = pq * c_m;
 
-        if (requires_grad) {
+        if constexpr(requires_grad) {
             pq *= m;
             ql1m_0 = qlmk[m - l] * (twomz * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1;
@@ -162,7 +161,7 @@ __device__ void generic_sph_l_channel_device(
     qlm_0 = qlmk[0] * (twoz * qlm_1 + rxy * qlm_2);
     sph[get_index(sph_offset)] = qlm_0 * pk[0];
 
-    if (requires_grad) {
+    if constexpr(requires_grad) {
         ql1m_0 = qlmk[-l] * (twoz * ql1m_1 + rxy * ql1m_2);
         ql1m_2 = ql1m_1;
         ql1m_1 = ql1m_0; // shift
@@ -357,7 +356,7 @@ __global__ void spherical_harmonics_kernel(
     );
 
     if (lmax>=3) {
-        HARCODED_SPH_MACRO(3, x, y, z, x2, y2, z2, buffer_sph, get_index);
+        HARDCODED_SPH_MACRO(3, x, y, z, x2, y2, z2, buffer_sph, get_index);
         if (requires_grad) {
             HARDCODED_SPH_DERIVATIVE_MACRO(
                 3,
@@ -371,7 +370,7 @@ __global__ void spherical_harmonics_kernel(
             );
         }
     } else if (lmax>=2) {
-        HARCODED_SPH_MACRO(2, x, y, z, x2, y2, z2, buffer_sph, get_index);
+        HARDCODED_SPH_MACRO(2, x, y, z, x2, y2, z2, buffer_sph, get_index);
         if (requires_grad) {
             HARDCODED_SPH_DERIVATIVE_MACRO(
                 2,
@@ -385,7 +384,7 @@ __global__ void spherical_harmonics_kernel(
             );
         }
     } else if (lmax>=1) {
-        HARCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
+        HARDCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
         if (requires_grad) {
             HARDCODED_SPH_DERIVATIVE_MACRO(
                 2,
@@ -446,24 +445,25 @@ __global__ void spherical_harmonics_kernel(
         clear_buffers(2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
 
         // do some work
-        generic_sph_l_channel_device(
-            l,
-            x,
-            y,
-            z,
-            rxy,
-            twoz,
-            buffer_sph,
-            buffer_dsph_x,
-            buffer_dsph_y,
-            buffer_dsph_z,
-            sph_offset,
-            pk,
-            qlmk,
-            buffer_c,
-            buffer_s,
-            requires_grad
-        );
+        if (requires_grad) {
+            generic_sph_l_channel_device<scalar_t, true>(
+                l,
+                x, y, z,
+                rxy, twoz,
+                buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
+                sph_offset,
+                pk, qlmk, buffer_c, buffer_s
+            );
+        } else {
+            generic_sph_l_channel_device<scalar_t, false>(
+                l,
+                x, y, z,
+                rxy, twoz,
+                buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
+                sph_offset,
+                pk, qlmk, buffer_c, buffer_s
+            );
+        }
 
         // write out temporary storage buffers
         write_buffers(
@@ -710,36 +710,6 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     }
 
     return xyz_grad;
-}
-
-template<typename T>
-void compute_sph_prefactors(int l_max, T *factors) {
-    auto k = 0; // quick access index
-    for (int l = 0; l <= l_max; ++l) {
-        T factor = (2 * l + 1) / (2 * M_PI);
-        // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
-        factors[k] = sqrt(factor) * M_SQRT1_2;
-        for (int m = 1; m <= l; ++m) {
-            factor *= 1.0 / (l * (l + 1) + m * (1 - m));
-            if (m % 2 == 0) {
-                factors[k + m] = sqrt(factor);
-            } else {
-                factors[k + m] = -sqrt(factor);
-            }
-        }
-        k += l + 1;
-    }
-
-    // that are needed in the recursive calculation of Qlm.
-    // Xll is just Qll, Xlm is the factor that enters the alternative m recursion
-    factors[k] = 1.0; k += 1;
-    for (int l = 1; l < l_max + 1; l++) {
-        factors[k+l] = -(2 * l - 1) * factors[k - 1];
-        for (int m = l - 1; m >= 0; --m) {
-            factors[k + m] = -1.0 / ((l + m + 1) * (l - m));
-        }
-        k += l + 1;
-    }
 }
 
 torch::Tensor sphericart_torch::prefactors_cuda(int64_t l_max, at::ScalarType dtype) {
