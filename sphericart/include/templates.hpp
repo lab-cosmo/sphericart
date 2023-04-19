@@ -88,96 +88,6 @@ void compute_sph_prefactors(int l_max, T *factors) {
     }
 }
 
-template <typename T, int HARDCODED_LMAX>
-inline void hardcoded_sph_template(
-    [[maybe_unused]] T x, // these are unused in some code pathways, hopefully the compiler will compile them away
-    [[maybe_unused]] T y,
-    [[maybe_unused]] T z,
-    [[maybe_unused]] T x2,
-    [[maybe_unused]] T y2,
-    [[maybe_unused]] T z2,
-    T *sph_i) {
-    /*
-        Combines the macro hard-coded Ylm calculators to get all the terms
-        up to HC_LMAX.  This templated version evaluates the ifs at compile time
-        avoiding unnecessary in-loop branching.
-    */
-
-    static_assert(HARDCODED_LMAX <= SPHERICART_LMAX_HARDCODED, "Computing hardcoded sph beyond what is currently implemented.");
-
-    COMPUTE_SPH_L0(sph_i, DUMMY_SPH_IDX);
-
-    if constexpr (HARDCODED_LMAX > 0) {
-        COMPUTE_SPH_L1(x, y, z, sph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 1) {
-        COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 2) {
-        COMPUTE_SPH_L3(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 3) {
-        COMPUTE_SPH_L4(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 4) {
-        COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 5) {
-        COMPUTE_SPH_L6(x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
-    }
-}
-
-template <typename T, int HARDCODED_LMAX>
-inline void hardcoded_sph_derivative_template(
-    [[maybe_unused]] T x,  // tell the compiler these may be unused in some code paths (namely for LMAX<3)
-    [[maybe_unused]] T y,
-    [[maybe_unused]] T z,
-    [[maybe_unused]] T x2,
-    [[maybe_unused]] T y2,
-    [[maybe_unused]] T z2,
-    [[maybe_unused]] T *sph_i,
-    T *dxsph_i,
-    T *dysph_i,
-    T *dzsph_i
-) {
-    /*
-        Combines the macro hard-coded dYlm/d(x,y,z) calculators to get all the terms
-        up to HC_LMAX.  This templated version evaluates the ifs at compile time
-        avoiding unnecessary in-loop branching.
-    */
-
-    COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
-
-    if constexpr (HARDCODED_LMAX > 0) {
-        COMPUTE_SPH_DERIVATIVE_L1(sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 1) {
-        COMPUTE_SPH_DERIVATIVE_L2(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 2) {
-        COMPUTE_SPH_DERIVATIVE_L3(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 3) {
-        COMPUTE_SPH_DERIVATIVE_L4(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 4) {
-        COMPUTE_SPH_DERIVATIVE_L5(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
-    }
-
-    if constexpr (HARDCODED_LMAX > 5) {
-        COMPUTE_SPH_DERIVATIVE_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
-    }
-}
-
 template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i,
     int size_y,
@@ -192,12 +102,12 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
     sample, and uses a template to avoid branching.
 */
 
-    auto x  = xyz_i[0];
+    auto x = xyz_i[0];
     auto y = xyz_i[1];
     auto z = xyz_i[2];
-    auto x2 = x * x;
-    auto y2 = y * y;
-    auto z2 = z * z;
+    [[maybe_unused]] auto x2 = x * x;
+    [[maybe_unused]] auto y2 = y * y;
+    [[maybe_unused]] auto z2 = z * z;
     [[maybe_unused]] T ir=0.0;
 
     if constexpr(NORMALIZED) {
@@ -206,13 +116,14 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
         x2 = x*x; y2=y*y; z2=z*z;
     }
 
-    hardcoded_sph_template<T, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
+    HARDCODED_SPH_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
 
     if constexpr (DO_DERIVATIVES) {
         T *dxsph_i = dsph_i;
         T *dysph_i = dxsph_i + size_y;
         T *dzsph_i = dysph_i + size_y;
-        hardcoded_sph_derivative_template<T, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
+        
         if constexpr(NORMALIZED) {
             // corrects derivatives for normalization
             for (int k=0; k<size_y; ++k) {
@@ -404,9 +315,9 @@ static inline void generic_sph_sample(const T *xyz_i,
     auto x = xyz_i[0];
     auto y = xyz_i[1];
     auto z = xyz_i[2];
-    auto x2 = x * x;
-    auto y2 = y * y;
-    auto z2 = z * z;
+    [[maybe_unused]] auto x2 = x * x;
+    [[maybe_unused]] auto y2 = y * y;
+    [[maybe_unused]] auto z2 = z * z;
     if constexpr(NORMALIZED) {
         ir = 1.0/sqrt(x2+y2+z2);
         x*=ir; y*=ir; z*=ir;
@@ -415,7 +326,7 @@ static inline void generic_sph_sample(const T *xyz_i,
     auto rxy = x2 + y2;
 
     // these are the hard-coded, low-lmax sph
-    hardcoded_sph_template<T, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i);
+    HARDCODED_SPH_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i,DUMMY_SPH_IDX);
 
     if constexpr (DO_DERIVATIVES) {
         // updates the pointer to the derivative storage
@@ -424,7 +335,7 @@ static inline void generic_sph_sample(const T *xyz_i,
         dzsph_i = dysph_i + size_y;
 
         // these are the hard-coded, low-lmax sph
-        hardcoded_sph_derivative_template<T, HARDCODED_LMAX>(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i);
+        HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
     }
 
     /* These are scaled version of cos(m phi) and sin(m phi).
