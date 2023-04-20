@@ -31,13 +31,13 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     sh_calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
 
     # without gradients
-    sh_sphericart = sh_calculator.compute(xyz, gradients=False)
+    sh_sphericart = sh_calculator.compute(xyz)
 
     # with gradients
-    sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
+    sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
 
     # the same calculator automatically chooses between float64 and float32
-    sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute(xyz_f, gradients=True)
+    sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute_with_gradients(xyz_f)
 
     # ===== check results =====
 

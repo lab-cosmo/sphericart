@@ -26,7 +26,7 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(torch::Tensor xyz
         if (do_gradients) {
             auto dsph = torch::empty({n_samples, 3, (l_max_ + 1) * (l_max_ + 1)}, options);
 
-            calculator_double_.compute_array(
+            calculator_double_.compute_array_with_gradients(
                 xyz.data_ptr<double>(),
                 n_samples * 3,
                 sph.data_ptr<double>(),
@@ -48,7 +48,7 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(torch::Tensor xyz
     } else if (xyz.dtype() == c10::kFloat) {
         if (do_gradients) {
             auto dsph = torch::empty({n_samples, 3, (l_max_ + 1) * (l_max_ + 1)}, options);
-            calculator_float_.compute_array(
+            calculator_float_.compute_array_with_gradients(
                 xyz.data_ptr<float>(),
                 n_samples * 3,
                 sph.data_ptr<float>(),

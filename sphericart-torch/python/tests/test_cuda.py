@@ -14,15 +14,15 @@ def test_cpu_vs_cuda():
         xyz_cuda = xyz.to("cuda")
 
         calculator = sphericart.torch.SphericalHarmonics(l_max=20, normalized=False)
-        sph, grad_sph = calculator.compute(xyz, gradients=True)
-        sph_cuda, grad_sph_cuda = calculator.compute(xyz_cuda, gradients=True)
+        sph, grad_sph = calculator.compute_with_gradients(xyz)
+        sph_cuda, grad_sph_cuda = calculator.compute_with_gradients(xyz_cuda)
 
         assert torch.allclose(sph, sph_cuda.to("cpu"))
         assert torch.allclose(grad_sph, grad_sph_cuda.to("cpu"))
 
         calculator = sphericart.torch.SphericalHarmonics(l_max=20, normalized=True)
-        sph, grad_sph = calculator.compute(xyz, gradients=True)
-        sph_cuda, grad_sph_cuda = calculator.compute(xyz_cuda, gradients=True)
+        sph, grad_sph = calculator.compute_with_gradients(xyz)
+        sph_cuda, grad_sph_cuda = calculator.compute_with_gradients(xyz_cuda)
 
         assert torch.allclose(sph, sph_cuda.to("cpu"))
         assert torch.allclose(grad_sph, grad_sph_cuda.to("cpu"))
