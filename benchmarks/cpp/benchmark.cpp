@@ -87,7 +87,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
 
     benchmark("Sample with derivatives", 1, n_tries, [&](){
-        SH.compute(sxyz, ssph, sdsph);
+        SH.compute_with_gradients(sxyz, ssph, sdsph);
     });
 
     std::cout << std::endl;
@@ -97,7 +97,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
 
     benchmark("Call with derivatives", n_samples, n_tries, [&](){
-        SH.compute(xyz, sph1, dsph1);
+        SH.compute_with_gradients(xyz, sph1, dsph1);
     });
     }
 
@@ -108,7 +108,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
 
     benchmark("Call with derivatives (normalized)", n_samples, n_tries, [&](){
-        SH.compute(xyz, sph1, dsph1);
+        SH.compute_with_gradients(xyz, sph1, dsph1);
     });
     }
     std::cout << std::endl;

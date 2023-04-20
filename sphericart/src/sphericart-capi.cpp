@@ -25,16 +25,32 @@ extern "C" void sphericart_compute_array(
     const double* xyz,
     size_t xyz_length,
     double* sph,
+    size_t sph_length
+) {
+    try {
+        calculator->compute_array(xyz, xyz_length, sph, sph_length);        
+    } catch (const std::exception& e) {
+        // TODO: better error handling
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
+extern "C" void sphericart_compute_array_with_gradients(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
     size_t sph_length,
     double* dsph,
     size_t dsph_length
 ) {
     try {
-        if (dsph == nullptr) {
-            calculator->compute_array(xyz, xyz_length, sph, sph_length);
-        } else {
-            calculator->compute_array(xyz, xyz_length, sph, sph_length, dsph, dsph_length);
-        }
+        calculator->compute_array_with_gradients(xyz, xyz_length, sph, 
+                    sph_length, dsph, dsph_length);        
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
@@ -50,16 +66,32 @@ extern "C" void sphericart_compute_sample(
     const double* xyz,
     size_t xyz_length,
     double* sph,
+    size_t sph_length
+) {
+    try {
+        calculator->compute_sample(xyz, xyz_length, sph, sph_length);        
+    } catch (const std::exception& e) {
+        // TODO: better error handling
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
+extern "C" void sphericart_compute_sample_with_gradients(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
     size_t sph_length,
     double* dsph,
     size_t dsph_length
 ) {
     try {
-        if (dsph == nullptr) {
-            calculator->compute_sample(xyz, xyz_length, sph, sph_length);
-        } else {
-            calculator->compute_sample(xyz, xyz_length, sph, sph_length, dsph, dsph_length);
-        }
+        calculator->compute_sample_with_gradients(xyz, xyz_length, sph, 
+                    sph_length, dsph, dsph_length);        
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
@@ -92,16 +124,32 @@ extern "C" void sphericart_compute_array_f(
     const float* xyz,
     size_t xyz_length,
     float* sph,
+    size_t sph_length
+) {
+    try {
+        calculator->compute_array(xyz, xyz_length, sph, sph_length);        
+    } catch (const std::exception& e) {
+        // TODO: better error handling
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
+extern "C" void sphericart_compute_array_with_gradients_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
     size_t sph_length,
     float* dsph,
     size_t dsph_length
 ) {
     try {
-        if (dsph == nullptr) {
-            calculator->compute_array(xyz, xyz_length, sph, sph_length);
-        } else {
-            calculator->compute_array(xyz, xyz_length, sph, sph_length, dsph, dsph_length);
-        }
+        calculator->compute_array_with_gradients(xyz, xyz_length, sph, 
+                    sph_length, dsph, dsph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
@@ -117,16 +165,32 @@ extern "C" void sphericart_compute_sample_f(
     const float* xyz,
     size_t xyz_length,
     float* sph,
+    size_t sph_length
+) {
+    try {
+        calculator->compute_sample(xyz, xyz_length, sph, sph_length);
+    } catch (const std::exception& e) {
+        // TODO: better error handling
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
+extern "C" void sphericart_compute_sample_with_gradients_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
     size_t sph_length,
     float* dsph,
     size_t dsph_length
 ) {
     try {
-        if (dsph == nullptr) {
-            calculator->compute_sample(xyz, xyz_length, sph, sph_length);
-        } else {
-            calculator->compute_sample(xyz, xyz_length, sph, sph_length, dsph, dsph_length);
-        }
+        calculator->compute_sample_with_gradients(xyz, xyz_length, sph, 
+                    sph_length, dsph, dsph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());

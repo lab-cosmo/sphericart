@@ -11,13 +11,13 @@ using namespace sphericart;
     if (this->normalized) { \
         this->_array_no_derivatives = &hardcoded_sph<T, false, true, L_MAX>; \
         this->_array_with_derivatives = &hardcoded_sph<T, true, true, L_MAX>; \
-        this->_sample_no_derivatives = &hardcoded_sph_sample<T, false, true, SPHERICART_LMAX_HARDCODED>; \
-        this->_sample_with_derivatives = &hardcoded_sph_sample<T, true, true, SPHERICART_LMAX_HARDCODED>; \
+        this->_sample_no_derivatives = &hardcoded_sph_sample<T, false, true, L_MAX>; \
+        this->_sample_with_derivatives = &hardcoded_sph_sample<T, true, true, L_MAX>; \
     } else { \
         this->_array_no_derivatives = &hardcoded_sph<T, false, false, L_MAX>; \
         this->_array_with_derivatives = &hardcoded_sph<T, true, false, L_MAX>; \
-        this->_sample_no_derivatives = &hardcoded_sph_sample<T, false, false, SPHERICART_LMAX_HARDCODED>; \
-        this->_sample_with_derivatives = &hardcoded_sph_sample<T, true, false, SPHERICART_LMAX_HARDCODED>; \
+        this->_sample_no_derivatives = &hardcoded_sph_sample<T, false, false, L_MAX>; \
+        this->_sample_with_derivatives = &hardcoded_sph_sample<T, true, false, L_MAX>; \
     }
 
 template<typename T>
@@ -94,15 +94,15 @@ void SphericalHarmonics<T>::compute(const std::vector<T>& xyz, std::vector<T>& s
 }
 
 template<typename T>
-void SphericalHarmonics<T>::compute(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph) {
+void SphericalHarmonics<T>::compute_with_gradients(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph) {
     auto n_samples = xyz.size() / 3;
     sph.resize(n_samples * (l_max + 1) * (l_max + 1));
     dsph.resize(n_samples * 3 * (l_max + 1) * (l_max + 1));
 
     if (xyz.size() == 3) {
-        this->compute_sample(xyz.data(), xyz.size(), sph.data(), sph.size(), dsph.data(), dsph.size());
+        this->compute_sample_with_gradients(xyz.data(), xyz.size(), sph.data(), sph.size(), dsph.data(), dsph.size());
     } else {
-        this->compute_array(xyz.data(), xyz.size(), sph.data(), sph.size(), dsph.data(), dsph.size());
+        this->compute_array_with_gradients(xyz.data(), xyz.size(), sph.data(), sph.size(), dsph.data(), dsph.size());
     }
 }
 
@@ -125,7 +125,7 @@ void SphericalHarmonics<T>::compute_array(const T* xyz, size_t xyz_length, T* sp
 }
 
 template<typename T>
-void SphericalHarmonics<T>::compute_array(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length) {
+void SphericalHarmonics<T>::compute_array_with_gradients(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length) {
     if (xyz_length % 3 != 0) {
         throw std::runtime_error(
             "SphericalHarmonics::compute_array: expected xyz array with `n_samples x 3` elements"
@@ -177,7 +177,7 @@ void SphericalHarmonics<T>::compute_sample(const T* xyz, size_t xyz_length, T* s
 }
 
 template<typename T>
-void SphericalHarmonics<T>::compute_sample(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length) {
+void SphericalHarmonics<T>::compute_sample_with_gradients(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length) {
     if (xyz_length != 3) {
         throw std::runtime_error(
             "SphericalHarmonics::compute_sample: expected xyz array with 3 elements"

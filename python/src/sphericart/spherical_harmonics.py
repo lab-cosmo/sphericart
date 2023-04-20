@@ -1,5 +1,5 @@
 import ctypes
-from typing import Optional, Tuple
+from typing import Tuple, Union
 
 import numpy as np
 
@@ -41,7 +41,7 @@ class SphericalHarmonics:
 
     def compute(
         self, xyz: np.ndarray, gradients: bool = False
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    ) -> Union[np.ndarray, Tuple[np.ndarray]]:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array.
@@ -52,19 +52,20 @@ class SphericalHarmonics:
             be calculated and returned in addition to the spherical harmonics.
             ``False`` by default.
 
-        :return: A tuple containing two values:
-
-            * An array of shape ``(n_samples, (l_max+1)**2)`` containing all the
-              spherical harmonics up to degree `l_max` in lexicographic order.
-              For example, if ``l_max = 2``, The last axis will correspond to
-              spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
-              1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
-            * Either ``None`` if ``gradients=False`` or, if ``gradients=True``,
-              an array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
-              the spherical harmonics' derivatives up to degree ``l_max``. The
-              last axis is organized in the same way as in the spherical
-              harmonics return array, while the second-to-last axis refers to
-              derivatives in the the x, y, and z directions, respectively.
+        :return: 
+            If ``gradients`` is ``False``, an array of shape 
+            ``(n_samples, (l_max+1)**2)`` containing all the
+            spherical harmonics up to degree `l_max` in lexicographic order.
+            For example, if ``l_max = 2``, The last axis will correspond to
+            spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
+            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
+            
+            If ``gradients`` is ``True``, it also returns
+            an array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
+            the spherical harmonics' derivatives up to degree ``l_max``. The
+            last axis is organized in the same way as in the spherical
+            harmonics return array, while the second-to-last axis refers to
+            derivatives in the the x, y, and z directions, respectively.
         """
 
         if not isinstance(xyz, np.ndarray):
@@ -127,4 +128,7 @@ class SphericalHarmonics:
                 dsph_length,
             )
 
-        return sph, dsph
+        if gradients:
+            return sph, dsph
+        else:
+            return sph

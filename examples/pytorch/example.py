@@ -34,7 +34,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # the interface allows to return directly the forward derivatives,
     # similar to the Python version
-    sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
+    sh_sphericart = sh_calculator.compute(xyz, gradients=False)
     sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
 
     sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute(xyz_f, gradients=True)
@@ -54,7 +54,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # the implementation also supports backpropagation.
     # the input tensor must be tagged to have `requires_grad`
     xyz = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
-    sh_sphericart, _ = sh_calculator.compute(xyz)
+    sh_sphericart = sh_calculator.compute(xyz)
 
     # then the spherical harmonics **but not their derivatives**
     # can be used with the usual PyTorch backward() workflow
@@ -79,7 +79,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     print(f"Check fw derivative difference CPU vs CUDA: {norm_dsph}")
 
     xyz_cuda = xyz.clone().detach().type(torch.float64).to("cuda").requires_grad_()
-    sh_sphericart_cuda, _ = sh_calculator.compute(xyz_cuda)
+    sh_sphericart_cuda = sh_calculator.compute(xyz_cuda)
 
     # then the spherical harmonics **but not their derivatives**
     # can be used with the usual PyTorch backward() workflow

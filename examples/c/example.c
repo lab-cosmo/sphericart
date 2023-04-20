@@ -42,18 +42,18 @@ int main(int argc, char *argv[]) {
 
     // function calls
     // without derivatives
-    sphericart_compute_array(calculator, xyz, 3 * n_samples, sph, sph_size, NULL, 0);
+    sphericart_compute_array(calculator, xyz, 3 * n_samples, sph, sph_size);
     // with derivatives
-    sphericart_compute_array(calculator, xyz, 3 * n_samples, sph, sph_size, dsph, dsph_size);
+    sphericart_compute_array_with_gradients(calculator, xyz, 3 * n_samples, sph, sph_size, dsph, dsph_size);
 
     // per-sample calculation - we reuse the same arrays, but only the first item is computed
-    sphericart_compute_sample(calculator, xyz, 3, sph, sph_size, NULL, 0);
-    sphericart_compute_sample(calculator, xyz, 3, sph, sph_size, dsph, dsph_size);
+    sphericart_compute_sample(calculator, xyz, 3, sph, sph_size);
+    sphericart_compute_sample_with_gradients(calculator, xyz, 3, sph, sph_size, dsph, dsph_size);
 
     // float version
     sphericart_calculator_f_t* calculator_f = sphericart_new_f(l_max, 0);
 
-    sphericart_compute_array_f(calculator_f, xyz_f, 3 * n_samples, sph_f, sph_size, dsph_f, dsph_size);
+    sphericart_compute_array_with_gradients_f(calculator_f, xyz_f, 3 * n_samples, sph_f, sph_size, dsph_f, dsph_size);
 
     /* ===== check results ===== */
 

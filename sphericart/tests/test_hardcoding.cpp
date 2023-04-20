@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     auto dsph1 = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
 
     SphericalHarmonics<DTYPE> SH(l_max, false);
-    SH.compute(xyz, sph1, dsph1);
+    SH.compute_with_gradients(xyz, sph1, dsph1);
 
     int size3 = 3*(l_max+1)*(l_max+1);  // Size of the third dimension in derivative arrays (or second in normal sph arrays).
     int size2 = (l_max+1)*(l_max+1);  // Size of the second+third dimensions in derivative arrays

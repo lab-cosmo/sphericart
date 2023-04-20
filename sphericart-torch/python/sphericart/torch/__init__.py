@@ -89,7 +89,7 @@ class SphericalHarmonics:
 
     def compute(
         self, xyz: torch.Tensor, gradients: bool = False
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor]]:
         """
         Calculates the spherical harmonics for a set of 3D points.
 
@@ -104,26 +104,26 @@ class SphericalHarmonics:
             The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
             shape ``(n_samples, 3)``.
 
-        :return:
-            A tuple containing two values:
-
-            * A tensor of shape ``(n_samples, (l_max+1)**2)`` containing all the
-              spherical harmonics up to degree `l_max` in lexicographic order.
-              For example, if ``l_max = 2``, The last axis will correspond to
-              spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
-              1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
-            * Either ``None`` if ``gradients=False`` or, if ``gradients=True``,
-              a tensor of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
-              the spherical harmonics' derivatives up to degree ``l_max``. The
-              last axis is organized in the same way as in the spherical
-              harmonics return array, while the second-to-last axis refers to
-              derivatives in the the x, y, and z directions, respectively.
+        :return: 
+            If ``gradients`` is ``False``, a tensor of shape 
+            ``(n_samples, (l_max+1)**2)`` containing all the
+            spherical harmonics up to degree `l_max` in lexicographic order.
+            For example, if ``l_max = 2``, The last axis will correspond to
+            spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
+            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
+            
+            If ``gradients`` is ``True``, it also returns
+            a tensor of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
+            the spherical harmonics' derivatives up to degree ``l_max``. The
+            last axis is organized in the same way as in the spherical
+            harmonics return array, while the second-to-last axis refers to
+            derivatives in the the x, y, and z directions, respectively.
         """
 
         if gradients:
             return self._sph.compute_with_gradients(xyz)
         else:
-            return self._sph.compute(xyz), None
+            return self._sph.compute(xyz)
 
 
 def e3nn_spherical_harmonics(
@@ -165,7 +165,7 @@ def e3nn_spherical_harmonics(
     l_max = max(l_list)
     is_range_lmax = list(l_list) == list(range(l_max + 1))
 
-    sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:, [2, 0, 1]])[0]
+    sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:, [2, 0, 1]])
     assert normalization in ["integral", "norm", "component"]
     if normalization != "integral":
         sh *= math.sqrt(4 * math.pi)

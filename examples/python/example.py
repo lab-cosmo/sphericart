@@ -31,7 +31,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     sh_calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
 
     # without gradients
-    sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=False)
+    sh_sphericart = sh_calculator.compute(xyz, gradients=False)
 
     # with gradients
     sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
