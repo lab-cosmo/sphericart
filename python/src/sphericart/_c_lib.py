@@ -39,7 +39,7 @@ def setup_functions(lib):
         ctypes.POINTER(ctypes.c_double),
         ctypes.c_size_t,
         ctypes.POINTER(ctypes.c_double),
-        ctypes.c_size_t
+        ctypes.c_size_t,
     ]
 
     lib.sphericart_compute_array_with_gradients.restype = None
@@ -59,7 +59,7 @@ def setup_functions(lib):
         ctypes.POINTER(ctypes.c_float),
         ctypes.c_size_t,
         ctypes.POINTER(ctypes.c_float),
-        ctypes.c_size_t
+        ctypes.c_size_t,
     ]
 
     lib.sphericart_compute_array_with_gradients_f.restype = None

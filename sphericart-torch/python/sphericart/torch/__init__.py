@@ -87,9 +87,7 @@ class SphericalHarmonics:
         self._sph = torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
         self._omp_num_threads = self._sph.get_omp_num_threads()
 
-    def compute(
-        self, xyz: torch.Tensor
-    ) -> torch.Tensor:
+    def compute(self, xyz: torch.Tensor) -> torch.Tensor:
         """
         Calculates the spherical harmonics for a set of 3D points.
 
@@ -104,19 +102,17 @@ class SphericalHarmonics:
             The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
             shape ``(n_samples, 3)``.
 
-        :return: 
+        :return:
             A tensor of shape ``(n_samples, (l_max+1)**2)`` containing all the
             spherical harmonics up to degree `l_max` in lexicographic order.
             For example, if ``l_max = 2``, The last axis will correspond to
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
-            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.                        
+            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
         """
 
         return self._sph.compute(xyz)
-        
-    def compute_with_gradients(
-        self, xyz: torch.Tensor
-    ) -> Tuple[torch.Tensor]:
+
+    def compute_with_gradients(self, xyz: torch.Tensor) -> Tuple[torch.Tensor]:
         """
         Calculates the spherical harmonics for a set of 3D points,
         and also returns the forward derivatives.
@@ -132,9 +128,9 @@ class SphericalHarmonics:
             The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
             shape ``(n_samples, 3)``.
 
-        :return: 
-            A tuple that contains: 
-            
+        :return:
+            A tuple that contains:
+
             * A ``(n_samples, (l_max+1)**2)`` tensor containing all the
               spherical harmonics up to degree `l_max` in lexicographic order.
               For example, if ``l_max = 2``, The last axis will correspond to
@@ -149,7 +145,7 @@ class SphericalHarmonics:
         """
 
         return self._sph.compute_with_gradients(xyz)
-        
+
 
 def e3nn_spherical_harmonics(
     l_list: Union[List[int], int],

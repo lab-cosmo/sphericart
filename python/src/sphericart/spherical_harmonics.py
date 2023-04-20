@@ -39,23 +39,21 @@ class SphericalHarmonics:
         self._lib.sphericart_delete(self._calculator)
         self._lib.sphericart_delete_f(self._calculator_f)
 
-    def compute(
-        self, xyz: np.ndarray
-    ) -> np.ndarray:
+    def compute(self, xyz: np.ndarray) -> np.ndarray:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array.
 
-        :param xyz: 
+        :param xyz:
             The Cartesian coordinates of the 3D points, as an array with
             shape ``(n_samples, 3)``
 
-        :return: 
+        :return:
             An array of shape ``(n_samples, (l_max+1)**2)`` containing all the
             spherical harmonics up to degree `l_max` in lexicographic order.
             For example, if ``l_max = 2``, The last axis will correspond to
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
-            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.            
+            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
         """
 
         if not isinstance(xyz, np.ndarray):
@@ -81,45 +79,35 @@ class SphericalHarmonics:
             sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
             self._lib.sphericart_compute_array(
-                self._calculator,
-                xyz_ptr,
-                xyz_length,
-                sph_ptr,
-                sph_length
+                self._calculator, xyz_ptr, xyz_length, sph_ptr, sph_length
             )
         elif xyz.dtype == np.float32:
             xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-            
+
             self._lib.sphericart_compute_array_f(
-                self._calculator_f,
-                xyz_ptr,
-                xyz_length,
-                sph_ptr,
-                sph_length
+                self._calculator_f, xyz_ptr, xyz_length, sph_ptr, sph_length
             )
 
         return sph
-        
-    def compute_with_gradients(
-        self, xyz: np.ndarray
-    ) -> Tuple[np.ndarray]:
+
+    def compute_with_gradients(self, xyz: np.ndarray) -> Tuple[np.ndarray]:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array, together with their Cartesian
         derivatives
 
-        :param xyz: 
+        :param xyz:
             The Cartesian coordinates of the 3D points, as an array with
             shape ``(n_samples, 3)``.
 
-        :return: 
+        :return:
             A tuple containing:
             * an array of shape ``(n_samples, (l_max+1)**2)`` containing all the
             spherical harmonics up to degree `l_max` in lexicographic order.
             For example, if ``l_max = 2``, The last axis will correspond to
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
-            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.            
+            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
             * An array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
             the spherical harmonics' derivatives up to degree ``l_max``. The
             last axis is organized in the same way as in the spherical
@@ -147,12 +135,12 @@ class SphericalHarmonics:
         sph_length = n_samples * (self._l_max + 1) ** 2
         dsph = np.empty((n_samples, 3, (self._l_max + 1) ** 2), dtype=xyz.dtype)
         dsph_length = n_samples * 3 * (self._l_max + 1) ** 2
-        
+
         if xyz.dtype == np.float64:
             xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
             sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
             dsph_ptr = dsph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-            
+
             self._lib.sphericart_compute_array_with_gradients(
                 self._calculator,
                 xyz_ptr,
@@ -166,7 +154,7 @@ class SphericalHarmonics:
             xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             dsph_ptr = dsph.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-            
+
             self._lib.sphericart_compute_array_with_gradients_f(
                 self._calculator_f,
                 xyz_ptr,
