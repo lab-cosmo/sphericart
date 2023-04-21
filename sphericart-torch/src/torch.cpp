@@ -27,8 +27,8 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_with_gradients(torch::Ten
 TORCH_LIBRARY(sphericart_torch, m) {
     m.class_<SphericalHarmonics>("SphericalHarmonics")
         .def(torch::init<int64_t, bool>(), "", {torch::arg("l_max"), torch::arg("normalized") = false})
-        .def("compute", &SphericalHarmonics::compute)
-        .def("compute_with_gradients", &SphericalHarmonics::compute_with_gradients)
+        .def("compute", &SphericalHarmonics::compute, "", {torch::arg("xyz")})
+        .def("compute_with_gradients", &SphericalHarmonics::compute_with_gradients, "", {torch::arg("xyz")})
         .def("omp_num_threads", &SphericalHarmonics::get_omp_num_threads)
         .def("l_max", &SphericalHarmonics::get_l_max)
         .def("normalized", &SphericalHarmonics::get_normalized_flag);

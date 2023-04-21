@@ -14,18 +14,16 @@ array of random 3D points, using both 32-bit and 64-bit arithmetics.
 """
 
 
-class SphericalHarmonicsModule(torch.nn.Module):
-    """`torch.nn.module` that uses `SphericalHarmonics` and can be jit compiled"""
+class SHModule(torch.nn.Module):
+    """Example of how to use SphericalHarmonics from within a
+    `torch.nn.Module`"""
 
-    def __init__(self, lmax, normalized):
+    def __init__(self, l_max, normalized=False):
+        self._sph = sphericart.torch.SphericalHarmonics(l_max, normalized)
         super().__init__()
-        self.sh_calculator = sphericart.torch.SphericalHarmonics(
-            lmax, normalized=normalized
-        )
 
     def forward(self, xyz):
-        sph = self.sh_calculator.compute(xyz)
-
+        sph = self._sph.compute(xyz)
         return sph
 
 
@@ -85,11 +83,11 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # ===== torchscript integration =====
     xyz_jit = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
 
-    sh_module = SphericalHarmonicsModule(l_max, normalized)
+    module = SHModule(l_max, normalized)
 
     # JIT compilation of the module
-    sh_script = torch.jit.script(sh_module)
-    sh_output = sh_script.forward(xyz_jit)
+    script = torch.jit.script(module)
+    sh_script = script.forward(xyz_jit)
 
     # ===== GPU implementaSphericalHarmonicsModule(args.l, args.normalized)tion ======
 
