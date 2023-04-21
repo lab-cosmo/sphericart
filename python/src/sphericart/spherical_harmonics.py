@@ -91,7 +91,7 @@ class SphericalHarmonics:
 
         return sph
 
-    def compute_with_gradients(self, xyz: np.ndarray) -> Tuple[np.ndarray]:
+    def compute_with_gradients(self, xyz: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array, together with their Cartesian
