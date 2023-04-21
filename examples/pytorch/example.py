@@ -34,10 +34,10 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # the interface allows to return directly the forward derivatives,
     # similar to the Python version
-    sh_sphericart = sh_calculator.compute(xyz, gradients=False)
-    sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
+    sh_sphericart = sh_calculator.compute(xyz)
+    sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
 
-    sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute(xyz_f, gradients=True)
+    sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute_with_gradients(xyz_f)
 
     # ===== check results =====
 
