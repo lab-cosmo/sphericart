@@ -10,19 +10,9 @@ import torch
 docstring = """
 An example of the use of TorchScript and the PyTorch intrface of the `sphericart` library.
 
-Creates a TorchScript-compatible module to compute Cartesian spherical harmonics 
+Compiles the TorchScript-compatible module to compute Cartesian spherical harmonics 
 for an array of random 3D points. 
 """
-
-class SphericalHarmonicsModule(torch.nn.Module):
-    def __init__(self, lmax, normalized):
-        super().__init__()
-        self.sh_calculator = sphericart.torch.SphericalHarmonics(lmax, normalized=normalized)
-
-    def forward(self, xyz):
-        sph, _ = self.sh_calculator.compute(xyz)
-
-        return sph
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=docstring)
@@ -38,8 +28,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    xyz = torch.randn((args.s, 3), dtype=torch.float64, device="cpu")
+    xyz = torch.randn((args.s, 3), dtype=torch.float64, device="cpu", requires_grad=True)
+    xyz_clone = xyz.detach().clone()
+    xyz_clone.requires_grad=True
 
-    script = torch.jit.script(SphericalHarmonicsModule(args.l, args.normalized))
+    sph_module = sphericart.torch.SphericalHarmonics(args.l, normalized=args.normalized)
 
-    output = script.forward(xyz)
+    script = torch.jit.script(sph_module)
+
+    output_script = script.forward(xyz)
+
+    out_module, _ = sph_module.compute(xyz_clone)
+
+    output_script.sum().backward()
+    out_module.sum().backward()
+
+    assert torch.equal(xyz.grad, xyz_clone.grad)

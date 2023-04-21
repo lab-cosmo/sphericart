@@ -64,8 +64,7 @@ def _lib_path():
 # load the C++ operators and custom classes
 torch.classes.load_library(_lib_path())
 
-
-class SphericalHarmonics:
+class SphericalHarmonics(torch.nn.Module):
     """
     Spherical harmonics calculator, up to degree ``l_max``.
 
@@ -86,10 +85,15 @@ class SphericalHarmonics:
         self._l_max = l_max
         self._sph = torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
         self._omp_num_threads = self._sph.get_omp_num_threads()
+        super().__init__()
+
+    def forward(self, xyz: torch.Tensor) -> torch.Tensor:
+        sph =  self._sph.compute(xyz)
+        return sph
 
     def compute(
         self, xyz: torch.Tensor, gradients: bool = False
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    ) -> List[torch.Tensor]:
         """
         Calculates the spherical harmonics for a set of 3D points.
 
@@ -123,7 +127,7 @@ class SphericalHarmonics:
         if gradients:
             return self._sph.compute_with_gradients(xyz)
         else:
-            return self._sph.compute(xyz), None
+            return self._sph.compute(xyz), torch.empty_like(xyz)
 
 
 def e3nn_spherical_harmonics(
