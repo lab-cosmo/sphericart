@@ -2,7 +2,7 @@ import math
 import os
 import sys
 from types import ModuleType
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
 
 import torch
@@ -118,7 +118,7 @@ class SphericalHarmonics:
 
         pass
 
-    def compute_with_gradients(self, xyz: torch.Tensor) -> Tuple[torch.Tensor]:
+    def compute_with_gradients(self, xyz: torch.Tensor) -> List[torch.Tensor]:
         """
         Calculates the spherical harmonics for a set of 3D points,
         and also returns the forward derivatives.
