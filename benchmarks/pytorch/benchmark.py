@@ -65,7 +65,7 @@ def sphericart_benchmark(
     time_deri = np.zeros(n_tries + 10)
     for i in range(n_tries + 10):
         elapsed = -time.time()
-        sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
+        sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
         elapsed += time.time()
         time_deri[i] = elapsed
 
