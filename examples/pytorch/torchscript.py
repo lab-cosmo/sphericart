@@ -20,7 +20,7 @@ class SphericalHarmonicsModule(torch.nn.Module):
         self.sh_calculator = sphericart.torch.SphericalHarmonics(lmax, normalized=normalized)
 
     def forward(self, xyz):
-        sph, _ = self.sh_calculator.conmpute(xyz)
+        sph, _ = self.sh_calculator.compute(xyz)
 
         return sph
 
@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    xyz = torch.randn((args.s, 3), dtype=torch.float64, device="cuda")
+    xyz = torch.randn((args.s, 3), dtype=torch.float64, device="cpu")
 
     script = torch.jit.script(SphericalHarmonicsModule(args.l, args.normalized))
 
