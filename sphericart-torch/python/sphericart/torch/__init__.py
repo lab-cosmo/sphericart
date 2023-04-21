@@ -152,6 +152,18 @@ class SphericalHarmonics:
 
         pass
 
+    def omp_num_threads(self):
+        """ Returns the number of threads available for calculations on the CPU. """
+        pass
+
+    def l_max(self):
+        """ Returns the maximum angular momentum setting for this calculator."""
+        pass
+
+    def normalized(self):
+        """ Returns normalization setting for this calculator."""
+        pass
+
 
 def e3nn_spherical_harmonics(
     l_list: Union[List[int], int],
