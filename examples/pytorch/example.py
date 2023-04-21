@@ -14,6 +14,21 @@ array of random 3D points, using both 32-bit and 64-bit arithmetics.
 """
 
 
+class SphericalHarmonicsModule(torch.nn.Module):
+    """`torch.nn.module` that uses `SphericalHarmonics` and can be jit compiled"""
+
+    def __init__(self, lmax, normalized):
+        super().__init__()
+        self.sh_calculator = sphericart.torch.SphericalHarmonics(
+            lmax, normalized=normalized
+        )
+
+    def forward(self, xyz):
+        sph = self.sh_calculator.compute(xyz)
+
+        return sph
+
+
 def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # `sphericart` provides a SphericalHarmonics object that initializes the
     # calculation and then can be called on any n x 3 arrays of Cartesian
@@ -53,8 +68,8 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # the implementation also supports backpropagation.
     # the input tensor must be tagged to have `requires_grad`
-    xyz = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
-    sh_sphericart = sh_calculator.compute(xyz)
+    xyz_gpu = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
+    sh_sphericart = sh_calculator.compute(xyz_gpu)
 
     # then the spherical harmonics **but not their derivatives**
     # can be used with the usual PyTorch backward() workflow
@@ -63,11 +78,20 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # checks the derivative is correct using the forward call
     delta = torch.norm(
-        xyz.grad - 2 * torch.einsum("iaj,ij->ia", dsh_sphericart, sh_sphericart)
+        xyz_gpu.grad - 2 * torch.einsum("iaj,ij->ia", dsh_sphericart, sh_sphericart)
     )
     print(f"Check derivative difference: {delta}")
 
-    # ===== GPU implementation ======
+    # ===== torchscript integration =====
+    xyz_jit = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
+
+    sh_module = SphericalHarmonicsModule(l_max, normalized)
+
+    # JIT compilation of the module
+    sh_script = torch.jit.script(sh_module)
+    sh_output = sh_script.forward(xyz_jit)
+
+    # ===== GPU implementaSphericalHarmonicsModule(args.l, args.normalized)tion ======
 
     xyz_cuda = xyz.clone().detach().type(torch.float64).to("cuda")
 

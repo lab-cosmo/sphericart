@@ -231,7 +231,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             xyz,
             prefactors,
             calculator.l_max_,
-            calculator.normalize_,
+            calculator.normalized_,
             GRID_DIM_X,
             GRID_DIM_Y,
 	    gradients

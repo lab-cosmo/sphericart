@@ -65,6 +65,11 @@ def _lib_path():
 torch.classes.load_library(_lib_path())
 
 
+# this is a workaround to provide docstrings for the SphericalHarmonics class,
+# even though it is defined on the libtorch side, that does not allow - it seems
+# to expose docstrings. The class reproduces the API of the libtorch class,
+# but has empty functions. Instead, it calls __new__ to return directly an instance
+# of the libtorch class.
 class SphericalHarmonics:
     """
     Spherical harmonics calculator, up to degree ``l_max``.
@@ -72,7 +77,7 @@ class SphericalHarmonics:
     By default, this class computes a non-normalized form of the real spherical
     harmonics, i.e. :math:`r^l Y^l_m(r)`. These scaled spherical harmonics
     are polynomials in the Cartesian coordinates of the input points.
-    ``normalize=True`` can be set to compute :math:`Y^l_m(r)`.
+    ``normalized=True`` can be set to compute :math:`Y^l_m(r)`.
 
     :param l_max:
         the maximum degree of the spherical harmonics to be calculated
@@ -82,10 +87,11 @@ class SphericalHarmonics:
     :return: a calculator, in the form of a SphericalHarmonics object
     """
 
+    def __new__(cls, l_max, normalized=False):
+        return torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
+
     def __init__(self, l_max: int, normalized: bool = False):
-        self._l_max = l_max
-        self._sph = torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
-        self._omp_num_threads = self._sph.get_omp_num_threads()
+        pass
 
     def compute(self, xyz: torch.Tensor) -> torch.Tensor:
         """
@@ -110,7 +116,7 @@ class SphericalHarmonics:
             1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
         """
 
-        return self._sph.compute(xyz)
+        pass
 
     def compute_with_gradients(self, xyz: torch.Tensor) -> Tuple[torch.Tensor]:
         """
@@ -144,7 +150,7 @@ class SphericalHarmonics:
 
         """
 
-        return self._sph.compute_with_gradients(xyz)
+        pass
 
 
 def e3nn_spherical_harmonics(
