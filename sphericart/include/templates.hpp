@@ -187,7 +187,7 @@ CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel(
     [[maybe_unused]] T x,  // these might be unused for low LMAX. not worth a full separate implementation
     [[maybe_unused]] T y,
     [[maybe_unused]] T z,
-    [[maybe_unused]] T rxy, // sqrt(x*x+y*y), used in other place so we reuse
+    [[maybe_unused]] T rxy, // (x*x+y*y), used in other place so we reuse
     const T *pk, const T *qlmk, // prefactors
     T *c,  // "scaled" cosines c_m
     T *s,  // "scaled" sines s_m
@@ -197,7 +197,7 @@ CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel(
     [[maybe_unused]] T *dysph_i,
     [[maybe_unused]] T *dzsph_i
 )
-{
+{    
     // working space for the recursive evaluation of Qlm and Q(l-1)m
     [[maybe_unused]] T qlm_2, qlm_1, qlm_0;
     [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
@@ -241,11 +241,10 @@ CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel(
     for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {
         qlm_0 = qlmk[m] * (twomz[GET_INDEX(m)] * qlm_1 + rxy * qlm_2);
         qlm_2 = qlm_1; qlm_1 = qlm_0; // shift
-
         pq = qlm_0 * pk[m];
         sph_i[GET_INDEX(-m)] = pq * s[GET_INDEX(m)];
         sph_i[GET_INDEX(+m)] = pq * c[GET_INDEX(m)];
-
+        
         if constexpr (DO_DERIVATIVES) {
             ql1m_0 = qlmk[m-l] * (twomz[GET_INDEX(m)] * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift

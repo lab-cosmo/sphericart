@@ -21,184 +21,6 @@
 /* Computes the index for buffer values which are shared across GRID_DIM_Y */
 __device__ int get_index(int i) { return i * blockDim.y + threadIdx.y; }
 
-template <typename scalar_t, bool requires_grad>
-__device__ void generic_sph_l_channel_device(
-    int l,
-    [[maybe_unused]] scalar_t x,  // these might be unused for low LMAX. not worth a full separate implementation
-    [[maybe_unused]] scalar_t y,
-    [[maybe_unused]] scalar_t z,
-    [[maybe_unused]] scalar_t rxy, // sqrt(x*x+y*y), used in other place so we reuse
-    const scalar_t *pk, const scalar_t *qlmk, // prefactors
-    scalar_t *c,  // "scaled" cosines c_m
-    scalar_t *s,  // "scaled" sines s_m
-    scalar_t *twomz, // 2 m z
-    scalar_t *sph_i, // return sph array
-    [[maybe_unused]] scalar_t *dxsph_i,  // return sph derivative arrays
-    [[maybe_unused]] scalar_t *dysph_i,
-    [[maybe_unused]] scalar_t *dzsph_i
-) {
-    generic_sph_l_channel<scalar_t, requires_grad, HARDCODED_LMAX, get_index> (
-        l,
-        x, y, z, 
-        rxy,
-        pk, qlmk,
-        c, s, twomz,
-        sph_i, 
-        dxsph_i, dysph_i, dzsph_i
-    );
-}
-
-template <typename scalar_t, bool requires_grad>
-__device__ void generic_sph_l_channel_device_old(
-    int l,
-    scalar_t x,
-    scalar_t y,
-    scalar_t z,
-    scalar_t rxy,
-    scalar_t twoz,
-    scalar_t *sph,
-    scalar_t *dsph_x,
-    scalar_t *dsph_y,
-    scalar_t *dsph_z,
-    scalar_t *pk,
-    scalar_t *qlmk,
-    scalar_t *c,
-    scalar_t *s
-) {
-    scalar_t qlm_2, qlm_1, qlm_0;
-    scalar_t ql1m_2, ql1m_1, ql1m_0;
-
-    qlm_2 = qlmk[l];
-
-    scalar_t pq = qlm_2 * pk[l];
-    scalar_t pdq = 0.0;
-    scalar_t pdqx = 0.0;
-    scalar_t pdqy = 0.0;
-
-    scalar_t s_l = s[get_index(l)];
-    scalar_t s_l_neg1 = s[get_index(l - 1)];
-    scalar_t c_l = c[get_index(l)];
-    scalar_t c_l_neg1 = c[get_index(l - 1)];
-
-    sph[get_index( - l)] = pq * s_l;
-    sph[get_index( + l)] = pq * c_l;
-
-    if constexpr(requires_grad) {
-        pq *= l;
-        dsph_x[get_index( - l)] = pq * s_l_neg1;
-        dsph_y[get_index( - l)] = dsph_x[get_index( + l)] = pq * c_l_neg1;
-        dsph_y[get_index( + l)] = -dsph_x[get_index( - l)];
-        dsph_z[get_index( - l)] = 0;
-        dsph_z[get_index( + l)] = 0;
-        ql1m_2 = 0;
-    }
-
-    qlm_1 = -z * qlm_2;
-    pq = qlm_1 * pk[l - 1];
-    sph[get_index( - l + 1)] = pq * s_l_neg1;
-    sph[get_index( + l - 1)] = pq * c_l_neg1;
-
-    if constexpr(requires_grad) {
-        pq *= (l - 1);
-        dsph_x[get_index( - l + 1)] = pq * s[get_index(l - 2)];
-        dsph_y[get_index( + -l + 1)] = dsph_x[get_index( + l - 1)] = pq * c[get_index(l - 2)];
-        dsph_y[get_index( + l - 1)] = -dsph_x[get_index( - l + 1)];
-
-        // uses Q(l-1)(l-1) to initialize the other recursion
-        ql1m_1 = qlmk[-1];
-        pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
-        dsph_z[get_index( - l + 1)] = pdq * s_l_neg1;
-        dsph_z[get_index( + l - 1)] = pdq * c[get_index(l - 1)];
-    }
-
-    // and now do the other m's, decrementally
-    auto twomz = l * twoz; // compute decrementally to hold 2(m+1)z
-    for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {
-        twomz -= twoz;
-        qlm_0 = qlmk[m] * (twomz * qlm_1 + rxy * qlm_2);
-        qlm_2 = qlm_1;
-        qlm_1 = qlm_0; // shift
-
-        pq = qlm_0 * pk[m];
-
-        auto s_m = s[get_index(m)];
-        auto c_m = c[get_index(m)];
-
-        auto s_m_neg1 = s[get_index(m - 1)];
-        auto c_m_neg1 = c[get_index(m - 1)];
-
-        sph[get_index( - m)] = pq * s_m;
-        sph[get_index( + m)] = pq * c_m;
-
-        if constexpr(requires_grad) {
-            pq *= m;
-            ql1m_0 = qlmk[m - l] * (twomz * ql1m_1 + rxy * ql1m_2);
-            ql1m_2 = ql1m_1;
-            ql1m_1 = ql1m_0; // shift
-
-            pdq = pk[m] * ql1m_2;
-            pdqx = pdq * x;
-            dsph_x[get_index( - m)] = pdqx * s_m + pq * s_m_neg1;
-            dsph_x[get_index( + m)] = pdqx * c_m + pq * c_m_neg1;
-            pdqy = pdq * y;
-            dsph_y[get_index( - m)] = pdqy * s_m + pq * c_m_neg1;
-            dsph_y[get_index( + m)] = pdqy * c_m - pq * s_m_neg1;
-            pdq = pk[m] * (l + m) * ql1m_1;
-            dsph_z[get_index( - m)] = pdq * s_m;
-            dsph_z[get_index( + m)] = pdq * c_m;
-        }
-    }
-
-    for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {
-        auto s_m = s[get_index(m)];
-        auto c_m = c[get_index(m)];
-
-        auto s_m_neg1 = s[get_index(m - 1)];
-        auto c_m_neg1 = c[get_index(m - 1)];
-
-        twomz -= twoz;
-        qlm_0 = qlmk[m] * (twomz * qlm_1 + rxy * qlm_2);
-        qlm_2 = qlm_1;
-        qlm_1 = qlm_0; // shift
-
-        pq = qlm_0 * pk[m];
-        sph[get_index( - m)] = pq * s_m;
-        sph[get_index( + m)] = pq * c_m;
-
-        if constexpr(requires_grad) {
-            pq *= m;
-            ql1m_0 = qlmk[m - l] * (twomz * ql1m_1 + rxy * ql1m_2);
-            ql1m_2 = ql1m_1;
-            ql1m_1 = ql1m_0; // shift
-
-            pdq = pk[m] * ql1m_2;
-            pdqx = pdq * x;
-            dsph_x[get_index( - m)] = pdqx * s_m + pq * s_m_neg1;
-            dsph_x[get_index( + m)] = pdqx * c_m + pq * c_m_neg1;
-            pdqy = pdq * y;
-            dsph_y[get_index( - m)] = pdqy * s_m + pq * c_m_neg1;
-            dsph_y[get_index( + m)] = pdqy * c_m - pq * s_m_neg1;
-            pdq = pk[m] * (l + m) * ql1m_1;
-            dsph_z[get_index( - m)] = pdq * s_m;
-            dsph_z[get_index( + m)] = pdq * c_m;
-        }
-    }
-
-    // m=0
-    qlm_0 = qlmk[0] * (twoz * qlm_1 + rxy * qlm_2);
-    sph[get_index(0)] = qlm_0 * pk[0];
-
-    if constexpr(requires_grad) {
-        ql1m_0 = qlmk[-l] * (twoz * ql1m_1 + rxy * ql1m_2);
-        ql1m_2 = ql1m_1;
-        ql1m_1 = ql1m_0; // shift
-        // derivatives
-        dsph_x[get_index(0)] = pk[0] * x * ql1m_2;
-        dsph_y[get_index(0)] = pk[0] * y * ql1m_2;
-        dsph_z[get_index(0)] = pk[0] * l * ql1m_1;
-    }
-}
-
 template <typename scalar_t>
 __device__ inline void clear_buffers(
     int nelements,
@@ -353,9 +175,8 @@ __global__ void spherical_harmonics_kernel(
         }
     }
 
-    auto twoz = 2 * z;
     auto rxy = x2 + y2;
-
+    auto twoz = 2*z;
     if (threadIdx.x == 0) {
         buffer_c[get_index(0)] = 1.0;
         buffer_s[get_index(0)] = 0.0;
@@ -470,7 +291,6 @@ __global__ void spherical_harmonics_kernel(
     scalar_t *pk = buffer_prefactors + k;
 
     int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
-
     for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1) {
         int sph_offset = blockDim.y*l; // sph needs to point to Y[l, 0]
 
@@ -485,17 +305,17 @@ __global__ void spherical_harmonics_kernel(
         // do some work
         if (threadIdx.x == 0) {
             if (requires_grad) {
-                generic_sph_l_channel_device<scalar_t, true>(
+                generic_sph_l_channel<scalar_t, true, HARDCODED_LMAX, get_index>(
                     l, x, y, z, rxy,
                     pk, qlmk,
                     buffer_c, buffer_s, buffer_twomz,
                     buffer_sph + sph_offset,
-                    buffer_dsph_z + sph_offset, 
+                    buffer_dsph_x + sph_offset, 
                     buffer_dsph_y + sph_offset, 
                     buffer_dsph_z + sph_offset
                 );
             } else {
-                generic_sph_l_channel_device<scalar_t, false>(
+                generic_sph_l_channel<scalar_t, false, HARDCODED_LMAX, get_index>(
                     l, x, y, z, rxy,
                     pk, qlmk,
                     buffer_c, buffer_s, buffer_twomz,
