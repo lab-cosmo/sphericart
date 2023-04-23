@@ -133,6 +133,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
     std::cout << std::endl;
 
+    if (l_max == 1) {
+        free(buffers);
+        return;
+    }
+
     //========================================================================//
     compute_sph_prefactors(2, prefactors.data());
     benchmark("L=2 (no h-c) values             ", n_samples, n_tries, [&](){
@@ -151,6 +156,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
         hardcoded_sph<DTYPE, true, false, 2>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
+
+    if (l_max == 2) {
+        free(buffers);
+        return;
+    }
 
     //========================================================================//
     compute_sph_prefactors(3, prefactors.data());
@@ -171,6 +181,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
     std::cout << std::endl;
 
+    if (l_max == 3) {
+        free(buffers);
+        return;
+    }
+
     //========================================================================//
     compute_sph_prefactors(4, prefactors.data());
     benchmark("L=4 (no h-c) values             ", n_samples, n_tries, [&](){
@@ -190,6 +205,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
     std::cout << std::endl;
 
+    if (l_max == 4) {
+        free(buffers);
+        return;
+    }
+
     //========================================================================//
     compute_sph_prefactors(5, prefactors.data());
     benchmark("L=5 (no h-c) values             ", n_samples, n_tries, [&](){
@@ -208,6 +228,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
         hardcoded_sph<DTYPE, true, false, 5>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
+
+    if (l_max == 5) {
+        free(buffers);
+        return;
+    }
 
     //========================================================================//
     compute_sph_prefactors(6, prefactors.data());
