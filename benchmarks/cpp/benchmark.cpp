@@ -293,11 +293,11 @@ int main(int argc, char *argv[]) {
     std::cout << "Running with n_tries=" << n_tries << ", n_samples=" << n_samples << std::endl;
     std::cout << "\n============= l_max = " << l_max << " ==============" << std::endl;
 
-    std::cout << "****************** DOUBLE PRECISION ******************" << std::endl;
-    run_timings<double>(l_max, n_tries, n_samples);
-
     std::cout << "****************** SINGLE PRECISION ******************" << std::endl;
     run_timings<float>(l_max, n_tries, n_samples);
+
+    std::cout << "****************** DOUBLE PRECISION ******************" << std::endl;
+    run_timings<double>(l_max, n_tries, n_samples);
 
     return 0;
 }
