@@ -1,6 +1,10 @@
 #ifndef SPHERICART_TEMPLATES_HPP
 #define SPHERICART_TEMPLATES_HPP
 
+#ifndef CUDA_DEVICE_PREFIX
+#define CUDA_DEVICE_PREFIX
+#endif
+
 /*
     Template implementation of Cartesian Ylm calculators.
 
@@ -168,18 +172,28 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
     }
 }
 
-template <typename T, bool DO_DERIVATIVES, int HARDCODED_LMAX>
-static inline void generic_sph_l_channel(int l,
+
+int inline dummy_idx(int i) { return i; }
+
+/** Computes the sph and their derivatives for a given Cartesian point and a given l.
+ * The template implementation supports different floating poitn types T, determines
+ * whether to compute derivatives (DO_DERIVATIVES), assumes that l is greater than 
+ * HARDCODED_LMAX. GET_INDEX is a function that might allow to map differently the 
+ * indices in the spherical harmonics (used in the CUDA implementation).
+*/
+template <typename T, bool DO_DERIVATIVES, int HARDCODED_LMAX, int (*GET_INDEX)(int) = dummy_idx>
+CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel(
+    int l,
     [[maybe_unused]] T x,  // these might be unused for low LMAX. not worth a full separate implementation
     [[maybe_unused]] T y,
     [[maybe_unused]] T z,
-    [[maybe_unused]] T rxy,
-    const T *pk, const T *qlmk,
-    T *c,
-    T *s,
-    T *twomz,
-    T *sph_i,
-    [[maybe_unused]] T *dxsph_i,
+    [[maybe_unused]] T rxy, // sqrt(x*x+y*y), used in other place so we reuse
+    const T *pk, const T *qlmk, // prefactors
+    T *c,  // "scaled" cosines c_m
+    T *s,  // "scaled" sines s_m
+    T *twomz, // 2 m z
+    T *sph_i, // return sph array
+    [[maybe_unused]] T *dxsph_i,  // return sph derivative arrays
     [[maybe_unused]] T *dysph_i,
     [[maybe_unused]] T *dzsph_i
 )
@@ -191,102 +205,102 @@ static inline void generic_sph_l_channel(int l,
     // l=+-m
     qlm_2 = qlmk[l]; // fetches the pre-computed Qll
     auto pq = qlm_2 * pk[l];
-    sph_i[-l] = pq * s[l];
-    sph_i[+l] = pq * c[l];
+    sph_i[GET_INDEX(-l)] = pq * s[GET_INDEX(l)];
+    sph_i[GET_INDEX(+l)] = pq * c[GET_INDEX(l)];
 
     if constexpr (DO_DERIVATIVES) {
         pq *= l;
-        dxsph_i[-l] = pq * s[l - 1];
-        dysph_i[-l] = dxsph_i[l] = pq * c[l - 1];
-        dysph_i[l] = -dxsph_i[-l];
-        dzsph_i[-l] = 0;
-        dzsph_i[l] = 0;
+        dxsph_i[GET_INDEX(-l)] = pq * s[GET_INDEX(l - 1)];
+        dysph_i[GET_INDEX(-l)] = dxsph_i[GET_INDEX(l)] = pq * c[GET_INDEX(l - 1)];
+        dysph_i[GET_INDEX(l)] = -dxsph_i[GET_INDEX(-l)];
+        dzsph_i[GET_INDEX(-l)] = 0;
+        dzsph_i[GET_INDEX(l)] = 0;
         ql1m_2 = 0;
     }
 
     // l=+-(m-1)
     qlm_1 = -z*qlm_2;
     pq = qlm_1 * pk[l - 1];
-    sph_i[-l + 1] = pq * s[l - 1];
-    sph_i[+l - 1] = pq * c[l - 1];
+    sph_i[GET_INDEX(-l + 1)] = pq * s[GET_INDEX(l - 1)];
+    sph_i[GET_INDEX(+l - 1)] = pq * c[GET_INDEX(l - 1)];
 
     if constexpr (DO_DERIVATIVES) {
         pq *= (l - 1);
-        dxsph_i[-l + 1] = pq * s[l - 2];
-        dysph_i[-l + 1] = dxsph_i[l - 1] = pq * c[l - 2];
-        dysph_i[l - 1] = -dxsph_i[-l + 1];
+        dxsph_i[GET_INDEX(-l + 1)] = pq * s[GET_INDEX(l - 2)];
+        dysph_i[GET_INDEX(-l + 1)] = dxsph_i[GET_INDEX(l - 1)] = pq * c[GET_INDEX(l - 2)];
+        dysph_i[GET_INDEX(l - 1)] = -dxsph_i[GET_INDEX(-l + 1)];
 
         // uses Q(l-1)(l-1) to initialize the other recursion
         ql1m_1 = qlmk[-1];
         auto pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
-        dzsph_i[-l + 1] = pdq * s[l - 1];
-        dzsph_i[l - 1] = pdq * c[l - 1];
+        dzsph_i[GET_INDEX(-l + 1)] = pdq * s[GET_INDEX(l - 1)];
+        dzsph_i[GET_INDEX(l - 1)] = pdq * c[GET_INDEX(l - 1)];
     }
 
     // and now do the other m's, decrementally
     for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {
-        qlm_0 = qlmk[m] * (twomz[m] * qlm_1 + rxy * qlm_2);
+        qlm_0 = qlmk[m] * (twomz[GET_INDEX(m)] * qlm_1 + rxy * qlm_2);
         qlm_2 = qlm_1; qlm_1 = qlm_0; // shift
 
         pq = qlm_0 * pk[m];
-        sph_i[-m] = pq * s[m];
-        sph_i[+m] = pq * c[m];
+        sph_i[GET_INDEX(-m)] = pq * s[GET_INDEX(m)];
+        sph_i[GET_INDEX(+m)] = pq * c[GET_INDEX(m)];
 
         if constexpr (DO_DERIVATIVES) {
-            ql1m_0 = qlmk[m-l] * (twomz[m] * ql1m_1 + rxy * ql1m_2);
+            ql1m_0 = qlmk[m-l] * (twomz[GET_INDEX(m)] * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
 
             pq *= m;
-            auto pqs = pq*s[m-1], pqc=pq*c[m-1];
+            auto pqs = pq*s[GET_INDEX(m-1)], pqc=pq*c[GET_INDEX(m-1)];
             auto pdq = pk[m] * ql1m_2;
             auto pdqx = pdq * x;
-            dxsph_i[-m] = (pdqx * s[m] + pqs);
-            dxsph_i[+m] = (pdqx * c[m] + pqc);
+            dxsph_i[GET_INDEX(-m)] = (pdqx * s[GET_INDEX(m)] + pqs);
+            dxsph_i[GET_INDEX(+m)] = (pdqx * c[GET_INDEX(m)] + pqc);
             auto pdqy = pdq * y;
-            dysph_i[-m] = (pdqy * s[m] + pqc);
-            dysph_i[m] = (pdqy * c[m] - pqs);
+            dysph_i[GET_INDEX(-m)] = (pdqy * s[GET_INDEX(m)] + pqc);
+            dysph_i[GET_INDEX(m)] = (pdqy * c[GET_INDEX(m)] - pqs);
             pdq = pk[m] * (l + m) * ql1m_1;
-            dzsph_i[-m] = pdq * s[m];
-            dzsph_i[m] = pdq * c[m];
+            dzsph_i[GET_INDEX(-m)] = pdq * s[GET_INDEX(m)];
+            dzsph_i[GET_INDEX(m)] = pdq * c[GET_INDEX(m)];
         }
     }
     for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {
-        qlm_0 = qlmk[m] * (twomz[m] * qlm_1 + rxy * qlm_2);
+        qlm_0 = qlmk[m] * (twomz[GET_INDEX(m)] * qlm_1 + rxy * qlm_2);
         qlm_2 = qlm_1; qlm_1 = qlm_0; // shift
 
         pq = qlm_0 * pk[m];
-        sph_i[-m] = pq * s[m];
-        sph_i[+m] = pq * c[m];
+        sph_i[GET_INDEX(-m)] = pq * s[GET_INDEX(m)];
+        sph_i[GET_INDEX(+m)] = pq * c[GET_INDEX(m)];
 
         if constexpr (DO_DERIVATIVES) {
-            ql1m_0 = qlmk[m-l] * (twomz[m] * ql1m_1 + rxy * ql1m_2);
+            ql1m_0 = qlmk[m-l] * (twomz[GET_INDEX(m)] * ql1m_1 + rxy * ql1m_2);
             ql1m_2 = ql1m_1; ql1m_1 = ql1m_0; // shift
 
             pq *= m;
-            auto pqs = pq*s[m-1], pqc=pq*c[m-1];
+            auto pqs = pq*s[GET_INDEX(m-1)], pqc=pq*c[GET_INDEX(m-1)];
             auto pdq = pk[m] * ql1m_2;
             auto pdqx = pdq * x;
-            dxsph_i[-m] = (pdqx * s[m] + pqs);
-            dxsph_i[+m] = (pdqx * c[m] + pqc);
+            dxsph_i[GET_INDEX(-m)] = (pdqx * s[GET_INDEX(m)] + pqs);
+            dxsph_i[GET_INDEX(+m)] = (pdqx * c[GET_INDEX(m)] + pqc);
             auto pdqy = pdq * y;
-            dysph_i[-m] = (pdqy * s[m] + pqc);
-            dysph_i[m] = (pdqy * c[m] - pqs);
+            dysph_i[GET_INDEX(-m)] = (pdqy * s[GET_INDEX(m)] + pqc);
+            dysph_i[GET_INDEX(m)] = (pdqy * c[GET_INDEX(m)] - pqs);
             pdq = pk[m] * (l + m) * ql1m_1;
-            dzsph_i[-m] = pdq * s[m];
-            dzsph_i[m] = pdq * c[m];
+            dzsph_i[GET_INDEX(-m)] = pdq * s[GET_INDEX(m)];
+            dzsph_i[GET_INDEX(m)] = pdq * c[GET_INDEX(m)];
         }
     }
 
     // m=0
-    qlm_0 = qlmk[0] * (twomz[0] * qlm_1 + rxy * qlm_2);
-    sph_i[0] = qlm_0 * pk[0];
+    qlm_0 = qlmk[0] * (twomz[GET_INDEX(0)] * qlm_1 + rxy * qlm_2);
+    sph_i[GET_INDEX(0)] = qlm_0 * pk[0];
 
     if constexpr (DO_DERIVATIVES) {
-        ql1m_0 = qlmk[-l] * (twomz[0] * ql1m_1 + rxy * ql1m_2);
+        ql1m_0 = qlmk[-l] * (twomz[GET_INDEX(0)] * ql1m_1 + rxy * ql1m_2);
         // derivatives
-        dxsph_i[0] = pk[0] * x *ql1m_1;
-        dysph_i[0] = pk[0] * y *ql1m_1;
-        dzsph_i[0] = pk[0] * l *ql1m_0;
+        dxsph_i[GET_INDEX(0)] = pk[0] * x *ql1m_1;
+        dysph_i[GET_INDEX(0)] = pk[0] * y *ql1m_1;
+        dzsph_i[GET_INDEX(0)] = pk[0] * l *ql1m_0;
     }
 }
 
