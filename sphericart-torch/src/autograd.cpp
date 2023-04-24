@@ -183,30 +183,33 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     } else if (xyz.device().is_cuda()) {
         // re-do the shared memory update in case `requires_grad` changed
         const int GRID_DIM_Y = 1;
-        int GRID_DIM_X = 32;
-
-        int dtype = torch::elementSize(xyz.scalar_type());
 
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
-        
+
         bool shm_result = calculator.cuda_shmem_.update_if_required(
             xyz.scalar_type(),
             calculator.l_max_,
-            GRID_DIM_X,
+            calculator.CUDA_GRID_DIM_X_,
             GRID_DIM_Y,
-            xyz.requires_grad()||gradients
+            xyz.requires_grad() || gradients
         );
-        
-        if (!shm_result){
-            printf("Warning: Failed to update shared memory specification with element_size = %d, GRID_DIM_X = %d, GRID_DIM_Y = %d, xyz.requires_grad() || gradients = %s\n",
-                    dtype, GRID_DIM_X, GRID_DIM_Y, xyz.requires_grad()||gradients ? "true" : "false");
-            printf ("Re-attempting with GRID_DIM_X= 16\n");
 
-            GRID_DIM_X = 16;
+        if (!shm_result){
+            printf("Warning: Failed to update shared memory specification with");
+            printf(
+                "element_size = %d, GRID_DIM_X = %d, GRID_DIM_Y = %d, xyz.requires_grad() || gradients = %s\n",
+                torch::elementSize(xyz.scalar_type()),
+                calculator.CUDA_GRID_DIM_X_,
+                GRID_DIM_Y,
+                xyz.requires_grad() || gradients ? "true" : "false"
+            );
+            printf("Re-attempting with GRID_DIM_X = 16\n");
+
+            calculator.CUDA_GRID_DIM_X_ = 16;
             shm_result = calculator.cuda_shmem_.update_if_required(
                 xyz.scalar_type(),
                 calculator.l_max_,
-                GRID_DIM_X,
+                calculator.CUDA_GRID_DIM_X_,
                 GRID_DIM_Y,
                 xyz.requires_grad()||gradients
             );
@@ -232,13 +235,12 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             prefactors,
             calculator.l_max_,
             calculator.normalized_,
-            GRID_DIM_X,
+            calculator.CUDA_GRID_DIM_X_,
             GRID_DIM_Y,
-	    gradients
+	        gradients
         );
         sph = results[0];
         dsph = results[1];
-	//printf("Computed CUDA with derivatives %f\n", dsph[5]);
     } else {
         throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
     }
