@@ -87,7 +87,9 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # JIT compilation of the module
     script = torch.jit.script(module)
-    sh_script = script.forward(xyz_jit)
+    sh_jit = script(xyz_jit)
+
+    print(f"jit vs direct call: {torch.norm(sh_jit - sh_sphericart)}")
 
     # ===== GPU implementation ======
 

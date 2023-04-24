@@ -2,11 +2,10 @@ import math
 import os
 import sys
 from types import ModuleType
-from typing import List, Optional, Union
-
+from typing import List, Optional, Union, Tuple
 
 import torch
-
+from torch import Tensor
 
 from ._build_torch_version import BUILD_TORCH_VERSION
 import re
@@ -65,11 +64,12 @@ def _lib_path():
 torch.classes.load_library(_lib_path())
 
 
-# this is a workaround to provide docstrings for the SphericalHarmonics class,
-# even though it is defined on the libtorch side, that does not allow - it seems
-# to expose docstrings. The class reproduces the API of the libtorch class,
-# but has empty functions. Instead, it calls __new__ to return directly an instance
-# of the libtorch class.
+# This is a workaround to provide docstrings for the SphericalHarmonics class,
+# even though it is defined as a C++ TorchScript object (and we can not figure
+# out a way to extract docstrings for either classes or methods from the C++
+# code). The class reproduces the API of the TorchScript class, but has empty
+# functions. Instead, when __new__ is called, an instance of the TorchScript
+# class is directly returned.
 class SphericalHarmonics:
     """
     Spherical harmonics calculator, up to degree ``l_max``.
@@ -93,7 +93,7 @@ class SphericalHarmonics:
     def __init__(self, l_max: int, normalized: bool = False):
         pass
 
-    def compute(self, xyz: torch.Tensor) -> torch.Tensor:
+    def compute(self, xyz: Tensor) -> Tensor:
         """
         Calculates the spherical harmonics for a set of 3D points.
 
@@ -118,7 +118,7 @@ class SphericalHarmonics:
 
         pass
 
-    def compute_with_gradients(self, xyz: torch.Tensor) -> List[torch.Tensor]:
+    def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
         """
         Calculates the spherical harmonics for a set of 3D points,
         and also returns the forward derivatives.
@@ -167,7 +167,7 @@ class SphericalHarmonics:
 
 def e3nn_spherical_harmonics(
     l_list: Union[List[int], int],
-    x: torch.Tensor,
+    x: Tensor,
     normalize: Optional[bool] = False,
     normalization: Optional[str] = "integral",
 ) -> torch.Tensor:
