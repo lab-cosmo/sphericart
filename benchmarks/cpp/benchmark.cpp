@@ -87,7 +87,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
 
     benchmark("Sample with derivatives", 1, n_tries, [&](){
-        SH.compute(sxyz, ssph, sdsph);
+        SH.compute_with_gradients(sxyz, ssph, sdsph);
     });
 
     std::cout << std::endl;
@@ -97,7 +97,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
 
     benchmark("Call with derivatives", n_samples, n_tries, [&](){
-        SH.compute(xyz, sph1, dsph1);
+        SH.compute_with_gradients(xyz, sph1, dsph1);
     });
     }
 
@@ -108,7 +108,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
 
     benchmark("Call with derivatives (normalized)", n_samples, n_tries, [&](){
-        SH.compute(xyz, sph1, dsph1);
+        SH.compute_with_gradients(xyz, sph1, dsph1);
     });
     }
     std::cout << std::endl;
@@ -133,6 +133,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
     std::cout << std::endl;
 
+    if (l_max == 1) {
+        free(buffers);
+        return;
+    }
+
     //========================================================================//
     compute_sph_prefactors(2, prefactors.data());
     benchmark("L=2 (no h-c) values             ", n_samples, n_tries, [&](){
@@ -151,6 +156,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
         hardcoded_sph<DTYPE, true, false, 2>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
+
+    if (l_max == 2) {
+        free(buffers);
+        return;
+    }
 
     //========================================================================//
     compute_sph_prefactors(3, prefactors.data());
@@ -171,6 +181,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
     std::cout << std::endl;
 
+    if (l_max == 3) {
+        free(buffers);
+        return;
+    }
+
     //========================================================================//
     compute_sph_prefactors(4, prefactors.data());
     benchmark("L=4 (no h-c) values             ", n_samples, n_tries, [&](){
@@ -190,6 +205,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     });
     std::cout << std::endl;
 
+    if (l_max == 4) {
+        free(buffers);
+        return;
+    }
+
     //========================================================================//
     compute_sph_prefactors(5, prefactors.data());
     benchmark("L=5 (no h-c) values             ", n_samples, n_tries, [&](){
@@ -208,6 +228,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
         hardcoded_sph<DTYPE, true, false, 5>(xyz.data(), sph1.data(), dsph1.data(),n_samples,  0, nullptr, nullptr);
     });
     std::cout << std::endl;
+
+    if (l_max == 5) {
+        free(buffers);
+        return;
+    }
 
     //========================================================================//
     compute_sph_prefactors(6, prefactors.data());
@@ -268,11 +293,11 @@ int main(int argc, char *argv[]) {
     std::cout << "Running with n_tries=" << n_tries << ", n_samples=" << n_samples << std::endl;
     std::cout << "\n============= l_max = " << l_max << " ==============" << std::endl;
 
-    std::cout << "****************** DOUBLE PRECISION ******************" << std::endl;
-    run_timings<double>(l_max, n_tries, n_samples);
-
     std::cout << "****************** SINGLE PRECISION ******************" << std::endl;
     run_timings<float>(l_max, n_tries, n_samples);
+
+    std::cout << "****************** DOUBLE PRECISION ******************" << std::endl;
+    run_timings<double>(l_max, n_tries, n_samples);
 
     return 0;
 }

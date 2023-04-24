@@ -44,7 +44,7 @@ def sphericart_benchmark(
 ):
     xyz = torch.randn((n_samples, 3), dtype=dtype, device=device)
     sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized)
-    omp_threads = sh_calculator._omp_num_threads
+    omp_threads = sh_calculator.omp_num_threads()
     print(
         f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries},"
         + f"dtype={dtype}, device={device}, omp_num_threads={omp_threads} ****"
@@ -53,7 +53,7 @@ def sphericart_benchmark(
     time_noderi = np.zeros(n_tries + 10)
     for i in range(n_tries + 10):
         elapsed = -time.time()
-        sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
+        sh_sphericart = sh_calculator.compute(xyz)
         elapsed += time.time()
         time_noderi[i] = elapsed
 
@@ -65,7 +65,7 @@ def sphericart_benchmark(
     time_deri = np.zeros(n_tries + 10)
     for i in range(n_tries + 10):
         elapsed = -time.time()
-        sh_sphericart, dsh_sphericart = sh_calculator.compute(xyz, gradients=True)
+        sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
         elapsed += time.time()
         time_deri[i] = elapsed
 
@@ -82,7 +82,7 @@ def sphericart_benchmark(
 
     for i in range(n_tries + 10):
         elapsed = -time.time()
-        sh_sphericart, _ = sh_calculator.compute(xyz, gradients=False)
+        sh_sphericart = sh_calculator.compute(xyz)
         elapsed += time.time()
         time_fw[i] = elapsed
 

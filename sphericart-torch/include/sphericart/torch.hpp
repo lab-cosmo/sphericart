@@ -26,13 +26,21 @@ private:
 
 class SphericalHarmonics: public torch::CustomClassHolder {
 public:
-    SphericalHarmonics(int64_t l_max, bool normalize);
+    SphericalHarmonics(int64_t l_max, bool normalized=false);
 
     // Actual calculation, with autograd support
     torch::Tensor compute(torch::Tensor xyz);
     std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz);
 
-    int64_t get_omp_num_threads() const;
+    int64_t get_l_max() const {
+        return this->l_max_;
+    }
+    bool get_normalized_flag() const {
+        return this->normalized_;
+    }
+    int64_t get_omp_num_threads() const {
+        return this->omp_num_threads_;
+    }
 
 private:
     friend class SphericalHarmonicsAutograd;
@@ -40,9 +48,9 @@ private:
     // Raw calculation, without autograd support, running on CPU
     std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients);
 
-    int64_t omp_num_threads;
+    int64_t omp_num_threads_;
     int64_t l_max_;
-    bool normalize_;
+    bool normalized_;
 
     // CPU implementation
     sphericart::SphericalHarmonics<double> calculator_double_;

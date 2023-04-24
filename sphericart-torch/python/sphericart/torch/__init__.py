@@ -2,11 +2,10 @@ import math
 import os
 import sys
 from types import ModuleType
-from typing import List, Optional, Tuple, Union
-
+from typing import List, Optional, Union, Tuple
 
 import torch
-
+from torch import Tensor
 
 from ._build_torch_version import BUILD_TORCH_VERSION
 import re
@@ -65,6 +64,12 @@ def _lib_path():
 torch.classes.load_library(_lib_path())
 
 
+# This is a workaround to provide docstrings for the SphericalHarmonics class,
+# even though it is defined as a C++ TorchScript object (and we can not figure
+# out a way to extract docstrings for either classes or methods from the C++
+# code). The class reproduces the API of the TorchScript class, but has empty
+# functions. Instead, when __new__ is called, an instance of the TorchScript
+# class is directly returned.
 class SphericalHarmonics:
     """
     Spherical harmonics calculator, up to degree ``l_max``.
@@ -72,7 +77,7 @@ class SphericalHarmonics:
     By default, this class computes a non-normalized form of the real spherical
     harmonics, i.e. :math:`r^l Y^l_m(r)`. These scaled spherical harmonics
     are polynomials in the Cartesian coordinates of the input points.
-    ``normalize=True`` can be set to compute :math:`Y^l_m(r)`.
+    ``normalized=True`` can be set to compute :math:`Y^l_m(r)`.
 
     :param l_max:
         the maximum degree of the spherical harmonics to be calculated
@@ -82,14 +87,13 @@ class SphericalHarmonics:
     :return: a calculator, in the form of a SphericalHarmonics object
     """
 
-    def __init__(self, l_max: int, normalized: bool = False):
-        self._l_max = l_max
-        self._sph = torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
-        self._omp_num_threads = self._sph.get_omp_num_threads()
+    def __new__(cls, l_max, normalized=False):
+        return torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
 
-    def compute(
-        self, xyz: torch.Tensor, gradients: bool = False
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def __init__(self, l_max: int, normalized: bool = False):
+        pass
+
+    def compute(self, xyz: Tensor) -> Tensor:
         """
         Calculates the spherical harmonics for a set of 3D points.
 
@@ -105,30 +109,65 @@ class SphericalHarmonics:
             shape ``(n_samples, 3)``.
 
         :return:
-            A tuple containing two values:
+            A tensor of shape ``(n_samples, (l_max+1)**2)`` containing all the
+            spherical harmonics up to degree `l_max` in lexicographic order.
+            For example, if ``l_max = 2``, The last axis will correspond to
+            spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
+            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
+        """
 
-            * A tensor of shape ``(n_samples, (l_max+1)**2)`` containing all the
+        pass
+
+    def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
+        """
+        Calculates the spherical harmonics for a set of 3D points,
+        and also returns the forward derivatives.
+
+        The coordinates should be stored in the ``xyz`` array. If ``xyz``
+        has `requires_grad = True` it stores the forward derivatives which
+        are then used in the backward pass.
+        The type of the entries of `xyz` determines the precision used,
+        and the device the tensor is stored on determines whether the
+        CPU or CUDA implementation is used for the calculation backend.
+
+        :param xyz:
+            The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
+            shape ``(n_samples, 3)``.
+
+        :return:
+            A tuple that contains:
+
+            * A ``(n_samples, (l_max+1)**2)`` tensor containing all the
               spherical harmonics up to degree `l_max` in lexicographic order.
               For example, if ``l_max = 2``, The last axis will correspond to
               spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
               1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
-            * Either ``None`` if ``gradients=False`` or, if ``gradients=True``,
-              a tensor of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
+            * A tensor of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
               the spherical harmonics' derivatives up to degree ``l_max``. The
               last axis is organized in the same way as in the spherical
               harmonics return array, while the second-to-last axis refers to
               derivatives in the the x, y, and z directions, respectively.
+
         """
 
-        if gradients:
-            return self._sph.compute_with_gradients(xyz)
-        else:
-            return self._sph.compute(xyz), None
+        pass
+
+    def omp_num_threads(self):
+        """Returns the number of threads available for calculations on the CPU."""
+        pass
+
+    def l_max(self):
+        """Returns the maximum angular momentum setting for this calculator."""
+        pass
+
+    def normalized(self):
+        """Returns normalization setting for this calculator."""
+        pass
 
 
 def e3nn_spherical_harmonics(
     l_list: Union[List[int], int],
-    x: torch.Tensor,
+    x: Tensor,
     normalize: Optional[bool] = False,
     normalization: Optional[str] = "integral",
 ) -> torch.Tensor:
@@ -165,7 +204,7 @@ def e3nn_spherical_harmonics(
     l_max = max(l_list)
     is_range_lmax = list(l_list) == list(range(l_max + 1))
 
-    sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:, [2, 0, 1]])[0]
+    sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:, [2, 0, 1]])
     assert normalization in ["integral", "norm", "component"]
     if normalization != "integral":
         sh *= math.sqrt(4 * math.pi)

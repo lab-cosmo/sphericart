@@ -42,15 +42,18 @@ int main() {
     // internal buffers and numerical factors are initalized at construction
     auto calculator = sphericart::SphericalHarmonics<double>(l_max);
 
-    calculator.compute(xyz, sph, dsph);
+    calculator.compute(xyz, sph); // no gradients
+    calculator.compute_with_gradients(xyz, sph, dsph);
 
     // the single-sample evaluation provides direct access to the main calculator,
     // avoiding the loop over samples and allowing e.g. custom parallelization
-    calculator.compute(xyz_sample, sph_sample, dsph_sample);
+    calculator.compute(xyz_sample, sph_sample); // no gradients
+    calculator.compute_with_gradients(xyz_sample, sph_sample, dsph_sample);
 
     // float version
     auto calculator_f = sphericart::SphericalHarmonics<float>(l_max);
-    calculator_f.compute(xyz_f, sph_f, dsph_f);
+    calculator_f.compute(xyz_f, sph_f); // no gradients
+    calculator_f.compute_with_gradients(xyz_f, sph_f, dsph_f);
 
     /* ===== check results ===== */
 

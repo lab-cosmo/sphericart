@@ -34,7 +34,12 @@ Python
 PyTorch
 -------
 
-The `PyTorch` implementation also supports backpropagation.
+The `PyTorch` implementation also supports backpropagation. 
+The example shows how to compute gradients relative to the input
+coordinates by using `backwards`. 
+The :py:class:`sphericart.torch.SphericalHarmonics` object can also 
+be used inside a :py:class:`torch.nn.Module`, that can then be 
+compiled using `torchscript`. 
 
 .. literalinclude:: ../../examples/pytorch/example.py
     :language: python

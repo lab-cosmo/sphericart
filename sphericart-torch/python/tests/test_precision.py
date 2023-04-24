@@ -19,8 +19,8 @@ def test_precision(xyz):
     xyz_32 = xyz.clone().to(dtype=torch.float32).detach().requires_grad_(True)
     assert ((xyz_64.detach() - xyz_32.detach()) ** 2).sum() < 1e-8
 
-    sph_64, _ = calculator.compute(xyz=xyz_64)
-    sph_32, _ = calculator.compute(xyz=xyz_32)
+    sph_64 = calculator.compute(xyz=xyz_64)
+    sph_32 = calculator.compute(xyz=xyz_32)
     assert ((sph_64.detach() / sph_32.detach() - 1) ** 2).sum() < 1e-5
 
     norm_64 = (sph_64**2).sum()

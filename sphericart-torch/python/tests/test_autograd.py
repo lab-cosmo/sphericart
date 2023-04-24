@@ -16,7 +16,7 @@ def test_autograd_cartesian(xyz):
     calculator = sphericart.torch.SphericalHarmonics(l_max=4, normalized=False)
 
     def compute(xyz):
-        sph, _ = calculator.compute(xyz=xyz)
+        sph = calculator.compute(xyz=xyz)
         assert torch.linalg.norm(sph) != 0.0
         return sph
 
@@ -31,7 +31,7 @@ def test_autograd_normalized(xyz):
     calculator = sphericart.torch.SphericalHarmonics(l_max=4, normalized=True)
 
     def compute(xyz):
-        sph, _ = calculator.compute(xyz=xyz)
+        sph = calculator.compute(xyz=xyz)
         assert torch.linalg.norm(sph) != 0.0
         return sph
 

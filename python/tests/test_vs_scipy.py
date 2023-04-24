@@ -49,13 +49,13 @@ def test_against_scipy(xyz):
             z = xyz[:, 2]
             r = np.sqrt(x**2 + y**2 + z**2)
             calculator = sphericart.SphericalHarmonics(l)
-            sph_sphericart, _ = calculator.compute(xyz, gradients=False)
+            sph_sphericart = calculator.compute(xyz)
             sph_sphericart_l_m = sph_sphericart[:, l * l + l + m] / r**l
 
             assert np.allclose(sph_scipy_l_m, sph_sphericart_l_m)
 
             calculator = sphericart.SphericalHarmonics(l, normalized=True)
-            sph_sphericart, _ = calculator.compute(xyz, gradients=False)
+            sph_sphericart = calculator.compute(xyz)
             sph_normalized_l_m = sph_sphericart[:, l * l + l + m]
 
             assert np.allclose(sph_scipy_l_m, sph_normalized_l_m)
@@ -70,10 +70,10 @@ def test_derivatives(xyz):
             xyz_plus[:, alpha] += delta * np.ones_like(xyz[:, alpha])
             xyz_minus = xyz.copy()
             xyz_minus[:, alpha] -= delta * np.ones_like(xyz[:, alpha])
-            sph_plus, _ = calculator.compute(xyz_plus, gradients=False)
-            sph_minus, _ = calculator.compute(xyz_minus, gradients=False)
+            sph_plus = calculator.compute(xyz_plus)
+            sph_minus = calculator.compute(xyz_minus)
             numerical_derivatives = (sph_plus - sph_minus) / (2.0 * delta)
-            sph, analytical_derivatives_all = calculator.compute(xyz, gradients=True)
+            sph, analytical_derivatives_all = calculator.compute_with_gradients(xyz)
             analytical_derivatives = analytical_derivatives_all[:, alpha, :]
             assert np.allclose(numerical_derivatives, analytical_derivatives)
 

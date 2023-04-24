@@ -101,6 +101,39 @@ SPHERICART_EXPORT void sphericart_delete_f(sphericart_calculator_f_t* calculator
  *        1), (2, 2)`, in this order.
  * @param sph_length size of the sph allocation, should be `n_samples * (l_max +
  *        1) * (l_max + 1)`
+ */
+SPHERICART_EXPORT void sphericart_compute_array(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length
+);
+
+/**
+ * This function calculates the spherical harmonics and their
+ * derivatives for an array of 3D points.
+ *
+ * @param spherical_harmonics A pointer to a `sphericart_calculator_t` struct
+ *        that holds prefactors and options to compute the spherical harmonics.
+ * @param xyz An array of size `n_samples x 3`. It contains the Cartesian
+ *        coordinates of the 3D points for which the spherical harmonics are to
+ *        be computed, organized along two dimensions. The outer dimension is
+ *        `n_samples` long, accounting for different samples, while the inner
+ *        dimension has size 3 and it represents the x, y, and z coordinates
+ *        respectively.
+ * @param xyz_length size of the xyz allocation, i.e, `3 * n_samples`
+ * @param sph pointer to the first element of an array containing `n_samples *
+ *        (l_max + 1) * (l_max + 1)` elements. On exit, this array will contain
+ *        the spherical harmonics organized along two dimensions. The leading
+ *        dimension is `n_samples` long and it represents the different samples,
+ *        while the inner dimension size is `(l_max + 1) * (l_max + 1)` long and
+ *        it contains the spherical harmonics. These are laid out in
+ *        lexicographic order. For example, if `l_max=2`, it will contain `(l,
+ *        m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1), (2, 0), (2,
+ *        1), (2, 2)`, in this order.
+ * @param sph_length size of the sph allocation, should be `n_samples * (l_max +
+ *        1) * (l_max + 1)`
  * @param dsph pointer to the first element of an array containing `n_samples *
  *         `n_samples * 3 * (l_max + 1) * (l_max + 1)` elements. On exit, this
  *         array will contain the spherical harmonics' derivatives organized
@@ -114,7 +147,7 @@ SPHERICART_EXPORT void sphericart_delete_f(sphericart_calculator_f_t* calculator
  * @param dsph_length size of the dsph allocation, which should be `n_samples * 3 *
  *        (l_max + 1) * (l_max + 1)`
  */
-SPHERICART_EXPORT void sphericart_compute_array(
+SPHERICART_EXPORT void sphericart_compute_array_with_gradients(
     sphericart_calculator_t* calculator,
     const double* xyz,
     size_t xyz_length,
@@ -125,23 +158,47 @@ SPHERICART_EXPORT void sphericart_compute_array(
 );
 
 /**
- * Similar to `sphericart_compute_array`, but it computes the spherical harmonics
- * for a single 3D point in space.
+ * Similar to :func:`sphericart_compute_array`, but it computes the spherical 
+ * harmonics for a single 3D point in space.
 */
 SPHERICART_EXPORT void sphericart_compute_sample(
     sphericart_calculator_t* calculator,
     const double* xyz,
     size_t xyz_length,
     double* sph,
+    size_t sph_length
+);
+
+/**
+ * Similar to :func:`sphericart_compute_array_with_gradients`, but it computes the 
+ * spherical harmonics for a single 3D point in space.
+*/
+SPHERICART_EXPORT void sphericart_compute_sample_with_gradients(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
     size_t sph_length,
     double* dsph,
     size_t dsph_length
 );
 
 /**
- * Similar to `sphericart_compute_array`, but using the `float` data type.
+ * Similar to :func:`sphericart_compute_array`, but using the `float` data type.
 */
 SPHERICART_EXPORT void sphericart_compute_array_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length
+);
+
+/**
+ * Similar to :func:`sphericart_compute_array_with_gradients`, but using the 
+ * `float` data type.
+*/
+SPHERICART_EXPORT void sphericart_compute_array_with_gradients_f(
     sphericart_calculator_f_t* calculator,
     const float* xyz,
     size_t xyz_length,
@@ -152,9 +209,20 @@ SPHERICART_EXPORT void sphericart_compute_array_f(
 );
 
 /**
- * Similar to `sphericart_compute_sample`, but using the `float` data type.
+ * Similar to :func:`sphericart_compute_sample`, but using the `float` data type.
 */
 SPHERICART_EXPORT void sphericart_compute_sample_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length
+);
+
+/**
+ * Similar to :func:`sphericart_compute_sample_with_gradients`, but using the `float` data type.
+*/
+SPHERICART_EXPORT void sphericart_compute_sample_with_gradients_f(
     sphericart_calculator_f_t* calculator,
     const float* xyz,
     size_t xyz_length,
