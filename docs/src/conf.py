@@ -58,3 +58,5 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable/", None),
     "e3nn": ("https://docs.e3nn.org/en/latest/", None),
 }
+
+html_theme = "furo"
