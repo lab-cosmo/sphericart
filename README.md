@@ -54,12 +54,16 @@ The following cmake configuration options are available:
 
 ### Running tests and documentation
 
-Tests and local documentations can be run with `tox`. 
+Tests and the local build of the documentation can be run with `tox`. 
+The default tests, which are also run on the CI, can be executed by simply running
+```bash
+tox
+```
+in the main folder of the repository. 
+
 To run tests in a CPU-only environment you can set the environment variable
 `PIP_EXTRA_INDEX_URL` before calling tox, e.g. 
-
 ```bash
 PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu tox -e docs
 ```
-
 will build the documentation in a CPU-only environment. 
