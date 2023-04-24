@@ -18,10 +18,10 @@ class SphericalHarmonics:
     In order to minimize the cost of each call, the `SphericalHarmonics` object
     computes prefactors and initializes buffers upon creation
 
-    >>> import numpy, sphericart    
+    >>> import numpy, sphericart
     >>> sh = SphericalHarmonics(l_max=8, normalized=False)
 
-    Then, the :py:func:`compute` method can be called on an array of 3D 
+    Then, the :py:func:`compute` method can be called on an array of 3D
     Cartesian points to compute the spherical harmonics
 
     >>> xyz = np.random.normal(size=(10,3))
