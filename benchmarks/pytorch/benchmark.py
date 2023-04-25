@@ -59,9 +59,11 @@ def sphericart_benchmark(
         elapsed += time.time()
         time_noderi[i] = elapsed
 
+    mean_time = time_noderi[warmup:].mean() / n_samples
+    std_time = time_noderi[warmup:].std() / n_samples
     print(
-        f" No derivatives: {time_noderi[warmup:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_noderi[warmup:].std()/n_samples*1e9: 10.1f} (std)"
+        f" No derivatives: {mean_time * 1e9: 10.1f} ns/sample ± "
+        + f"{std_time * 1e9: 10.1f} (std)"
     )
     if verbose:
         print("Warm-up timings / sec.:\n", time_noderi[:warmup])
@@ -73,9 +75,11 @@ def sphericart_benchmark(
         elapsed += time.time()
         time_deri[i] = elapsed
 
+    mean_time = time_deri[warmup:].mean() / n_samples
+    std_time = time_deri[warmup:].std() / n_samples
     print(
-        f" Derivatives:    {time_deri[warmup:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_deri[warmup:].std()/n_samples*1e9: 10.1f} (std)"
+        f" Derivatives:    {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
     )
     if verbose:
         print("Warm-up timings / sec.:\n", time_deri[:warmup])
@@ -134,14 +138,19 @@ def sphericart_benchmark(
             time_bw[i] = elapsed
             xyz_tensor.grad.zero_()
 
+        mean_time = time_fw[warmup:].mean() / n_samples
+        std_time = time_fw[warmup:].std() / n_samples
         print(
-            f" E3NN-FW:        {time_fw[warmup:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw[warmup:].std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-FW:        {mean_time * 1e9: 10.1f} ns/sample ± "
+            + f"{std_time * 1e9: 10.1f} (std)"
         )
         print("Warm-up timings / sec.: \n", time_fw[:warmup])
+
+        mean_time = time_bw[warmup:].mean() / n_samples
+        std_time = time_bw[warmup:].std() / n_samples
         print(
-            f" E3NN-BW:        {time_bw[warmup:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw[warmup:].std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-BW:        {mean_time * 1e9:10.1f} ns/sample ± "
+            + f"{std_time * 1e9:10.1f} (std)"
         )
         print("Warm-up timings / sec.: \n", time_bw[:warmup])
 
@@ -167,14 +176,18 @@ def sphericart_benchmark(
             time_bw[i] = elapsed
             xyz.grad.zero_()
 
+        mean_time = time_fw[warmup:].mean() / n_samples
+        std_time = time_fw[warmup:].std() / n_samples
         print(
-            f" PATCH-FW:       {time_fw[warmup:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw[warmup:].std()/n_samples*1e9: 10.1f} (std)"
+            f" PATCH-FW:       {mean_time*1e9: 10.1f} ns/sample ± "
+            + f"{std_time*1e9: 10.1f} (std)"
         )
         print("Warm-up timings / sec.: \n", time_fw[:warmup])
+        mean_time = time_bw[warmup:].mean() / n_samples
+        std_time = time_bw[warmup:].std() / n_samples
         print(
-            f" PATCH-BW:       {time_bw[warmup:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw[warmup:].std()/n_samples*1e9: 10.1f} (std)"
+            f" PATCH-BW:       {mean_time * 1e9:10.1f} ns/sample ± "
+            + f"{std_time * 1e9:10.1f} (std)"
         )
         print("Warm-up timings / sec.: \n", time_bw[:warmup])
         sphericart.torch.unpatch_e3nn(e3nn)
@@ -211,14 +224,18 @@ def sphericart_benchmark(
             elapsed += time.time()
             time_bw[i] = elapsed
 
+        mean_time = time_fw[warmup:].mean() / n_samples
+        std_time = time_fw[warmup:].std() / n_samples
         print(
-            f" E3NN-JAX-FW:    {time_fw[warmup:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw[warmup:].std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-JAX-FW:    {mean_time*1e9: 10.1f} ns/sample ± "
+            + f"{std_time*1e9: 10.1f} (std)"
         )
         print("Warm-up timings / sec.: \n", time_fw[:warmup])
+        mean_time = time_bw[warmup:].mean() / n_samples
+        std_time = time_bw[warmup:].std() / n_samples
         print(
-            f" E3NN-JAX-BW:    {time_bw[warmup:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw[warmup:].std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-JAX-BW:    {mean_time*1e9: 10.1f} ns/sample ± "
+            + f"{std_time*1e9: 10.1f} (std)"
         )
         print("Warm-up timings / sec.: \n", time_bw[:warmup])
     print(
@@ -232,6 +249,12 @@ if __name__ == "__main__":
     parser.add_argument("-l", type=int, default=10, help="maximum angular momentum")
     parser.add_argument("-s", type=int, default=10000, help="number of samples")
     parser.add_argument("-t", type=int, default=100, help="number of runs/sample")
+    parser.add_argument(
+        "-cpu", type=int, default=1, help="print CPU results (0=False, 1=True)"
+    )
+    parser.add_argument(
+        "-gpu", type=int, default=1, help="print GPU results (0=False, 1=True)"
+    )
     parser.add_argument(
         "--normalized",
         action="store_true",
@@ -257,30 +280,31 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Run benchmarks
-    sphericart_benchmark(
-        args.l,
-        args.s,
-        args.t,
-        args.normalized,
-        device="cpu",
-        dtype=torch.float64,
-        compare=args.compare,
-        verbose=args.verbose,
-        warmup=args.warmup,
-    )
-    sphericart_benchmark(
-        args.l,
-        args.s,
-        args.t,
-        args.normalized,
-        device="cpu",
-        dtype=torch.float32,
-        compare=args.compare,
-        verbose=args.verbose,
-        warmup=args.warmup,
-    )
+    if args.cpu:
+        sphericart_benchmark(
+            args.l,
+            args.s,
+            args.t,
+            args.normalized,
+            device="cpu",
+            dtype=torch.float64,
+            compare=args.compare,
+            verbose=args.verbose,
+            warmup=args.warmup,
+        )
+        sphericart_benchmark(
+            args.l,
+            args.s,
+            args.t,
+            args.normalized,
+            device="cpu",
+            dtype=torch.float32,
+            compare=args.compare,
+            verbose=args.verbose,
+            warmup=args.warmup,
+        )
 
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and args.gpu:
         sphericart_benchmark(
             args.l,
             args.s,
