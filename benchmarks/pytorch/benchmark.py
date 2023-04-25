@@ -32,12 +32,7 @@ try:
 except ImportError:
     _HAS_E3NN_JAX = False
 
-<<<<<<< HEAD
-=======
-_WARMUP = 16
 
-
->>>>>>> 46f248d6fd6cc41d88736b33ef653d3b372f216b
 def sphericart_benchmark(
     l_max=10,
     n_samples=10000,
@@ -250,12 +245,14 @@ if __name__ == "__main__":
         help="compare timings with other codes, if installed",
     )
     parser.add_argument(
-            "--verbose",
-            action="store_true",
-            default=False,
-            help="verbose timing output",
-            )
-    parser.add_argument("--warmup", type=int, default=16, help="number of warm-up evaluations")
+        "--verbose",
+        action="store_true",
+        default=False,
+        help="verbose timing output",
+    )
+    parser.add_argument(
+        "--warmup", type=int, default=16, help="number of warm-up evaluations"
+    )
 
     args = parser.parse_args()
 
