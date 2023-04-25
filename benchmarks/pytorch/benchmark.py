@@ -32,7 +32,7 @@ try:
 except ImportError:
     _HAS_E3NN_JAX = False
 
-
+_WARMUP = 16
 def sphericart_benchmark(
     l_max=10,
     n_samples=10000,
@@ -41,6 +41,7 @@ def sphericart_benchmark(
     device="cpu",
     dtype=torch.float64,
     compare=False,
+    verbose=False,
 ):
     xyz = torch.randn((n_samples, 3), dtype=dtype, device=device)
     sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized)
@@ -50,37 +51,41 @@ def sphericart_benchmark(
         + f"dtype={dtype}, device={device}, omp_num_threads={omp_threads} ****"
     )
 
-    time_noderi = np.zeros(n_tries + 10)
-    for i in range(n_tries + 10):
+    time_noderi = np.zeros(n_tries + _WARMUP)
+    for i in range(n_tries + _WARMUP):
         elapsed = -time.time()
         sh_sphericart = sh_calculator.compute(xyz)
         elapsed += time.time()
         time_noderi[i] = elapsed
 
     print(
-        f" No derivatives: {time_noderi[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_noderi[10:].std()/n_samples*1e9: 10.1f} (std)"
+        f" No derivatives: {time_noderi[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_noderi[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
     )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_noderi[:_WARMUP])
 
-    time_deri = np.zeros(n_tries + 10)
-    for i in range(n_tries + 10):
+    time_deri = np.zeros(n_tries + _WARMUP)
+    for i in range(n_tries + _WARMUP):
         elapsed = -time.time()
         sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
         elapsed += time.time()
         time_deri[i] = elapsed
 
     print(
-        f" Derivatives:    {time_deri[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_deri[10:].std()/n_samples*1e9: 10.1f} (std)"
+        f" Derivatives:    {time_deri[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_deri[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
     )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_deri[:_WARMUP])
 
     # autograd
     xyz = xyz.clone().detach().type(dtype).to(device).requires_grad_()
 
-    time_fw = np.zeros(n_tries + 10)
-    time_bw = np.zeros(n_tries + 10)
+    time_fw = np.zeros(n_tries + _WARMUP)
+    time_bw = np.zeros(n_tries + _WARMUP)
 
-    for i in range(n_tries + 10):
+    for i in range(n_tries + _WARMUP):
         elapsed = -time.time()
         sh_sphericart = sh_calculator.compute(xyz)
         elapsed += time.time()
@@ -94,19 +99,24 @@ def sphericart_benchmark(
         xyz.grad.zero_()
 
     print(
-        f" Forward:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        f" Forward:        {time_fw[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
     )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_fw[:_WARMUP])
+
     print(
-        f" Backward:       {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
+        f" Backward:       {time_bw[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
     )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_bw[:_WARMUP])
 
     if compare and _HAS_E3NN:
         xyz_tensor = (
             xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
         )
-        for i in range(n_tries + 10):
+        for i in range(n_tries + _WARMUP):
             elapsed = -time.time()
             sh_e3nn = e3nn.o3.spherical_harmonics(
                 list(range(l_max + 1)),
@@ -124,22 +134,22 @@ def sphericart_benchmark(
             xyz_tensor.grad.zero_()
 
         print(
-            f" E3NN-FW:        {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-FW:        {time_fw[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("Warm-up timings / sec.: \n", time_fw[:10])
+        print("Warm-up timings / sec.: \n", time_fw[:_WARMUP])
         print(
-            f" E3NN-BW:        {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-BW:        {time_bw[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("Warm-up timings / sec.: \n", time_bw[:10])
+        print("Warm-up timings / sec.: \n", time_bw[:_WARMUP])
 
         # check the timing with the patch
         sphericart.torch.patch_e3nn(e3nn)
         xyz_tensor = (
             xyz[:, [1, 2, 0]].clone().detach().type(dtype).to(device).requires_grad_()
         )
-        for i in range(n_tries + 10):
+        for i in range(n_tries + _WARMUP):
             elapsed = -time.time()
             sh_e3nn = e3nn.o3.spherical_harmonics(
                 list(range(l_max + 1)),
@@ -157,15 +167,15 @@ def sphericart_benchmark(
             xyz.grad.zero_()
 
         print(
-            f" PATCH-FW:       {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
+            f" PATCH-FW:       {time_fw[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("Warm-up timings / sec.: \n", time_fw[:10])
+        print("Warm-up timings / sec.: \n", time_fw[:_WARMUP])
         print(
-            f" PATCH-BW:       {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
+            f" PATCH-BW:       {time_bw[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("Warm-up timings / sec.: \n", time_bw[:10])
+        print("Warm-up timings / sec.: \n", time_bw[:_WARMUP])
         sphericart.torch.unpatch_e3nn(e3nn)
 
     if compare and _HAS_E3NN_JAX:
@@ -189,7 +199,7 @@ def sphericart_benchmark(
 
         loss_grad_fn = jax.grad(loss_fn)
 
-        for i in range(n_tries + 10):
+        for i in range(n_tries + _WARMUP):
             elapsed = -time.time()
             _ = loss_fn(xyz_tensor)
             elapsed += time.time()
@@ -201,15 +211,15 @@ def sphericart_benchmark(
             time_bw[i] = elapsed
 
         print(
-            f" E3NN-JAX-FW:    {time_fw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_fw[10:].std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-JAX-FW:    {time_fw[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_fw[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("Warm-up timings / sec.: \n", time_fw[:10])
+        print("Warm-up timings / sec.: \n", time_fw[:_WARMUP])
         print(
-            f" E3NN-JAX-BW:    {time_bw[10:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
-{time_bw[10:].std()/n_samples*1e9: 10.1f} (std)"
+            f" E3NN-JAX-BW:    {time_bw[_WARMUP:].mean()/n_samples*1e9: 10.1f} ns/sample ± \
+{time_bw[_WARMUP:].std()/n_samples*1e9: 10.1f} (std)"
         )
-        # print("Warm-up timings / sec.: \n", time_bw[:10])
+        print("Warm-up timings / sec.: \n", time_bw[:_WARMUP])
     print(
         "******************************************************************************"
     )
@@ -233,6 +243,13 @@ if __name__ == "__main__":
         default=False,
         help="compare timings with other codes, if installed",
     )
+    parser.add_argument(
+            "--verbose",
+            action="store_true",
+            default=False,
+            help="verbose timing output",
+            )
+
 
     args = parser.parse_args()
 
@@ -245,6 +262,7 @@ if __name__ == "__main__":
         device="cpu",
         dtype=torch.float64,
         compare=args.compare,
+        verbose=args.verbose,
     )
     sphericart_benchmark(
         args.l,
@@ -254,6 +272,7 @@ if __name__ == "__main__":
         device="cpu",
         dtype=torch.float32,
         compare=args.compare,
+        verbose=args.verbose,
     )
 
     if torch.cuda.is_available():
@@ -265,6 +284,7 @@ if __name__ == "__main__":
             device="cuda",
             dtype=torch.float64,
             compare=args.compare,
+            verbose=args.verbose,
         )
         sphericart_benchmark(
             args.l,
@@ -274,4 +294,5 @@ if __name__ == "__main__":
             device="cuda",
             dtype=torch.float32,
             compare=args.compare,
+            verbose=args.verbose,
         )
