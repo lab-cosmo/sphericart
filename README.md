@@ -1,6 +1,6 @@
 # sphericart
 
-|tests| |docs|
+![tests](https://github.com/lab-cosmo/sphericart/actions/workflows/tests.yml/badge.svg)
 
 This is sphericart, a multi-language library for the efficient calculation of the
 spherical harmonics and their derivatives in Cartesian coordinates.
@@ -68,12 +68,4 @@ To run tests in a CPU-only environment you can set the environment variable
 ```bash
 PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu tox -e docs
 ```
-will build the documentation in a CPU-only environment. 
-
-.. |tests| image:: https://github.com/lab-cosmo/sphericart/workflows/Test/badge.svg
-   :alt: Github Actions Tests Job Status
-   :target: https://github.com/lab-cosmo/sphericart/actions?query=workflow%3ATest
-
-.. |docs| image:: https://img.shields.io/badge/documentation-latest-sucess
-   :alt: Documentation
-   :target: https://sphericart.readthedocs.io
+will build the documentation in a CPU-only environment.
