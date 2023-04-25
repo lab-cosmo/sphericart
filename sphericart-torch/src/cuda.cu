@@ -200,6 +200,7 @@ __global__ void spherical_harmonics_kernel(
 
     // work through hardcoded parts first...
     int ml = min(static_cast<int>(HARDCODED_LMAX), lmax);
+    /*
     clear_buffers(
         (ml + 1) * (ml + 1),
         buffer_sph,
@@ -208,6 +209,7 @@ __global__ void spherical_harmonics_kernel(
         buffer_dsph_z,
         requires_grad
     );
+    */
 
     if (threadIdx.x == 0) {
         if (lmax>=3) {
@@ -403,13 +405,6 @@ bool sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, 
                 required_buff_size
             );
             break;
-        // case torch::ScalarType::Half:
-        //     cudaFuncSetAttribute(
-        //         spherical_harmonics_kernel<at::Half>,
-        //         cudaFuncAttributeMaxDynamicSharedMemorySize,
-        //         total_buff_size
-        //     );
-        //     break;
         }
     }
     return accepted;
@@ -465,17 +460,8 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     AT_DISPATCH_FLOATING_TYPES(
         xyz.scalar_type(), "spherical_harmonics_cuda", ([&] {
-            size_t total_buff_size = 0;
-
-            total_buff_size += GRID_DIM_Y * (l_max + 1) * sizeof(scalar_t);     // buffer_c
-            total_buff_size += GRID_DIM_Y * (l_max + 1) * sizeof(scalar_t);     // buffer_s
-            total_buff_size += GRID_DIM_Y * (l_max + 1) * sizeof(scalar_t);     // buffer_twomz
-            total_buff_size += (l_max + 1) * (l_max + 2) * sizeof(scalar_t);    // buffer_prefactors
-            total_buff_size += GRID_DIM_Y  * nl * sizeof(scalar_t); // buffer_sph_out
-
-            if (xyz.requires_grad() || gradients) {
-                total_buff_size += 3 * GRID_DIM_Y  * nl * sizeof(scalar_t); // buffer_sph_derivs
-            }
+            size_t total_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, 
+                                sizeof(scalar_t), xyz.requires_grad() || gradients);
 
             spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
                 xyz.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
