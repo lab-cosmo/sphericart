@@ -18,8 +18,9 @@ class SphericalHarmonics:
     In order to minimize the cost of each call, the `SphericalHarmonics` object
     computes prefactors and initializes buffers upon creation
 
-    >>> import numpy, sphericart
-    >>> sh = SphericalHarmonics(l_max=8, normalized=False)
+    >>> import numpy as np
+    >>> import sphericart as sc
+    >>> sh = sc.SphericalHarmonics(l_max=8, normalized=False)
 
     Then, the :py:func:`compute` method can be called on an array of 3D
     Cartesian points to compute the spherical harmonics
@@ -34,6 +35,9 @@ class SphericalHarmonics:
     >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
     >>> sh_grads.shape
     (10, 3, 81)
+
+    which returns the gradient as a tensor with size
+    `(n_samples, 3, (l_max+1)**2)`.
 
     :param l_max: the maximum degree of the spherical harmonics to be calculated
     :param normalized: whether to normalize the spherical harmonics (default: False)
@@ -63,6 +67,14 @@ class SphericalHarmonics:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array.
+
+        >>> import numpy as np
+        >>> import sphericart as sc
+        >>> sh = sc.SphericalHarmonics(l_max=8, normalized=False)
+        >>> xyz = np.random.normal(size=(10,3))
+        >>> sh_values = sh.compute(xyz)
+        >>> sh_values.shape
+        (10, 81)
 
         :param xyz:
             The Cartesian coordinates of the 3D points, as an array with
@@ -115,7 +127,15 @@ class SphericalHarmonics:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array, together with their Cartesian
-        derivatives
+        derivatives.
+
+        >>> import numpy as np
+        >>> import sphericart as sc
+        >>> sh = sc.SphericalHarmonics(l_max=8, normalized=False)
+        >>> xyz = np.random.normal(size=(10,3))
+        >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
+        >>> sh_grads.shape
+        (10, 3, 81)
 
         :param xyz:
             The Cartesian coordinates of the 3D points, as an array with
