@@ -1,5 +1,7 @@
 # sphericart
 
+|tests|
+
 This is sphericart, a multi-language library for the efficient calculation of the
 spherical harmonics and their derivatives in Cartesian coordinates.
 
