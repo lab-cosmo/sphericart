@@ -278,7 +278,7 @@ if __name__ == "__main__":
         compare=args.compare,
         verbose=args.verbose,
         warmup=args.warmup,
-   )
+    )
 
     if torch.cuda.is_available():
         sphericart_benchmark(
