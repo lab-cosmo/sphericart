@@ -28,6 +28,11 @@ inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *
 
 template<typename Fn>
 inline void benchmark(std::string context, size_t n_samples, size_t n_tries, Fn function) {
+    // warmup
+    for (size_t i_try = 0; i_try < 10; i_try++) {
+        function();
+    }
+
     auto time = 0.0;
     auto time2 = 0.0;
 
@@ -78,38 +83,38 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     auto dsph1 = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
 
     {
-    SphericalHarmonics<DTYPE> SH(l_max, false);
-    sxyz[0] = xyz[0]; sxyz[1] = xyz[1]; sxyz[2] = xyz[2];
+        SphericalHarmonics<DTYPE> calculator(l_max, false);
+        sxyz[0] = xyz[0]; sxyz[1] = xyz[1]; sxyz[2] = xyz[2];
 
-    // single-sample evaluation
-    benchmark("Sample without derivatives", 1, n_tries, [&](){
-        SH.compute(sxyz, ssph);
-    });
+        // single-sample evaluation
+        benchmark("Sample without derivatives", 1, n_tries, [&](){
+            calculator.compute(sxyz, ssph);
+        });
 
-    benchmark("Sample with derivatives", 1, n_tries, [&](){
-        SH.compute_with_gradients(sxyz, ssph, sdsph);
-    });
+        benchmark("Sample with derivatives", 1, n_tries, [&](){
+            calculator.compute_with_gradients(sxyz, ssph, sdsph);
+        });
 
-    std::cout << std::endl;
+        std::cout << std::endl;
 
-    benchmark("Call without derivatives", n_samples, n_tries, [&](){
-        SH.compute(xyz, sph1);
-    });
+        benchmark("Call without derivatives", n_samples, n_tries, [&](){
+            calculator.compute(xyz, sph1);
+        });
 
-    benchmark("Call with derivatives", n_samples, n_tries, [&](){
-        SH.compute_with_gradients(xyz, sph1, dsph1);
-    });
+        benchmark("Call with derivatives", n_samples, n_tries, [&](){
+            calculator.compute_with_gradients(xyz, sph1, dsph1);
+        });
     }
 
     {
-    SphericalHarmonics<DTYPE> SH(l_max, true);
-    benchmark("Call without derivatives (normalized)", n_samples, n_tries, [&](){
-        SH.compute(xyz, sph1);
-    });
+        SphericalHarmonics<DTYPE> calculator(l_max, true);
+        benchmark("Call without derivatives (normalized)", n_samples, n_tries, [&](){
+            calculator.compute(xyz, sph1);
+        });
 
-    benchmark("Call with derivatives (normalized)", n_samples, n_tries, [&](){
-        SH.compute_with_gradients(xyz, sph1, dsph1);
-    });
+        benchmark("Call with derivatives (normalized)", n_samples, n_tries, [&](){
+            calculator.compute_with_gradients(xyz, sph1, dsph1);
+        });
     }
     std::cout << std::endl;
 
@@ -259,7 +264,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
 
 int main(int argc, char *argv[]) {
     size_t n_samples = 10000;
-    size_t n_tries = 100;
+    size_t n_tries = 10000;
     size_t l_max = 10;
 
     // parse command line options
