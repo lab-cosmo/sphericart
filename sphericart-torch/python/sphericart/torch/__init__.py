@@ -206,9 +206,7 @@ def e3nn_spherical_harmonics(
 
     sh = SphericalHarmonics(l_max, normalized=normalize).compute(
         torch.index_select(
-            x, 
-            1, 
-            torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
+            x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
         )
     )
     assert normalization in ["integral", "norm", "component"]
