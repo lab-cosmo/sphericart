@@ -82,7 +82,7 @@ void compute_sph_prefactors(int l_max, T *factors) {
     for (int l = 1; l < l_max + 1; l++) {
         factors[k+l] = -(2 * l - 1) * factors[k - 1];
         for (int m = l - 1; m >= 0; --m) {
-            factors[k + m] = -1.0 / ((l + m + 1) * (l - m));
+            factors[k + m] = static_cast<T>(-1.0) / ((l + m + 1) * (l - m));
         }
         k += l + 1;
     }
