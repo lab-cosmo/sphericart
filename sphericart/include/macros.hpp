@@ -18,6 +18,10 @@
 
 #define SPHERICART_LMAX_HARDCODED 6
 
+// we need this monstruosity to make sure that literals are not treated as 
+// double precision, as that slows down greatly floating-point execution.
+// basically this static casts the constant to the type of the target 
+// pointer
 #define cast(sph, lit) static_cast<std::remove_pointer_t<decltype(sph)>>(lit)
 
 #define COMPUTE_SPH_L0(sph_i, SPH_IDX) \

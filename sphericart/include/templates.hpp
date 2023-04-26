@@ -66,7 +66,7 @@ void compute_sph_prefactors(int l_max, T *factors) {
         // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
         factors[k] = std::sqrt(factor) * M_SQRT1_2;
         for (int m = 1; m <= l; ++m) {
-            factor *= 1.0 / (l * (l + 1) + m * (1 - m));
+            factor *= static_cast<T>(1.0) / (l * (l + 1) + m * (1 - m));
             if (m % 2 == 0) {
                 factors[k + m] = std::sqrt(factor);
             } else {
@@ -78,7 +78,7 @@ void compute_sph_prefactors(int l_max, T *factors) {
 
     // that are needed in the recursive calculation of Qlm.
     // Xll is just Qll, Xlm is the factor that enters the alternative m recursion
-    factors[k] = 1.0; k += 1;
+    factors[k] = 1; k += 1;
     for (int l = 1; l < l_max + 1; l++) {
         factors[k+l] = -(2 * l - 1) * factors[k - 1];
         for (int m = l - 1; m >= 0; --m) {
@@ -111,7 +111,7 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
     [[maybe_unused]] T ir=0.0;
 
     if constexpr(NORMALIZED) {
-        ir = 1.0/std::sqrt(x2+y2+z2);
+        ir = 1/std::sqrt(x2+y2+z2);
         x*=ir; y*=ir; z*=ir;
         x2 = x*x; y2=y*y; z2=z*z;
     }
@@ -319,7 +319,7 @@ static inline void generic_sph_sample(const T *xyz_i,
     [[maybe_unused]] auto y2 = y * y;
     [[maybe_unused]] auto z2 = z * z;
     if constexpr(NORMALIZED) {
-        ir = 1.0 / std::sqrt(x2+y2+z2);
+        ir = 1 / std::sqrt(x2+y2+z2);
         x*=ir; y*=ir; z*=ir;
         x2 = x*x; y2=y*y; z2=z*z;
     }
@@ -343,7 +343,7 @@ static inline void generic_sph_sample(const T *xyz_i,
         so that they are just plain polynomials of x,y,z.    */
     // help the compiler unroll the first part of the loop
     int m = 0;
-    auto twoz = 2 * z;
+    auto twoz = z+z;
     twomz[0] = twoz;
     // also initialize the sine and cosine, even if these never change
     c[0] = 1.0;
