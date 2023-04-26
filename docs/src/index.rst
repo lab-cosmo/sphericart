@@ -19,6 +19,6 @@ the library, as well as a more comprehensive overview of the different APIs.
     :maxdepth: 1
 
     installation
-    using
     api
+    using
     maths

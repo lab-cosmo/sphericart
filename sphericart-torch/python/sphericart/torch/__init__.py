@@ -75,9 +75,31 @@ class SphericalHarmonics:
     Spherical harmonics calculator, up to degree ``l_max``.
 
     By default, this class computes a non-normalized form of the real spherical
-    harmonics, i.e. :math:`r^l Y^l_m(r)`. These scaled spherical harmonics
+    harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
     are polynomials in the Cartesian coordinates of the input points.
-    ``normalized=True`` can be set to compute :math:`Y^l_m(r)`.
+    ``normalized=True`` can be set to compute :math:`Y^l_m`.
+
+    Usage is similar to that of :py:class:`sphericart.SphericalHarmonics`,
+    and allows to return explicit forward gradients
+
+    >>> import torch
+    >>> import sphericart.torch as sct
+    >>> sh = sct.SphericalHarmonics(l_max=8, normalized=False)
+    >>> xyz = torch.rand(size=(10,3))
+    >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
+    >>> sh_grads.shape
+    torch.Size([10, 3, 81])
+
+    It is also possible to use backpropagation to compute derivatives
+    of a combination of spherical harmonics relative to the input coordinates.
+
+    >>> xyz = xyz.detach().clone().requires_grad_()
+    >>> sh = sct.SphericalHarmonics(l_max=8, normalized=False)
+    >>> sh_values = sh.compute(xyz)
+    >>> sh_values.sum().backward()
+    >>> torch.allclose(xyz.grad, sh_grads.sum(axis=-1))
+    True
+
 
     :param l_max:
         the maximum degree of the spherical harmonics to be calculated

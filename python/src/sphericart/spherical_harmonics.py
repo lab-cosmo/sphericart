@@ -11,14 +11,38 @@ class SphericalHarmonics:
     Spherical harmonics calculator, up to degree ``l_max``.
 
     By default, this class computes a non-normalized form of the real spherical
-    harmonics, i.e. :math:`r^l Y^l_m(r)`. These scaled spherical harmonics
+    harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
     are polynomials in the Cartesian coordinates of the input points.
-    ``normalize=True`` can be set to compute :math:`Y^l_m(r)`.
+    ``normalize=True`` can be set to compute :math:`Y^l_m`.
+
+    In order to minimize the cost of each call, the `SphericalHarmonics` object
+    computes prefactors and initializes buffers upon creation
+
+    >>> import numpy as np
+    >>> import sphericart as sc
+    >>> sh = sc.SphericalHarmonics(l_max=8, normalized=False)
+
+    Then, the :py:func:`compute` method can be called on an array of 3D
+    Cartesian points to compute the spherical harmonics
+
+    >>> xyz = np.random.normal(size=(10,3))
+    >>> sh_values = sh.compute(xyz)
+    >>> sh_values.shape
+    (10, 81)
+
+    In order to also compute derivatives, you can use
+
+    >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
+    >>> sh_grads.shape
+    (10, 3, 81)
+
+    which returns the gradient as a tensor with size
+    `(n_samples, 3, (l_max+1)**2)`.
 
     :param l_max: the maximum degree of the spherical harmonics to be calculated
     :param normalized: whether to normalize the spherical harmonics (default: False)
 
-    :return: a calculator, in the form of a SphericalHarmonics object
+    :return: a calculator, in the form of a `SphericalHarmonics` object
     """
 
     def __init__(self, l_max: int, normalized: bool = False):
@@ -43,6 +67,14 @@ class SphericalHarmonics:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array.
+
+        >>> import numpy as np
+        >>> import sphericart as sc
+        >>> sh = sc.SphericalHarmonics(l_max=8, normalized=False)
+        >>> xyz = np.random.normal(size=(10,3))
+        >>> sh_values = sh.compute(xyz)
+        >>> sh_values.shape
+        (10, 81)
 
         :param xyz:
             The Cartesian coordinates of the 3D points, as an array with
@@ -95,7 +127,15 @@ class SphericalHarmonics:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array, together with their Cartesian
-        derivatives
+        derivatives.
+
+        >>> import numpy as np
+        >>> import sphericart as sc
+        >>> sh = sc.SphericalHarmonics(l_max=8, normalized=False)
+        >>> xyz = np.random.normal(size=(10,3))
+        >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
+        >>> sh_grads.shape
+        (10, 3, 81)
 
         :param xyz:
             The Cartesian coordinates of the 3D points, as an array with
