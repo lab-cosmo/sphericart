@@ -226,7 +226,11 @@ def e3nn_spherical_harmonics(
     l_max = max(l_list)
     is_range_lmax = list(l_list) == list(range(l_max + 1))
 
-    sh = SphericalHarmonics(l_max, normalized=normalize).compute(x[:, [2, 0, 1]])
+    sh = SphericalHarmonics(l_max, normalized=normalize).compute(
+        torch.index_select(
+            x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
+        )
+    )
     assert normalization in ["integral", "norm", "component"]
     if normalization != "integral":
         sh *= math.sqrt(4 * math.pi)
