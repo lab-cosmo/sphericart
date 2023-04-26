@@ -37,8 +37,8 @@ add_library(sphericart
 )
 
 set_target_properties(sphericart PROPERTIES
-    VERSION "0.1.0"
-    SOVERSION "0.1"
+    VERSION ${SPHERICART_VERSION}
+    SOVERSION ${SPHERICART_VERSION_MAJOR}.${SPHERICART_VERSION_MINOR}
     POSITION_INDEPENDENT_CODE ON
 )
 
@@ -85,7 +85,9 @@ else()
 endif()
 
 check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
-if(COMPILER_SUPPORTS_MARCH_NATIVE)
+# for some reason COMPILER_SUPPORTS_MARCH_NATIVE is true with Apple clang,
+# but then fails with `the clang compiler does not support '-march=native'`
+if(COMPILER_SUPPORTS_MARCH_NATIVE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(STATUS "march=native is enabled")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()

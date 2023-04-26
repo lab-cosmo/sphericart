@@ -38,9 +38,18 @@ class cmake_ext(build_ext):
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DBUILD_SHARED_LIBS=ON",
-            "-DSPHERICART_BUILD_EXAMPLES=OFF",
             "-DSPHERICART_BUILD_TESTS=OFF",
         ]
+
+        if sys.platform.startswith("darwin"):
+            cmake_options.append("-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=11.0")
+
+        # ARCHFLAGS is used by cibuildwheel to pass the requested arch to the
+        # compilers
+        ARCHFLAGS = os.environ.get("ARCHFLAGS")
+        if ARCHFLAGS is not None:
+            cmake_options.append(f"-DCMAKE_C_FLAGS={ARCHFLAGS}")
+            cmake_options.append(f"-DCMAKE_CXX_FLAGS={ARCHFLAGS}")
 
         subprocess.run(
             ["cmake", source_dir, *cmake_options],
