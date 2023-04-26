@@ -10,76 +10,64 @@ on:
 jobs:
   build-wheels:
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.name }}
+    name: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - name: x86_64 macOS
-            os: macos-11
-            platform-name: macosx-10.9-x86_64
-          - name: M1 macOS
-            os: macos-11
-            platform-name: macosx-11.0-arm64
-          # TODO: add a Windows builder
+        # TODO: add windows builder
+        os: [ubuntu-20.04, macos-11]
+
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: build wheel
-        env:
-          MACOS_DEPLOYMENT_TARGET: "11.0"
-        run: |
-          python -m pip install wheel cmake torch
-          python setup.py bdist_wheel --plat-name ${{ matrix.platform-name }}
-          cd sphericart-torch
-          python setup.py bdist_wheel --plat-name ${{ matrix.platform-name }}
 
-          # build sphericart-torch wheels on CI, but do no include them in the
-          # uploaded wheels (see justification below in the Linux builder)
-          # mv dist/*.whl ../dist/
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel build
+
+      - name: Build sphericart wheels
+        run: |
+          # ensure we build the wheel from the sdist, not the checkout
+          python -m build --sdist . --outdir dist
+          python -m cibuildwheel dist/*.tar.gz --output-dir dist
+        env:
+          # build wheels on CPython 3.10
+          CIBW_BUILD: cp310-*
+          # skip musl and 32-bit builds
+          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+          # on macOS, build both Intel & Apple Silicon versions
+          CIBW_ARCHS_MACOS: x86_64 arm64
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+
+      - name: Build sphericart-torch wheels
+        run: |
+          # ensure we build the wheel from the sdist, not the checkout
+          python -m build --sdist sphericart-torch --outdir sphericart-torch/dist
+          python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
+        env:
+          CIBW_BUILD: cp310-*
+          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+          # we can not build wheels for macos-arm64, since the host is always
+          # x86_64, and we assume we can link against the host version of libtorch
+          CIBW_ARCHS_MACOS: x86_64
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          # Use the CPU only version of torch when building/running the code
+          CIBW_ENVIRONMENT: PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
+          # do not complain for missing libtorch.so in sphericart-torch wheel
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
+            delocate-wheel --ignore-missing-dependencies --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
+            auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
+
       - uses: actions/upload-artifact@v3
         with:
           name: wheels
           path: dist/*.whl
-      - name: upload wheel to GitHub release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/*.whl
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-manylinux-wheels:
-    runs-on: ubuntu-20.04
-    # TODO: add other arch for linux?
-    name: x86_64 manylinux
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: build wheel in docker
-        run: |
-          docker run --rm -v $(pwd):/code quay.io/pypa/manylinux2014_x86_64 bash -c "cd /code && /opt/python/cp38-cp38/bin/python -m pip wheel --no-deps -w dist . --verbose"
-          docker run --rm -v $(pwd):/code quay.io/pypa/manylinux2014_x86_64 bash -c "cd /code/sphericart-torch && /opt/python/cp38-cp38/bin/python -m pip wheel --no-deps -w dist . --verbose --extra-index-url=https://download.pytorch.org/whl/cpu"
-      - name: run auditwheel in docker
-        run: |
-          docker run --rm -v $(pwd):/code quay.io/pypa/manylinux2014_x86_64 bash -c "auditwheel repair /code/dist/*.whl -w /code/dist"
-          docker run --rm -v $(pwd):/code quay.io/pypa/manylinux2014_x86_64 bash -c "auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so /code/sphericart-torch/dist/*.whl -w /code/dist"
-      - name: remove wheel with wrong tag
-        run: sudo rm dist/*linux_x86_64.whl
-      - name: remove sphericart-torch wheels
-        # these wheels are only built for one Python version and one PyTorch
-        # version, so we should not upload them since they won't be usable by
-        # most users
-        run: sudo rm dist/sphericart_torch*.whl
-      - uses: actions/upload-artifact@v3
-        with:
-          name: wheels
-          path: dist/*.whl
       - name: upload wheel to GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1

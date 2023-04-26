@@ -2,7 +2,6 @@ import os
 import subprocess
 import sys
 
-import cmake
 from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
 from setuptools.command.build_ext import build_ext
@@ -27,14 +26,23 @@ class cmake_ext(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
         ]
 
-        CMAKE_EXE = os.path.join(cmake.CMAKE_BIN_DIR, "cmake")
+        if sys.platform.startswith("darwin"):
+            cmake_options.append("-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=11.0")
+
+        # ARCHFLAGS is used by cibuildwheel to pass the requested arch to the
+        # compilers
+        ARCHFLAGS = os.environ.get("ARCHFLAGS")
+        if ARCHFLAGS is not None:
+            cmake_options.append(f"-DCMAKE_C_FLAGS={ARCHFLAGS}")
+            cmake_options.append(f"-DCMAKE_CXX_FLAGS={ARCHFLAGS}")
+
         subprocess.run(
-            [CMAKE_EXE, source_dir, *cmake_options],
+            ["cmake", source_dir, *cmake_options],
             cwd=build_dir,
             check=True,
         )
         subprocess.run(
-            [CMAKE_EXE, "--build", build_dir, "--target", "install"],
+            ["cmake", "--build", build_dir, "--target", "install"],
             check=True,
         )
 
