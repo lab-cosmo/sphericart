@@ -48,7 +48,7 @@ def sphericart_benchmark(
     sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized)
     omp_threads = sh_calculator.omp_num_threads()
     print(
-        f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries},"
+        f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, "
         + f"dtype={dtype}, device={device}, omp_num_threads={omp_threads} ****"
     )
 
@@ -144,7 +144,8 @@ def sphericart_benchmark(
             f" E3NN-FW:        {mean_time * 1e9: 10.1f} ns/sample ± "
             + f"{std_time * 1e9: 10.1f} (std)"
         )
-        print("Warm-up timings / sec.: \n", time_fw[:warmup])
+        if verbose:
+            print("Warm-up timings / sec.: \n", time_fw[:warmup])
 
         mean_time = time_bw[warmup:].mean() / n_samples
         std_time = time_bw[warmup:].std() / n_samples
@@ -152,7 +153,8 @@ def sphericart_benchmark(
             f" E3NN-BW:        {mean_time * 1e9:10.1f} ns/sample ± "
             + f"{std_time * 1e9:10.1f} (std)"
         )
-        print("Warm-up timings / sec.: \n", time_bw[:warmup])
+        if verbose:
+            print("Warm-up timings / sec.: \n", time_bw[:warmup])
 
         # check the timing with the patch
         sphericart.torch.patch_e3nn(e3nn)
@@ -182,14 +184,16 @@ def sphericart_benchmark(
             f" PATCH-FW:       {mean_time*1e9: 10.1f} ns/sample ± "
             + f"{std_time*1e9: 10.1f} (std)"
         )
-        print("Warm-up timings / sec.: \n", time_fw[:warmup])
+        if verbose:
+            print("Warm-up timings / sec.: \n", time_fw[:warmup])
         mean_time = time_bw[warmup:].mean() / n_samples
         std_time = time_bw[warmup:].std() / n_samples
         print(
             f" PATCH-BW:       {mean_time * 1e9:10.1f} ns/sample ± "
             + f"{std_time * 1e9:10.1f} (std)"
         )
-        print("Warm-up timings / sec.: \n", time_bw[:warmup])
+        if verbose:
+            print("Warm-up timings / sec.: \n", time_bw[:warmup])
         sphericart.torch.unpatch_e3nn(e3nn)
 
     if compare and _HAS_E3NN_JAX:
@@ -230,14 +234,16 @@ def sphericart_benchmark(
             f" E3NN-JAX-FW:    {mean_time*1e9: 10.1f} ns/sample ± "
             + f"{std_time*1e9: 10.1f} (std)"
         )
-        print("Warm-up timings / sec.: \n", time_fw[:warmup])
+        if verbose:
+            print("Warm-up timings / sec.: \n", time_fw[:warmup])
         mean_time = time_bw[warmup:].mean() / n_samples
         std_time = time_bw[warmup:].std() / n_samples
         print(
             f" E3NN-JAX-BW:    {mean_time*1e9: 10.1f} ns/sample ± "
             + f"{std_time*1e9: 10.1f} (std)"
         )
-        print("Warm-up timings / sec.: \n", time_bw[:warmup])
+        if verbose:
+            print("Warm-up timings / sec.: \n", time_bw[:warmup])
     print(
         "******************************************************************************"
     )
