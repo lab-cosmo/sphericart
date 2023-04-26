@@ -64,13 +64,13 @@ void compute_sph_prefactors(int l_max, T *factors) {
     for (int l = 0; l <= l_max; ++l) {
         T factor = (2 * l + 1) / (2 * M_PI);
         // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
-        factors[k] = sqrt(factor) * M_SQRT1_2;
+        factors[k] = std::sqrt(factor) * M_SQRT1_2;
         for (int m = 1; m <= l; ++m) {
             factor *= 1.0 / (l * (l + 1) + m * (1 - m));
             if (m % 2 == 0) {
-                factors[k + m] = sqrt(factor);
+                factors[k + m] = std::sqrt(factor);
             } else {
-                factors[k + m] = -sqrt(factor);
+                factors[k + m] = -std::sqrt(factor);
             }
         }
         k += l + 1;
@@ -111,7 +111,7 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
     [[maybe_unused]] T ir=0.0;
 
     if constexpr(NORMALIZED) {
-        ir = 1.0/sqrt(x2+y2+z2);
+        ir = 1.0/std::sqrt(x2+y2+z2);
         x*=ir; y*=ir; z*=ir;
         x2 = x*x; y2=y*y; z2=z*z;
     }
@@ -123,7 +123,7 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
         T *dysph_i = dxsph_i + size_y;
         T *dzsph_i = dysph_i + size_y;
         HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
-        
+
         if constexpr(NORMALIZED) {
             // corrects derivatives for normalization
             for (int k=0; k<size_y; ++k) {
@@ -319,14 +319,14 @@ static inline void generic_sph_sample(const T *xyz_i,
     [[maybe_unused]] auto y2 = y * y;
     [[maybe_unused]] auto z2 = z * z;
     if constexpr(NORMALIZED) {
-        ir = 1.0/sqrt(x2+y2+z2);
+        ir = 1.0 / std::sqrt(x2+y2+z2);
         x*=ir; y*=ir; z*=ir;
         x2 = x*x; y2=y*y; z2=z*z;
     }
     auto rxy = x2 + y2;
 
     // these are the hard-coded, low-lmax sph
-    HARDCODED_SPH_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i,DUMMY_SPH_IDX);
+    HARDCODED_SPH_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
 
     if constexpr (DO_DERIVATIVES) {
         // updates the pointer to the derivative storage
