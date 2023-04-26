@@ -37,7 +37,10 @@ jobs:
           python setup.py bdist_wheel --plat-name ${{ matrix.platform-name }}
           cd sphericart-torch
           python setup.py bdist_wheel --plat-name ${{ matrix.platform-name }}
-          mv dist/*.whl ../dist/
+
+          # build sphericart-torch wheels on CI, but do no include them in the
+          # uploaded wheels (see justification below in the Linux builder)
+          # mv dist/*.whl ../dist/
       - uses: actions/upload-artifact@v3
         with:
           name: wheels
@@ -68,6 +71,11 @@ jobs:
           docker run --rm -v $(pwd):/code quay.io/pypa/manylinux2014_x86_64 bash -c "auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so /code/sphericart-torch/dist/*.whl -w /code/dist"
       - name: remove wheel with wrong tag
         run: sudo rm dist/*linux_x86_64.whl
+      - name: remove sphericart-torch wheels
+        # these wheels are only built for one Python version and one PyTorch
+        # version, so we should not upload them since they won't be usable by
+        # most users
+        run: sudo rm dist/sphericart_torch*.whl
       - uses: actions/upload-artifact@v3
         with:
           name: wheels
