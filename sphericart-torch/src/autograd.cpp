@@ -182,7 +182,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         dsph = results[1];
     } else if (xyz.device().is_cuda()) {
         // re-do the shared memory update in case `requires_grad` changed
-        const int GRID_DIM_Y = 1;
+        int GRID_DIM_Y = 16;
 
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
 
@@ -205,7 +205,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             );
             printf("Re-attempting with GRID_DIM_X = 16\n");
 
-            calculator.CUDA_GRID_DIM_X_ = 16;
+            GRID_DIM_Y = 8;
             shm_result = calculator.cuda_shmem_.update_if_required(
                 xyz.scalar_type(),
                 calculator.l_max_,

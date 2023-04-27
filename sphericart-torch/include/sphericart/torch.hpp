@@ -59,7 +59,7 @@ private:
     torch::Tensor prefactors_cuda_double_;
     torch::Tensor prefactors_cuda_float_;
 
-    int64_t CUDA_GRID_DIM_X_ = 32;
+    int64_t CUDA_GRID_DIM_X_ = 8;
     CudaSharedMemorySettings cuda_shmem_;
     std::mutex cuda_shmem_mutex_;
 };
