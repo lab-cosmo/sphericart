@@ -10,7 +10,7 @@ string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_PA
 
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 
-OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" ON) # TODO: change default to OFF
+OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" OFF)
 OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
@@ -108,10 +108,23 @@ if(COMPILER_SUPPORTS_WDOUBLE_PROMOTION)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wdouble-promotion")
 endif()
 
-
 check_cxx_compiler_flag("-Wfloat-conversion" COMPILER_SUPPORTS_WFLOAT_CONVERSION)
 if(COMPILER_SUPPORTS_WFLOAT_CONVERSION)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfloat-conversion")
+endif()
+
+
+# Disable some overly strict warnings with MSVC compiler
+if (MSVC)
+    # unreferenced inline function has been removed
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4514")
+    # padding added in struct/class
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4820")
+    # conversion from 'size_t' to 'int', signed/unsigned mismatch
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4365")
+    # conversion from 'size_t' to 'int', possible loss of data
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4267")
+
 endif()
 
 # Define test targets if required
