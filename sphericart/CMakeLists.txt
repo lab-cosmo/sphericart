@@ -103,6 +103,17 @@ if(COMPILER_SUPPORTS_WEXTRA)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
 endif()
 
+check_cxx_compiler_flag("-Wdouble-promotion" COMPILER_SUPPORTS_WDOUBLE_PROMOTION)
+if(COMPILER_SUPPORTS_WDOUBLE_PROMOTION)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wdouble-promotion")
+endif()
+
+
+check_cxx_compiler_flag("-Wfloat-conversion" COMPILER_SUPPORTS_WFLOAT_CONVERSION)
+if(COMPILER_SUPPORTS_WFLOAT_CONVERSION)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfloat-conversion")
+endif()
+
 # Define test targets if required
 enable_testing()
 if (SPHERICART_BUILD_TESTS)
