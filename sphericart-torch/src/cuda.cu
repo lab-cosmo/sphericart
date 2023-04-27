@@ -262,7 +262,7 @@ __global__ void spherical_harmonics_kernel(
     int nl = max(
         static_cast<int>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
          2 * lmax + 1
-     );
+    );
 
     scalar_t *buffer_sph = reinterpret_cast<scalar_t *>(buffer + offset);
     offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
@@ -345,9 +345,9 @@ __global__ void spherical_harmonics_kernel(
     __syncthreads();
 
     // work through hardcoded parts first...
-
+    int ml = min(static_cast<int>(HARDCODED_LMAX), lmax);
     clear_buffers(
-        (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1),
+        (ml + 1) * (ml + 1),
         buffer_sph,
         buffer_dsph_x,
         buffer_dsph_y,
@@ -398,8 +398,8 @@ __global__ void spherical_harmonics_kernel(
             );
         }
     } else {
-        COMPUTE_SPH_L0(buffer_sph, get_index);  
-        COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);    
+        COMPUTE_SPH_L0(buffer_sph, get_index);
+        COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
     }
 
     __syncthreads();
@@ -411,7 +411,7 @@ __global__ void spherical_harmonics_kernel(
         y,
         z,
         ir,
-        (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1),
+        (ml + 1) * (ml + 1),
         0,
         buffer_sph,
         buffer_dsph_x,
