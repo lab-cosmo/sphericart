@@ -13,7 +13,16 @@ For instructions and examples on the usage of the library, please refer to our
 
 ### Python API
 
-From source
+Pre-built (https://pypi.org/project/sphericart/).
+
+```bash
+pip install sphericart             # numpy version
+pip install sphericart[torch]      # including also the torch bindings
+```
+
+Note that the pre-built packages are compiled for a generic CPU, and might be
+less performant than they could be on a specific processor. To generate
+libraries that are optimized for the target system, you can build from source:
 
 ```bash
 git clone https://github.com/lab-cosmo/sphericart
@@ -24,13 +33,6 @@ pip install .[torch]
 
 # torch bindings, CPU-only version
 pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
-```
-
-Pre-built (https://pypi.org/project/sphericart/).
-
-```bash
-pip install sphericart             # numpy version
-pip install sphericart[torch]      # including also the torch bindings
 ```
 
 ### C and C++ API
@@ -58,14 +60,18 @@ The following cmake configuration options are available:
 
 Tests and the local build of the documentation can be run with `tox`.
 The default tests, which are also run on the CI, can be executed by simply running
+
 ```bash
 tox
 ```
+
 in the main folder of the repository.
 
 To run tests in a CPU-only environment you can set the environment variable
 `PIP_EXTRA_INDEX_URL` before calling tox, e.g.
+
 ```bash
 PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu tox -e docs
 ```
+
 will build the documentation in a CPU-only environment.

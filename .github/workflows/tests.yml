@@ -32,7 +32,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DSPHERICART_BUILD_EXAMPLES=ON
+          cmake -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON ..
           cmake --build .
           ctest
 

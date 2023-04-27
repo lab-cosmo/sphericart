@@ -8,6 +8,7 @@ from setuptools.command.build_ext import build_ext
 
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
+SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
 
 
 class cmake_ext(build_ext):
@@ -24,6 +25,7 @@ class cmake_ext(build_ext):
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
+            f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
         ]
 
         if sys.platform.startswith("darwin"):

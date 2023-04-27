@@ -10,6 +10,7 @@ from wheel.bdist_wheel import bdist_wheel
 
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
+SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
 
 
 class universal_wheel(bdist_wheel):
@@ -38,7 +39,7 @@ class cmake_ext(build_ext):
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DBUILD_SHARED_LIBS=ON",
-            "-DSPHERICART_BUILD_TESTS=OFF",
+            f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
         ]
 
         if sys.platform.startswith("darwin"):
