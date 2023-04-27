@@ -12,17 +12,30 @@ The Python package can be installed with pip by simply running
     pip install sphericart
 
 This basic package makes use of NumPy. A PyTorch-based implementation,
-which includes GPU support, can be installed with 
+which includes GPU support, can be installed with
 
 .. code-block:: bash
 
     pip install sphericart[torch]
 
+The pre-built version available on PyPI tradeoff some performance to ensure it
+will works on all systems. If you need an extra 5-10% of performance, you should
+build the code from source:
+
+.. code-block:: bash
+
+    git clone https://github.com/lab-cosmo/sphericart
+    pip install .
+
+    # if you also want the torch bindings
+    pip install .[torch]
+
+
 
 C/C++ library
 -------------
 
-First, the repository needs to be cloned with 
+First, the repository needs to be cloned with
 
 .. code-block:: bash
 
@@ -38,8 +51,8 @@ After that, default installation of the C/C++ library can be achieved as
     cmake ..
     make install
 
-This will attempt to install a static library inside the ``/usr/local/lib/`` folder, 
-which might cause a permission error. This can be solved by using 
-higher privileges (e.g., ``sudo make install``) or, alternatively, by changing the destination 
-folder. For example, ``cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local``
+This will attempt to install a static library inside the ``/usr/local/lib/``
+folder, which might cause a permission error. This can be solved by using higher
+privileges (e.g., ``sudo make install``) or, alternatively, by changing the
+destination folder. For example, ``cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local``
 will be appropriate in the majority of cases.
