@@ -8,6 +8,9 @@ spherical harmonics and their derivatives in Cartesian coordinates.
 For instructions and examples on the usage of the library, please refer to our
 [documentation](https://sphericart.readthedocs.io/en/latest/).
 
+<div style="text-align: center;">
+![A plot of the +-1 isosurfaces of the Y^0\_3 solid harmonic](./docs/src/_static/sphericart_3-0.png)
+</div>
 
 ## Installation
 
