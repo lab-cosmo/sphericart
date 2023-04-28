@@ -13,7 +13,7 @@ Pytorch, with OpenMPI parallelism. In addition, the PyTorch-based implementation
 provides fast spherical harmonics evaluation on GPUs using CUDA.
 
 .. image:: _static/sphericart_3-0.png
-   :alt: A plot of the +-1 isosurfaces of the Y^0_3 solid harmonic
+   :alt: A plot of the +-1 isosurfaces of the Y^0_3 solid harmonic, including also gradients
    :width: 500px
    :align: center
 
