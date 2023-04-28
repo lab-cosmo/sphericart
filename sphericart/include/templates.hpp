@@ -11,6 +11,7 @@
 */
 
 #include <vector>
+#include <cmath>
 
 #ifdef _OPENMP
 
@@ -62,7 +63,7 @@ void compute_sph_prefactors(int l_max, T *factors) {
 
     auto k = 0; // quick access index
     for (int l = 0; l <= l_max; ++l) {
-        T factor = (2 * l + 1) / (2 * M_PI);
+        T factor = (2 * l + 1) / (2 * static_cast<T>(M_PI));
         // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
         factors[k] = std::sqrt(factor) * static_cast<T>(M_SQRT1_2);
         for (int m = 1; m <= l; ++m) {
@@ -82,7 +83,7 @@ void compute_sph_prefactors(int l_max, T *factors) {
     for (int l = 1; l < l_max + 1; l++) {
         factors[k+l] = -(2 * l - 1) * factors[k - 1];
         for (int m = l - 1; m >= 0; --m) {
-            factors[k + m] = -1.0 / ((l + m + 1) * (l - m));
+            factors[k + m] = static_cast<T>(-1.0) / ((l + m + 1) * (l - m));
         }
         k += l + 1;
     }

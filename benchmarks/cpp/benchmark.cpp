@@ -264,7 +264,7 @@ void run_timings(int l_max, int n_tries, int n_samples) {
 
 int main(int argc, char *argv[]) {
     size_t n_samples = 10000;
-    size_t n_tries = 10000;
+    size_t n_tries = 1000;
     size_t l_max = 10;
 
     // parse command line options
