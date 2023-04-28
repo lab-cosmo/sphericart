@@ -59,4 +59,6 @@ intersphinx_mapping = {
     "e3nn": ("https://docs.e3nn.org/en/latest/", None),
 }
 
-html_theme = "furo"
+html_theme = 'sphinx_rtd_theme'
+html_static_path = ['_static']
+html_logo = '_static/sphericart_icon.svg'
