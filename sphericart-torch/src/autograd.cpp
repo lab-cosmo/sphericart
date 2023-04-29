@@ -181,16 +181,14 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         sph = results[0];
         dsph = results[1];
     } else if (xyz.device().is_cuda()) {
-        // re-do the shared memory update in case `requires_grad` changed
-        int GRID_DIM_Y = 16;
-
+        // re-do the shared memory update in case `requires_grad` changed        
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
 
         bool shm_result = calculator.cuda_shmem_.update_if_required(
             xyz.scalar_type(),
             calculator.l_max_,
             calculator.CUDA_GRID_DIM_X_,
-            GRID_DIM_Y,
+            calculator.CUDA_GRID_DIM_Y_,
             xyz.requires_grad() || gradients
         );
 
@@ -200,17 +198,17 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
                 "element_size = %d, GRID_DIM_X = %d, GRID_DIM_Y = %d, xyz.requires_grad() || gradients = %s\n",
                 torch::elementSize(xyz.scalar_type()),
                 calculator.CUDA_GRID_DIM_X_,
-                GRID_DIM_Y,
+                calculator.CUDA_GRID_DIM_Y_,
                 xyz.requires_grad() || gradients ? "true" : "false"
             );
-            printf("Re-attempting with GRID_DIM_X = 16\n");
+            printf("Re-attempting with GRID_DIM_Y = 8\n");
 
-            GRID_DIM_Y = 8;
+            calculator.CUDA_GRID_DIM_Y_ = 8;
             shm_result = calculator.cuda_shmem_.update_if_required(
                 xyz.scalar_type(),
                 calculator.l_max_,
                 calculator.CUDA_GRID_DIM_X_,
-                GRID_DIM_Y,
+                calculator.CUDA_GRID_DIM_Y_,
                 xyz.requires_grad()||gradients
             );
 
@@ -236,7 +234,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             calculator.l_max_,
             calculator.normalized_,
             calculator.CUDA_GRID_DIM_X_,
-            GRID_DIM_Y,
+            calculator.CUDA_GRID_DIM_Y_,
 	        gradients
         );
         sph = results[0];

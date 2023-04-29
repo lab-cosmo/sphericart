@@ -56,10 +56,12 @@ private:
     sphericart::SphericalHarmonics<double> calculator_double_;
     sphericart::SphericalHarmonics<float> calculator_float_;
 
+    // CUDA sdata
     torch::Tensor prefactors_cuda_double_;
     torch::Tensor prefactors_cuda_float_;
 
-    int64_t CUDA_GRID_DIM_X_ = 8;
+    int64_t CUDA_GRID_DIM_X_ =  8;
+    int64_t CUDA_GRID_DIM_Y_ = 16;
     CudaSharedMemorySettings cuda_shmem_;
     std::mutex cuda_shmem_mutex_;
 };
