@@ -22,3 +22,12 @@ the library, as well as a more comprehensive overview of the different APIs.
     api
     using
     maths
+
+.. figure:: _static/sphericart_3-0.png
+   :alt: The figure shows a plot of the +-1 isosurfaces of the Y^0_3 solid harmonic, colored in orange and blue. Gradients along the surfaces are also shown as black arrows. 
+   :width: 500px
+   :align: center
+
+   A plot of the +-1 isosurfaces of the :math:`Y^0_3` solid harmonic, including also gradients
+
+
