@@ -661,23 +661,30 @@ __global__ void backward_kernel(
             );
         }*/
 
-    int atom_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    int sample_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    int nsamples = sph_grad.size(0);
 
     int spatial = blockIdx.y;
 
     scalar_t sum = 0.0;
 
-    for (int j = threadIdx.x; j < sph_grad.size(1); j +=blockDim.x){
-        sum +=  dsph[atom_idx][spatial][j] * sph_grad[atom_idx][j];
+    if (sample_idx < nsamples) {
+        for (int j = threadIdx.x; j < sph_grad.size(1); j +=blockDim.x){
+            sum +=  dsph[sample_idx][spatial][j] * sph_grad[sample_idx][j];
+        }
     }
+
+    __syncthreads();
 
     // reduce across the sub-warp
     for (int offset = blockDim.x/2; offset > 0; offset /= 2) {
         sum += __shfl_down_sync(FULL_MASK, sum, offset);
     }
 
-    if (threadIdx.x == 0) {
-        xyz_grad[atom_idx][spatial]  = sum;
+    if (sample_idx < nsamples) {
+        if (threadIdx.x == 0) {
+            xyz_grad[sample_idx][spatial]  = sum;
+        }
     }
 
 }
