@@ -18,7 +18,7 @@
 #define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
 
 /* Computes the index for buffer values which are shared across GRID_DIM_Y */
-__device__ int get_index(int i) { return i * blockDim.x + threadIdx.x; }
+__device__ int get_index(int i) { return i * blockDim.y + threadIdx.y; }
 
 template <typename scalar_t, bool requires_grad>
 __device__ void generic_sph_l_channel_device(
@@ -181,7 +181,7 @@ __device__ inline void clear_buffers(
     scalar_t *dsph_z,
     bool requires_grad
 ) {
-    for (int i = 0; i < nelements; i++) {
+    for (int i = threadIdx.x; i < nelements; i+=blockDim.x) {
         sph[get_index(i)] = 0.0;
 
         if (requires_grad) {
@@ -213,7 +213,7 @@ __device__ inline void write_buffers(
     bool normalize
 ) {
     if (atom_idx < natoms) {
-        for (int i = 0; i < n_elements; i++) {
+        for (int i = threadIdx.x; i < n_elements; i+=blockDim.x) {
             sph[atom_idx][offset + i] = buffer_sph[get_index(i)];
 
             if (requires_grad) {
@@ -253,9 +253,9 @@ __global__ void spherical_harmonics_kernel(
     size_t offset = 0;
 
     scalar_t *buffer_c = reinterpret_cast<scalar_t *>(buffer + offset);
-    offset += blockDim.x * (lmax + 1) * sizeof(scalar_t);
+    offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
     scalar_t *buffer_s = reinterpret_cast<scalar_t *>(buffer + offset);
-    offset += blockDim.x * (lmax + 1) * sizeof(scalar_t);
+    offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
     scalar_t *buffer_prefactors = reinterpret_cast<scalar_t *>(buffer + offset);
     offset += prefactors.size(0) * sizeof(scalar_t);
 
@@ -265,7 +265,7 @@ __global__ void spherical_harmonics_kernel(
     );
 
     scalar_t *buffer_sph = reinterpret_cast<scalar_t *>(buffer + offset);
-    offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
+    offset += blockDim.y * nl * sizeof(scalar_t);
 
     scalar_t *buffer_dsph_x;
     scalar_t *buffer_dsph_y;
@@ -273,14 +273,14 @@ __global__ void spherical_harmonics_kernel(
 
     if (requires_grad) {
         buffer_dsph_x = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
+        offset += blockDim.y  * nl * sizeof(scalar_t);
         buffer_dsph_y = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
+        offset += blockDim.y * nl * sizeof(scalar_t);
         buffer_dsph_z = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * blockDim.x * nl * sizeof(scalar_t);
+        offset += blockDim.y * nl * sizeof(scalar_t);
     }
 
-    int atom_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int atom_idx = blockIdx.x * blockDim.y + threadIdx.y;
 
     int natoms = xyz.size(0);
 
@@ -292,10 +292,11 @@ __global__ void spherical_harmonics_kernel(
     scalar_t y2 = 0.0;
     scalar_t z2 = 0.0;
 
-    for (int i = threadIdx.x; i < prefactors.size(0); i += blockDim.x) {
-        buffer_prefactors[i] = prefactors[i];
+    if (threadIdx.y == 0) {
+        for (int i = threadIdx.x; i < prefactors.size(0); i += blockDim.x) {
+            buffer_prefactors[i] = prefactors[i];
+        }
     }
-
     __syncthreads();
 
     if (atom_idx < natoms) {
@@ -326,7 +327,7 @@ __global__ void spherical_harmonics_kernel(
     auto twoz = 2 * z;
     auto rxy = x2 + y2;
 
-    if (threadIdx.y == 0) {
+    if (threadIdx.x == 0) {
         buffer_c[get_index(0)] = 1.0;
         buffer_s[get_index(0)] = 0.0;
 
@@ -355,51 +356,56 @@ __global__ void spherical_harmonics_kernel(
         requires_grad
     );
 
-    if (lmax>=3) {
-        HARDCODED_SPH_MACRO(3, x, y, z, x2, y2, z2, buffer_sph, get_index);
-        if (requires_grad) {
-            HARDCODED_SPH_DERIVATIVE_MACRO(
-                3,
-                x, y, z,
-                x2, y2, z2,
-                buffer_sph,
-                buffer_dsph_x,
-                buffer_dsph_y,
-                buffer_dsph_z,
-                get_index
-            );
+    if (threadIdx.x == 0) {
+        if (lmax>=3) {
+            HARDCODED_SPH_MACRO(3, x, y, z, x2, y2, z2, buffer_sph, get_index);
+            if (requires_grad) {
+                HARDCODED_SPH_DERIVATIVE_MACRO(
+                    3,
+                    x, y, z,
+                    x2, y2, z2,
+                    buffer_sph,
+                    buffer_dsph_x,
+                    buffer_dsph_y,
+                    buffer_dsph_z,
+                    get_index
+                );
+            }
+        } else if (lmax>=2) {
+            HARDCODED_SPH_MACRO(2, x, y, z, x2, y2, z2, buffer_sph, get_index);
+            if (requires_grad) {
+                HARDCODED_SPH_DERIVATIVE_MACRO(
+                    2,
+                    x, y, z,
+                    x2, y2, z2,
+                    buffer_sph,
+                    buffer_dsph_x,
+                    buffer_dsph_y,
+                    buffer_dsph_z,
+                    get_index
+                );
+            }
+        } else if (lmax>=1) {
+            HARDCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
+            if (requires_grad) {
+                HARDCODED_SPH_DERIVATIVE_MACRO(
+                    2,
+                    x, y, z,
+                    x2, y2, z2,
+                    buffer_sph,
+                    buffer_dsph_x,
+                    buffer_dsph_y,
+                    buffer_dsph_z,
+                    get_index
+                );
+            }
+        } else {
+            COMPUTE_SPH_L0(buffer_sph, get_index);
+	        if (requires_grad) {
+                COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
+            }
+            }
         }
-    } else if (lmax>=2) {
-        HARDCODED_SPH_MACRO(2, x, y, z, x2, y2, z2, buffer_sph, get_index);
-        if (requires_grad) {
-            HARDCODED_SPH_DERIVATIVE_MACRO(
-                2,
-                x, y, z,
-                x2, y2, z2,
-                buffer_sph,
-                buffer_dsph_x,
-                buffer_dsph_y,
-                buffer_dsph_z,
-                get_index
-            );
-        }
-    } else if (lmax>=1) {
-        HARDCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
-        if (requires_grad) {
-            HARDCODED_SPH_DERIVATIVE_MACRO(
-                2,
-                x, y, z,
-                x2, y2, z2,
-                buffer_sph,
-                buffer_dsph_x,
-                buffer_dsph_y,
-                buffer_dsph_z,
-                get_index
-            );
-        }
-    } else {
-        COMPUTE_SPH_L0(buffer_sph, get_index);
-        COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
     }
 
     __syncthreads();
@@ -445,24 +451,26 @@ __global__ void spherical_harmonics_kernel(
         clear_buffers(2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
 
         // do some work
-        if (requires_grad) {
-            generic_sph_l_channel_device<scalar_t, true>(
-                l,
-                x, y, z,
-                rxy, twoz,
-                buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
-                sph_offset,
-                pk, qlmk, buffer_c, buffer_s
-            );
-        } else {
-            generic_sph_l_channel_device<scalar_t, false>(
-                l,
-                x, y, z,
-                rxy, twoz,
-                buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
-                sph_offset,
-                pk, qlmk, buffer_c, buffer_s
-            );
+        if (threadIdx.x == 0) {
+            if (requires_grad) {
+                generic_sph_l_channel_device<scalar_t, true>(
+                    l,
+                    x, y, z,
+                    rxy, twoz,
+                    buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
+                    sph_offset,
+                    pk, qlmk, buffer_c, buffer_s
+                );
+            } else {
+                generic_sph_l_channel_device<scalar_t, false>(
+                    l,
+                    x, y, z,
+                    rxy, twoz,
+                    buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
+                    sph_offset,
+                    pk, qlmk, buffer_c, buffer_s
+                );
+            }
         }
 
         // write out temporary storage buffers
@@ -501,13 +509,13 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X, size_t GRID_DIM
 
     size_t total_buff_size = 0;
 
-    total_buff_size += GRID_DIM_X * (l_max + 1) * dtype_size;      // buffer_c
-    total_buff_size += GRID_DIM_X * (l_max + 1) * dtype_size;      // buffer_s
+    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;      // buffer_c
+    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;      // buffer_s
     total_buff_size += (l_max + 1) * (l_max + 2) * dtype_size;     // buffer_prefactors
-    total_buff_size += GRID_DIM_Y * GRID_DIM_X * nl * dtype_size;  // buffer_sph_out
+    total_buff_size += GRID_DIM_Y  * nl * dtype_size;  // buffer_sph_out
 
     if (requires_grad) {
-        total_buff_size += 3 * GRID_DIM_Y * GRID_DIM_X * nl * dtype_size; // buffer_sph_derivs
+        total_buff_size += 3 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_derivs
     }
 
     return total_buff_size;
@@ -593,7 +601,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
 
-    dim3 block_dim(find_num_blocks(xyz.size(0), GRID_DIM_X));
+    dim3 block_dim(find_num_blocks(xyz.size(0), GRID_DIM_Y));
 
     int nl = max(
         static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
@@ -606,13 +614,13 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
         xyz.scalar_type(), "spherical_harmonics_cuda", ([&] {
             size_t total_buff_size = 0;
 
-            total_buff_size += GRID_DIM_X * (l_max + 1) * sizeof(scalar_t);     // buffer_c
-            total_buff_size += GRID_DIM_X * (l_max + 1) * sizeof(scalar_t);     // buffer_s
+            total_buff_size += GRID_DIM_Y * (l_max + 1) * sizeof(scalar_t);     // buffer_c
+            total_buff_size += GRID_DIM_Y * (l_max + 1) * sizeof(scalar_t);     // buffer_s
             total_buff_size += (l_max + 1) * (l_max + 2) * sizeof(scalar_t);    // buffer_prefactors
-            total_buff_size += GRID_DIM_Y * GRID_DIM_X * nl * sizeof(scalar_t); // buffer_sph_out
+            total_buff_size += GRID_DIM_Y  * nl * sizeof(scalar_t); // buffer_sph_out
 
             if (xyz.requires_grad() || gradients) {
-                total_buff_size += 3 * GRID_DIM_Y * GRID_DIM_X * nl * sizeof(scalar_t); // buffer_sph_derivs
+                total_buff_size += 3 * GRID_DIM_Y  * nl * sizeof(scalar_t); // buffer_sph_derivs
             }
 
             spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
@@ -654,23 +662,30 @@ __global__ void backward_kernel(
             );
         }*/
 
-    int atom_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    int sample_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    int nsamples = sph_grad.size(0);
 
     int spatial = blockIdx.y;
 
     scalar_t sum = 0.0;
 
-    for (int j = threadIdx.x; j < sph_grad.size(1); j +=blockDim.x){
-        sum +=  dsph[atom_idx][spatial][j] * sph_grad[atom_idx][j];
+    if (sample_idx < nsamples) {
+        for (int j = threadIdx.x; j < sph_grad.size(1); j +=blockDim.x){
+            sum +=  dsph[sample_idx][spatial][j] * sph_grad[sample_idx][j];
+        }
     }
+
+    __syncthreads();
 
     // reduce across the sub-warp
     for (int offset = blockDim.x/2; offset > 0; offset /= 2) {
         sum += __shfl_down_sync(FULL_MASK, sum, offset);
     }
 
-    if (threadIdx.x == 0) {
-        xyz_grad[atom_idx][spatial]  = sum;
+    if (sample_idx < nsamples) {
+        if (threadIdx.x == 0) {
+            xyz_grad[sample_idx][spatial]  = sum;
+        }
     }
 
 }
