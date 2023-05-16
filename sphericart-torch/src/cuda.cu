@@ -404,7 +404,6 @@ __global__ void spherical_harmonics_kernel(
 	        if (requires_grad) {
                 COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
             }
-            }
         }
     }
 
