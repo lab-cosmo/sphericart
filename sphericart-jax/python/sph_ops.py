@@ -24,11 +24,11 @@ from sphericart import SphericalHarmonics as SphericalHarmonicsCPU
 
 import sys
 sys.path.insert(0,'../../build/sphericart-jax/')
-import sphericart_jax
+import cpu_ops
 
 from trace_jax import trace
 
-for _name, _value in sphericart_jax.registrations().items():
+for _name, _value in cpu_ops.registrations().items():
     xla_client.register_cpu_custom_call_target(_name, _value)
 
 def default_layouts(*shapes):
