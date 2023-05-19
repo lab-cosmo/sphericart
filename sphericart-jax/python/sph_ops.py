@@ -18,6 +18,9 @@ from jax.interpreters.mlir import ir
 from jax.lib import xla_client
 from jax.sharding import Mesh, PartitionSpec
 from jaxlib.hlo_helpers import custom_call
+import jax._src.test_util as jtu
+
+from sphericart import SphericalHarmonics as SphericalHarmonicsCPU
 
 import sys
 sys.path.insert(0,'../../build/sphericart-jax/')
@@ -47,8 +50,10 @@ _sph_fwd_p.def_impl(partial(xla.apply_primitive, _sph_fwd_p))
 
 @trace("sph_fwd")
 def sph_fwd(ls, normalized, xyz):
-    output, invvar = _sph_fwd_p.bind(ls, normalized, xyz)
-    return output, (invvar, xyz)
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    sph, dsph = _sph_fwd_p.bind(ls, normalized, xyz)
+    return sph, (dsph, )
+    # return _sph_fwd_p.bind(ls, normalized, xyz)
 
 @trace("sph_abstract_eval")
 def sph_abstract_eval(ls, normalized, xyz):
@@ -75,6 +80,7 @@ def sph_lowering_cpu(ctx, ls, normalized, xyz):
     # np_dtype = np.dtype(x_type.element_type)
     n_sample = x_shape[0]
     # print("@@@@@@@",dtype, type(dtype), dtype==ir.F32Type.get(), dtype==ir.F64Type.get())
+    # print("######", ls, type(ls), ls.type)
     ls_type = ir.RankedTensorType(ls.type)
     ls_shape = ls_type.shape
     l_max = ls_shape[0] - 1
@@ -97,9 +103,10 @@ def sph_lowering_cpu(ctx, ls, normalized, xyz):
           mlir.ir.RankedTensorType.get(dshape, dtype),
       ],
       # The inputs:
-      operands=[l_max, normalized, xyz],
+      operands=[mlir.ir_constant(l_max), normalized,
+                    mlir.ir_constant(n_sample), xyz],
       # Layout specification:
-      operand_layouts=default_layouts((),(),x_shape),
+      operand_layouts=default_layouts((),(),(),x_shape),
       result_layouts=default_layouts(shape, dshape)
     )
 
@@ -115,30 +122,55 @@ _sph_fwd_p.def_abstract_eval(sph_abstract_eval)
 
 
 
-_sph_bwd_p = core.Primitive("sph_bwd")
-_sph_bwd_p.multiple_results = True
-_sph_bwd_p.def_impl(partial(xla.apply_primitive, _sph_bwd_p))
+# _sph_bwd_p = core.Primitive("sph_bwd")
+# _sph_bwd_p.multiple_results = True
+# _sph_bwd_p.def_impl(partial(xla.apply_primitive, _sph_bwd_p))
 
-@trace("sph_bwd")
-def sph_bwd(normalized, ls, res, g):
-    invvar, xyz = res
-    grad_input, grad_weight, part_grad = _sph_bwd_p.bind(
-        g, invvar, xyz, ls
-    )
-    return grad_input, grad_weight
+@trace("sph_jvp")
+def sph_jvp(l_max, normalized, xyz):
+    ls = jnp.arange(l_max+1)
+    sph, dsph = sph_fwd(ls, normalized, xyz)
+    return sph, dsph
 
+@trace("sph_vjp")
+def sph_vjp(l_max, normalized, args, tangents):
+    dsph = args[0]
+    out = jnp.einsum('ndl,nl->nd', dsph, tangents)
+    return (out,)
 
+@partial(jax.custom_vjp, nondiff_argnums=(0,1))
+def spherical_harmonics(l_max, normalized, xyz):
+    ls = jnp.arange(l_max+1)
+    output, _ = sph_fwd(ls, normalized, xyz)
+    return output
 
+spherical_harmonics.defvjp(sph_jvp, sph_vjp)
 
+@jit
+def func(xyz):
+    l_max = 2
+    sph = spherical_harmonics(l_max, False, xyz)
+    return sph.sum()
 
 if __name__ == "__main__":
     key = jax.random.PRNGKey(0)
     xyz = 6 * jax.random.normal(key,(4, 3))
-    l_max = 2
+    l_max = 5
     ls = jnp.arange(l_max+1)
     normalized = False
-    out = sph_fwd(ls, normalized, xyz)
+    sph_t, (dsph_t,) = jit(sph_fwd)(ls, normalized, xyz)
 
-    # calculator = sphericart_torch.SphericalHarmonics(l_max=l_max, normalized=False)
-    # sph, grad_sph = calculator.compute(xyz, gradients=True)
-    # print(sph.shape, (l_max+1) ** 2)
+    # print(sph_t.shape, dsph_t.shape)
+    calculator = SphericalHarmonicsCPU(l_max=l_max, normalized=False)
+    sph, grad_sph = calculator.compute(np.asarray(xyz), gradients=True)
+
+
+    print(np.allclose(sph_t, sph), np.allclose(dsph_t, grad_sph))
+
+    # print(sph.shape,grad_sph.shape, (l_max+1) ** 2)
+
+    out = func(xyz)
+    dout = grad(func)(xyz)
+
+    rout = jtu.check_grads(func, (xyz,), modes=["bwd"], order=1)
+    # print(rout)
