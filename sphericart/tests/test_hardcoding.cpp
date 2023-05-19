@@ -104,6 +104,9 @@ int main(int argc, char *argv[]) {
     }
     if (test_passed) {
         printf("Consistency test passed\n");
+        return 0;
+    } else {
+        printf("Consistency test failed\n");
+        return -1;
     }
-    return 0;
 }

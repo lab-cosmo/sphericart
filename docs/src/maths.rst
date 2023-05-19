@@ -13,7 +13,7 @@ possible to reformulate the spherical harmonics in a real-valued form, which lea
 to even further ambiguity in the definitions. 
 
 Within `sphericart` we take an opinionated stance: we compute only real-valued
-harmonics, we express them as a function of the full Cartesian cooedinates of a 
+harmonics, we express them as a function of the full Cartesian coordinates of a 
 point in three dimensions :math:`(x,y,z)` and compute by default "scaled" 
 versions :math:`\tilde{Y}^m_l(x)` which correspond to polynomials of the 
 Cartesian coordinates:
