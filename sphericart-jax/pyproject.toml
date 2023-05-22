@@ -1,0 +1,56 @@
+[project]
+name = "sphericart-jax"
+dynamic = ["version"]
+requires-python = ">=3.7"
+dependencies = ["jax >= 0.4.1"]
+
+readme = "README.md"
+license = {text = "Apache-2.0"}
+description = "JAX bindings to sphericart"
+authors = [
+    {name = "Filippo Bigi"},
+    {name = "Guillaume Fraux"},
+    {name = "Nicholas Browning"},
+    {name = "Michele Ceriotti"},
+    {name = "Felix Musil"},
+]
+
+keywords = ["spherical harmonics", "jax"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+    "Environment :: GPU :: NVIDIA CUDA",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+homepage = "https://github.com/lab-cosmo/sphericart"
+documentation = "https://sphericart.readthedocs.io/en/latest/"
+repository = "https://github.com/lab-cosmo/sphericart"
+
+### ======================================================================== ###
+
+[build-system]
+requires = [
+    "setuptools >=44",
+    "wheel >=0.36",
+    "cmake",
+]
+build-backend = "setuptools.build_meta"
+
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["python"]
+include = ["sphericart*"]
+namespaces = true

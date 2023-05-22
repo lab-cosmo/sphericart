@@ -1,0 +1,11 @@
+include CMakeLists.txt
+
+# the sphericart folder is a symbolic link to /sphericart, so we can include
+# the sphericart sources in the sphericart-torch python package
+recursive-include sphericart *
+
+recursive-include src *
+recursive-include include *
+
+include pyproject.toml
+include README.md
