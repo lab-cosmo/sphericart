@@ -12,6 +12,8 @@
 
 #include <vector>
 #include <cmath>
+#include <cstdint>
+
 
 #ifdef _OPENMP
 
@@ -48,7 +50,7 @@
  *        the second containing constansts that are needed to evaluate the \f$Q_l^m\f$.
  */
 template<typename T>
-void compute_sph_prefactors(int l_max, T *factors) {
+void compute_sph_prefactors(int64_t l_max, T *factors) {
     /*
         Computes the prefactors for the spherical harmonics
         (-1)^|m| sqrt((2l+1)/(2pi) (l-|m|)!/(l+|m}\|)!)
@@ -62,11 +64,11 @@ void compute_sph_prefactors(int l_max, T *factors) {
     */
 
     auto k = 0; // quick access index
-    for (int l = 0; l <= l_max; ++l) {
+    for (int64_t l = 0; l <= l_max; ++l) {
         T factor = (2 * l + 1) / (2 * static_cast<T>(M_PI));
         // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
         factors[k] = std::sqrt(factor) * static_cast<T>(M_SQRT1_2);
-        for (int m = 1; m <= l; ++m) {
+        for (int64_t m = 1; m <= l; ++m) {
             factor *= static_cast<T>(1.0) / (l * (l + 1) + m * (1 - m));
             if (m % 2 == 0) {
                 factors[k + m] = std::sqrt(factor);
@@ -80,19 +82,19 @@ void compute_sph_prefactors(int l_max, T *factors) {
     // that are needed in the recursive calculation of Qlm.
     // Xll is just Qll, Xlm is the factor that enters the alternative m recursion
     factors[k] = 1; k += 1;
-    for (int l = 1; l < l_max + 1; l++) {
+    for (int64_t l = 1; l < l_max + 1; l++) {
         factors[k+l] = -(2 * l - 1) * factors[k - 1];
-        for (int m = l - 1; m >= 0; --m) {
+        for (int64_t m = l - 1; m >= 0; --m) {
             factors[k + m] = static_cast<T>(-1.0) / ((l + m + 1) * (l - m));
         }
         k += l + 1;
     }
 }
 
-template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int64_t HARDCODED_LMAX>
 inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i,
-    [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface
-    [[maybe_unused]] int size_y=1,
+    [[maybe_unused]] int64_t l_max_dummy=0,  // dummy variables to have a uniform interface
+    [[maybe_unused]] int64_t size_y=1,
     [[maybe_unused]] const T *py_dummy=nullptr,
     [[maybe_unused]] const T *qy_dummy=nullptr,
     [[maybe_unused]] T *c_dummy=nullptr,
@@ -127,7 +129,7 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
 
         if constexpr(NORMALIZED) {
             // corrects derivatives for normalization
-            for (int k=0; k<size_y; ++k) {
+            for (int64_t k=0; k<size_y; ++k) {
                 auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
                 dxsph_i[k] = (dxsph_i[k]-x*tmp)*ir;
                 dysph_i[k] = (dysph_i[k]-y*tmp)*ir;
@@ -137,10 +139,10 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
     }
 }
 
-template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int64_t HARDCODED_LMAX>
 void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
-    int n_samples,
-    [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface with generic_sph
+    int64_t n_samples,
+    [[maybe_unused]] int64_t l_max_dummy=0,  // dummy variables to have a uniform interface with generic_sph
     [[maybe_unused]] const T *prefactors_dummy=nullptr,
     [[maybe_unused]] T *buffers_dummy=nullptr) {
     /*
@@ -157,7 +159,7 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
         T *dsph_i = nullptr;
 
         #pragma omp for
-        for (int i_sample = 0; i_sample < n_samples; i_sample++) {
+        for (int64_t i_sample = 0; i_sample < n_samples; i_sample++) {
             xyz_i = xyz + i_sample * 3;
             sph_i = sph + i_sample * size_y;
             if constexpr (DO_DERIVATIVES) {
@@ -168,8 +170,8 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
     }
 }
 
-template <typename T, bool DO_DERIVATIVES, int HARDCODED_LMAX>
-static inline void generic_sph_l_channel(int l,
+template <typename T, bool DO_DERIVATIVES, int64_t HARDCODED_LMAX>
+static inline void generic_sph_l_channel(int64_t l,
     [[maybe_unused]] T x,  // these might be unused for low LMAX. not worth a full separate implementation
     [[maybe_unused]] T y,
     [[maybe_unused]] T z,
@@ -290,12 +292,12 @@ static inline void generic_sph_l_channel(int l,
     }
 }
 
-template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int64_t HARDCODED_LMAX>
 static inline void generic_sph_sample(const T *xyz_i,
     T *sph_i,
     [[maybe_unused]] T *dsph_i,
-    int l_max,
-    int size_y,
+    int64_t l_max,
+    int64_t size_y,
     const T *pylm,
     const T *pqlm,
     T *c,
@@ -311,7 +313,7 @@ static inline void generic_sph_sample(const T *xyz_i,
     a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
     so we often write a nested loop on l and m and track where we
     got by incrementing a separate index k. */
-    int k = 0;
+    int64_t k = 0;
 
     auto x = xyz_i[0];
     auto y = xyz_i[1];
@@ -343,7 +345,7 @@ static inline void generic_sph_sample(const T *xyz_i,
         Basically, these are cos and sin multiplied by r_xy^m,
         so that they are just plain polynomials of x,y,z.    */
     // help the compiler unroll the first part of the loop
-    int m = 0;
+    int64_t m = 0;
     auto twoz = z+z;
     twomz[0] = twoz;
     // also initialize the sine and cosine, even if these never change
@@ -382,7 +384,7 @@ static inline void generic_sph_sample(const T *xyz_i,
 
     auto pk = pylm+k;
     auto qlmk = pqlm+k;
-    for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
+    for (int64_t l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
         generic_sph_l_channel<T, DO_DERIVATIVES, HARDCODED_LMAX>(
             l,
             x,
@@ -427,13 +429,13 @@ static inline void generic_sph_sample(const T *xyz_i,
 }
 
 
-template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int64_t HARDCODED_LMAX>
 void generic_sph(
     const T *xyz,
     T *sph,
     [[maybe_unused]] T *dsph,
-    int n_samples,
-    int l_max,
+    int64_t n_samples,
+    int64_t l_max,
     const T *prefactors,
     T *buffers
 ) {
@@ -474,7 +476,7 @@ void generic_sph(
         T* dsph_i = nullptr;
 
         #pragma omp for
-        for (int i_sample = 0; i_sample < n_samples; i_sample++) {
+        for (int64_t i_sample = 0; i_sample < n_samples; i_sample++) {
             auto xyz_i = xyz+i_sample*3;
             // pointer to the segment that should store the i_sample sph
             sph_i = sph + i_sample * size_y;

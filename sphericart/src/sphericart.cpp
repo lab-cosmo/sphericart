@@ -22,18 +22,18 @@ using namespace sphericart;
 
 template<typename T>
 SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
-    this->l_max = (int) l_max;
-    this->size_y = (int) (l_max + 1) * (l_max + 1);
-    this->size_q = (int) (l_max + 1) * (l_max + 2) / 2;
+    this->l_max = static_cast<int64_t>(l_max);
+    this->size_y = static_cast<int64_t>((l_max + 1) * (l_max + 1));
+    this->size_q = static_cast<int64_t>((l_max + 1) * (l_max + 2) / 2);
     this->normalized = normalized;
     this->prefactors = new T[(l_max+1)*(l_max+2)];
     this ->omp_num_threads = omp_get_max_threads();
-    
+
     // buffers for cos, sin, 2mz arrays
     // allocates buffers that are large enough to store thread-local data
     this->buffers = new T[this->size_q*3*this->omp_num_threads];
 
-    compute_sph_prefactors<T>((int) l_max, this->prefactors);
+    compute_sph_prefactors<T>(static_cast<int64_t>(l_max), this->prefactors);
 
     // sets the correct function pointers for the compute functions
     if (this->l_max<=SPHERICART_LMAX_HARDCODED) {

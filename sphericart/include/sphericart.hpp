@@ -193,12 +193,12 @@ private:
     T *buffers;
 
     // function pointers are used to set up the right functions to be called
-    void (*_array_no_derivatives)(const T*, T*, T*, int, int, const T*, T*);
-    void (*_array_with_derivatives)(const T*, T*, T*, int, int, const T*, T*);
-    // these compute a single sample
+    void (*_array_no_derivatives)(const T*, T*, T*, int64_t, int64_t, const T*, T*);
+    void (*_array_with_derivatives)(const T*, T*, T*, int64_t, int64_t, const T*, T*);
 
-    void (*_sample_no_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
-    void (*_sample_with_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
+    // these compute a single sample
+    void (*_sample_no_derivatives)(const T*, T*, T*, int64_t, int64_t, const T*, const T*, T*, T*, T*);
+    void (*_sample_with_derivatives)(const T*, T*, T*, int64_t, int64_t, const T*, const T*, T*, T*, T*);
 /* @endcond */
 
 };

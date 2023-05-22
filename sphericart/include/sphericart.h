@@ -62,7 +62,7 @@ typedef struct sphericart_calculator_f_t sphericart_calculator_f_t;
 SPHERICART_EXPORT sphericart_calculator_t* sphericart_new(size_t l_max, bool normalized);
 
 /**
- * Similar to `sphericart_new`, but it returns a `sphericart_calculator_f_t`, which 
+ * Similar to `sphericart_new`, but it returns a `sphericart_calculator_f_t`, which
  * performs calculations on the `float` type.
 */
 SPHERICART_EXPORT sphericart_calculator_f_t* sphericart_new_f(size_t l_max, bool normalized);
@@ -158,7 +158,7 @@ SPHERICART_EXPORT void sphericart_compute_array_with_gradients(
 );
 
 /**
- * Similar to :func:`sphericart_compute_array`, but it computes the spherical 
+ * Similar to :func:`sphericart_compute_array`, but it computes the spherical
  * harmonics for a single 3D point in space.
 */
 SPHERICART_EXPORT void sphericart_compute_sample(
@@ -170,7 +170,7 @@ SPHERICART_EXPORT void sphericart_compute_sample(
 );
 
 /**
- * Similar to :func:`sphericart_compute_array_with_gradients`, but it computes the 
+ * Similar to :func:`sphericart_compute_array_with_gradients`, but it computes the
  * spherical harmonics for a single 3D point in space.
 */
 SPHERICART_EXPORT void sphericart_compute_sample_with_gradients(
@@ -195,7 +195,7 @@ SPHERICART_EXPORT void sphericart_compute_array_f(
 );
 
 /**
- * Similar to :func:`sphericart_compute_array_with_gradients`, but using the 
+ * Similar to :func:`sphericart_compute_array_with_gradients`, but using the
  * `float` data type.
 */
 SPHERICART_EXPORT void sphericart_compute_array_with_gradients_f(
@@ -233,16 +233,12 @@ SPHERICART_EXPORT void sphericart_compute_sample_with_gradients_f(
 );
 
 /**
- * Get the number of OpenMP threads used by a calculator. 
+ * Get the number of OpenMP threads used by a calculator.
  * If `sphericart` is computed without OpenMP support returns 1.
 */
-SPHERICART_EXPORT int sphericart_omp_num_threads(
-    sphericart_calculator_t* calculator
-);
+SPHERICART_EXPORT int sphericart_omp_num_threads(sphericart_calculator_t* calculator);
 
-SPHERICART_EXPORT int sphericart_omp_num_threads_f(
-    sphericart_calculator_f_t* calculator
-);
+SPHERICART_EXPORT int sphericart_omp_num_threads_f(sphericart_calculator_f_t* calculator);
 
 #ifdef __cplusplus
 }

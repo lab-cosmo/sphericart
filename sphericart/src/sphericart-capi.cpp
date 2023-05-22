@@ -28,7 +28,7 @@ extern "C" void sphericart_compute_array(
     size_t sph_length
 ) {
     try {
-        calculator->compute_array(xyz, xyz_length, sph, sph_length);        
+        calculator->compute_array(xyz, xyz_length, sph, sph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
@@ -49,8 +49,8 @@ extern "C" void sphericart_compute_array_with_gradients(
     size_t dsph_length
 ) {
     try {
-        calculator->compute_array_with_gradients(xyz, xyz_length, sph, 
-                    sph_length, dsph, dsph_length);        
+        calculator->compute_array_with_gradients(xyz, xyz_length, sph,
+                    sph_length, dsph, dsph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
@@ -69,7 +69,7 @@ extern "C" void sphericart_compute_sample(
     size_t sph_length
 ) {
     try {
-        calculator->compute_sample(xyz, xyz_length, sph, sph_length);        
+        calculator->compute_sample(xyz, xyz_length, sph, sph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
@@ -90,8 +90,8 @@ extern "C" void sphericart_compute_sample_with_gradients(
     size_t dsph_length
 ) {
     try {
-        calculator->compute_sample_with_gradients(xyz, xyz_length, sph, 
-                    sph_length, dsph, dsph_length);        
+        calculator->compute_sample_with_gradients(xyz, xyz_length, sph,
+                    sph_length, dsph, dsph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
@@ -127,7 +127,7 @@ extern "C" void sphericart_compute_array_f(
     size_t sph_length
 ) {
     try {
-        calculator->compute_array(xyz, xyz_length, sph, sph_length);        
+        calculator->compute_array(xyz, xyz_length, sph, sph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
@@ -148,7 +148,7 @@ extern "C" void sphericart_compute_array_with_gradients_f(
     size_t dsph_length
 ) {
     try {
-        calculator->compute_array_with_gradients(xyz, xyz_length, sph, 
+        calculator->compute_array_with_gradients(xyz, xyz_length, sph,
                     sph_length, dsph, dsph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
@@ -189,7 +189,7 @@ extern "C" void sphericart_compute_sample_with_gradients_f(
     size_t dsph_length
 ) {
     try {
-        calculator->compute_sample_with_gradients(xyz, xyz_length, sph, 
+        calculator->compute_sample_with_gradients(xyz, xyz_length, sph,
                     sph_length, dsph, dsph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
@@ -201,14 +201,10 @@ extern "C" void sphericart_compute_sample_with_gradients_f(
     }
 }
 
-extern "C"  int sphericart_omp_num_threads(
-    sphericart_calculator_t* calculator
-) {
+extern "C" int sphericart_omp_num_threads(sphericart_calculator_t* calculator) {
     return calculator->get_omp_num_threads();
 }
 
-extern "C"  int sphericart_omp_num_threads_f(
-    sphericart_calculator_f_t* calculator
-) {
+extern "C" int sphericart_omp_num_threads_f(sphericart_calculator_f_t* calculator) {
     return calculator->get_omp_num_threads();
 }
