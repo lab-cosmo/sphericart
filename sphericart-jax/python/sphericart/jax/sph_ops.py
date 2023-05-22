@@ -1,8 +1,3 @@
-from jax.config import config
-config.update('jax_platform_name', 'cpu')
-config.update("jax_enable_x64", True)
-
-import torch
 import jax
 from jax import grad, jit, vmap
 import jax.numpy as jnp
@@ -22,11 +17,9 @@ import jax._src.test_util as jtu
 
 from sphericart import SphericalHarmonics as SphericalHarmonicsCPU
 
-import sys
-sys.path.insert(0,'../../build/sphericart-jax/')
-import cpu_ops
+from .lib import cpu_ops
 
-from trace_jax import trace
+# from trace_jax import trace
 
 for _name, _value in cpu_ops.registrations().items():
     xla_client.register_cpu_custom_call_target(_name, _value)
