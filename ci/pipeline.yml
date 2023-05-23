@@ -28,6 +28,8 @@ test_job:
     - make
     - ./sphericart/tests/test_samples
     - ./sphericart/tests/test_hardcoding
+    - cd ..
+    - python3 -m pytest python/tests/test_vs_scipy.py
 
   variables:
     SLURM_JOB_NUM_NODES: 1
