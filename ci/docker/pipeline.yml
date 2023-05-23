@@ -1,0 +1,28 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
+
+stages:
+  - build
+  - test
+
+variables:
+  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/sphericart:$CI_COMMIT_REF_NAME
+
+build_job:
+  stage: build
+  extends: .container-builder
+  variables:
+    DOCKERFILE: ci/docker/Dockerfile.build
+
+test_job:
+  stage: test
+  extends: .container-runner-daint-gpu
+  image: $PERSIST_IMAGE_NAME
+  script:
+    - cd /sphericart
+    - python3 -m pip install .[torch] --user --no-build-isolation
+    - python3 benchmarks/pytorch/benchmark.py
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_PARTITION: normal
+    SLURM_NTASKS: 1

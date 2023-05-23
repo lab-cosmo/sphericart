@@ -1,0 +1,5 @@
+FROM nvcr.io/nvidia/pytorch:23.03-py3
+
+COPY . /sphericart
+
+WORKDIR /sphericart
