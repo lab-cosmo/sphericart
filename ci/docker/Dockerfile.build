@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/pytorch:23.03-py3
+FROM prashanthkanduri/librascal-pytorch2:latest
 
 COPY . /sphericart
 

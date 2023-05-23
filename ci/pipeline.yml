@@ -22,6 +22,15 @@ test_job:
     - cd /sphericart
     - python3 -m pip install .[torch] --user --no-build-isolation
     - python3 benchmarks/pytorch/benchmark.py
+    - mkdir buildcpp
+    - cd buildcpp
+    - cmake .. -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON
+    - make
+    - ./sphericart/tests/test_samples
+    - ./sphericart/tests/test_hardcoding
+    - cd ..
+    - python3 -m pytest python/tests/test_vs_scipy.py
+
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_PARTITION: normal
