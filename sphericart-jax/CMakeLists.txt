@@ -7,17 +7,6 @@ endif()
 
 project(sphericart_jax CXX)
 
-find_package(pybind11 CONFIG REQUIRED)
-
-
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(sphericart_jax PUBLIC OpenMP::OpenMP_CXX)
-endif()
-if(COMPILER_SUPPORTS_WPRAGMAS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
-endif()
-
-
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     if("${CMAKE_BUILD_TYPE}" STREQUAL "" AND "${CMAKE_CONFIGURATION_TYPES}" STREQUAL "")
@@ -32,25 +21,28 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     endif()
 endif()
 
-option(SPHERICART_JAX_BUILD_FOR_PYTHON "Are we building sphericart_jax for usage from Python?" OFF)
+find_package(pybind11 CONFIG REQUIRED)
 
-if (SPHERICART_JAX_BUILD_FOR_PYTHON)
-    if (NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-        message(FATAL_ERROR "SPHERICART_JAX_BUILD_FOR_PYTHON can only be set when this project is the root project")
-    endif()
 
-    # prevent recursive build: we are including sphericart/CMakeLists.txt, which can
-    # include this file (in sphericart/torch/CMakeLists.txt) if SPHERICART_BUILD_JAX=ON.
-    set(SPHERICART_BUILD_JAX OFF CACHE BOOL "" FORCE)
-    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-    mark_as_advanced(SPHERICART_BUILD_JAX)
-    add_subdirectory(sphericart EXCLUDE_FROM_ALL)
-
-else()
-    if (NOT TARGET sphericart)
-        message(FATAL_ERROR "missing sphericart target, you should build sphericart_jax as a sub-project of sphericart")
-    endif()
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(sphericart_jax PUBLIC OpenMP::OpenMP_CXX)
 endif()
+if(COMPILER_SUPPORTS_WPRAGMAS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+endif()
+
+
+if (NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+    message(FATAL_ERROR "SPHERICART_JAX_BUILD_FOR_PYTHON can only be set when this project is the root project")
+endif()
+
+# prevent recursive build: we are including sphericart/CMakeLists.txt, which can
+# include this file (in sphericart/torch/CMakeLists.txt) if SPHERICART_BUILD_JAX=ON.
+set(SPHERICART_BUILD_JAX OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+mark_as_advanced(SPHERICART_BUILD_JAX)
+add_subdirectory(sphericart EXCLUDE_FROM_ALL)
+
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
