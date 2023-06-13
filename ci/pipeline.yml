@@ -26,7 +26,7 @@ test_job:
     - tox
     - mkdir buildcpp
     - cd buildcpp
-    - export Torch_DIR = "/usr/local/lib/python3.8/dist-packages/torch/share/cmake/Torch"
+    - export Torch_DIR=/usr/local/lib/python3.8/dist-packages/torch/share/cmake/Torch
     - cmake .. -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TORCH=ON
     - cmake --build .
     - ctest
