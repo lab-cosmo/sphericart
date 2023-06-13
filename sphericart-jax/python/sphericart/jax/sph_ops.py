@@ -3,7 +3,7 @@ import jax.numpy as jnp
 
 from functools import partial
 from jax import core
-from jax.abstract_arrays import ShapedArray
+from jax.core import ShapedArray
 from jax.interpreters import mlir, xla
 from jax.interpreters.mlir import ir
 from jax.lib import xla_client
