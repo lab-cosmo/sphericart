@@ -389,7 +389,7 @@ __global__ void spherical_harmonics_kernel(
             HARDCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
             if (requires_grad) {
                 HARDCODED_SPH_DERIVATIVE_MACRO(
-                    2,
+                    1,
                     x, y, z,
                     x2, y2, z2,
                     buffer_sph,
