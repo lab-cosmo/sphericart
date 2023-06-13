@@ -24,14 +24,6 @@ endif()
 find_package(pybind11 CONFIG REQUIRED)
 
 
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(sphericart_jax PUBLIC OpenMP::OpenMP_CXX)
-endif()
-if(COMPILER_SUPPORTS_WPRAGMAS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
-endif()
-
-
 if (NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     message(FATAL_ERROR "SPHERICART_JAX_BUILD_FOR_PYTHON can only be set when this project is the root project")
 endif()
