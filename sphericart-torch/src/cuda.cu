@@ -214,17 +214,16 @@ __global__ void spherical_harmonics_kernel(
     __syncthreads();
 
     // work through hardcoded parts first...
+
     int ml = min(static_cast<int>(HARDCODED_LMAX), lmax);
-    /*
+
     clear_buffers(
         (ml + 1) * (ml + 1),
         buffer_sph,
         buffer_dsph_x,
         buffer_dsph_y,
         buffer_dsph_z,
-        requires_grad
-    );
-    */
+        requires_grad);
 
     if (threadIdx.x == 0)
     {
@@ -266,7 +265,7 @@ __global__ void spherical_harmonics_kernel(
             if (requires_grad)
             {
                 HARDCODED_SPH_DERIVATIVE_MACRO(
-                    2,
+                    1,
                     x, y, z,
                     x2, y2, z2,
                     buffer_sph,
@@ -285,76 +284,11 @@ __global__ void spherical_harmonics_kernel(
             }
         }
     }
-}
 
-__syncthreads();
+    __syncthreads();
 
-write_buffers(
-    atom_idx,
-    natoms,
-    x,
-    y,
-    z,
-    ir,
-    (ml + 1) * (ml + 1),
-    0,
-    buffer_sph,
-    buffer_dsph_x,
-    buffer_dsph_y,
-    buffer_dsph_z,
-    sph,
-    dsph,
-    requires_grad,
-    normalize);
+    // write out the values of the hardcoded derivatives from shared memory into global memory.
 
-// now lets do the generic terms...
-int size_q = (lmax + 1) * (lmax + 2) / 2;
-int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
-
-scalar_t *qlmk = buffer_prefactors + size_q + k;
-
-scalar_t *pk = buffer_prefactors + k;
-
-int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
-for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1)
-{
-    int sph_offset = blockDim.y * l; // sph needs to point to Y[l, 0]
-
-    // sph 0 : 0
-    // sph 1: 0 1 2
-    // sph 2: 0 1 2 3 4
-    // sph 3: 0 1 2 3 4 5 6
-
-    // clear out temporary storage buffers
-    clear_buffers(2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
-
-    // do some work
-    if (threadIdx.x == 0)
-    {
-        if (requires_grad)
-        {
-            generic_sph_l_channel<scalar_t, true, HARDCODED_LMAX, get_index>(
-                l, x, y, z, rxy,
-                pk, qlmk,
-                buffer_c, buffer_s, buffer_twomz,
-                buffer_sph + sph_offset,
-                buffer_dsph_x + sph_offset,
-                buffer_dsph_y + sph_offset,
-                buffer_dsph_z + sph_offset);
-        }
-        else
-        {
-            generic_sph_l_channel<scalar_t, false, HARDCODED_LMAX, get_index>(
-                l, x, y, z, rxy,
-                pk, qlmk,
-                buffer_c, buffer_s, buffer_twomz,
-                buffer_sph + sph_offset,
-                buffer_dsph_x, buffer_dsph_y, buffer_dsph_z // these are nullpointers
-            );
-        }
-    }
-
-    // write out temporary storage buffers
     write_buffers(
         atom_idx,
         natoms,
@@ -362,8 +296,8 @@ for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1)
         y,
         z,
         ir,
-        2 * l + 1,
-        base_index,
+        (ml + 1) * (ml + 1),
+        0,
         buffer_sph,
         buffer_dsph_x,
         buffer_dsph_y,
@@ -373,18 +307,85 @@ for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1)
         requires_grad,
         normalize);
 
-    base_index += 2 * l + 1;
-    qlmk += l + 1;
-    pk += l + 1;
-}
+    // now lets do the generic terms for l > HARDCODED_LMAX
+
+    int size_q = (lmax + 1) * (lmax + 2) / 2;
+    int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
+    scalar_t *qlmk = buffer_prefactors + size_q + k;
+    scalar_t *pk = buffer_prefactors + k;
+    int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
+
+    for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1)
+    {
+        int sph_offset = l; // sph needs to point to Y[l, 0]
+
+        // sph 0 : 0
+        // sph 1: 0 1 2
+        // sph 2: 0 1 2 3 4
+        // sph 3: 0 1 2 3 4 5 6
+
+        // clear out temporary storage buffers
+        clear_buffers(2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+
+        // do some work
+        if (threadIdx.x == 0)
+        {
+            if (requires_grad)
+            {
+                generic_sph_l_channel<scalar_t, true, HARDCODED_LMAX, get_index>(
+                    l, x, y, z, rxy,
+                    pk, qlmk,
+                    buffer_c, buffer_s, buffer_twomz,
+                    buffer_sph + sph_offset,
+                    buffer_dsph_x + sph_offset,
+                    buffer_dsph_y + sph_offset,
+                    buffer_dsph_z + sph_offset);
+            }
+            else
+            {
+                generic_sph_l_channel<scalar_t, false, HARDCODED_LMAX, get_index>(
+                    l, x, y, z, rxy,
+                    pk, qlmk,
+                    buffer_c, buffer_s, buffer_twomz,
+                    buffer_sph + sph_offset,
+                    buffer_dsph_x, buffer_dsph_y, buffer_dsph_z // these are nullpointers
+                );
+            }
+        }
+
+        // write out temporary storage buffers
+        write_buffers(
+            atom_idx,
+            natoms,
+            x,
+            y,
+            z,
+            ir,
+            2 * l + 1,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            sph,
+            dsph,
+            requires_grad,
+            normalize);
+
+        base_index += 2 * l + 1;
+        qlmk += l + 1;
+        pk += l + 1;
+    }
 }
 
 /*
     Computes the total amount of shared memory space required by spherical_harmonics_kernel.
+
+    For lmax <= HARCODED_LMAX, we need to store all (HARDCODED_LMAX + 1)**2 scalars in shared memory. For lmax > HARDCODED_LMAX,
+    we only need to store each spherical harmonics vector per sample in shared memory.
 */
 static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X, size_t GRID_DIM_Y, size_t dtype_size, bool requires_grad)
 {
-
     int nl = max(
         static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
         2 * l_max + 1);
@@ -406,7 +407,7 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X, size_t GRID_DIM
 }
 
 /*
-    The default shared memory space on most recent NVIDIA cards is defaulted 49152 bytes, regarldess if there is more available per SM. 
+    The default shared memory space on most recent NVIDIA cards is defaulted 49152 bytes, regarldess if there is more available per SM.
     This method attempts to adjust the shared memory to fit the requested configuration if the allocation exceeds the default 49152 bytes.
 */
 bool sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool requires_grad)
@@ -447,17 +448,14 @@ bool sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, 
 }
 
 /*
-    Wrapper to launch the CUDA kernel. Returns the spherical harmonics and their gradients if gradients = True as a vector, otherwise returns
+    Wrapper to launch the CUDA kernel. Returns a vector containing the spherical harmonics and their gradients if required, otherwise returns
     the spherical harmonics and an empty tensor.
 
-    GRID_DIM_X is the number of threads to launch in the x dimension.
-    GRID_DIM_Y is the number of threads to launch in the y dimension.
+    GRID_DIM_X is the number of threads to launch in the x dimension. Used to parallelize over the sample dimension.
+    GRID_DIM_Y is the number of threads to launch in the y dimension. Used only to improve memory throughput on reads and writes.
 
-    Total number of available threads is GRID_DIM_X * GRID_DIM_Y.
-
-    GRID_DIM_Y is used to paralelise over the number of samples, and GRID_DIM_X is currently used only to improve memory throughput on reads and writes.
+    Total number of threads used is GRID_DIM_X * GRID_DIM_Y.
 */
-
 std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     torch::Tensor xyz,
     torch::Tensor prefactors,
@@ -499,10 +497,6 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     { return (x + bdim - 1) / bdim; };
 
     dim3 block_dim(find_num_blocks(xyz.size(0), GRID_DIM_Y));
-
-    int nl = max(
-        static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
-        2 * l_max + 1);
 
     AT_DISPATCH_FLOATING_TYPES(
         xyz.scalar_type(), "spherical_harmonics_cuda", ([&]
