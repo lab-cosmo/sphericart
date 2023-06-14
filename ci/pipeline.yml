@@ -18,20 +18,21 @@ test_job:
   stage: test
   extends: .container-runner-daint-gpu
   image: $PERSIST_IMAGE_NAME
+  timeout: 1h
   script:
     - cd /sphericart
-    - python3 -m pip install .[torch] --user --no-build-isolation
-    - python3 benchmarks/pytorch/benchmark.py
+    - python3 -m pip install --upgrade pip
+    - python3 -m pip install tox
+    - tox
     - mkdir buildcpp
     - cd buildcpp
-    - cmake .. -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON
-    - make
-    - ./sphericart/tests/test_samples
-    - ./sphericart/tests/test_hardcoding
-    - cd ..
-    - python3 -m pytest python/tests/test_vs_scipy.py
+    - export Torch_DIR=/usr/local/lib/python3.8/dist-packages/torch/share/cmake/Torch
+    - cmake .. -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TORCH=ON
+    - cmake --build .
+    - ctest
 
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_PARTITION: normal
     SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: '00:30:00'
