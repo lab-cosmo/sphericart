@@ -8,14 +8,20 @@
     values are computed for one point at a time, and that the spherical harmonics are
     stored in a contiguous section that "flattens" the (l,m) dimensions, e.g.
     [ (0,0), (1,-1), (1,0), (1,1), (2,-2), ...]
+
     Functions get pointers to the beginning of the storage space for the current sample,
     x,y,z and, for l>1, x^2, y^2 and z^2, which can be reused.
+    
     Each macro computes one l, and macros should be called in order as the higher l
     reuse calculations at lower angular momentum. The expressions here are derived
     with computer assisted algebra by attempting all possible polynomial decompositions
-    and selecting that with the smallest number of operations.
+    and selecting that with the smallest number of operations. One should call
+    COMPUTE_SPH_L* or COMPUTE_SPH_DERIVATIVE_L* depending on whether only Ylm are needed
+    or if one also want to evbaluate Cartesian derivatives
 */
 
+// this is used thoughout to indicate the maximum l channel for which we provide a hard-coded macro.
+// this should be modified if further macros are added
 #define SPHERICART_LMAX_HARDCODED 6
 
 // we need this monstruosity to make sure that literals are not treated as 
@@ -297,8 +303,8 @@
     }
 
 /*
-Combines the macro hard-coded Ylm calculators to get all the terms
-up to a given value. Macro version.
+Combines the macro hard-coded Ylm calculators to get all the terms up to a given value. Macro version.
+This uses if constexpr to decide at compile time which macro(s) should be called
 */
 #define HARDCODED_SPH_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, SPH_IDX) \
     static_assert(HARDCODED_LMAX <= SPHERICART_LMAX_HARDCODED, "Computing hardcoded sph beyond what is currently implemented."); \

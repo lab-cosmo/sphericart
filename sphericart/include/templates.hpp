@@ -99,8 +99,8 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
     [[maybe_unused]] T *s_dummy=nullptr,
     [[maybe_unused]] T *z_dummy=nullptr) {
 /*
-    Wrapper for the hardcoded derivatives that also allows to apply normalization. Computes a single
-    sample, and uses a template to avoid branching.
+    Wrapper for the hardcoded macros that also allows to apply normalization. 
+    Computes a single sample, and uses a template to avoid branching.
 */
 
     auto x = xyz_i[0];
@@ -117,6 +117,7 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
         x2 = x*x; y2=y*y; z2=z*z;
     }
 
+    // nb: asserting that HARDCODED_LMAX is not too large is done statically inside the macro
     HARDCODED_SPH_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
 
     if constexpr (DO_DERIVATIVES) {
@@ -144,9 +145,8 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
     [[maybe_unused]] const T *prefactors_dummy=nullptr,
     [[maybe_unused]] T *buffers_dummy=nullptr) {
     /*
-        Cartesian Ylm calculator using the hardcoded expressions.
-        Templated version, just calls _compute_sph_templated and
-        _compute_dsph_templated functions within a loop.
+        Cartesian Ylm calculator using the hardcoded expressions. 
+        Templated version, just calls hardcoded_sph_sample within a loop.
     */
     constexpr auto size_y = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
@@ -184,6 +184,27 @@ static inline void generic_sph_l_channel(int l,
     [[maybe_unused]] T *dzsph_i
 )
 {
+    /* 
+    This is the main low-level code to compute sph and dsph for an arbitrary l. 
+    The code is a bit hard to follow because of (too?) many micro-optimizations. 
+    Sine and cosine terms are precomputed. Here the Qlm modifield Legendre polynomials
+    are evaluated, and combined with the other terms and the prefactors. 
+    The core iteration is an iteration down to lower values of m,
+
+    Qlm = A z Ql(m+1) + B rxy^2 Ql(m+2)
+
+    1. the special cases with l=+-m and +-1 are done separately, also because they 
+    initialize the recursive expression
+    2. we assume that some lower l are done with hard-coding, and HARDCODED_LMAX is
+    passed as a template parameter. this is used to split the loops over m in a part
+    with fixed size, known at compile time, and one with variable length. 
+    3. we do the recursion using stack variables and never store the full Qlm array
+    4. we compute separately Qlm and Q(l-1) - the latter needed for derivatives
+    rather than reuse the calculation from another l channel. It appears that 
+    the simplification in memory access makes this beneficial, with the added advantage
+    that each l channel can be computed independently 
+
+    */
     // working space for the recursive evaluation of Qlm and Q(l-1)m
     [[maybe_unused]] T qlm_2, qlm_1, qlm_0;
     [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
@@ -216,7 +237,7 @@ static inline void generic_sph_l_channel(int l,
         dysph_i[-l + 1] = dxsph_i[l - 1] = pq * c[l - 2];
         dysph_i[l - 1] = -dxsph_i[-l + 1];
 
-        // uses Q(l-1)(l-1) to initialize the other recursion
+        // uses Q(l-1)(l-1) to initialize the Qlm  recursion
         ql1m_1 = qlmk[-1];
         auto pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
         dzsph_i[-l + 1] = pdq * s[l - 1];
@@ -277,7 +298,7 @@ static inline void generic_sph_l_channel(int l,
         }
     }
 
-    // m=0
+    // m=0 is also a special case
     qlm_0 = qlmk[0] * (twomz[0] * qlm_1 + rxy * qlm_2);
     sph_i[0] = qlm_0 * pk[0];
 
@@ -302,6 +323,13 @@ static inline void generic_sph_sample(const T *xyz_i,
     T *s,
     T *twomz
 ) {
+    /*
+    This is a low-level function that combines all the pieces to evaluate the sph for a single sample.
+    It calls both the hardcoded macros and the generic l-channel calculator, as well as the sine and cosine
+    terms that are combined with the Qlm, that are needed in the generic calculator. 
+    There is a lot of pointer algebra used to address the correct part of the various arrays, that 
+    turned out to be more efficient than explicit indexing in early tests. 
+    */
     [[maybe_unused]] T ir = 0.0;
     [[maybe_unused]] T* dxsph_i = nullptr;
     [[maybe_unused]] T* dysph_i = nullptr;
@@ -438,12 +466,14 @@ void generic_sph(
     T *buffers
 ) {
     /*
-        Implementation of the general case, but start at HARDCODED_LMAX and use
-        hard-coding before that.
+        Implementation of the general Ylm calculator case. Starts at HARDCODED_LMAX 
+        and uses hard-coding before that.
 
         Some general implementation remarks:
         - we use an alternative iteration for the Qlm that avoids computing the
           low-l section
+        - there is OMP parallelism threading over the samples (there is probably lots
+          to optimize on this front)
         - we compute at the same time Qlm and the corresponding Ylm, to reuse
           more of the pieces and stay local in memory. we use `if constexpr`
           to avoid runtime branching in the DO_DERIVATIVES=true/false cases
