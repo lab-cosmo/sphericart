@@ -18,6 +18,10 @@
     and selecting that with the smallest number of operations. One should call
     COMPUTE_SPH_L* or COMPUTE_SPH_DERIVATIVE_L* depending on whether only Ylm are needed
     or if one also want to evbaluate Cartesian derivatives
+
+    Every macro takes an agument SPH_IDX that is an indexing function, that can be used to 
+    map the consecutive indices of the Ylm to a different memory layout (this is e.g. used
+    to optimize threads in CUDA code)
 */
 
 // this is used thoughout to indicate the maximum l channel for which we provide a hard-coded macro.

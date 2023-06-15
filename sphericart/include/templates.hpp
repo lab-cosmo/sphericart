@@ -90,8 +90,8 @@ void compute_sph_prefactors(int l_max, T *factors) {
 }
 
 template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i,
-    [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface
+inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i, 
+    [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface with generic_sph_ functions
     [[maybe_unused]] int size_y=1,
     [[maybe_unused]] const T *py_dummy=nullptr,
     [[maybe_unused]] const T *qy_dummy=nullptr,
@@ -100,7 +100,26 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
     [[maybe_unused]] T *z_dummy=nullptr) {
 /*
     Wrapper for the hardcoded macros that also allows to apply normalization. 
-    Computes a single sample, and uses a template to avoid branching.
+    Computes a single sample, and uses a template to avoid branching. 
+    
+    Template parameters:
+    typename T: float type (e.g. single/double precision)
+    bool DO_DERIVATIVES: should se evaluate the derivatives?
+    bool NORMALIZED: should we normalize the input positions?
+    int HARDCODED_LMAX: which lmax value will be computed
+
+    NB: this is meant to be computed for a maximum LMAX value defined at compile time. 
+    the l_max_dummy parameter (that correspond to l_max in the generic implementation)
+    is ignored 
+
+    Actual parameters:
+    const T *xyz_i: a T array containing the x,y,z coordinates of a single sample (x,y,z)
+    T *sph_i: pointer to the storage location for the Ylm (stored as l,m= (0,0),(1,-1),(1,0),(1,1),...
+    [[maybe_unused]] T *dsph_i : pointer to the storage location for the dYlm/dx,dy,dz. 
+                    stored as for sph_i, with three consecutive blocks associated to d/dx,d/dy,d/dz 
+    [[maybe_unused]] int size_y: size of storage for the y, (HARDCODED_LMAX+1)**2
+    
+    ALL XXX_dummy variables are defined to match the interface of generic_sph_sample and are ignored
 */
 
     auto x = xyz_i[0];
@@ -109,7 +128,7 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
     [[maybe_unused]] auto x2 = x * x;
     [[maybe_unused]] auto y2 = y * y;
     [[maybe_unused]] auto z2 = z * z;
-    [[maybe_unused]] T ir=0.0;
+    [[maybe_unused]] T ir=0.0; // 1/r, it is only computed and used if we normalize the input vector
 
     if constexpr(NORMALIZED) {
         ir = 1/std::sqrt(x2+y2+z2);
@@ -121,6 +140,7 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
     HARDCODED_SPH_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, DUMMY_SPH_IDX);
 
     if constexpr (DO_DERIVATIVES) {
+        // computes the derivatives 
         T *dxsph_i = dsph_i;
         T *dysph_i = dxsph_i + size_y;
         T *dzsph_i = dysph_i + size_y;
@@ -147,6 +167,17 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
     /*
         Cartesian Ylm calculator using the hardcoded expressions. 
         Templated version, just calls hardcoded_sph_sample within a loop.
+        XXX_dummy variables are ignored
+
+        Template parameters: see hardcoded_sph_sample
+
+        Actual parameters:
+        const T *xyz: a T array containing th n_samplex*3 x,y,z coordinates of multiple 3D points
+        T *sph: pointer to the storage location for the Ylm (stored as l,m= (0,0),(1,-1),(1,0),(1,1),...
+        [[maybe_unused]] T *dsph : pointer to the storage location for the dYlm/dx,dy,dz. 
+                        stored as for sph_i, with three consecutive blocks associated to d/dx,d/dy,d/dz 
+        int n_samples: number of samples that have to be computed
+
     */
     constexpr auto size_y = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
@@ -158,6 +189,7 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
 
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
+            // gets pointers to the current sample input and output arrays
             xyz_i = xyz + i_sample * 3;
             sph_i = sph + i_sample * size_y;
             if constexpr (DO_DERIVATIVES) {
@@ -204,8 +236,25 @@ static inline void generic_sph_l_channel(int l,
     the simplification in memory access makes this beneficial, with the added advantage
     that each l channel can be computed independently 
 
+    Template parameters:
+    typename T: float type (e.g. single/double precision)
+    bool DO_DERIVATIVES: should se evaluate the derivatives?
+    bool NORMALIZED: should we normalize the input positions?
+
+    Actual parameters:
+    l: which l we are computing
+    x,y,z: the Cartesian coordinates of the point
+    rxy: sqrt(x^2+y^2), precomputed because it's used for all l
+    pk, qlmk: prefactors used in the calculation of Ylm and Qlm, respectively
+    c,s: the c_k and s_k cos-like and sin-like terms combined with the Qlm to compute Ylm
+    twomz: 2*m*z, these are also computed once and reused for all l
+    sph_i, d[x,y,z]sph_i: storage locations of the output arrays for Ylm and dYlm/d[x,y,z]
+
+
     */
-    // working space for the recursive evaluation of Qlm and Q(l-1)m
+    // working space for the recursive evaluation of Qlm and Q(l-1)m. 
+    // qlm_[0,1,2] correspond to the current Qlm, Ql(m+1) and Ql(m+2), and the 
+    // ql1m_[0,1,2] hold the same but for l-1
     [[maybe_unused]] T qlm_2, qlm_1, qlm_0;
     [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
 
@@ -329,8 +378,11 @@ static inline void generic_sph_sample(const T *xyz_i,
     terms that are combined with the Qlm, that are needed in the generic calculator. 
     There is a lot of pointer algebra used to address the correct part of the various arrays, that 
     turned out to be more efficient than explicit indexing in early tests. 
+
+    The parameters correspond to those described in generic_sph_l_channel.
     */
-    [[maybe_unused]] T ir = 0.0;
+
+    [[maybe_unused]] T ir = 0.0;  // storage for computing 1/r, which is reused when NORMALIZED=true
     [[maybe_unused]] T* dxsph_i = nullptr;
     [[maybe_unused]] T* dysph_i = nullptr;
     [[maybe_unused]] T* dzsph_i = nullptr;
@@ -372,7 +424,7 @@ static inline void generic_sph_sample(const T *xyz_i,
         so that they are just plain polynomials of x,y,z.    */
     // help the compiler unroll the first part of the loop
     int m = 0;
-    auto twoz = z+z;
+    auto twoz = z+z; // twomz actually holds 2*(m+1)*z
     twomz[0] = twoz;
     // also initialize the sine and cosine, even if these never change
     c[0] = 1.0;
@@ -409,7 +461,7 @@ static inline void generic_sph_sample(const T *xyz_i,
     }
 
     auto pk = pylm+k;
-    auto qlmk = pqlm+k;
+    auto qlmk = pqlm+k; // starts at HARDCODED_LMAX+1
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
         generic_sph_l_channel<T, DO_DERIVATIVES, HARDCODED_LMAX>(
             l,
@@ -482,14 +534,30 @@ void generic_sph(
           the compiler can choose to unroll if it makes sense
         - there's a bit of pointer gymnastics because of the contiguous storage
           of the irregularly-shaped Q[l,m] and Y[l,m] arrays
+
+        Template parameters:
+        typename T: float type (e.g. single/double precision)
+        bool DO_DERIVATIVES: should se evaluate the derivatives?
+        bool NORMALIZED: should we normalize the input positions?
+        int HARDCODED_LMAX: which lmax value will be computed        
+
+        Actual parameters:        
+        const T *xyz: a T array containing th n_samplex*3 x,y,z coordinates of multiple 3D points
+        T *sph: pointer to the storage location for the Ylm (stored as l,m= (0,0),(1,-1),(1,0),(1,1),...
+        [[maybe_unused]] T *dsph : pointer to the storage location for the dYlm/dx,dy,dz. 
+                        stored as for sph_i, with three consecutive blocks associated to d/dx,d/dy,d/dz 
+        int n_samples: number of samples that have to be computed  
+        int l_max: maximum l to compute
+        prefactors: pointer to an array that contains the prefactors used for Ylm and Qlm calculation
+        buffers: buffer space to compute cosine, sine and 2*m*z terms
     */
 
     // implementation assumes to use hardcoded expressions for at least l=0,1
     static_assert(HARDCODED_LMAX>=1, "Cannot call the generic Ylm calculator for l<=1.");
 
-    const auto size_y = (l_max + 1) * (l_max + 1);
-    const auto size_q = (l_max + 1) * (l_max + 2) / 2;
-    const T *qlmfactors = prefactors + size_q;
+    const auto size_y = (l_max + 1) * (l_max + 1);  // size of Ylm blocks
+    const auto size_q = (l_max + 1) * (l_max + 2) / 2;  // size of Qlm blocks
+    const T *qlmfactors = prefactors + size_q; // the coeffs. used to compute Qlm are just stored contiguously after the Ylm prefactors
 
     #pragma omp parallel
     {
