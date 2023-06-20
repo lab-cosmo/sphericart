@@ -20,9 +20,14 @@
     CHECK_CUDA(x);     \
     CHECK_CONTIGUOUS(x)
 
-/* Computes the index for buffer values which are shared across GRID_DIM_Y */
+/* 
+    Computes the index for buffer values which are shared across GRID_DIM_Y
+*/
 __device__ int get_index(int i) { return i * blockDim.y + threadIdx.y; }
 
+/*
+    Clears the shared memory buffers for the spherical harmonics and gradients if required.
+*/
 template <typename scalar_t>
 __device__ inline void clear_buffers(
     int nelements,
@@ -46,6 +51,9 @@ __device__ inline void clear_buffers(
     __syncthreads();
 }
 
+/*
+    Writes out the shared memory buffers to global memory, as well as applying normalisation if necessary.
+*/
 template <typename scalar_t>
 __device__ inline void write_buffers(
     int atom_idx,
@@ -95,6 +103,9 @@ __device__ inline void write_buffers(
     }
 }
 
+/*
+    CUDA kernel for computing Cartesian spherical harmonics and their derivatives.
+*/
 template <typename scalar_t>
 __global__ void spherical_harmonics_kernel(
     torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> xyz,
@@ -214,7 +225,6 @@ __global__ void spherical_harmonics_kernel(
     __syncthreads();
 
     // work through hardcoded parts first...
-
     int ml = min(static_cast<int>(HARDCODED_LMAX), lmax);
 
     clear_buffers(
@@ -284,11 +294,9 @@ __global__ void spherical_harmonics_kernel(
             }
         }
     }
-
     __syncthreads();
 
     // write out the values of the hardcoded derivatives from shared memory into global memory.
-
     write_buffers(
         atom_idx,
         natoms,
@@ -308,7 +316,6 @@ __global__ void spherical_harmonics_kernel(
         normalize);
 
     // now lets do the generic terms for l > HARDCODED_LMAX
-
     int size_q = (lmax + 1) * (lmax + 2) / 2;
     int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
     scalar_t *qlmk = buffer_prefactors + size_q + k;
@@ -317,17 +324,20 @@ __global__ void spherical_harmonics_kernel(
 
     for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1)
     {
-        int sph_offset = l; // sph needs to point to Y[l, 0]
-
-        // sph 0 : 0
-        // sph 1: 0 1 2
-        // sph 2: 0 1 2 3 4
-        // sph 3: 0 1 2 3 4 5 6
+        int sph_offset = l * blockDim.y;
+        /*
+            sph_offset needs to point to Y[l, 0], so the mapping from array indices to memory locations may look like:
+            sph 0: 0, sph_offset: 0
+            sph 1: 0 1 2, sph_offset: 1
+            sph 2: 0 1 2 3 4, sph_offset: 2
+            sph 3: 0 1 2 3 4 5 6, sph_offset: 3
+            we also need to make sure we select the right atom in the buffer, hence multiplication by blockDim.y.
+        */
 
         // clear out temporary storage buffers
         clear_buffers(2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
 
-        // do some work
+        // Currently only one warp computes the spherical harmonics.
         if (threadIdx.x == 0)
         {
             if (requires_grad)
@@ -608,6 +618,9 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     return xyz_grad;
 }
 
+/*
+    wrapper to compute prefactors with correct dtype.
+*/
 torch::Tensor sphericart_torch::prefactors_cuda(int64_t l_max, at::ScalarType dtype)
 {
     auto result = torch::empty({(l_max + 1) * (l_max + 2)}, torch::TensorOptions().device("cpu").dtype(dtype));
