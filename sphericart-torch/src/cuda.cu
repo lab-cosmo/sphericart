@@ -402,11 +402,11 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X, size_t GRID_DIM
 
     size_t total_buff_size = 0;
 
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_c
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_s
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_twomz
-    total_buff_size += (l_max + 1) * (l_max + 2) * dtype_size; // buffer_prefactors
-    total_buff_size += GRID_DIM_Y * nl * dtype_size;           // buffer_sph_out
+    total_buff_size +=  GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_c
+    total_buff_size +=  GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_s
+    total_buff_size +=  GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_twomz
+    total_buff_size += (l_max + 1)* (l_max + 2) * dtype_size; // buffer_prefactors
+    total_buff_size +=  GRID_DIM_Y * nl * dtype_size;           // buffer_sph_out
 
     if (requires_grad)
     {
