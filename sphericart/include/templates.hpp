@@ -95,8 +95,8 @@ void compute_sph_prefactors(int l_max, T *factors) {
 
 template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i,
-    int size_y,
     [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface
+    [[maybe_unused]] int size_y=1,
     [[maybe_unused]] const T *py_dummy=nullptr,
     [[maybe_unused]] const T *qy_dummy=nullptr,
     [[maybe_unused]] T *c_dummy=nullptr,
@@ -167,7 +167,7 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
             if constexpr (DO_DERIVATIVES) {
                 dsph_i = dsph + i_sample * size_y * 3;
             }
-            hardcoded_sph_sample<T, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, size_y);
+            hardcoded_sph_sample<T, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, HARDCODED_LMAX, size_y);
         }
     }
 }
