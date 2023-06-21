@@ -89,19 +89,26 @@ void compute_sph_prefactors(int l_max, T *factors) {
     }
 }
 
-template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i,
+template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+inline void hardcoded_sph_sample(
+    const T *xyz_i, 
+    T *sph_i, 
+    [[maybe_unused]] T *dsph_i,
+    [[maybe_unused]] T *ddsph_i,
     [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface
     [[maybe_unused]] int size_y=1,
     [[maybe_unused]] const T *py_dummy=nullptr,
     [[maybe_unused]] const T *qy_dummy=nullptr,
     [[maybe_unused]] T *c_dummy=nullptr,
     [[maybe_unused]] T *s_dummy=nullptr,
-    [[maybe_unused]] T *z_dummy=nullptr) {
+    [[maybe_unused]] T *z_dummy=nullptr
+) {
 /*
     Wrapper for the hardcoded derivatives that also allows to apply normalization. Computes a single
     sample, and uses a template to avoid branching.
 */
+
+    static_assert(!DO_SECOND_DERIVATIVES, "Hardcoded implementations of the second derivatives are not implemented.");
 
     auto x = xyz_i[0];
     auto y = xyz_i[1];
@@ -137,8 +144,12 @@ inline void hardcoded_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *d
     }
 }
 
-template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
-void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
+template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+void hardcoded_sph(
+    const T *xyz, 
+    T *sph, 
+    [[maybe_unused]] T *dsph,
+    [[maybe_unused]] T *ddsph,
     int n_samples,
     [[maybe_unused]] int l_max_dummy=0,  // dummy variables to have a uniform interface with generic_sph
     [[maybe_unused]] const T *prefactors_dummy=nullptr,
@@ -148,6 +159,8 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
         Templated version, just calls _compute_sph_templated and
         _compute_dsph_templated functions within a loop.
     */
+    static_assert(!DO_SECOND_DERIVATIVES, "Hardcoded implementations of the second derivatives are not implemented.");
+
     constexpr auto size_y = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
     #pragma omp parallel
@@ -155,6 +168,7 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
         const T *xyz_i = nullptr;
         T *sph_i = nullptr;
         T *dsph_i = nullptr;
+        T *ddsph_i = nullptr;
 
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
@@ -163,12 +177,12 @@ void hardcoded_sph(const T *xyz, T *sph, [[maybe_unused]] T *dsph,
             if constexpr (DO_DERIVATIVES) {
                 dsph_i = dsph + i_sample * size_y * 3;
             }
-            hardcoded_sph_sample<T, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, HARDCODED_LMAX, size_y);
+            hardcoded_sph_sample<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, ddsph_i, HARDCODED_LMAX, size_y);
         }
     }
 }
 
-template <typename T, bool DO_DERIVATIVES, int HARDCODED_LMAX>
+template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES, int HARDCODED_LMAX>
 static inline void generic_sph_l_channel(int l,
     [[maybe_unused]] T x,  // these might be unused for low LMAX. not worth a full separate implementation
     [[maybe_unused]] T y,
@@ -181,9 +195,18 @@ static inline void generic_sph_l_channel(int l,
     T *sph_i,
     [[maybe_unused]] T *dxsph_i,
     [[maybe_unused]] T *dysph_i,
-    [[maybe_unused]] T *dzsph_i
-)
-{
+    [[maybe_unused]] T *dzsph_i,
+
+    [[maybe_unused]] T *dxdxsph_i,
+    [[maybe_unused]] T *dxdysph_i,
+    [[maybe_unused]] T *dxdzsph_i,
+    [[maybe_unused]] T *dydxsph_i,
+    [[maybe_unused]] T *dydysph_i,
+    [[maybe_unused]] T *dydzsph_i,
+    [[maybe_unused]] T *dzdxsph_i,
+    [[maybe_unused]] T *dzdysph_i,
+    [[maybe_unused]] T *dzdzsph_i
+) {
     // working space for the recursive evaluation of Qlm and Q(l-1)m
     [[maybe_unused]] T qlm_2, qlm_1, qlm_0;
     [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
@@ -290,10 +313,11 @@ static inline void generic_sph_l_channel(int l,
     }
 }
 
-template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 static inline void generic_sph_sample(const T *xyz_i,
     T *sph_i,
     [[maybe_unused]] T *dsph_i,
+    [[maybe_unused]] T *ddsph_i,
     int l_max,
     int size_y,
     const T *pylm,
@@ -383,7 +407,7 @@ static inline void generic_sph_sample(const T *xyz_i,
     auto pk = pylm+k;
     auto qlmk = pqlm+k;
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
-        generic_sph_l_channel<T, DO_DERIVATIVES, HARDCODED_LMAX>(
+        generic_sph_l_channel<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES, HARDCODED_LMAX>(
             l,
             x,
             y,
@@ -395,6 +419,16 @@ static inline void generic_sph_sample(const T *xyz_i,
             s,
             twomz,
             sph_i,
+            dxsph_i,
+            dysph_i,
+            dzsph_i,
+
+            dxsph_i,
+            dysph_i,
+            dzsph_i,
+            dxsph_i,
+            dysph_i,
+            dzsph_i,
             dxsph_i,
             dysph_i,
             dzsph_i
@@ -427,11 +461,12 @@ static inline void generic_sph_sample(const T *xyz_i,
 }
 
 
-template <typename T, bool DO_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
+template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES, bool NORMALIZED, int HARDCODED_LMAX>
 void generic_sph(
     const T *xyz,
     T *sph,
     [[maybe_unused]] T *dsph,
+    [[maybe_unused]] T *ddsph,
     int n_samples,
     int l_max,
     const T *prefactors,
@@ -472,6 +507,7 @@ void generic_sph(
         // for a given point
         T* sph_i = nullptr;
         T* dsph_i = nullptr;
+        T* ddsph_i = nullptr;
 
         #pragma omp for
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
@@ -483,10 +519,11 @@ void generic_sph(
                 dsph_i = dsph + i_sample * 3 * size_y;
             }
 
-            generic_sph_sample<T, DO_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(
+            generic_sph_sample<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(
                 xyz_i,
                 sph_i,
                 dsph_i,
+                ddsph_i,
                 l_max,
                 size_y,
                 prefactors,

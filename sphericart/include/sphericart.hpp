@@ -104,6 +104,8 @@ public:
      */
     void compute_with_gradients(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph);
 
+    void compute_with_hessians(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph, std::vector<T>& ddsph);
+
     /** Computes the spherical harmonics for a set of 3D points using bare arrays.
      *
      * @param xyz An array of size `n_samples x 3`. It contains the
@@ -143,6 +145,8 @@ public:
     */
     void compute_array_with_gradients(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length);
 
+    void compute_array_with_hessians(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length, T* ddsph, size_t ddsph_length);
+
     /** Computes the spherical harmonics for a single 3D point using bare arrays.
      *
      * @param xyz An array of size 3. It contains the
@@ -175,6 +179,8 @@ public:
     */
     void compute_sample_with_gradients(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length);
 
+    void compute_sample_with_hessians(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length, T* ddsph, size_t ddsph_length);
+
     /**
     Returns the number of threads used in the calculation
     */
@@ -193,12 +199,14 @@ private:
     T *buffers;
 
     // function pointers are used to set up the right functions to be called
-    void (*_array_no_derivatives)(const T*, T*, T*, int, int, const T*, T*);
-    void (*_array_with_derivatives)(const T*, T*, T*, int, int, const T*, T*);
+    void (*_array_no_derivatives)(const T*, T*, T*, T*, int, int, const T*, T*);
+    void (*_array_with_derivatives)(const T*, T*, T*, T*, int, int, const T*, T*);
+    void (*_array_with_hessians)(const T*, T*, T*, T*, int, int, const T*, T*);
+    
     // these compute a single sample
-
-    void (*_sample_no_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
-    void (*_sample_with_derivatives)(const T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
+    void (*_sample_no_derivatives)(const T*, T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
+    void (*_sample_with_derivatives)(const T*, T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
+    void (*_sample_with_hessians)(const T*, T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
 /* @endcond */
 
 };
