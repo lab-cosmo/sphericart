@@ -5,7 +5,6 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
-#include <initializer_list>
 #include "sphericart.hpp"
 
 #define DELTA 1e-4
@@ -154,7 +153,7 @@ int main() {
         }
     }
 
-    for (bool normalize : {false, true}) {  // Test with and without normalization
+    for (bool normalize : std::vector<bool>{false, true}) {  // Test with and without normalization
         for (int l_max=0; l_max<l_max_max; l_max++) {  // Test for a range of l_max values
             sphericart::SphericalHarmonics<double> normalized_calculator = sphericart::SphericalHarmonics<double>(l_max, normalize);
             is_passed = check_gradient_call(l_max, normalized_calculator, xyz);
