@@ -206,3 +206,70 @@ class SphericalHarmonics:
             )
 
         return sph, dsph
+    
+    def compute_with_hessians(self, xyz: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Calculates the spherical harmonics for a set of 3D points, whose
+        coordinates are in the ``xyz`` array, together with their Cartesian
+        derivatives and second derivatives.
+
+        """
+
+        if not isinstance(xyz, np.ndarray):
+            raise TypeError("xyz must be a numpy array")
+
+        if not (xyz.dtype == np.float32 or xyz.dtype == np.float64):
+            raise TypeError("xyz must be a numpy array of 32 or 64-bit floats")
+
+        if len(xyz.shape) != 2 or xyz.shape[1] != 3:
+            raise ValueError("xyz array must be a `N x 3` array")
+
+        # make xyz contiguous before taking a pointer to it
+        xyz = np.ascontiguousarray(xyz)
+
+        n_samples = xyz.shape[0]
+        xyz_length = n_samples * 3
+
+        sph = np.empty((n_samples, (self._l_max + 1) ** 2), dtype=xyz.dtype)
+        sph_length = n_samples * (self._l_max + 1) ** 2
+        dsph = np.empty((n_samples, 3, (self._l_max + 1) ** 2), dtype=xyz.dtype)
+        dsph_length = n_samples * 3 * (self._l_max + 1) ** 2
+        ddsph = np.empty((n_samples, 3, 3, (self._l_max + 1) ** 2), dtype=xyz.dtype)
+        ddsph_length = n_samples * 9 * (self._l_max + 1) ** 2
+
+        if xyz.dtype == np.float64:
+            xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+            sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+            dsph_ptr = dsph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+            ddsph_ptr = ddsph.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+
+            self._lib.sphericart_compute_array_with_hessians(
+                self._calculator,
+                xyz_ptr,
+                xyz_length,
+                sph_ptr,
+                sph_length,
+                dsph_ptr,
+                dsph_length,
+                ddsph_ptr,
+                ddsph_length,
+            )
+        elif xyz.dtype == np.float32:
+            xyz_ptr = xyz.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            sph_ptr = sph.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            dsph_ptr = dsph.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            ddsph_ptr = ddsph.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+
+            self._lib.sphericart_compute_array_with_gradients_f(
+                self._calculator_f,
+                xyz_ptr,
+                xyz_length,
+                sph_ptr,
+                sph_length,
+                dsph_ptr,
+                dsph_length,
+                ddsph_ptr,
+                ddsph_length,
+            )
+
+        return sph, dsph, ddsph

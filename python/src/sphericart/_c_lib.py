@@ -53,6 +53,19 @@ def setup_functions(lib):
         ctypes.c_size_t,
     ]
 
+    lib.sphericart_compute_array_with_hessians.restype = None
+    lib.sphericart_compute_array_with_hessians.argtypes = [
+        sphericart_calculator_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+    ]
+
     lib.sphericart_compute_array_f.restype = None
     lib.sphericart_compute_array_f.argtypes = [
         sphericart_calculator_f_t,
@@ -65,6 +78,19 @@ def setup_functions(lib):
     lib.sphericart_compute_array_with_gradients_f.restype = None
     lib.sphericart_compute_array_with_gradients_f.argtypes = [
         sphericart_calculator_f_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+    ]
+
+    lib.sphericart_compute_array_with_hessians_f.restype = None
+    lib.sphericart_compute_array_with_hessians_f.argtypes = [
+        sphericart_calculator_f_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
         ctypes.POINTER(ctypes.c_float),
         ctypes.c_size_t,
         ctypes.POINTER(ctypes.c_float),

@@ -634,7 +634,7 @@ static inline void generic_sph_sample(const T *xyz_i,
         dzdzsph_i = dzdysph_i + size_y;
 
         // these are the hard-coded, low-lmax sph
-        HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
+        HARDCODED_SPH_SECOND_DERIVATIVE_MACRO(HARDCODED_LMAX, sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, DUMMY_SPH_IDX);
     }
 
     /* These are scaled version of cos(m phi) and sin(m phi).

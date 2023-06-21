@@ -157,6 +157,18 @@ SPHERICART_EXPORT void sphericart_compute_array_with_gradients(
     size_t dsph_length
 );
 
+SPHERICART_EXPORT void sphericart_compute_array_with_hessians(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length,
+    double* ddsph,
+    size_t ddsph_length
+);
+
 /**
  * Similar to :func:`sphericart_compute_array`, but it computes the spherical 
  * harmonics for a single 3D point in space.
@@ -181,6 +193,18 @@ SPHERICART_EXPORT void sphericart_compute_sample_with_gradients(
     size_t sph_length,
     double* dsph,
     size_t dsph_length
+);
+
+SPHERICART_EXPORT void sphericart_compute_sample_with_hessians(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length,
+    double* ddsph,
+    size_t ddsph_length
 );
 
 /**
@@ -208,6 +232,18 @@ SPHERICART_EXPORT void sphericart_compute_array_with_gradients_f(
     size_t dsph_length
 );
 
+SPHERICART_EXPORT void sphericart_compute_array_with_hessians_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length,
+    float* ddsph,
+    size_t ddsph_length
+);
+
 /**
  * Similar to :func:`sphericart_compute_sample`, but using the `float` data type.
 */
@@ -230,6 +266,18 @@ SPHERICART_EXPORT void sphericart_compute_sample_with_gradients_f(
     size_t sph_length,
     float* dsph,
     size_t dsph_length
+);
+
+SPHERICART_EXPORT void sphericart_compute_sample_with_hessians_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length,
+    float* ddsph,
+    size_t ddsph_length
 );
 
 /**
