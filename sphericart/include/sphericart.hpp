@@ -190,15 +190,17 @@ public:
 
 /* @cond */
 private:
-    size_t l_max;
-    size_t size_y;
-    size_t size_q;
-    bool normalized;
-    int omp_num_threads;
-    T *prefactors;
+    size_t l_max; // maximum l value computed by this class
+    size_t size_y; // size of the Ylm rows (l_max+1)**2
+    size_t size_q; // size of the prefactor-like arrays (l_max+1)*(l_max+2)/2
+    bool normalized; // should we normalize the input vectors?
+    int omp_num_threads; // number of openmp thread
+    T *prefactors; // storage space for prefactor and buffers
     T *buffers;
 
     // function pointers are used to set up the right functions to be called
+    // these are set in the constructor, so that the public compute functions can 
+    // be redirected to the right implementation
     void (*_array_no_derivatives)(const T*, T*, T*, T*, int, int, const T*, T*);
     void (*_array_with_derivatives)(const T*, T*, T*, T*, int, int, const T*, T*);
     void (*_array_with_hessians)(const T*, T*, T*, T*, int, int, const T*, T*);

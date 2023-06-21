@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
     auto prefactors = std::vector<DTYPE>((l_max+1)*(l_max+2), 0.0);
     compute_sph_prefactors(l_max, prefactors.data());
 
+    // random values
     auto xyz = std::vector<DTYPE>(n_samples*3, 0.0);
     for (size_t i=0; i<n_samples*3; ++i) {
         xyz[i] = (DTYPE)rand()/ (DTYPE) RAND_MAX *2.0-1.0;

@@ -6,7 +6,9 @@
 
 using namespace sphericart;
 
-// macro to define different possible hardcoded function calls
+// This macro to define different possible hardcoded function calls. It is used to 
+// initialize the function pointers that are used by the `compute_` calls in the
+// SphericalHarmonics class
 #define _HARCODED_SWITCH_CASE(L_MAX) \
     if (this->normalized) { \
         this->_array_no_derivatives = &hardcoded_sph<T, false, false, true, L_MAX>; \
@@ -22,11 +24,17 @@ using namespace sphericart;
 
 template<typename T>
 SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
+    /* 
+        This is the constructor of the SphericalHarmonics class. It initizlizes buffer         
+        space, compute prefactors, and sets the function pointers that are used for 
+        the actual calls 
+    */
+
     this->l_max = (int) l_max;
     this->size_y = (int) (l_max + 1) * (l_max + 1);
     this->size_q = (int) (l_max + 1) * (l_max + 2) / 2;
     this->normalized = normalized;
-    this->prefactors = new T[(l_max+1)*(l_max+2)];
+    this->prefactors = new T[this->size_q*2];
     this ->omp_num_threads = omp_get_max_threads();
     
     // buffers for cos, sin, 2mz arrays
@@ -37,6 +45,8 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
 
     // sets the correct function pointers for the compute functions
     if (this->l_max<=SPHERICART_LMAX_HARDCODED) {
+        // If we only need hard-coded calls, we set them up at this point
+        // using a macro to avoid even more code duplication. 
         switch (this->l_max) {
         case 0:
             _HARCODED_SWITCH_CASE(0);
@@ -101,12 +111,16 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
 
 template<typename T>
 SphericalHarmonics<T>::~SphericalHarmonics() {
+    // Destructor, simply frees buffers
     delete [] this->prefactors;
     delete [] this->buffers;
 }
 
+// The compute/compute_with_gradient functions decide which function to call based on the size of the input vectors
+
 template<typename T>
-void SphericalHarmonics<T>::compute(const std::vector<T>& xyz, std::vector<T>& sph) {
+void SphericalHarmonics<T>::compute(const std::vector<T>& xyz, std::vector<T>& sph) {    
+
     auto n_samples = xyz.size() / 3;
     sph.resize(n_samples * (l_max + 1) * (l_max + 1));
 
@@ -130,6 +144,8 @@ void SphericalHarmonics<T>::compute_with_gradients(const std::vector<T>& xyz, st
     }
 }
 
+// Lower-level functions are simply wrappers over function-pointer-style calls that invoke the right (hardcoded or generic)
+// C++-library call
 template<typename T>
 void SphericalHarmonics<T>::compute_with_hessians(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph, std::vector<T>& ddsph) {
     auto n_samples = xyz.size() / 3;
