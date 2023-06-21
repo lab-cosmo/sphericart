@@ -206,8 +206,10 @@ class SphericalHarmonics:
             )
 
         return sph, dsph
-    
-    def compute_with_hessians(self, xyz: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+    def compute_with_hessians(
+        self, xyz: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
         coordinates are in the ``xyz`` array, together with their Cartesian

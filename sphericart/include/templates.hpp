@@ -436,10 +436,10 @@ static inline void generic_sph_l_channel(int l,
                 auto pql1m_0 = pk[m]*ql1m_1;  // SHIFTED ABOVE
                 auto pql2m_1 = pk[m]*ql2m_1;
 
-                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2.0*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
-                dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2.0*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
-                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2.0*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
-                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2.0*m*y*pql1m_1*c[m-1] - m*(m-1)*pq*s[m-2];
+                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
+                dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
+                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
+                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2*m*y*pql1m_1*c[m-1] - m*(m-1)*pq*s[m-2];
                 dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
                 dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
 
@@ -493,10 +493,10 @@ static inline void generic_sph_l_channel(int l,
                 auto pql1m_0 = pk[m]*ql1m_1;  // SHIFTED ABOVE
                 auto pql2m_1 = pk[m]*ql2m_1;
 
-                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2.0*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
-                dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2.0*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
-                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2.0*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
-                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2.0*m*y*pql1m_1*c[m-1] - m*(m-1)*pq*s[m-2];
+                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
+                dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
+                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
+                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2*m*y*pql1m_1*c[m-1] - m*(m-1)*pq*s[m-2];
                 dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
                 dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
 
@@ -530,11 +530,9 @@ static inline void generic_sph_l_channel(int l,
                 ql2m_0 = qlmk[-2*l+1] * (twomz[0] * ql2m_1 + rxy * ql2m_2);
             }
 
-            auto pq = pk[0]*qlm_0;
             auto pql1m_1 = pk[0]*ql1m_1;
             auto pql2m_2 = pk[0]*ql2m_2;
             auto pql2m_0 = pk[0]*ql2m_0;
-            auto pql1m_0 = pk[0]*ql1m_0;
             auto pql2m_1 = pk[0]*ql2m_1;
 
             dxdxsph_i[0] = pql1m_1 + x*x*pql2m_2;

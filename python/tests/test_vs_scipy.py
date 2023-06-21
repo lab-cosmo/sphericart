@@ -100,11 +100,24 @@ def test_second_derivatives(xyz):
                 sph_plus_minus = calculator.compute(xyz_plus_minus)
                 sph_minus_plus = calculator.compute(xyz_minus_plus)
                 sph_minus_minus = calculator.compute(xyz_minus_minus)
-                numerical_second_derivatives = (sph_plus_plus - sph_minus_plus - sph_plus_minus + sph_minus_minus) / (4.0 * delta**2)
-                _, _, analytical_second_derivatives_all = calculator.compute_with_hessians(xyz)
-                analytical_second_derivatives = analytical_second_derivatives_all[:, alpha, beta, :]
+                numerical_second_derivatives = (
+                    sph_plus_plus - sph_minus_plus - sph_plus_minus + sph_minus_minus
+                ) / (4.0 * delta**2)
+                (
+                    _,
+                    _,
+                    analytical_second_derivatives_all,
+                ) = calculator.compute_with_hessians(xyz)
+                analytical_second_derivatives = analytical_second_derivatives_all[
+                    :, alpha, beta, :
+                ]
                 # Lower the tolerances: numerical second derivatives are imprecise:
-                assert np.allclose(numerical_second_derivatives, analytical_second_derivatives, rtol=1e-4, atol=1e-5)
+                assert np.allclose(
+                    numerical_second_derivatives,
+                    analytical_second_derivatives,
+                    rtol=1e-4,
+                    atol=1e-5,
+                )
 
 
 if __name__ == "__main__":
