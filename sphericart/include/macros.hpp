@@ -30,6 +30,11 @@
 #define COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX) \
     (dxsph_i)[SPH_IDX(0)] = (dysph_i)[SPH_IDX(0)] = (dzsph_i)[SPH_IDX(0)] = cast(sph_i, 0.0);
 
+#define COMPUTE_SPH_SECOND_DERIVATIVE_L0(sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX) \
+    (dxdxsph_i)[SPH_IDX(0)] = (dxdysph_i)[SPH_IDX(0)] = (dxdzsph_i)[SPH_IDX(0)] = cast(sph_i, 0.0); \
+    (dydxsph_i)[SPH_IDX(0)] = (dydysph_i)[SPH_IDX(0)] = (dydzsph_i)[SPH_IDX(0)] = cast(sph_i, 0.0); \
+    (dzdxsph_i)[SPH_IDX(0)] = (dzdysph_i)[SPH_IDX(0)] = (dzdzsph_i)[SPH_IDX(0)] = cast(sph_i, 0.0);
+
 #define COMPUTE_SPH_L1(x, y, z, sph_i, SPH_IDX)                                                                                \
     (sph_i)[SPH_IDX(1)] = cast(sph_i, 0.48860251190292) * y;                                                                                 \
     (sph_i)[SPH_IDX(2)] = cast(sph_i, 0.48860251190292) * z;                                                                                 \
@@ -45,6 +50,35 @@
     (dzsph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                                \
     (dzsph_i)[SPH_IDX(2)] = cast(sph_i, 0.48860251190292);                                                                                   \
     (dzsph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);
+
+#define COMPUTE_SPH_SECOND_DERIVATIVE_L1(sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX)                                                           \
+    (dxdxsph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                                \
+    (dxdxsph_i)[SPH_IDX(2)] = cast(sph_i, 0.0);                                                                                                \
+    (dxdxsph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);                                                                                   \
+    (dxdysph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                   \
+    (dxdysph_i)[SPH_IDX(2)] = cast(sph_i, 0.0);                                                                                                \
+    (dxdysph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);                                                                                                \
+    (dxdzsph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                                \
+    (dxdzsph_i)[SPH_IDX(2)] = cast(sph_i, 0.0);                                                                                   \
+    (dxdzsph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);                                                                                   \
+    (dydxsph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                                \
+    (dydxsph_i)[SPH_IDX(2)] = cast(sph_i, 0.0);                                                                                                \
+    (dydxsph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);                                                                                   \
+    (dydysph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                   \
+    (dydysph_i)[SPH_IDX(2)] = cast(sph_i, 0.0);                                                                                                \
+    (dydysph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);                                                                                                \
+    (dydzsph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                                \
+    (dydzsph_i)[SPH_IDX(2)] = cast(sph_i, 0.0);                                                                                   \
+    (dydzsph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);                                                                                   \
+    (dzdxsph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                                \
+    (dzdxsph_i)[SPH_IDX(2)] = cast(sph_i, 0.0);                                                                                                \
+    (dzdxsph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);                                                                                   \
+    (dzdysph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                   \
+    (dzdysph_i)[SPH_IDX(2)] = cast(sph_i, 0.0);                                                                                                \
+    (dzdysph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);                                                                                                \
+    (dzdzsph_i)[SPH_IDX(1)] = cast(sph_i, 0.0);                                                                                                \
+    (dzdzsph_i)[SPH_IDX(2)] = cast(sph_i, 0.0);                                                                                   \
+    (dzdzsph_i)[SPH_IDX(3)] = cast(sph_i, 0.0);                                                                                   
 
 #define COMPUTE_SPH_L2(x, y, z, x2, y2, z2, sph_i, SPH_IDX)                                                                    \
     {                                                                                                                  \
@@ -342,6 +376,12 @@ up to a given value. Macro version.
     }\
     if constexpr (HARDCODED_LMAX > 5) {\
         COMPUTE_SPH_DERIVATIVE_L6(x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, SPH_IDX);\
+    }
+
+#define HARDCODED_SPH_SECOND_DERIVATIVE_MACRO(HARDCODED_LMAX, sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX) \
+    COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX);\
+    if constexpr (HARDCODED_LMAX > 0) { \
+        COMPUTE_SPH_DERIVATIVE_L1(sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX);\
     }
 
 #endif

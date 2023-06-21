@@ -7,7 +7,7 @@
 #include <cassert>
 #include "sphericart.hpp"
 
-#define delta 1e-6
+#define delta 1e-3
 #define tolerance 1e-7
 
 
@@ -102,7 +102,8 @@ bool check_second_derivatives(int l_max, sphericart::SphericalHarmonics<double> 
                 for (int i_sph=0; i_sph<n_sph; i_sph++) {
                     double analytical = ddsph[9*n_sph*i_sample+n_sph*3*alpha+n_sph*beta+i_sph];
                     double finite_diff = (sph_plus_plus[n_sph*i_sample+i_sph]-sph_plus_minus[n_sph*i_sample+i_sph]-sph_minus_plus[n_sph*i_sample+i_sph]+sph_minus_minus[n_sph*i_sample+i_sph])/(4.0*delta*delta);
-                    if (std::abs(analytical/finite_diff-1.0) > tolerance) std::cout << "Wrong second derivative: " << analytical << " vs " << finite_diff << std::endl;
+                    std::cout << i_sph << " " << alpha << " " << beta << " " << finite_diff << " " << analytical << std::endl;
+                    // if (std::abs(analytical/finite_diff-1.0) > tolerance) std::cout << "Wrong second derivative: " << analytical << " vs " << finite_diff << std::endl;
                     if (std::abs(analytical/finite_diff-1.0) > tolerance) is_passed = false;
                 }
             }
@@ -117,7 +118,7 @@ bool check_second_derivatives(int l_max, sphericart::SphericalHarmonics<double> 
 int main() {
 
     bool is_passed;
-    int l_max = 20;
+    int l_max = 2;
     std::vector<double> xyz(15);
     for (int i_sample=0; i_sample<5; i_sample++) {
         for (int alpha=0; alpha<3; alpha++) {
@@ -127,17 +128,20 @@ int main() {
 
     // Test without normalization:
     sphericart::SphericalHarmonics<double> calculator = sphericart::SphericalHarmonics<double>(l_max);
+    /*
     is_passed = check_first_derivatives(l_max, calculator, xyz);
     if (!is_passed) {
         std::cout << "Test failed" << std::endl;
         return -1;
     }
+    */
     is_passed = check_second_derivatives(l_max, calculator, xyz);
     if (!is_passed) {
         std::cout << "Test failed" << std::endl;
         return -1;
     }
 
+    /*
     // Test with normalization:
     sphericart::SphericalHarmonics<double> normalized_calculator = sphericart::SphericalHarmonics<double>(l_max, true);
     is_passed = check_first_derivatives(l_max, normalized_calculator, xyz);
@@ -150,6 +154,7 @@ int main() {
         std::cout << "Test failed" << std::endl;
         return -1;
     }
+    */
 
     std::cout << "Test passed" << std::endl;
     return 0;

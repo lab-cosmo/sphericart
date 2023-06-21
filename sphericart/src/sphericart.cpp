@@ -75,11 +75,27 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
     }
 
     if (this->normalized) {
-        this->_array_with_hessians = &generic_sph<T, true, true, true, 1>;
-        this->_sample_with_hessians = &generic_sph_sample<T, true, true, true, 1>;
+        if (this->l_max == 0) {
+            this->_array_with_hessians = &hardcoded_sph<T, true, true, true, 0>;
+            this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, true, 0>;
+        } else if (this->l_max == 1) {
+            this->_array_with_hessians = &hardcoded_sph<T, true, true, true, 1>;
+            this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, true, 1>;
+        } else {  // second derivatives are not hardcoded past l = 1. Call generic implementations
+            this->_array_with_hessians = &generic_sph<T, true, true, true, 1>;
+            this->_sample_with_hessians = &generic_sph_sample<T, true, true, true, 1>;
+        }
     } else { 
-        this->_array_with_hessians = &generic_sph<T, true, true, false, 1>;
-        this->_sample_with_hessians = &generic_sph_sample<T, true, true, false, 1>;
+        if (this->l_max == 0) {
+            this->_array_with_hessians = &hardcoded_sph<T, true, true, false, 0>;
+            this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, false, 0>;
+        } else if (this->l_max == 1) {
+            this->_array_with_hessians = &hardcoded_sph<T, true, true, false, 1>;
+            this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, false, 1>;
+        } else {  // second derivatives are not hardcoded past l = 1. Call generic implementations
+            this->_array_with_hessians = &generic_sph<T, true, true, false, 1>;
+            this->_sample_with_hessians = &generic_sph_sample<T, true, true, false, 1>;
+        }
     }
 }
 

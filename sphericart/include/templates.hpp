@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <cmath>
+#include <iostream>
 
 #ifdef _OPENMP
 
@@ -108,7 +109,7 @@ inline void hardcoded_sph_sample(
     sample, and uses a template to avoid branching.
 */
 
-    static_assert(!DO_SECOND_DERIVATIVES, "Hardcoded implementations of the second derivatives are not implemented.");
+    static_assert(!(DO_SECOND_DERIVATIVES && HARDCODED_LMAX > 1), "Hardcoded second derivatives are only implemented up to l=1.");
 
     auto x = xyz_i[0];
     auto y = xyz_i[1];
@@ -141,6 +142,23 @@ inline void hardcoded_sph_sample(
                 dzsph_i[k] = (dzsph_i[k]-z*tmp)*ir;
             }
         }
+
+        if constexpr (DO_SECOND_DERIVATIVES) {
+            // set each double derivative pointer to the appropriate place
+            T* dxdxsph_i = ddsph_i;
+            T* dxdysph_i = dxdxsph_i + size_y;
+            T* dxdzsph_i = dxdysph_i + size_y;
+            T* dydxsph_i = dxdzsph_i + size_y;
+            T* dydysph_i = dydxsph_i + size_y;
+            T* dydzsph_i = dydysph_i + size_y;
+            T* dzdxsph_i = dydzsph_i + size_y;
+            T* dzdysph_i = dzdxsph_i + size_y;
+            T* dzdzsph_i = dzdysph_i + size_y;
+            HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
+
+            // No normalization for the second derivatives: they are always zero for l=0 and l=1, which are the
+            // only hardcoded cases for the moment.
+        }
     }
 }
 
@@ -159,7 +177,7 @@ void hardcoded_sph(
         Templated version, just calls _compute_sph_templated and
         _compute_dsph_templated functions within a loop.
     */
-    static_assert(!DO_SECOND_DERIVATIVES, "Hardcoded implementations of the second derivatives are not implemented.");
+    static_assert(!(DO_SECOND_DERIVATIVES && HARDCODED_LMAX > 1), "Hardcoded second derivatives are not implemented for l>1.");
 
     constexpr auto size_y = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
@@ -188,7 +206,8 @@ static inline void generic_sph_l_channel(int l,
     [[maybe_unused]] T y,
     [[maybe_unused]] T z,
     [[maybe_unused]] T rxy,
-    const T *pk, const T *qlmk,
+    const T *pk, 
+    const T *qlmk,
     T *c,
     T *s,
     T *twomz,
@@ -196,7 +215,6 @@ static inline void generic_sph_l_channel(int l,
     [[maybe_unused]] T *dxsph_i,
     [[maybe_unused]] T *dysph_i,
     [[maybe_unused]] T *dzsph_i,
-
     [[maybe_unused]] T *dxdxsph_i,
     [[maybe_unused]] T *dxdysph_i,
     [[maybe_unused]] T *dxdzsph_i,
@@ -207,11 +225,16 @@ static inline void generic_sph_l_channel(int l,
     [[maybe_unused]] T *dzdysph_i,
     [[maybe_unused]] T *dzdzsph_i
 ) {
-    // working space for the recursive evaluation of Qlm and Q(l-1)m
+    static_assert(!(DO_SECOND_DERIVATIVES && !DO_DERIVATIVES), "Cannot calculate second derivatives without first derivatives");
+
+    // working space for the recursive evaluation of Qlm, Q(l-1)m, Q(l-2)m
     [[maybe_unused]] T qlm_2, qlm_1, qlm_0;
     [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
+    [[maybe_unused]] T ql2m_2, ql2m_1, ql2m_0;
 
-    // l=+-m
+    if (DO_SECOND_DERIVATIVES) std::cout << "Called function " << DO_SECOND_DERIVATIVES << std::endl;
+
+    // m=+-l
     qlm_2 = qlmk[l]; // fetches the pre-computed Qll
     auto pq = qlm_2 * pk[l];
     sph_i[-l] = pq * s[l];
@@ -225,9 +248,24 @@ static inline void generic_sph_l_channel(int l,
         dzsph_i[-l] = 0;
         dzsph_i[l] = 0;
         ql1m_2 = 0;
+
+        if constexpr (DO_SECOND_DERIVATIVES) {
+            pq *= l;
+            dxdxsph_i[l] = pq*c[l-2];
+            dxdxsph_i[-l] = pq*s[l-2];
+            dxdysph_i[l] = dydxsph_i[l] = dydysph_i[-l] = -dxdxsph_i[-l];
+            dxdysph_i[-l] = dydxsph_i[-l] = dxdxsph_i[l];
+            dxdzsph_i[l] = dzdxsph_i[l] = 0.0;
+            dxdzsph_i[-l] = dzdxsph_i[-l] = 0.0;
+            dydysph_i[l] = -dxdxsph_i[l];
+            dydzsph_i[l] = dzdysph_i[l] = 0.0;
+            dydzsph_i[-l] = dzdysph_i[-l] = 0.0;
+            dzdzsph_i[l] = dzdzsph_i[-l] = 0.0;
+            ql2m_2 = 0.0;
+        }
     }
 
-    // l=+-(m-1)
+    // m = +-(l-1)
     qlm_1 = -z*qlm_2;
     pq = qlm_1 * pk[l - 1];
     sph_i[-l + 1] = pq * s[l - 1];
@@ -244,6 +282,22 @@ static inline void generic_sph_l_channel(int l,
         auto pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
         dzsph_i[-l + 1] = pdq * s[l - 1];
         dzsph_i[l - 1] = pdq * c[l - 1];
+
+        if constexpr (DO_SECOND_DERIVATIVES) {
+            pq*=(l-1);
+            dxdxsph_i[l-1] = pq*c[l-2];
+            dxdxsph_i[-l+1] = pq*s[l-2];
+            dxdysph_i[l-1] = dydxsph_i[l-1] = dydysph_i[-l+1] = -dxdxsph_i[-l+1];
+            dxdysph_i[-l+1] = dydxsph_i[-l+1] = dxdxsph_i[l-1];
+            auto temp = -pk[l-1]*qlm_2;  // this is p[l-1]*q[l-1][l-1]*(2*l-1)*(l-1)
+            dxdzsph_i[l-1] = dzdxsph_i[l-1] = temp*c[l-2];
+            dxdzsph_i[-l+1] = dzdxsph_i[-l+1] = temp*s[l-2];
+            dydysph_i[l-1] = -dxdxsph_i[l-1];
+            dydzsph_i[l-1] = dzdysph_i[l-1] = -dxdzsph_i[-l+1];
+            dydzsph_i[-l+1] = dzdysph_i[-l+1] = dxdzsph_i[l-1];
+            dzdzsph_i[l-1] = dzdzsph_i[-l+1] = 0.0;
+            ql2m_1 = 0.0;
+        }
     }
 
     // and now do the other m's, decrementally
@@ -271,6 +325,37 @@ static inline void generic_sph_l_channel(int l,
             pdq = pk[m] * (l + m) * ql1m_1;
             dzsph_i[-m] = pdq * s[m];
             dzsph_i[m] = pdq * c[m];
+
+            if constexpr (DO_SECOND_DERIVATIVES) {
+                if (m == l-2)  {
+                    ql2m_0 = qlmk[-l-1];
+                } else {
+                    ql2m_0 = qlmk[m-2*l-1] * (twomz[m] * ql2m_1 + rxy * ql2m_2);
+                }
+
+                pq /= m;
+                auto pql1m_1 = pk[m]*ql1m_2;  // SHIFTED ABOVE
+                auto pql2m_2 = pk[m]*ql2m_2;  
+                auto pql2m_0 = pk[m]*ql2m_0;
+                auto pql1m_0 = pk[m]*ql1m_1;  // SHIFTED ABOVE
+                auto pql2m_1 = pk[m]*ql2m_1;
+
+                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2.0*m*x*pql1m_1*c[m-1] + m*m*pq*c[m-2];
+                dxdxsph_i[m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2.0*m*x*pql1m_1*s[m-1] + m*m*pq*s[m-2];
+                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2.0*m*y*pql1m_1*s[m-1] - m*m*pq*c[m-2];
+                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2.0*m*y*pql1m_1*c[m-1] - m*m*pq*s[m-2];
+                dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
+                dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
+
+                dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*m*pq*s[m-2];
+                dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*m*pq*c[m-2];
+                dxdzsph_i[m] = dzdxsph_i[m] = x*(l+m)*pql2m_1*c[m] + (l+m)*pql1m_0*m*c[m-1];
+                dxdzsph_i[-m] = dzdxsph_i[-m] = x*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*s[m-1];
+                dydzsph_i[m] = dzdysph_i[m] = y*(l+m)*pql2m_1*c[m] - (l+m)*pql1m_0*m*s[m-1];
+                dydzsph_i[-m] = dzdysph_i[-m] = y*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*c[m-1];
+
+                ql2m_2 = ql2m_1; ql2m_1 = ql2m_0; // shift
+            }
         }
     }
     for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {
@@ -297,6 +382,37 @@ static inline void generic_sph_l_channel(int l,
             pdq = pk[m] * (l + m) * ql1m_1;
             dzsph_i[-m] = pdq * s[m];
             dzsph_i[m] = pdq * c[m];
+
+            if constexpr (DO_SECOND_DERIVATIVES) {
+                if (m == l-2)  {
+                    ql2m_0 = qlmk[-l-1];
+                } else {
+                    ql2m_0 = qlmk[m-2*l-1] * (twomz[m] * ql2m_1 + rxy * ql2m_2);
+                }
+
+                pq /= m;
+                auto pql1m_1 = pk[m]*ql1m_2;  // SHIFTED ABOVE
+                auto pql2m_2 = pk[m]*ql2m_2;  
+                auto pql2m_0 = pk[m]*ql2m_0;
+                auto pql1m_0 = pk[m]*ql1m_1;  // SHIFTED ABOVE
+                auto pql2m_1 = pk[m]*ql2m_1;
+
+                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2.0*m*x*pql1m_1*c[m-1] + m*m*pq*c[m-2];
+                dxdxsph_i[m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2.0*m*x*pql1m_1*s[m-1] + m*m*pq*s[m-2];
+                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2.0*m*y*pql1m_1*s[m-1] - m*m*pq*c[m-2];
+                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2.0*m*y*pql1m_1*c[m-1] - m*m*pq*s[m-2];
+                dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
+                dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
+
+                dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*m*pq*s[m-2];
+                dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*m*pq*c[m-2];
+                dxdzsph_i[m] = dzdxsph_i[m] = x*(l+m)*pql2m_1*c[m] + (l+m)*pql1m_0*m*c[m-1];
+                dxdzsph_i[-m] = dzdxsph_i[-m] = x*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*s[m-1];
+                dydzsph_i[m] = dzdysph_i[m] = y*(l+m)*pql2m_1*c[m] - (l+m)*pql1m_0*m*s[m-1];
+                dydzsph_i[-m] = dzdysph_i[-m] = y*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*c[m-1];
+
+                ql2m_2 = ql2m_1; ql2m_1 = ql2m_0; // shift
+            }
         }
     }
 
@@ -310,6 +426,29 @@ static inline void generic_sph_l_channel(int l,
         dxsph_i[0] = pk[0] * x *ql1m_1;
         dysph_i[0] = pk[0] * y *ql1m_1;
         dzsph_i[0] = pk[0] * l *ql1m_0;
+
+        if constexpr (DO_SECOND_DERIVATIVES) {
+            if (l = 2) {
+                ql2m_0 = qlmk[-2*l+1];
+            } else {
+                ql2m_0 = qlmk[-2*l+1] * (twomz[0] * ql2m_1 + rxy * ql2m_2);
+            }
+
+            auto pq = pk[0]*qlm_0;
+            auto pql1m_1 = pk[0]*ql1m_1;
+            auto pql2m_2 = pk[0]*ql2m_2;
+            auto pql2m_0 = pk[0]*ql2m_0;
+            auto pql1m_0 = pk[0]*ql1m_0;
+            auto pql2m_1 = pk[0]*ql2m_1;
+
+            dxdxsph_i[0] = pql1m_1 + x*x*pql2m_2;
+            dydysph_i[0] = pql1m_1 + y*y*pql2m_2;
+            dzdzsph_i[0] = (l)*(l-1)*pql2m_0;
+
+            dxdysph_i[0] = dydxsph_i[0] = x*y*pql2m_2;
+            dxdzsph_i[0] = dzdxsph_i[0] = x*l*pql2m_1;
+            dydzsph_i[0] = dzdysph_i[0] = y*l*pql2m_1;
+        }
     }
 }
 
@@ -326,10 +465,25 @@ static inline void generic_sph_sample(const T *xyz_i,
     T *s,
     T *twomz
 ) {
+    static_assert(!(DO_SECOND_DERIVATIVES && HARDCODED_LMAX > 1), "Hardcoded second derivatives are not implemented for l>1.");
+
     [[maybe_unused]] T ir = 0.0;
+
+    // pointers for first derivatives
     [[maybe_unused]] T* dxsph_i = nullptr;
     [[maybe_unused]] T* dysph_i = nullptr;
     [[maybe_unused]] T* dzsph_i = nullptr;
+
+    // pointers for second derivatives
+    [[maybe_unused]] T* dxdxsph_i = nullptr;
+    [[maybe_unused]] T* dxdysph_i = nullptr;
+    [[maybe_unused]] T* dxdzsph_i = nullptr;
+    [[maybe_unused]] T* dydxsph_i = nullptr;
+    [[maybe_unused]] T* dydysph_i = nullptr;
+    [[maybe_unused]] T* dydzsph_i = nullptr;
+    [[maybe_unused]] T* dzdxsph_i = nullptr;
+    [[maybe_unused]] T* dzdysph_i = nullptr;
+    [[maybe_unused]] T* dzdzsph_i = nullptr;
 
     /* k is a utility index to traverse lm arrays. we store sph in
     a contiguous dimension, with (lm)=[(00)(1-1)(10)(11)(2-2)(2-1)...]
@@ -358,6 +512,22 @@ static inline void generic_sph_sample(const T *xyz_i,
         dxsph_i = dsph_i;
         dysph_i = dxsph_i + size_y;
         dzsph_i = dysph_i + size_y;
+
+        // these are the hard-coded, low-lmax sph
+        HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
+    }
+
+    if constexpr (DO_SECOND_DERIVATIVES) {
+        // set each double derivative pointer to the appropriate place
+        dxdxsph_i = ddsph_i;
+        dxdysph_i = dxdxsph_i + size_y;
+        dxdzsph_i = dxdysph_i + size_y;
+        dydxsph_i = dxdzsph_i + size_y;
+        dydysph_i = dydxsph_i + size_y;
+        dydzsph_i = dydysph_i + size_y;
+        dzdxsph_i = dydzsph_i + size_y;
+        dzdysph_i = dzdxsph_i + size_y;
+        dzdzsph_i = dzdysph_i + size_y;
 
         // these are the hard-coded, low-lmax sph
         HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
@@ -404,6 +574,18 @@ static inline void generic_sph_sample(const T *xyz_i,
         dzsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
     }
 
+    if constexpr (DO_SECOND_DERIVATIVES) {
+        dxdxsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+        dxdysph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+        dxdzsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+        dydxsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+        dydysph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+        dydzsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+        dzdxsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+        dzdysph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+        dzdzsph_i += (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1 + 1);
+    }
+
     auto pk = pylm+k;
     auto qlmk = pqlm+k;
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
@@ -422,16 +604,15 @@ static inline void generic_sph_sample(const T *xyz_i,
             dxsph_i,
             dysph_i,
             dzsph_i,
-
-            dxsph_i,
-            dysph_i,
-            dzsph_i,
-            dxsph_i,
-            dysph_i,
-            dzsph_i,
-            dxsph_i,
-            dysph_i,
-            dzsph_i
+            dxdxsph_i,
+            dxdysph_i,
+            dxdzsph_i,
+            dydxsph_i,
+            dydysph_i,
+            dydzsph_i,
+            dzdxsph_i,
+            dzdysph_i,
+            dzdzsph_i
         );
 
         // shift pointers & indexes to the next l block
@@ -442,6 +623,19 @@ static inline void generic_sph_sample(const T *xyz_i,
             dxsph_i += 2*l + 2;
             dysph_i += 2*l + 2;
             dzsph_i += 2*l + 2;
+        }
+
+
+        if constexpr(DO_SECOND_DERIVATIVES) {
+            dxdxsph_i += 2*l + 2;
+            dxdysph_i += 2*l + 2;
+            dxdzsph_i += 2*l + 2;
+            dydxsph_i += 2*l + 2;
+            dydysph_i += 2*l + 2;
+            dydzsph_i += 2*l + 2;
+            dzdxsph_i += 2*l + 2;
+            dzdysph_i += 2*l + 2;
+            dzdzsph_i += 2*l + 2;
         }
     }
 
@@ -458,6 +652,11 @@ static inline void generic_sph_sample(const T *xyz_i,
             dzsph_i[k] = (dzsph_i[k]-z*tmp)*ir;
         }
     }
+
+    if constexpr(DO_SECOND_DERIVATIVES && NORMALIZED) {
+        // corrects derivatives for normalization TO DOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+    }
+
 }
 
 
@@ -517,6 +716,10 @@ void generic_sph(
             if constexpr (DO_DERIVATIVES) {
                 // updates the pointer to the derivative storage
                 dsph_i = dsph + i_sample * 3 * size_y;
+            }
+            if constexpr (DO_SECOND_DERIVATIVES) {
+                // updates the pointer to the second derivative storage
+                ddsph_i = ddsph + i_sample * 9 * size_y;
             }
 
             generic_sph_sample<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(
