@@ -21,8 +21,10 @@ template<typename DTYPE>
 inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors, DTYPE *xyz, DTYPE *sph, DTYPE *dsph, DTYPE* ddsph, DTYPE* buffers) {
     if (dsph==nullptr) {
         generic_sph<DTYPE, false, false, false, 1>(xyz, sph, dsph, ddsph, n_samples, l_max, prefactors, buffers);
-    } else {
+    } else if (ddsph==nullptr) {
         generic_sph<DTYPE, true, false, false, 1>(xyz, sph, dsph, ddsph, n_samples, l_max, prefactors, buffers);
+    } else {
+        generic_sph<DTYPE, true, true, false, 1>(xyz, sph, dsph, ddsph, n_samples, l_max, prefactors, buffers);
     }
 }
 
@@ -66,21 +68,28 @@ void run_timings(int l_max, int n_tries, int n_samples) {
 
     auto sph = std::vector<DTYPE>(n_samples*(l_max+1)*(l_max+1), 0.0);
     auto dsph = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
+    auto ddsph = std::vector<DTYPE>(n_samples*9*(l_max+1)*(l_max+1), 0.0);
 
     benchmark("Call without derivatives (no hardcoding)", n_samples, n_tries, [&](){
         compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), nullptr, nullptr, buffers);
     });
 
     benchmark("Call with derivatives (no hardcoding)", n_samples, n_tries, [&](){
-        compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), nullptr, dsph.data(), buffers);
+        compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data(), nullptr, buffers);
+    });
+
+    benchmark("Call with second derivatives (no hardcoding)", n_samples, n_tries, [&](){
+        compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data(), ddsph.data(), buffers);
     });
     std::cout << std::endl;
 
     auto sxyz = std::vector<DTYPE>(3, 0.0);
     auto ssph = std::vector<DTYPE>((l_max+1)*(l_max+1), 0.0);
     auto sdsph = std::vector<DTYPE>(3*(l_max+1)*(l_max+1), 0.0);
+    auto sddsph = std::vector<DTYPE>(9*(l_max+1)*(l_max+1), 0.0);
     auto sph1 = std::vector<DTYPE>(n_samples*(l_max+1)*(l_max+1), 0.0);
     auto dsph1 = std::vector<DTYPE>(n_samples*3*(l_max+1)*(l_max+1), 0.0);
+    auto ddsph1 = std::vector<DTYPE>(n_samples*9*(l_max+1)*(l_max+1), 0.0);
 
     {
         SphericalHarmonics<DTYPE> calculator(l_max, false);
@@ -94,15 +103,19 @@ void run_timings(int l_max, int n_tries, int n_samples) {
         benchmark("Sample with derivatives", 1, n_tries, [&](){
             calculator.compute_with_gradients(sxyz, ssph, sdsph);
         });
-
+        benchmark("Sample with second derivatives", 1, n_tries, [&](){
+            calculator.compute_with_hessians(sxyz, ssph, sdsph, sddsph);
+        });
         std::cout << std::endl;
 
         benchmark("Call without derivatives", n_samples, n_tries, [&](){
             calculator.compute(xyz, sph1);
         });
-
         benchmark("Call with derivatives", n_samples, n_tries, [&](){
             calculator.compute_with_gradients(xyz, sph1, dsph1);
+        });
+        benchmark("Call with second derivatives", n_samples, n_tries, [&](){
+            calculator.compute_with_hessians(xyz, sph1, dsph1, ddsph1);
         });
     }
 
@@ -111,9 +124,11 @@ void run_timings(int l_max, int n_tries, int n_samples) {
         benchmark("Call without derivatives (normalized)", n_samples, n_tries, [&](){
             calculator.compute(xyz, sph1);
         });
-
         benchmark("Call with derivatives (normalized)", n_samples, n_tries, [&](){
             calculator.compute_with_gradients(xyz, sph1, dsph1);
+        });
+        benchmark("Call with second derivatives (normalized)", n_samples, n_tries, [&](){
+            calculator.compute_with_hessians(xyz, sph1, dsph1, ddsph1);
         });
     }
     std::cout << std::endl;
