@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
+#include <initializer_list>
 #include "sphericart.hpp"
 
 #define DELTA 1e-4
