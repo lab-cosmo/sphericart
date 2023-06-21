@@ -389,9 +389,9 @@ This uses if constexpr to decide at compile time which macro(s) should be called
     }
 
 #define HARDCODED_SPH_SECOND_DERIVATIVE_MACRO(HARDCODED_LMAX, sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX) \
-    COMPUTE_SPH_DERIVATIVE_L0(sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX);\
+    COMPUTE_SPH_SECOND_DERIVATIVE_L0(sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX);\
     if constexpr (HARDCODED_LMAX > 0) { \
-        COMPUTE_SPH_DERIVATIVE_L1(sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX);\
+        COMPUTE_SPH_SECOND_DERIVATIVE_L1(sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, SPH_IDX);\
     }
 
 #endif

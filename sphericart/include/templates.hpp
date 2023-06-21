@@ -154,16 +154,6 @@ inline void hardcoded_sph_sample(
         T *dzsph_i = dysph_i + size_y;
         HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
 
-        if constexpr(NORMALIZED) {
-            // corrects derivatives for normalization
-            for (int k=0; k<size_y; ++k) {
-                auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
-                dxsph_i[k] = (dxsph_i[k]-x*tmp)*ir;
-                dysph_i[k] = (dysph_i[k]-y*tmp)*ir;
-                dzsph_i[k] = (dzsph_i[k]-z*tmp)*ir;
-            }
-        }
-
         if constexpr (DO_SECOND_DERIVATIVES) {
             // set each double derivative pointer to the appropriate place
             T* dxdxsph_i = ddsph_i;
@@ -175,10 +165,37 @@ inline void hardcoded_sph_sample(
             T* dzdxsph_i = dydzsph_i + size_y;
             T* dzdysph_i = dzdxsph_i + size_y;
             T* dzdzsph_i = dzdysph_i + size_y;
-            HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
+            HARDCODED_SPH_SECOND_DERIVATIVE_MACRO(HARDCODED_LMAX, sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, DUMMY_SPH_IDX);
 
-            // No normalization for the second derivatives: they are always zero for l=0 and l=1, which are the
-            // only hardcoded cases for the moment.
+            if constexpr(NORMALIZED) {
+                for (int k=0; k<size_y; ++k) {
+                    // We loop again over k (and recalculate tmp for the second derivatives) to avoid crazy nesting of these sections.
+                    // The main issue is that if(constexpr) restricts the scope of the double derivative pointers.
+                    // correct second derivatives for normalization. We do it before the first derivatives because we need the unchanged first derivatives
+                    auto irsq = ir*ir;
+                    auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
+                    auto tmpx = x*dxdxsph_i[k] + y*dydxsph_i[k] + z*dzdxsph_i[k];
+                    auto tmpy = x*dxdysph_i[k] + y*dydysph_i[k] + z*dydzsph_i[k];
+                    auto tmpz = x*dxdzsph_i[k] + y*dydzsph_i[k] + z*dzdzsph_i[k];
+                    auto tmp2 = x*x*dxdxsph_i[k] + y*y*dydysph_i[k] + z*z*dzdzsph_i[k] + 2*x*y*dxdysph_i[k] + 2*x*z*dxdzsph_i[k] + 2*y*z*dydzsph_i[k];
+                    dxdxsph_i[k] = (- 2*x*tmpx + dxdxsph_i[k] + 3*x*x*tmp - tmp - 2*x*dxsph_i[k] + x*x*tmp2) * irsq;
+                    dydysph_i[k] = (- 2*y*tmpy + dydysph_i[k] + 3*y*y*tmp - tmp - 2*y*dysph_i[k] + y*y*tmp2) * irsq;
+                    dzdzsph_i[k] = (- 2*z*tmpz + dzdzsph_i[k] + 3*z*z*tmp - tmp - 2*z*dzsph_i[k] + z*z*tmp2) * irsq;
+                    dxdysph_i[k] = dydxsph_i[k] = (- x*tmpy - y*tmpx + dxdysph_i[k] + 3*x*y*tmp - x*dysph_i[k] - y*dxsph_i[k] + x*y*tmp2) * irsq;
+                    dxdzsph_i[k] = dzdxsph_i[k] = (- x*tmpz - z*tmpx + dxdzsph_i[k] + 3*x*z*tmp - x*dzsph_i[k] - z*dxsph_i[k] + x*z*tmp2) * irsq;
+                    dzdysph_i[k] = dydzsph_i[k] = (- z*tmpy - y*tmpz + dzdysph_i[k] + 3*y*z*tmp - z*dysph_i[k] - y*dzsph_i[k] + y*z*tmp2) * irsq;
+                }
+            }
+        }
+
+        if constexpr(NORMALIZED) {
+            // corrects derivatives for normalization
+            for (int k=0; k<size_y; ++k) {
+                auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
+                dxsph_i[k] = (dxsph_i[k]-x*tmp)*ir;
+                dysph_i[k] = (dysph_i[k]-y*tmp)*ir;
+                dzsph_i[k] = (dzsph_i[k]-z*tmp)*ir;
+            }
         }
     }
 }
@@ -226,6 +243,9 @@ void hardcoded_sph(
             sph_i = sph + i_sample * size_y;
             if constexpr (DO_DERIVATIVES) {
                 dsph_i = dsph + i_sample * size_y * 3;
+            }
+            if constexpr (DO_SECOND_DERIVATIVES) {
+                ddsph_i = ddsph + i_sample * size_y * 9;
             }
             hardcoded_sph_sample<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES, NORMALIZED, HARDCODED_LMAX>(xyz_i, sph_i, dsph_i, ddsph_i, HARDCODED_LMAX, size_y);
         }
@@ -746,7 +766,6 @@ static inline void generic_sph_sample(const T *xyz_i,
             auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
 
             if constexpr(DO_SECOND_DERIVATIVES) {
-                ///*
                 // correct second derivatives for normalization. We do it before the first derivatives because we need the unchanged first derivatives
                 auto irsq = ir*ir;
                 auto tmpx = x*dxdxsph_i[k] + y*dydxsph_i[k] + z*dzdxsph_i[k];
@@ -759,7 +778,6 @@ static inline void generic_sph_sample(const T *xyz_i,
                 dxdysph_i[k] = dydxsph_i[k] = (- x*tmpy - y*tmpx + dxdysph_i[k] + 3*x*y*tmp - x*dysph_i[k] - y*dxsph_i[k] + x*y*tmp2) * irsq;
                 dxdzsph_i[k] = dzdxsph_i[k] = (- x*tmpz - z*tmpx + dxdzsph_i[k] + 3*x*z*tmp - x*dzsph_i[k] - z*dxsph_i[k] + x*z*tmp2) * irsq;
                 dzdysph_i[k] = dydzsph_i[k] = (- z*tmpy - y*tmpz + dzdysph_i[k] + 3*y*z*tmp - z*dysph_i[k] - y*dzsph_i[k] + y*z*tmp2) * irsq;
-                //*/
             }
 
             dxsph_i[k] = (dxsph_i[k]-x*tmp)*ir;
