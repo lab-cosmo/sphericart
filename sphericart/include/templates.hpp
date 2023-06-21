@@ -729,16 +729,43 @@ static inline void generic_sph_sample(const T *xyz_i,
         dysph_i = dxsph_i + size_y;
         dzsph_i = dysph_i + size_y;
 
+        if constexpr(DO_SECOND_DERIVATIVES) {
+            // set each second derivative pointer to the appropriate place
+            dxdxsph_i = ddsph_i;
+            dxdysph_i = dxdxsph_i + size_y;
+            dxdzsph_i = dxdysph_i + size_y;
+            dydxsph_i = dxdzsph_i + size_y;
+            dydysph_i = dydxsph_i + size_y;
+            dydzsph_i = dydysph_i + size_y;
+            dzdxsph_i = dydzsph_i + size_y;
+            dzdysph_i = dzdxsph_i + size_y;
+            dzdzsph_i = dzdysph_i + size_y;
+        }
+
         for (k=0; k<size_y; ++k) {
             auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
+
+            if constexpr(DO_SECOND_DERIVATIVES) {
+                ///*
+                // correct second derivatives for normalization. We do it before the first derivatives because we need the unchanged first derivatives
+                auto irsq = ir*ir;
+                auto tmpx = x*dxdxsph_i[k] + y*dydxsph_i[k] + z*dzdxsph_i[k];
+                auto tmpy = x*dxdysph_i[k] + y*dydysph_i[k] + z*dydzsph_i[k];
+                auto tmpz = x*dxdzsph_i[k] + y*dydzsph_i[k] + z*dzdzsph_i[k];
+                auto tmp2 = x*x*dxdxsph_i[k] + y*y*dydysph_i[k] + z*z*dzdzsph_i[k] + 2*x*y*dxdysph_i[k] + 2*x*z*dxdzsph_i[k] + 2*y*z*dydzsph_i[k];
+                dxdxsph_i[k] = (- 2*x*tmpx + dxdxsph_i[k] + 3*x*x*tmp - tmp - 2*x*dxsph_i[k] + x*x*tmp2) * irsq;
+                dydysph_i[k] = (- 2*y*tmpy + dydysph_i[k] + 3*y*y*tmp - tmp - 2*y*dysph_i[k] + y*y*tmp2) * irsq;
+                dzdzsph_i[k] = (- 2*z*tmpz + dzdzsph_i[k] + 3*z*z*tmp - tmp - 2*z*dzsph_i[k] + z*z*tmp2) * irsq;
+                dxdysph_i[k] = dydxsph_i[k] = (- x*tmpy - y*tmpx + dxdysph_i[k] + 3*x*y*tmp - x*dysph_i[k] - y*dxsph_i[k] + x*y*tmp2) * irsq;
+                dxdzsph_i[k] = dzdxsph_i[k] = (- x*tmpz - z*tmpx + dxdzsph_i[k] + 3*x*z*tmp - x*dzsph_i[k] - z*dxsph_i[k] + x*z*tmp2) * irsq;
+                dzdysph_i[k] = dydzsph_i[k] = (- z*tmpy - y*tmpz + dzdysph_i[k] + 3*y*z*tmp - z*dysph_i[k] - y*dzsph_i[k] + y*z*tmp2) * irsq;
+                //*/
+            }
+
             dxsph_i[k] = (dxsph_i[k]-x*tmp)*ir;
             dysph_i[k] = (dysph_i[k]-y*tmp)*ir;
             dzsph_i[k] = (dzsph_i[k]-z*tmp)*ir;
         }
-    }
-
-    if constexpr(DO_SECOND_DERIVATIVES && NORMALIZED) {
-        // corrects derivatives for normalization TO DOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
     }
 
 }
