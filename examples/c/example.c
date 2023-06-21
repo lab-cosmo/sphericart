@@ -27,6 +27,9 @@ int main(int argc, char *argv[]) {
     size_t dsph_size = n_samples * 3 * (l_max + 1) * (l_max + 1);
     double *dsph = malloc(dsph_size * sizeof(double));
 
+    size_t ddsph_size = n_samples * 9 * (l_max + 1) * (l_max + 1);
+    double *ddsph = malloc(ddsph_size * sizeof(double));
+
     // float versions
     float *xyz_f = malloc(n_samples * 3 * sizeof(float));
     for (size_t i=0; i<n_samples*3; ++i) {
@@ -34,6 +37,7 @@ int main(int argc, char *argv[]) {
     }
     float *sph_f = malloc(sph_size * sizeof(float));
     float *dsph_f = malloc(dsph_size * sizeof(float));
+    float *ddsph_f = malloc(ddsph_size * sizeof(float));
 
     /* ===== API calls ===== */
 
@@ -45,10 +49,13 @@ int main(int argc, char *argv[]) {
     sphericart_compute_array(calculator, xyz, 3 * n_samples, sph, sph_size);
     // with derivatives
     sphericart_compute_array_with_gradients(calculator, xyz, 3 * n_samples, sph, sph_size, dsph, dsph_size);
+    // with second derivatives
+    sphericart_compute_array_with_hessians(calculator, xyz, 3 * n_samples, sph, sph_size, dsph, dsph_size, ddsph, ddsph_size);
 
-    // per-sample calculation - we reuse the same arrays, but only the first item is computed
+    // per-sample calculation - we reuse the same arrays for simplicity, but only the first item is computed
     sphericart_compute_sample(calculator, xyz, 3, sph, sph_size);
     sphericart_compute_sample_with_gradients(calculator, xyz, 3, sph, sph_size, dsph, dsph_size);
+    sphericart_compute_sample_with_hessians(calculator, xyz, 3, sph, sph_size, dsph, dsph_size, ddsph, ddsph_size);
 
     // float version
     sphericart_calculator_f_t* calculator_f = sphericart_new_f(l_max, 0);

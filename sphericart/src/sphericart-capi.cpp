@@ -61,6 +61,30 @@ extern "C" void sphericart_compute_array_with_gradients(
     }
 }
 
+extern "C" void sphericart_compute_array_with_hessians(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length,
+    double* ddsph,
+    size_t ddsph_length
+) {
+    try {
+        calculator->compute_array_with_hessians(xyz, xyz_length, sph, 
+                    sph_length, dsph, dsph_length, ddsph, ddsph_length);        
+    } catch (const std::exception& e) {
+        // TODO: better error handling
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
 extern "C" void sphericart_compute_sample(
     sphericart_calculator_t* calculator,
     const double* xyz,
@@ -92,6 +116,30 @@ extern "C" void sphericart_compute_sample_with_gradients(
     try {
         calculator->compute_sample_with_gradients(xyz, xyz_length, sph, 
                     sph_length, dsph, dsph_length);        
+    } catch (const std::exception& e) {
+        // TODO: better error handling
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
+extern "C" void sphericart_compute_sample_with_hessians(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length,
+    double* ddsph,
+    size_t ddsph_length
+) {
+    try {
+        calculator->compute_sample_with_hessians(xyz, xyz_length, sph, 
+                    sph_length, dsph, dsph_length, ddsph, ddsph_length);        
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
@@ -160,6 +208,30 @@ extern "C" void sphericart_compute_array_with_gradients_f(
     }
 }
 
+extern "C" void sphericart_compute_array_with_hessians_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length,
+    float* ddsph,
+    size_t ddsph_length
+) {
+    try {
+        calculator->compute_array_with_hessians(xyz, xyz_length, sph, 
+                    sph_length, dsph, dsph_length, ddsph, ddsph_length);
+    } catch (const std::exception& e) {
+        // TODO: better error handling
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
 extern "C" void sphericart_compute_sample_f(
     sphericart_calculator_f_t* calculator,
     const float* xyz,
@@ -191,6 +263,30 @@ extern "C" void sphericart_compute_sample_with_gradients_f(
     try {
         calculator->compute_sample_with_gradients(xyz, xyz_length, sph, 
                     sph_length, dsph, dsph_length);
+    } catch (const std::exception& e) {
+        // TODO: better error handling
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
+extern "C" void sphericart_compute_sample_with_hessians_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length,
+    float* ddsph,
+    size_t ddsph_length
+) {
+    try {
+        calculator->compute_sample_with_hessians(xyz, xyz_length, sph, 
+                    sph_length, dsph, dsph_length, ddsph, ddsph_length);
     } catch (const std::exception& e) {
         // TODO: better error handling
         printf("fatal error: %s\n", e.what());
