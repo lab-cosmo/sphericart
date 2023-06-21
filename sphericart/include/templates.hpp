@@ -305,8 +305,6 @@ static inline void generic_sph_l_channel(int l,
     [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
     [[maybe_unused]] T ql2m_2, ql2m_1, ql2m_0;
 
-    if (DO_SECOND_DERIVATIVES) std::cout << "Called function " << DO_SECOND_DERIVATIVES << std::endl;
-
     // m=+-l
     qlm_2 = qlmk[l]; // fetches the pre-computed Qll
     auto pq = qlm_2 * pk[l];
@@ -323,7 +321,7 @@ static inline void generic_sph_l_channel(int l,
         ql1m_2 = 0;
 
         if constexpr (DO_SECOND_DERIVATIVES) {
-            pq *= l;
+            pq *= (l-1);
             dxdxsph_i[l] = pq*c[l-2];
             dxdxsph_i[-l] = pq*s[l-2];
             dxdysph_i[l] = dydxsph_i[l] = dydysph_i[-l] = -dxdxsph_i[-l];
@@ -357,12 +355,17 @@ static inline void generic_sph_l_channel(int l,
         dzsph_i[l - 1] = pdq * c[l - 1];
 
         if constexpr (DO_SECOND_DERIVATIVES) {
-            pq*=(l-1);
-            dxdxsph_i[l-1] = pq*c[l-2];
-            dxdxsph_i[-l+1] = pq*s[l-2];
+            pq*=(l-2);
+            if (l == 2) {
+                dxdxsph_i[l-1] = 0;
+                dxdxsph_i[-l+1] = 0;
+            } else {
+                dxdxsph_i[l-1] = pq*c[l-3];
+                dxdxsph_i[-l+1] = pq*s[l-3];
+            }
             dxdysph_i[l-1] = dydxsph_i[l-1] = dydysph_i[-l+1] = -dxdxsph_i[-l+1];
             dxdysph_i[-l+1] = dydxsph_i[-l+1] = dxdxsph_i[l-1];
-            auto temp = -pk[l-1]*qlm_2;  // this is p[l-1]*q[l-1][l-1]*(2*l-1)*(l-1)
+            auto temp = -pk[l-1]*(l-1)*qlm_2;  // this is p[l-1]*q[l-1][l-1]*(2*l-1)*(l-1) = p[l-1]*(l-1)*Q_ll
             dxdzsph_i[l-1] = dzdxsph_i[l-1] = temp*c[l-2];
             dxdzsph_i[-l+1] = dzdxsph_i[-l+1] = temp*s[l-2];
             dydysph_i[l-1] = -dxdxsph_i[l-1];
@@ -403,7 +406,7 @@ static inline void generic_sph_l_channel(int l,
                 if (m == l-2)  {
                     ql2m_0 = qlmk[-l-1];
                 } else {
-                    ql2m_0 = qlmk[m-2*l-1] * (twomz[m] * ql2m_1 + rxy * ql2m_2);
+                    ql2m_0 = qlmk[m-2*l+1] * (twomz[m] * ql2m_1 + rxy * ql2m_2);
                 }
 
                 pq /= m;
@@ -413,15 +416,15 @@ static inline void generic_sph_l_channel(int l,
                 auto pql1m_0 = pk[m]*ql1m_1;  // SHIFTED ABOVE
                 auto pql2m_1 = pk[m]*ql2m_1;
 
-                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2.0*m*x*pql1m_1*c[m-1] + m*m*pq*c[m-2];
-                dxdxsph_i[m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2.0*m*x*pql1m_1*s[m-1] + m*m*pq*s[m-2];
-                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2.0*m*y*pql1m_1*s[m-1] - m*m*pq*c[m-2];
-                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2.0*m*y*pql1m_1*c[m-1] - m*m*pq*s[m-2];
+                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2.0*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
+                dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2.0*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
+                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2.0*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
+                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2.0*m*y*pql1m_1*c[m-1] - m*(m-1)*pq*s[m-2];
                 dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
                 dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
 
-                dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*m*pq*s[m-2];
-                dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*m*pq*c[m-2];
+                dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*(m-1)*pq*s[m-2];
+                dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*(m-1)*pq*c[m-2];
                 dxdzsph_i[m] = dzdxsph_i[m] = x*(l+m)*pql2m_1*c[m] + (l+m)*pql1m_0*m*c[m-1];
                 dxdzsph_i[-m] = dzdxsph_i[-m] = x*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*s[m-1];
                 dydzsph_i[m] = dzdysph_i[m] = y*(l+m)*pql2m_1*c[m] - (l+m)*pql1m_0*m*s[m-1];
@@ -460,7 +463,7 @@ static inline void generic_sph_l_channel(int l,
                 if (m == l-2)  {
                     ql2m_0 = qlmk[-l-1];
                 } else {
-                    ql2m_0 = qlmk[m-2*l-1] * (twomz[m] * ql2m_1 + rxy * ql2m_2);
+                    ql2m_0 = qlmk[m-2*l+1] * (twomz[m] * ql2m_1 + rxy * ql2m_2);
                 }
 
                 pq /= m;
@@ -470,15 +473,15 @@ static inline void generic_sph_l_channel(int l,
                 auto pql1m_0 = pk[m]*ql1m_1;  // SHIFTED ABOVE
                 auto pql2m_1 = pk[m]*ql2m_1;
 
-                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2.0*m*x*pql1m_1*c[m-1] + m*m*pq*c[m-2];
-                dxdxsph_i[m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2.0*m*x*pql1m_1*s[m-1] + m*m*pq*s[m-2];
-                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2.0*m*y*pql1m_1*s[m-1] - m*m*pq*c[m-2];
-                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2.0*m*y*pql1m_1*c[m-1] - m*m*pq*s[m-2];
+                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2.0*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
+                dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2.0*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
+                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2.0*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
+                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2.0*m*y*pql1m_1*c[m-1] - m*(m-1)*pq*s[m-2];
                 dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
                 dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
 
-                dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*m*pq*s[m-2];
-                dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*m*pq*c[m-2];
+                dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*(m-1)*pq*s[m-2];
+                dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*(m-1)*pq*c[m-2];
                 dxdzsph_i[m] = dzdxsph_i[m] = x*(l+m)*pql2m_1*c[m] + (l+m)*pql1m_0*m*c[m-1];
                 dxdzsph_i[-m] = dzdxsph_i[-m] = x*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*s[m-1];
                 dydzsph_i[m] = dzdysph_i[m] = y*(l+m)*pql2m_1*c[m] - (l+m)*pql1m_0*m*s[m-1];
@@ -501,7 +504,7 @@ static inline void generic_sph_l_channel(int l,
         dzsph_i[0] = pk[0] * l *ql1m_0;
 
         if constexpr (DO_SECOND_DERIVATIVES) {
-            if (l = 2) {
+            if (l == 2) {
                 ql2m_0 = qlmk[-2*l+1];
             } else {
                 ql2m_0 = qlmk[-2*l+1] * (twomz[0] * ql2m_1 + rxy * ql2m_2);
