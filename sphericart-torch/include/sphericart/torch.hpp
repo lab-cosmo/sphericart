@@ -10,6 +10,7 @@
 namespace sphericart_torch {
 
 class SphericalHarmonicsAutograd;
+class SphericalHarmonicsAutogradBackward;
 
 class CudaSharedMemorySettings {
 public:
@@ -26,14 +27,18 @@ private:
 
 class SphericalHarmonics: public torch::CustomClassHolder {
 public:
-    SphericalHarmonics(int64_t l_max, bool normalized=false);
+    SphericalHarmonics(int64_t l_max, bool normalized=false, bool backward_second_derivatives=false);
 
     // Actual calculation, with autograd support
     torch::Tensor compute(torch::Tensor xyz);
     std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz);
+    std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz);
 
     int64_t get_l_max() const {
         return this->l_max_;
+    }
+    bool get_backward_second_derivative_flag() const {
+        return this->backward_second_derivatives_;
     }
     bool get_normalized_flag() const {
         return this->normalized_;
@@ -46,10 +51,11 @@ private:
     friend class SphericalHarmonicsAutograd;
 
     // Raw calculation, without autograd support, running on CPU
-    std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients);
+    std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients, bool do_hessians);
 
     int64_t omp_num_threads_;
     int64_t l_max_;
+    bool backward_second_derivatives_;
     bool normalized_;
 
     // CPU implementation

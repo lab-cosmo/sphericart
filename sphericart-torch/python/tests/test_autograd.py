@@ -13,7 +13,9 @@ def xyz():
 
 
 def test_autograd_cartesian(xyz):
-    calculator = sphericart.torch.SphericalHarmonics(l_max=4, normalized=False)
+    calculator = sphericart.torch.SphericalHarmonics(
+        l_max=4, normalized=False, backward_second_derivatives=True
+    )
 
     def compute(xyz):
         sph = calculator.compute(xyz=xyz)
@@ -21,6 +23,7 @@ def test_autograd_cartesian(xyz):
         return sph
 
     assert torch.autograd.gradcheck(compute, xyz, fast_mode=True)
+    assert torch.autograd.gradgradcheck(compute, xyz, fast_mode=True)
 
     if torch.cuda.is_available():
         xyz = xyz.to(device="cuda")
@@ -28,7 +31,9 @@ def test_autograd_cartesian(xyz):
 
 
 def test_autograd_normalized(xyz):
-    calculator = sphericart.torch.SphericalHarmonics(l_max=4, normalized=True)
+    calculator = sphericart.torch.SphericalHarmonics(
+        l_max=4, normalized=True, backward_second_derivatives=True
+    )
 
     def compute(xyz):
         sph = calculator.compute(xyz=xyz)
@@ -36,6 +41,7 @@ def test_autograd_normalized(xyz):
         return sph
 
     assert torch.autograd.gradcheck(compute, xyz, fast_mode=True)
+    assert torch.autograd.gradgradcheck(compute, xyz, fast_mode=True)
 
     if torch.cuda.is_available():
         xyz = xyz.to(device="cuda")

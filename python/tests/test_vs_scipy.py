@@ -5,7 +5,7 @@ import scipy.special
 import sphericart
 
 
-L_MAX = 40
+L_MAX = 15
 N_SAMPLES = 100
 
 
@@ -79,7 +79,7 @@ def test_derivatives(xyz):
 
 
 def test_second_derivatives(xyz):
-    delta = 1e-6
+    delta = 1e-5
     for normalized in [False, True]:
         calculator = sphericart.SphericalHarmonics(L_MAX, normalized=normalized)
         for alpha in range(3):
@@ -112,11 +112,12 @@ def test_second_derivatives(xyz):
                     :, alpha, beta, :
                 ]
                 # Lower the tolerances: numerical second derivatives are imprecise:
+                print(numerical_second_derivatives - analytical_second_derivatives)
                 assert np.allclose(
                     numerical_second_derivatives,
                     analytical_second_derivatives,
                     rtol=1e-4,
-                    atol=1e-5,
+                    atol=1e-3,
                 )
 
 

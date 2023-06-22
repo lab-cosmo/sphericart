@@ -109,10 +109,17 @@ class SphericalHarmonics:
     :return: a calculator, in the form of a SphericalHarmonics object
     """
 
-    def __new__(cls, l_max, normalized=False):
-        return torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
+    def __new__(cls, l_max, normalized=False, backward_second_derivatives=False):
+        return torch.classes.sphericart_torch.SphericalHarmonics(
+            l_max, normalized, backward_second_derivatives
+        )
 
-    def __init__(self, l_max: int, normalized: bool = False):
+    def __init__(
+        self,
+        l_max: int,
+        normalized: bool = False,
+        backward_second_derivatives: bool = False,
+    ):
         pass
 
     def compute(self, xyz: Tensor) -> Tensor:
