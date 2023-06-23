@@ -23,7 +23,6 @@ class cmake_ext(build_ext):
 
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
-            "-DSPHERICART_JAX_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
         ]

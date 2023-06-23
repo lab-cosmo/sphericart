@@ -29,17 +29,12 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 add_subdirectory(sphericart EXCLUDE_FROM_ALL)
 
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # CPU op library
 pybind11_add_module(cpu_ops ${CMAKE_CURRENT_LIST_DIR}/src/jax.cpp)
 install(TARGETS cpu_ops DESTINATION sphericart_jax)
 
-# add_library(sphericart_jax SHARED
-#     "include/sphericart/kernel_helpers.h"
-#     "include/sphericart/pybind11_kernel_helpers.h"
-#     "src/jax.cpp"
-# )
 
 
 target_link_libraries(cpu_ops PUBLIC sphericart)
