@@ -220,7 +220,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
         if (do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_)) {
-            throw std::runtime_error("Second derivatives are not yet implemented in CUDA")
+            throw std::runtime_error("Second derivatives are not yet implemented in CUDA");
         }
 
         // re-do the shared memory update in case `requires_grad` changed        
