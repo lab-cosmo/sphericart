@@ -73,11 +73,9 @@ void run_timings(int l_max, int n_tries, int n_samples) {
     benchmark("Call without derivatives (no hardcoding)", n_samples, n_tries, [&](){
         compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), nullptr, nullptr, buffers);
     });
-
     benchmark("Call with derivatives (no hardcoding)", n_samples, n_tries, [&](){
         compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data(), nullptr, buffers);
     });
-
     benchmark("Call with second derivatives (no hardcoding)", n_samples, n_tries, [&](){
         compute_generic<DTYPE>(n_samples, l_max, prefactors.data(), xyz.data(), sph.data(), dsph.data(), ddsph.data(), buffers);
     });
@@ -114,6 +112,8 @@ void run_timings(int l_max, int n_tries, int n_samples) {
         benchmark("Call with derivatives", n_samples, n_tries, [&](){
             calculator.compute_with_gradients(xyz, sph1, dsph1);
         });
+        // Note that the second derivatives are not hardcoded past l=1,
+        // hence this is equivalent to the first call
         benchmark("Call with second derivatives", n_samples, n_tries, [&](){
             calculator.compute_with_hessians(xyz, sph1, dsph1, ddsph1);
         });
@@ -127,6 +127,8 @@ void run_timings(int l_max, int n_tries, int n_samples) {
         benchmark("Call with derivatives (normalized)", n_samples, n_tries, [&](){
             calculator.compute_with_gradients(xyz, sph1, dsph1);
         });
+        // Note that the second derivatives are not hardcoded past l=1,
+        // hence this is equivalent to the first call
         benchmark("Call with second derivatives (normalized)", n_samples, n_tries, [&](){
             calculator.compute_with_hessians(xyz, sph1, dsph1, ddsph1);
         });

@@ -12,7 +12,6 @@
 
 #include <vector>
 #include <cmath>
-#include <iostream>
 
 #ifdef _OPENMP
 
@@ -111,6 +110,7 @@ inline void hardcoded_sph_sample(
     Template parameters:
     typename T: float type (e.g. single/double precision)
     bool DO_DERIVATIVES: should se evaluate the derivatives?
+    bool DO_SECOND_DERIVATIVES: should se evaluate the second derivatives?
     bool NORMALIZED: should we normalize the input positions?
     int HARDCODED_LMAX: which lmax value will be computed
 
@@ -123,6 +123,9 @@ inline void hardcoded_sph_sample(
     T *sph_i: pointer to the storage location for the Ylm (stored as l,m= (0,0),(1,-1),(1,0),(1,1),...
     [[maybe_unused]] T *dsph_i : pointer to the storage location for the dYlm/dx,dy,dz. 
                     stored as for sph_i, with three consecutive blocks associated to d/dx,d/dy,d/dz 
+    [[maybe_unused]] T *ddsph_i : pointer to the storage location for the second derivatives. 
+                    stored as for sph_i, with nine consecutive blocks associated to the nine second
+                    derivative combinations
     [[maybe_unused]] int size_y: size of storage for the y, (HARDCODED_LMAX+1)**2
     
     ALL XXX_dummy variables are defined to match the interface of generic_sph_sample and are ignored
@@ -155,7 +158,7 @@ inline void hardcoded_sph_sample(
         HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
 
         if constexpr (DO_SECOND_DERIVATIVES) {
-            // set each double derivative pointer to the appropriate place
+            // set each second derivative pointer to the appropriate place
             T* dxdxsph_i = ddsph_i;
             T* dxdysph_i = dxdxsph_i + size_y;
             T* dxdzsph_i = dxdysph_i + size_y;
@@ -171,6 +174,7 @@ inline void hardcoded_sph_sample(
                 for (int k=0; k<size_y; ++k) {
                     // We loop again over k (and recalculate tmp for the second derivatives) to avoid crazy nesting of these sections.
                     // The main issue is that if(constexpr) restricts the scope of the double derivative pointers.
+
                     // correct second derivatives for normalization. We do it before the first derivatives because we need the unchanged first derivatives
                     auto irsq = ir*ir;
                     auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
@@ -222,6 +226,9 @@ void hardcoded_sph(
         T *sph: pointer to the storage location for the Ylm (stored as l,m= (0,0),(1,-1),(1,0),(1,1),...
         [[maybe_unused]] T *dsph : pointer to the storage location for the dYlm/dx,dy,dz. 
                         stored as for sph_i, with three consecutive blocks associated to d/dx,d/dy,d/dz 
+        [[maybe_unused]] T *ddsph : pointer to the storage location for the second derivatives. 
+                        stored as for sph_i, with nine consecutive blocks associated to the nine possible
+                        second derivative combinations 
         int n_samples: number of samples that have to be computed
 
     */
@@ -310,17 +317,15 @@ static inline void generic_sph_l_channel(int l,
     c,s: the c_k and s_k cos-like and sin-like terms combined with the Qlm to compute Ylm
     twomz: 2*m*z, these are also computed once and reused for all l
     sph_i, d[x,y,z]sph_i: storage locations of the output arrays for Ylm and dYlm/d[x,y,z]
-
+    d[x,y,z]d[x,y,z]sph_i: storage locations of the output arrays for the second derivatives
 
     */
+    static_assert(!(DO_SECOND_DERIVATIVES && !DO_DERIVATIVES), "Cannot calculate second derivatives without first derivatives");
+
     // working space for the recursive evaluation of Qlm and Q(l-1)m. 
     // qlm_[0,1,2] correspond to the current Qlm, Ql(m+1) and Ql(m+2), and the 
     // ql1m_[0,1,2] hold the same but for l-1
-    // and ql2m_[0,1,2] the same but for l-2
-    
-    static_assert(!(DO_SECOND_DERIVATIVES && !DO_DERIVATIVES), "Cannot calculate second derivatives without first derivatives");
-
-    // working space for the recursive evaluation of Qlm, Q(l-1)m, Q(l-2)m
+    // ql2m_[0,1,2] hold the same but for l-2
     [[maybe_unused]] T qlm_2, qlm_1, qlm_0;
     [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
     [[maybe_unused]] T ql2m_2, ql2m_1, ql2m_0;
@@ -376,7 +381,7 @@ static inline void generic_sph_l_channel(int l,
 
         if constexpr (DO_SECOND_DERIVATIVES) {
             pq*=(l-2);
-            if (l == 2) {
+            if (l == 2) {  // this is a special case for second derivatives
                 dxdxsph_i[l-1] = 0;
                 dxdxsph_i[-l+1] = 0;
             } else {
@@ -424,18 +429,21 @@ static inline void generic_sph_l_channel(int l,
 
             if constexpr (DO_SECOND_DERIVATIVES) {
                 if (m == l-2)  {
+                    // In this case, the recursion still needs to be initialized using Q(l-2)(l-2)
                     ql2m_0 = qlmk[-l-1];
                 } else {
+                    // Recursion
                     ql2m_0 = qlmk[m-2*l+1] * (twomz[m] * ql2m_1 + rxy * ql2m_2);
                 }
 
                 pq /= m;
-                auto pql1m_1 = pk[m]*ql1m_2;  // SHIFTED ABOVE
+                auto pql1m_1 = pk[m]*ql1m_2;  // Note the index discrepancy: ql1m_1 was already shifted above to ql1m_2 
                 auto pql2m_2 = pk[m]*ql2m_2;  
                 auto pql2m_0 = pk[m]*ql2m_0;
-                auto pql1m_0 = pk[m]*ql1m_1;  // SHIFTED ABOVE
+                auto pql1m_0 = pk[m]*ql1m_1;  // Note the index discrepancy: ql1m_0 was already shifted above to ql1m_1
                 auto pql2m_1 = pk[m]*ql2m_1;
 
+                // Diagonal hessian terms
                 dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
                 dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
                 dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
@@ -443,6 +451,7 @@ static inline void generic_sph_l_channel(int l,
                 dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
                 dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
 
+                // Off-diagonal terms. Note that these are symmetric
                 dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*(m-1)*pq*s[m-2];
                 dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*(m-1)*pq*c[m-2];
                 dxdzsph_i[m] = dzdxsph_i[m] = x*(l+m)*pql2m_1*c[m] + (l+m)*pql1m_0*m*c[m-1];
@@ -450,7 +459,7 @@ static inline void generic_sph_l_channel(int l,
                 dydzsph_i[m] = dzdysph_i[m] = y*(l+m)*pql2m_1*c[m] - (l+m)*pql1m_0*m*s[m-1];
                 dydzsph_i[-m] = dzdysph_i[-m] = y*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*c[m-1];
 
-                ql2m_2 = ql2m_1; ql2m_1 = ql2m_0; // shift
+                ql2m_2 = ql2m_1; ql2m_1 = ql2m_0; // shift at the end because we need all three at the same time
             }
         }
     }
@@ -481,18 +490,21 @@ static inline void generic_sph_l_channel(int l,
 
             if constexpr (DO_SECOND_DERIVATIVES) {
                 if (m == l-2)  {
+                    // In this case, the recursion still needs to be initialized using Q(l-2)(l-2)
                     ql2m_0 = qlmk[-l-1];
                 } else {
+                    // Recursion
                     ql2m_0 = qlmk[m-2*l+1] * (twomz[m] * ql2m_1 + rxy * ql2m_2);
                 }
 
                 pq /= m;
-                auto pql1m_1 = pk[m]*ql1m_2;  // SHIFTED ABOVE
+                auto pql1m_1 = pk[m]*ql1m_2;  // Note the index discrepancy: ql1m_1 was already shifted above to ql1m_2 
                 auto pql2m_2 = pk[m]*ql2m_2;  
                 auto pql2m_0 = pk[m]*ql2m_0;
-                auto pql1m_0 = pk[m]*ql1m_1;  // SHIFTED ABOVE
+                auto pql1m_0 = pk[m]*ql1m_1;  // Note the index discrepancy: ql1m_0 was already shifted above to ql1m_1
                 auto pql2m_1 = pk[m]*ql2m_1;
 
+                // Diagonal hessian terms
                 dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
                 dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
                 dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
@@ -500,6 +512,7 @@ static inline void generic_sph_l_channel(int l,
                 dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
                 dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
 
+                // Off-diagonal terms. Note that these are symmetric
                 dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*(m-1)*pq*s[m-2];
                 dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*(m-1)*pq*c[m-2];
                 dxdzsph_i[m] = dzdxsph_i[m] = x*(l+m)*pql2m_1*c[m] + (l+m)*pql1m_0*m*c[m-1];
@@ -507,7 +520,7 @@ static inline void generic_sph_l_channel(int l,
                 dydzsph_i[m] = dzdysph_i[m] = y*(l+m)*pql2m_1*c[m] - (l+m)*pql1m_0*m*s[m-1];
                 dydzsph_i[-m] = dzdysph_i[-m] = y*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*c[m-1];
 
-                ql2m_2 = ql2m_1; ql2m_1 = ql2m_0; // shift
+                ql2m_2 = ql2m_1; ql2m_1 = ql2m_0; // shift at the end because we need all three at the same time
             }
         }
     }
@@ -525,6 +538,7 @@ static inline void generic_sph_l_channel(int l,
 
         if constexpr (DO_SECOND_DERIVATIVES) {
             if (l == 2) {
+                // special case: recursion is not initialized yet
                 ql2m_0 = qlmk[-2*l+1];
             } else {
                 ql2m_0 = qlmk[-2*l+1] * (twomz[0] * ql2m_1 + rxy * ql2m_2);
@@ -535,10 +549,12 @@ static inline void generic_sph_l_channel(int l,
             auto pql2m_0 = pk[0]*ql2m_0;
             auto pql2m_1 = pk[0]*ql2m_1;
 
+            // diagonal
             dxdxsph_i[0] = pql1m_1 + x*x*pql2m_2;
             dydysph_i[0] = pql1m_1 + y*y*pql2m_2;
             dzdzsph_i[0] = (l)*(l-1)*pql2m_0;
 
+            // off-diagonal (symmetric)
             dxdysph_i[0] = dydxsph_i[0] = x*y*pql2m_2;
             dxdzsph_i[0] = dzdxsph_i[0] = x*l*pql2m_1;
             dydzsph_i[0] = dzdysph_i[0] = y*l*pql2m_1;
@@ -572,6 +588,7 @@ static inline void generic_sph_sample(const T *xyz_i,
 
     [[maybe_unused]] T ir = 0.0;  // storage for computing 1/r, which is reused when NORMALIZED=true
 
+    // pointers for first derivatives
     [[maybe_unused]] T* dxsph_i = nullptr;
     [[maybe_unused]] T* dysph_i = nullptr;
     [[maybe_unused]] T* dzsph_i = nullptr;
@@ -615,7 +632,7 @@ static inline void generic_sph_sample(const T *xyz_i,
         dysph_i = dxsph_i + size_y;
         dzsph_i = dysph_i + size_y;
 
-        // these are the hard-coded, low-lmax sph
+        // these are the hard-coded, low-lmax dsph
         HARDCODED_SPH_DERIVATIVE_MACRO(HARDCODED_LMAX, x, y, z, x2, y2, z2, sph_i, dxsph_i, dysph_i, dzsph_i, DUMMY_SPH_IDX);
     }
 
@@ -631,7 +648,7 @@ static inline void generic_sph_sample(const T *xyz_i,
         dzdysph_i = dzdxsph_i + size_y;
         dzdzsph_i = dzdysph_i + size_y;
 
-        // these are the hard-coded, low-lmax sph
+        // these are the hard-coded, low-lmax ddsph
         HARDCODED_SPH_SECOND_DERIVATIVE_MACRO(HARDCODED_LMAX, sph_i, dxdxsph_i, dxdysph_i, dxdzsph_i, dydxsph_i, dydysph_i, dydzsph_i, dzdxsph_i, dzdysph_i, dzdzsph_i, DUMMY_SPH_IDX);
     }
 
@@ -727,7 +744,6 @@ static inline void generic_sph_sample(const T *xyz_i,
             dzsph_i += 2*l + 2;
         }
 
-
         if constexpr(DO_SECOND_DERIVATIVES) {
             dxdxsph_i += 2*l + 2;
             dxdysph_i += 2*l + 2;
@@ -764,7 +780,8 @@ static inline void generic_sph_sample(const T *xyz_i,
             auto tmp = (dxsph_i[k]*x+dysph_i[k]*y+dzsph_i[k]*z);
 
             if constexpr(DO_SECOND_DERIVATIVES) {
-                // correct second derivatives for normalization. We do it before the first derivatives because we need the unchanged first derivatives
+                // correct second derivatives for normalization.
+                // We do it before the first derivatives because we need the first derivatives in their non-normalized form
                 auto irsq = ir*ir;
                 auto tmpx = x*dxdxsph_i[k] + y*dydxsph_i[k] + z*dzdxsph_i[k];
                 auto tmpy = x*dxdysph_i[k] + y*dydysph_i[k] + z*dydzsph_i[k];
@@ -778,6 +795,7 @@ static inline void generic_sph_sample(const T *xyz_i,
                 dzdysph_i[k] = dydzsph_i[k] = (- z*tmpy - y*tmpz + dzdysph_i[k] + 3*y*z*tmp - z*dysph_i[k] - y*dzsph_i[k] + y*z*tmp2) * irsq;
             }
 
+            // correct first derivatives for normalization
             dxsph_i[k] = (dxsph_i[k]-x*tmp)*ir;
             dysph_i[k] = (dysph_i[k]-y*tmp)*ir;
             dzsph_i[k] = (dzsph_i[k]-z*tmp)*ir;
@@ -818,7 +836,8 @@ void generic_sph(
 
         Template parameters:
         typename T: float type (e.g. single/double precision)
-        bool DO_DERIVATIVES: should se evaluate the derivatives?
+        bool DO_DERIVATIVES: should we evaluate the derivatives?
+        bool DO_SECOND_DERIVATIVES: should we evaluate the second derivatives?
         bool NORMALIZED: should we normalize the input positions?
         int HARDCODED_LMAX: which lmax value will be computed        
 
@@ -826,7 +845,10 @@ void generic_sph(
         const T *xyz: a T array containing th n_samplex*3 x,y,z coordinates of multiple 3D points
         T *sph: pointer to the storage location for the Ylm (stored as l,m= (0,0),(1,-1),(1,0),(1,1),...
         [[maybe_unused]] T *dsph : pointer to the storage location for the dYlm/dx,dy,dz. 
-                        stored as for sph_i, with three consecutive blocks associated to d/dx,d/dy,d/dz 
+                        stored as for sph_i, with three consecutive blocks associated to d/dx,d/dy,d/dz
+        [[maybe_unused]] T *dsph : pointer to the storage location for the second derivatives. 
+                        stored as for sph_i, with nine consecutive blocks associated to the possible
+                        second derivative combinations  
         int n_samples: number of samples that have to be computed  
         int l_max: maximum l to compute
         prefactors: pointer to an array that contains the prefactors used for Ylm and Qlm calculation

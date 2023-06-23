@@ -84,6 +84,7 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
         }
     }
 
+    // set up the second derivative functions
     if (this->normalized) {
         if (this->l_max == 0) {
             this->_array_with_hessians = &hardcoded_sph<T, true, true, true, 0>;

@@ -219,6 +219,10 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         dsph = results[1];
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
+        if (do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_)) {
+            throw std::runtime_error("Second derivatives are not yet implemented in CUDA")
+        }
+
         // re-do the shared memory update in case `requires_grad` changed        
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
 
@@ -308,6 +312,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     if (grad_outputs.size() > 1) {
         throw std::runtime_error("We can not run a backward pass through the gradients of spherical harmonics");
     }
+    // we extract xyz and pass it as a separate variable because it will need gradients
     return {torch::Tensor(), SphericalHarmonicsAutogradBackward::apply(grad_outputs[0], xyz, saved_variables), torch::Tensor(), torch::Tensor()};
 }
 
@@ -319,7 +324,8 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
 ) {
     auto dsph = saved_variables[1];
     auto ddsph = torch::Tensor();
-    bool double_backward = (saved_variables.size() == 3);
+
+    bool double_backward = (saved_variables.size() == 3);  // If the double backward was not requested in advance, this vector will be shorter
     if (double_backward) {
         ddsph = saved_variables[2];
         ctx->save_for_backward({xyz, grad_outputs, dsph, ddsph});
@@ -346,8 +352,8 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
     auto saved_variables = ctx->get_saved_variables();
     if (saved_variables.size() == 0) {
         // No saved variables, meaning that the user called the double backward without specifying 
-        // second_derivatives when creating the class.
-        throw std::runtime_error("Please specify backward_second_derivatives=True at class instantiation if you want to perform double backpropagation");
+        // that they want to do backward second derivatives when creating the class.
+        throw std::runtime_error("internal error: please specify backward_second_derivatives=True at class instantiation if you want to perform double backpropagation");
     }
     auto xyz = saved_variables[0];
     auto grad_out = saved_variables[1];

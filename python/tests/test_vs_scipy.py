@@ -111,7 +111,7 @@ def test_second_derivatives(xyz):
                 analytical_second_derivatives = analytical_second_derivatives_all[
                     :, alpha, beta, :
                 ]
-                # Lower the tolerances: numerical second derivatives are imprecise:
+                # Lower the tolerances as numerical second derivatives are imprecise:
                 print(numerical_second_derivatives - analytical_second_derivatives)
                 assert np.allclose(
                     numerical_second_derivatives,
