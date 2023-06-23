@@ -332,6 +332,11 @@ static inline void generic_sph_l_channel(int l,
     [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
     [[maybe_unused]] T ql2m_2, ql2m_1, ql2m_0;
 
+    [[maybe_unused]] T x2, y2, xy; // for second derivatives. we could get them from parent but not worth the additional complexity
+    if constexpr (DO_SECOND_DERIVATIVES) {
+        x2 = x*x; y2 = y*y; xy = x*y;
+    }
+
     // m=+-l
     qlm_2 = qlmk[l]; // fetches the pre-computed Qll
     auto pq = qlm_2 * pk[l];
@@ -446,16 +451,18 @@ static inline void generic_sph_l_channel(int l,
                 auto pql2m_1 = pk[m]*ql2m_1;
 
                 // Diagonal hessian terms
-                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
-                dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
-                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
-                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2*m*y*pql1m_1*c[m-1] - m*(m-1)*pq*s[m-2];
+                auto mmpqc2 = m*(m-1)*pq*c[m-2];
+                auto mmpqs2 = m*(m-1)*pq*s[m-2];
+                dxdxsph_i[m] = pql1m_1*c[m] + x2*pql2m_2*c[m] + 2*m*x*pql1m_1*c[m-1] + mmpqc2;
+                dxdxsph_i[-m] = pql1m_1*s[m] + x2*pql2m_2*s[m] + 2*m*x*pql1m_1*s[m-1] + mmpqs2;
+                dydysph_i[m] = pql1m_1*c[m] + y2*pql2m_2*c[m] - 2*m*y*pql1m_1*s[m-1] - mmpqc2;
+                dydysph_i[-m] = pql1m_1*s[m] + y2*pql2m_2*s[m] + 2*m*y*pql1m_1*c[m-1] - mmpqs2;
                 dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
                 dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
 
                 // Off-diagonal terms. Note that these are symmetric
-                dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*(m-1)*pq*s[m-2];
-                dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*(m-1)*pq*c[m-2];
+                dxdysph_i[m] = dydxsph_i[m] = xy*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - mmpqs2;
+                dxdysph_i[-m] = dydxsph_i[-m] = xy*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + mmpqc2;
                 dxdzsph_i[m] = dzdxsph_i[m] = x*(l+m)*pql2m_1*c[m] + (l+m)*pql1m_0*m*c[m-1];
                 dxdzsph_i[-m] = dzdxsph_i[-m] = x*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*s[m-1];
                 dydzsph_i[m] = dzdysph_i[m] = y*(l+m)*pql2m_1*c[m] - (l+m)*pql1m_0*m*s[m-1];
@@ -507,16 +514,18 @@ static inline void generic_sph_l_channel(int l,
                 auto pql2m_1 = pk[m]*ql2m_1;
 
                 // Diagonal hessian terms
-                dxdxsph_i[m] = pql1m_1*c[m] + x*x*pql2m_2*c[m] + 2*m*x*pql1m_1*c[m-1] + m*(m-1)*pq*c[m-2];
-                dxdxsph_i[-m] = pql1m_1*s[m] + x*x*pql2m_2*s[m] + 2*m*x*pql1m_1*s[m-1] + m*(m-1)*pq*s[m-2];
-                dydysph_i[m] = pql1m_1*c[m] + y*y*pql2m_2*c[m] - 2*m*y*pql1m_1*s[m-1] - m*(m-1)*pq*c[m-2];
-                dydysph_i[-m] = pql1m_1*s[m] + y*y*pql2m_2*s[m] + 2*m*y*pql1m_1*c[m-1] - m*(m-1)*pq*s[m-2];
+                auto mmpqc2 = m*(m-1)*pq*c[m-2];
+                auto mmpqs2 = m*(m-1)*pq*s[m-2];
+                dxdxsph_i[m] = pql1m_1*c[m] + x2*pql2m_2*c[m] + 2*m*x*pql1m_1*c[m-1] + mmpqc2;
+                dxdxsph_i[-m] = pql1m_1*s[m] + x2*pql2m_2*s[m] + 2*m*x*pql1m_1*s[m-1] + mmpqs2;
+                dydysph_i[m] = pql1m_1*c[m] + y2*pql2m_2*c[m] - 2*m*y*pql1m_1*s[m-1] - mmpqc2;
+                dydysph_i[-m] = pql1m_1*s[m] + y2*pql2m_2*s[m] + 2*m*y*pql1m_1*c[m-1] - mmpqs2;
                 dzdzsph_i[m] = (l+m)*(l+m-1)*pql2m_0*c[m];
                 dzdzsph_i[-m] = (l+m)*(l+m-1)*pql2m_0*s[m];
 
                 // Off-diagonal terms. Note that these are symmetric
-                dxdysph_i[m] = dydxsph_i[m] = x*y*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - m*(m-1)*pq*s[m-2];
-                dxdysph_i[-m] = dydxsph_i[-m] = x*y*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + m*(m-1)*pq*c[m-2];
+                dxdysph_i[m] = dydxsph_i[m] = xy*pql2m_2*c[m] + y*pql1m_1*m*c[m-1] - x*pql1m_1*m*s[m-1] - mmpqs2;
+                dxdysph_i[-m] = dydxsph_i[-m] = xy*pql2m_2*s[m] + y*pql1m_1*m*s[m-1] + x*pql1m_1*m*c[m-1] + mmpqc2;
                 dxdzsph_i[m] = dzdxsph_i[m] = x*(l+m)*pql2m_1*c[m] + (l+m)*pql1m_0*m*c[m-1];
                 dxdzsph_i[-m] = dzdxsph_i[-m] = x*(l+m)*pql2m_1*s[m] + (l+m)*pql1m_0*m*s[m-1];
                 dydzsph_i[m] = dzdysph_i[m] = y*(l+m)*pql2m_1*c[m] - (l+m)*pql1m_0*m*s[m-1];
@@ -552,12 +561,12 @@ static inline void generic_sph_l_channel(int l,
             auto pql2m_1 = pk[0]*ql2m_1;
 
             // diagonal
-            dxdxsph_i[0] = pql1m_1 + x*x*pql2m_2;
-            dydysph_i[0] = pql1m_1 + y*y*pql2m_2;
+            dxdxsph_i[0] = pql1m_1 + x2*pql2m_2;
+            dydysph_i[0] = pql1m_1 + y2*pql2m_2;
             dzdzsph_i[0] = (l)*(l-1)*pql2m_0;
 
             // off-diagonal (symmetric)
-            dxdysph_i[0] = dydxsph_i[0] = x*y*pql2m_2;
+            dxdysph_i[0] = dydxsph_i[0] = xy*pql2m_2;
             dxdzsph_i[0] = dzdxsph_i[0] = x*l*pql2m_1;
             dydzsph_i[0] = dzdysph_i[0] = y*l*pql2m_1;
         }
