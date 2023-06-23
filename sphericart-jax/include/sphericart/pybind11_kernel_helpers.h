@@ -1,3 +1,4 @@
+// taken from https://github.com/dfm/extending-jax
 // This header extends kernel_helpers.h with the pybind11 specific interface to
 // serializing descriptors. It also adds a pybind11 function for wrapping our
 // custom calls in a Python capsule. This is separate from kernel_helpers so that
