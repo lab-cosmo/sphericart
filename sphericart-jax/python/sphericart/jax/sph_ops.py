@@ -17,6 +17,10 @@ for _name, _value in cpu_ops.registrations().items():
     xla_client.register_cpu_custom_call_target(_name, _value)
 
 
+# for future work on this code you will want to use the tracing code from
+# https://jax.readthedocs.io/en/latest/notebooks/How_JAX_primitives_work.html
+# to get a closer look at the call structure of the jax primitives
+
 def default_layouts(*shapes):
     return [range(len(shape) - 1, -1, -1) for shape in shapes]
 
@@ -99,7 +103,10 @@ mlir.register_lowering(
 _sph_fwd_p.def_abstract_eval(sph_abstract_eval)
 
 ### define how to compute the gradients backward
-
+# to be able to use dsph in sph_vjp without recomputing it is returned here
+# the drawback is that only backward diff. is possible with the current code
+# SUGGESTION change the bindings/Cpp API to be able to retrive the gradients
+# at a later stage
 def sph_jvp(l_max, normalized, xyz):
     ls = jnp.arange(l_max + 1)
     sph, dsph = sph_fwd(ls, normalized, xyz)
