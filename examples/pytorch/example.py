@@ -45,10 +45,11 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized)
 
-    # the interface allows to return directly the forward derivatives,
+    # the interface allows to return directly the forward derivatives (up to second order),
     # similar to the Python version
     sh_sphericart = sh_calculator.compute(xyz)
     sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
+    sh_sphericart, dsh_sphericart, ddsh_sphericart = sh_calculator.compute_with_hessians(xyz)
 
     sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute_with_gradients(xyz_f)
 
@@ -79,6 +80,37 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
         xyz_ag.grad - 2 * torch.einsum("iaj,ij->ia", dsh_sphericart, sh_sphericart)
     )
     print(f"Check derivative difference: {delta}")
+
+    # double derivatives. In order to access them via backpropagation, an additional
+    # flag must be specified at class instantiation:
+    sh_calculator_2 = sphericart.torch.SphericalHarmonics(
+        l_max,
+        normalized=normalized,
+        backward_second_derivatives=True
+    )
+
+    # double grad() call:
+    xyz_ag2 = xyz[:5].clone().detach().type(torch.float64).to("cpu").requires_grad_()
+    sh_sphericart_2 = sh_calculator_2.compute(xyz_ag2)
+    sph_norm = torch.sum(sh_sphericart_2**2)
+    grad = torch.autograd.grad(
+        sph_norm,
+        xyz_ag2,
+        retain_graph=True,
+        create_graph=True
+    )[0]
+    grad_grad = torch.autograd.grad(
+        torch.sum(grad),
+        xyz_ag2
+    )[0]
+
+    # hessian() call:
+    xyz_ag2 = xyz[:5].clone().detach().type(torch.float64).to("cpu").requires_grad_()
+    def func(xyz):
+        sh_sphericart_2 = sh_calculator_2.compute(xyz)
+        return torch.sum(sh_sphericart_2**2)
+    hessian = torch.autograd.functional.hessian(func, xyz_ag2)
+
 
     # ===== torchscript integration =====
     xyz_jit = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
