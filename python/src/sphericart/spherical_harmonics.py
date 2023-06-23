@@ -240,7 +240,7 @@ class SphericalHarmonics:
             harmonics return array, while the second-to-last axis refers to
             derivatives in the the x, y, and z directions, respectively.
             * An array of shape ``(n_samples, 3, 3, (l_max+1)**2)`` containing all
-            the spherical harmonics' second derivatives up to degree ``l_max``. 
+            the spherical harmonics' second derivatives up to degree ``l_max``.
             The last axis is organized in the same way as in the spherical
             harmonics return array, while the two intermediate axes represent the
             hessian dimensions.

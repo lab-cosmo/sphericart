@@ -131,6 +131,7 @@ inline void hardcoded_sph_sample(
     ALL XXX_dummy variables are defined to match the interface of generic_sph_sample and are ignored
 */
 
+    static_assert(!(DO_SECOND_DERIVATIVES && !DO_DERIVATIVES), "Cannot calculate second derivatives without first derivatives");
     static_assert(!(DO_SECOND_DERIVATIVES && HARDCODED_LMAX > 1), "Hardcoded second derivatives are only implemented up to l=1.");
 
     auto x = xyz_i[0];
@@ -200,7 +201,7 @@ inline void hardcoded_sph_sample(
                 dysph_i[k] = (dysph_i[k]-y*tmp)*ir;
                 dzsph_i[k] = (dzsph_i[k]-z*tmp)*ir;
             }
-        }
+        }        
     }
 }
 
@@ -306,7 +307,8 @@ static inline void generic_sph_l_channel(int l,
 
     Template parameters:
     typename T: float type (e.g. single/double precision)
-    bool DO_DERIVATIVES: should se evaluate the derivatives?
+    bool DO_DERIVATIVES: should we evaluate the derivatives?
+    bool DO_SECOND_DERIVATIVES: should we evaluate the second derivatives?
     bool NORMALIZED: should we normalize the input positions?
 
     Actual parameters:
