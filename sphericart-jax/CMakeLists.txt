@@ -24,15 +24,8 @@ endif()
 find_package(pybind11 CONFIG REQUIRED)
 
 
-if (NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-    message(FATAL_ERROR "SPHERICART_JAX_BUILD_FOR_PYTHON can only be set when this project is the root project")
-endif()
 
-# prevent recursive build: we are including sphericart/CMakeLists.txt, which can
-# include this file (in sphericart/torch/CMakeLists.txt) if SPHERICART_BUILD_JAX=ON.
-set(SPHERICART_BUILD_JAX OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-mark_as_advanced(SPHERICART_BUILD_JAX)
 add_subdirectory(sphericart EXCLUDE_FROM_ALL)
 
 
