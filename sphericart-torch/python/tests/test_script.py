@@ -1,7 +1,7 @@
 import pytest
+import torch
 
 import sphericart.torch
-import torch
 
 
 torch.manual_seed(0)

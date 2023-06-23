@@ -1,9 +1,9 @@
 import itertools
 
 import pytest
+import torch
 
 import sphericart.torch
-import torch
 
 
 # only run e3nn tests if e3nn is present
