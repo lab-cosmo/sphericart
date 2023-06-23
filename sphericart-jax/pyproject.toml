@@ -2,7 +2,7 @@
 name = "sphericart-jax"
 dynamic = ["version"]
 requires-python = ">=3.7"
-dependencies = ["jax >= 0.4.1"]
+dependencies = ["jax[cpu] >= 0.4.1"]
 
 readme = "README.md"
 license = {text = "Apache-2.0"}
