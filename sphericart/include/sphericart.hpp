@@ -90,8 +90,7 @@ public:
      *        if `l_max=2`, it will contain `(l, m) = (0, 0), (1, -1), (1, 0),
      *        (1, 1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)`, in this order.
      * @param dsph `std::vector` for spherical harmonics derivatives.
-     *        If not provided, no derivatives will be calculated.
-     *        If provided, it is a (possibly uninitialized) `std::vector`, which
+     *        It is a (possibly uninitialized) `std::vector`, which
      *        will be resized to `n_samples * 3 * (l_max + 1) * (l_max + 1)`. On
      *        exit, this array will contain the spherical harmonics' derivatives
      *        organized along three dimensions. As for the `sph` parameter, the
@@ -104,6 +103,50 @@ public:
      */
     void compute_with_gradients(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph);
 
+    /** Computes the spherical harmonics, their derivatives and second derivatives 
+     *  with respect to the Cartesian coordinates of one or more 3D points, using 
+     *  `std::vector`s.
+     *
+     * @param xyz A `std::vector` array of size `n_samples x 3`. It contains the
+     *        Cartesian coordinates of the 3D points for which the spherical
+     *        harmonics are to be computed, organized along two dimensions. The
+     *        outer dimension is `n_samples` long, accounting for different
+     *        samples, while the inner dimension has size 3 and it represents
+     *        the x, y, and z coordinates respectively. If `xyz` it contains a
+     *        single point, the class will call a simpler functions that
+     *        directly evaluates the point, without a loop.
+     * @param sph On entry, a (possibly uninitialized) `std::vector`, which will
+     *        be resized to `n_samples * (l_max + 1) * (l_max + 1)`. On exit,
+     *        this array will contain the spherical harmonics organized along
+     *        two dimensions. The leading dimension is `n_samples` long and it
+     *        represents the different samples, while the inner dimension size
+     *        is `(l_max + 1) * (l_max + 1)` long and it contains the spherical
+     *        harmonics. These are laid out in lexicographic order. For example,
+     *        if `l_max=2`, it will contain `(l, m) = (0, 0), (1, -1), (1, 0),
+     *        (1, 1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)`, in this order.
+     * @param dsph `std::vector` for spherical harmonics derivatives.
+     *        It is a (possibly uninitialized) `std::vector`, which
+     *        will be resized to `n_samples * 3 * (l_max + 1) * (l_max + 1)`. On
+     *        exit, this array will contain the spherical harmonics' derivatives
+     *        organized along three dimensions. As for the `sph` parameter, the
+     *        leading dimension represents the different samples, while the
+     *        inner-most dimension size is `(l_max + 1) * (l_max + 1)`, and it
+     *        represents the degree and order of the spherical harmonics (again,
+     *        organized in lexicographic order). The intermediate dimension
+     *        corresponds to different spatial derivatives of the spherical
+     *        harmonics: x, y, and z, respectively.
+     * @param ddsph `std::vector` for spherical harmonics second derivatives.
+     *        It is a (possibly uninitialized) `std::vector`, which
+     *        will be resized to `n_samples * 3 * 3 * (l_max + 1) * (l_max + 1)`. On
+     *        exit, this array will contain the spherical harmonics' second derivatives
+     *        organized along four dimensions. As for the `sph` parameter, the
+     *        leading dimension represents the different samples, while the
+     *        inner-most dimension size is `(l_max + 1) * (l_max + 1)`, and it
+     *        represents the degree and order of the spherical harmonics (again,
+     *        organized in lexicographic order). The intermediate dimensions
+     *        correspond to the different spatial second derivatives of the spherical
+     *        harmonics, i.e., to the dimensions of the hessian matrix.
+     */
     void compute_with_hessians(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph, std::vector<T>& ddsph);
 
     /** Computes the spherical harmonics for a set of 3D points using bare arrays.
@@ -124,9 +167,8 @@ public:
      *        if `l_max=2`, it will contain `(l, m) = (0, 0), (1, -1), (1, 0),
      *        (1, 1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)`, in this order.
      * @param sph_length Total length of the `sph` array: `n_samples * (l_max + 1) * (l_max + 1)`.
-     * @param dsph Optional array for spherical harmonics derivatives.
-     *        If not provided, no derivatives will be calculated.
-     *        If provided, it is an array of size `n_samples * 3 * (l_max + 1) * (l_max + 1)`.
+     * @param dsph If present, array for spherical harmonics derivatives.
+     *        It is an array of size `n_samples * 3 * (l_max + 1) * (l_max + 1)`.
      *        On exit, this array will contain the spherical harmonics' derivatives
      *        organized along three dimensions. As for the `sph` parameter, the
      *        leading dimension represents the different samples, while the
@@ -135,8 +177,20 @@ public:
      *        organized in lexicographic order). The intermediate dimension
      *        corresponds to the different spatial derivatives of the spherical
      *        harmonics: x, y, and z, respectively.
-     * @param sph_length Optional (only to be provided if `dsph` is).
+     * @param dsph_length Applicable only if `dsph` is.
      *        Total length of the `dsph` array: `n_samples * 3 * (l_max + 1) * (l_max + 1)`.
+     * @param ddsph If present, array for spherical harmonics derivatives.
+     *        It is an array of size `n_samples * 3 * 3 * (l_max + 1) * (l_max + 1)`.
+     *        On exit, this array will contain the spherical harmonics' derivatives
+     *        organized along four dimensions. As for the `sph` parameter, the
+     *        leading dimension represents the different samples, while the
+     *        inner-most dimension size is `(l_max + 1) * (l_max + 1)`, and it
+     *        represents the degree and order of the spherical harmonics (again,
+     *        organized in lexicographic order). The intermediate dimensions
+     *        correspond to the different spatial second derivatives of the spherical
+     *        harmonics, i.e., to the dimensions of the hessian matrix.
+     * @param ddsph_length Applicable only if `ddsph` is.
+     *        Total length of the `ddsph` array: `n_samples * 9 * (l_max + 1) * (l_max + 1)`.
      */
     void compute_array(const T* xyz, size_t xyz_length, T* sph, size_t sph_length);
 
@@ -145,6 +199,9 @@ public:
     */
     void compute_array_with_gradients(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length);
 
+    /**
+    See `compute_array` above.
+    */
     void compute_array_with_hessians(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length, T* ddsph, size_t ddsph_length);
 
     /** Computes the spherical harmonics for a single 3D point using bare arrays.
@@ -160,9 +217,8 @@ public:
      *        order: `(l, m) = (0, 0), (1, -1), (1, 0),
      *        (1, 1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)`.
      * @param sph_length Total length of the `sph` array: `(l_max + 1) * (l_max + 1)`.
-     * @param dsph Optional array for spherical harmonics derivatives.
-     *        If not provided, no derivatives will be calculated.
-     *        If provided, it is an array of size `3 * (l_max + 1) * (l_max + 1)`.
+     * @param dsph If present, array for spherical harmonics derivatives.
+     *        It is an array of size `3 * (l_max + 1) * (l_max + 1)`.
      *        On exit, this array will contain the spherical harmonics' derivatives
      *        organized along two dimensions. The second
      *        dimension's size is `(l_max + 1) * (l_max + 1)`, and it
@@ -170,8 +226,19 @@ public:
      *        organized in lexicographic order). The first dimension
      *        corresponds to the different spatial derivatives of the spherical
      *        harmonics: x, y, and z, respectively.
-     * @param sph_length Optional (only to be provided if `dsph` is).
+     * @param dsph_length Only applicable if `dsph` is.
      *        Total length of the `dsph` array: `3 * (l_max + 1) * (l_max + 1)`.
+     * @param ddsph If present, array for spherical harmonics derivatives.
+     *        It is an array of size `3 * 3 * (l_max + 1) * (l_max + 1)`.
+     *        On exit, this array will contain the spherical harmonics' derivatives
+     *        organized along three dimensions. As for the `sph` parameter, the
+     *        inner-most dimension size is `(l_max + 1) * (l_max + 1)`, and it
+     *        represents the degree and order of the spherical harmonics (again,
+     *        organized in lexicographic order). The first two dimensions
+     *        correspond to the different spatial second derivatives of the spherical
+     *        harmonics, i.e., to the dimensions of the hessian matrix.
+     * @param ddsph_length Applicable only if `ddsph` is.
+     *        Total length of the `ddsph` array: `9 * (l_max + 1) * (l_max + 1)`.
      */
     void compute_sample(const T* xyz, size_t xyz_length, T* sph, size_t sph_length);
     /**
@@ -179,6 +246,9 @@ public:
     */
     void compute_sample_with_gradients(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length);
 
+    /**
+    See `compute_sample` above.
+    */
     void compute_sample_with_hessians(const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length, T* ddsph, size_t ddsph_length);
 
     /**

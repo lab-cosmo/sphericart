@@ -215,6 +215,36 @@ class SphericalHarmonics:
         coordinates are in the ``xyz`` array, together with their Cartesian
         derivatives and second derivatives.
 
+        >>> import numpy as np
+        >>> import sphericart as sc
+        >>> sh = sc.SphericalHarmonics(l_max=8, normalized=False)
+        >>> xyz = np.random.normal(size=(10,3))
+        >>> sh_values, sh_grads, sh_hessians = sh.compute_with_hessians(xyz)
+        >>> sh_hessians.shape
+        (10, 3, 3, 81)
+
+        :param xyz:
+            The Cartesian coordinates of the 3D points, as an array with
+            shape ``(n_samples, 3)``.
+
+        :return:
+            A tuple containing:
+            * an array of shape ``(n_samples, (l_max+1)**2)`` containing all the
+            spherical harmonics up to degree `l_max` in lexicographic order.
+            For example, if ``l_max = 2``, The last axis will correspond to
+            spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
+            1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
+            * An array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
+            the spherical harmonics' derivatives up to degree ``l_max``. The
+            last axis is organized in the same way as in the spherical
+            harmonics return array, while the second-to-last axis refers to
+            derivatives in the the x, y, and z directions, respectively.
+            * An array of shape ``(n_samples, 3, 3, (l_max+1)**2)`` containing all
+            the spherical harmonics' second derivatives up to degree ``l_max``. 
+            The last axis is organized in the same way as in the spherical
+            harmonics return array, while the two intermediate axes represent the
+            hessian dimensions.
+
         """
 
         if not isinstance(xyz, np.ndarray):
