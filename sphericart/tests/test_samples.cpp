@@ -1,5 +1,5 @@
 /** @file test_hardcoding.cpp
- *  @brief Checks consistency of generic and hardcoded implementations
+ *  @brief Checks consistency of array and sample calls
 */
 
 #include <unistd.h>
