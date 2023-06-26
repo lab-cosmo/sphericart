@@ -131,7 +131,7 @@ def spherical_harmonics(l_max, normalized, xyz):
     l_max : int
         maximum order of the spherical harmonics (included)
     normalized : bool
-        if the imput vectors have already been normalized
+        should we compute cartesian (``normalized=False``) or normalized spherical harmonics
     xyz : jax array [n_sample, 3]
         set of n_sample vectors in 3D
 
