@@ -124,7 +124,7 @@ def sph_vjp(l_max, normalized, args, tangents):
 @partial(jax.custom_vjp, nondiff_argnums=(0, 1))
 def spherical_harmonics(l_max, normalized, xyz):
     """Computes the Spherical harmonics and their derivatives within
-    the JAX framework. see `sphericart.SphericalHarmonics` for more details.
+    the JAX framework. See :py:class:`sphericart.SphericalHarmonics` for more details.
 
     Parameters
     ----------
