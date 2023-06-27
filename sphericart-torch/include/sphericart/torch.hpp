@@ -14,14 +14,15 @@ class SphericalHarmonicsAutogradBackward;
 
 class CudaSharedMemorySettings {
 public:
-    CudaSharedMemorySettings(): scalar_size_(0), l_max_(-1), grid_dim_x_(-1), grid_dim_y_(-1), requires_grad_(false) {}
+    CudaSharedMemorySettings(): scalar_size_(0), l_max_(-1), grid_dim_x_(-1), grid_dim_y_(-1), requires_grad_(false), requires_hessian_(false) {}
 
-    bool update_if_required(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool gradients);
+    bool update_if_required(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool gradients, bool hessian);
 private:
     int64_t l_max_;
     int64_t grid_dim_x_;
     int64_t grid_dim_y_;
     bool requires_grad_;
+    bool requires_hessian_;
     size_t scalar_size_;
 };
 
@@ -67,7 +68,7 @@ private:
     torch::Tensor prefactors_cuda_float_;
 
     int64_t CUDA_GRID_DIM_X_ =  8;
-    int64_t CUDA_GRID_DIM_Y_ = 16;
+    int64_t CUDA_GRID_DIM_Y_ = 8;
     CudaSharedMemorySettings cuda_shmem_;
     std::mutex cuda_shmem_mutex_;
 };

@@ -163,26 +163,28 @@ bool CudaSharedMemorySettings::update_if_required(
     int64_t l_max,
     int64_t GRID_DIM_X,
     int64_t GRID_DIM_Y,
-    bool gradients
+    bool gradients,
+    bool hessian
 ) {
     auto scalar_size = torch::elementSize(scalar_type);
     if (this->l_max_ >= l_max &&
         this->grid_dim_x_ >= GRID_DIM_X &&
         this->grid_dim_y_ >= GRID_DIM_Y &&
         this->scalar_size_ >= scalar_size &&
-        (this->requires_grad_ || !gradients)
+        (this->requires_grad_ || !gradients) && (this->requires_hessian_ || !hessian)
     ) {
         // no need to adjust shared memory
         return true;
     }
 
-    bool result = adjust_cuda_shared_memory(scalar_type, l_max, GRID_DIM_X, GRID_DIM_Y, gradients);
+    bool result = adjust_cuda_shared_memory(scalar_type, l_max, GRID_DIM_X, GRID_DIM_Y, gradients, hessian);
 
     if (result){
         this->l_max_ = l_max;
         this->grid_dim_x_ = GRID_DIM_X;
         this->grid_dim_y_ = GRID_DIM_Y;
         this->requires_grad_ = gradients;
+        this->requires_hessian_ = hessian;
         this->scalar_size_ = scalar_size;
     }
     return result;
@@ -220,7 +222,8 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
         if (do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_)) {
-            throw std::runtime_error("Second derivatives are not yet implemented in CUDA");
+            //TODO commenting this out so the CUDA code can be called for double backwards/hessians...
+           // throw std::runtime_error("Second derivatives are not yet implemented in CUDA");
         }
 
         // re-do the shared memory update in case `requires_grad` changed        
@@ -231,27 +234,30 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             calculator.l_max_,
             calculator.CUDA_GRID_DIM_X_,
             calculator.CUDA_GRID_DIM_Y_,
-            xyz.requires_grad() || do_gradients
+            xyz.requires_grad() || do_gradients,
+            xyz.requires_grad() || do_hessians
         );
 
         if (!shm_result){
             printf("Warning: Failed to update shared memory specification with");
             printf(
-                "element_size = %d, GRID_DIM_X = %d, GRID_DIM_Y = %d, xyz.requires_grad() || do_gradients = %s\n",
+                "element_size = %d, GRID_DIM_X = %d, GRID_DIM_Y = %d, xyz.requires_grad() || do_gradients = %s, xyz.requires_grad() || do_hessians = %s\n",
                 torch::elementSize(xyz.scalar_type()),
                 calculator.CUDA_GRID_DIM_X_,
                 calculator.CUDA_GRID_DIM_Y_,
-                xyz.requires_grad() || do_gradients ? "true" : "false"
+                xyz.requires_grad() || do_gradients ? "true" : "false",
+                xyz.requires_grad() || do_hessians ? "true" : "false"
             );
-            printf("Re-attempting with GRID_DIM_Y = 8\n");
+            printf("Re-attempting with GRID_DIM_Y = 4\n");
 
-            calculator.CUDA_GRID_DIM_Y_ = 8;
+            calculator.CUDA_GRID_DIM_Y_ = 4;
             shm_result = calculator.cuda_shmem_.update_if_required(
                 xyz.scalar_type(),
                 calculator.l_max_,
                 calculator.CUDA_GRID_DIM_X_,
                 calculator.CUDA_GRID_DIM_Y_,
-                xyz.requires_grad()||do_gradients
+                xyz.requires_grad()|| do_gradients,
+                xyz.requires_grad() || do_hessians
             );
 
             if (!shm_result) {
@@ -277,11 +283,12 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             calculator.normalized_,
             calculator.CUDA_GRID_DIM_X_,
             calculator.CUDA_GRID_DIM_Y_,
-	        do_gradients
+	        do_gradients,
+            do_hessians
         );
         sph = results[0];
         dsph = results[1];
-        ddsph = torch::Tensor();  // TODO
+        ddsph = results[2];
     } else {
         throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
     }
