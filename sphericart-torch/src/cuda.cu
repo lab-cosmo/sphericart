@@ -778,16 +778,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
                 }));
 
     cudaDeviceSynchronize();
-
-    /*if (xyz.requires_grad() || gradients)
-    {
-        return {sph, d_sph};
-    }
-    else
-    {
-        return {sph, torch::Tensor()};
-    } */
-
+    
     return {sph, d_sph, hess_sph};
 }
 
