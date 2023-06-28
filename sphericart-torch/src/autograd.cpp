@@ -375,7 +375,7 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
     if (grad_out.requires_grad()) {
         int n_samples = xyz.sizes()[0];
         gradgrad_wrt_grad_out = torch::sum(dsph*grad_2_out.reshape({n_samples, 3, 1}), 1);
-        // this does the same as the following (but faster):
+        // the above does the same as the following (but faster):
         // gradgrad_wrt_grad_out = torch::einsum("sak, sa -> sk", {dsph, grad_2_out});
     }
 
@@ -386,7 +386,7 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
             grad_2_out.reshape({n_samples, 1, 3})*torch::sum(grad_out.reshape({n_samples, 1, 1, n_sph})*ddsph, 3),
             2
         );
-        // this does the same as the following (but faster):
+        // the above does the same as the following (but faster):
         // gradgrad_wrt_xyz = torch::einsum("sa, sk, sabk -> sb", {grad_2_out, grad_out, ddsph});
     }
 
