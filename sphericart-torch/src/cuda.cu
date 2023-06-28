@@ -136,9 +136,9 @@ __device__ inline void write_buffers(
                 auto tmp_dydy = buffer_dsph_dydy[get_index(i)];
                 auto tmp_dydz = buffer_dsph_dydz[get_index(i)];
 
-                auto tmp_dzdx = buffer_dsph_dxdx[get_index(i)];
-                auto tmp_dzdy = buffer_dsph_dxdy[get_index(i)];
-                auto tmp_dzdz = buffer_dsph_dxdz[get_index(i)];
+                auto tmp_dzdx = buffer_dsph_dzdx[get_index(i)];
+                auto tmp_dzdy = buffer_dsph_dzdy[get_index(i)];
+                auto tmp_dzdz = buffer_dsph_dzdz[get_index(i)];
 
                 if (normalize)
                 {
@@ -154,8 +154,8 @@ __device__ inline void write_buffers(
                     tmp_dzdz = (-2 * z * tmpz + tmp_dzdz + 3 * z * z * tmp - tmp - 2 * z * tmp_dz + z * z * tmp2) * (ir * ir);
 
                     tmp_dxdy = tmp_dydx = (-x * tmpy - y * tmpx + tmp_dxdy + 3 * x * y * tmp - x * tmp_dy - y * tmp_dx + x * y * tmp2) * (ir * ir);
-                    tmp_dxdz = tmp_dzdx = (-x * tmpz - z * tmpx + tmp_dxdz + 3 * x * z * tmp - x * tmp_dy - z * tmp_dx + x * z * tmp2) * (ir * ir);
-                    tmp_dzdy = tmp_dydz = (-z * tmpy - y * tmpz + tmp_dzdy + 3 * y * z * tmp - z * tmp_dz - y * tmp_dz + y * z * tmp2) * (ir * ir);
+                    tmp_dxdz = tmp_dzdx = (-x * tmpz - z * tmpx + tmp_dxdz + 3 * x * z * tmp - x * tmp_dz - z * tmp_dx + x * z * tmp2) * (ir * ir);
+                    tmp_dzdy = tmp_dydz = (-z * tmpy - y * tmpz + tmp_dzdy + 3 * y * z * tmp - z * tmp_dy - y * tmp_dz + y * z * tmp2) * (ir * ir);
                 }
 
                 ddsph[atom_idx][0][0][offset + i] = tmp_dxdx;
@@ -778,7 +778,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
                 }));
 
     cudaDeviceSynchronize();
-    
+
     return {sph, d_sph, hess_sph};
 }
 
