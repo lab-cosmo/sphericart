@@ -5,7 +5,6 @@ import numpy as np
 import torch
 
 import sphericart.torch
-from torch.profiler import profile
 
 
 docstring = """
@@ -55,25 +54,22 @@ def sphericart_benchmark(
     )
 
     time_hessian = np.zeros(n_tries + warmup)
-    if True: #with profile() as prof:
-        for i in range(n_tries + warmup):
-            elapsed = -time.time()
-            sh_sphericart = sh_calculator.compute(xyz)
-            sph_sum = torch.sum(sh_sphericart)
-            grad = torch.autograd.grad(
-                sph_sum,
-                xyz,
-                retain_graph=True,
-                create_graph=True
-            )[0]
-            grad_grad = torch.autograd.grad(
-                torch.sum(grad),
-                xyz
-            )[0]
-            elapsed += time.time()
-            time_hessian[i] = elapsed
-
-    # print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=20))
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        sh_sphericart = sh_calculator.compute(xyz)
+        sph_sum = torch.sum(sh_sphericart)
+        grad = torch.autograd.grad(
+            sph_sum,
+            xyz,
+            retain_graph=True,
+            create_graph=True
+        )[0]
+        grad_grad = torch.autograd.grad(
+            torch.sum(grad),
+            xyz
+        )[0]
+        elapsed += time.time()
+        time_hessian[i] = elapsed
 
     mean_time = time_hessian[warmup:].mean() / n_samples
     std_time = time_hessian[warmup:].std() / n_samples
