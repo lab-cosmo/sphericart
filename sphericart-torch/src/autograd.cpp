@@ -241,7 +241,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         if (!shm_result){
             printf("Warning: Failed to update shared memory specification with");
             printf(
-                "element_size = %d, GRID_DIM_X = %d, GRID_DIM_Y = %d, xyz.requires_grad() || do_gradients = %s, xyz.requires_grad() || do_hessians = %s\n",
+                "element_size = %ld, GRID_DIM_X = %ld, GRID_DIM_Y = %ld, xyz.requires_grad() || do_gradients = %s, xyz.requires_grad() || do_hessians = %s\n",
                 torch::elementSize(xyz.scalar_type()),
                 calculator.CUDA_GRID_DIM_X_,
                 calculator.CUDA_GRID_DIM_Y_,
@@ -375,6 +375,8 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
     if (grad_out.requires_grad()) {
         int n_samples = xyz.sizes()[0];
         gradgrad_wrt_grad_out = torch::sum(dsph*grad_2_out.reshape({n_samples, 3, 1}), 1);
+        // this does the same as the following (but faster):
+        // gradgrad_wrt_grad_out = torch::einsum("sak, sa -> sk", {dsph, grad_2_out});
     }
 
     if (xyz.requires_grad()) {
@@ -384,6 +386,8 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
             grad_2_out.reshape({n_samples, 1, 3})*torch::sum(grad_out.reshape({n_samples, 1, 1, n_sph})*ddsph, 3),
             2
         );
+        // this does the same as the following (but faster):
+        // gradgrad_wrt_xyz = torch::einsum("sa, sk, sabk -> sb", {grad_2_out, grad_out, ddsph});
     }
 
     return {gradgrad_wrt_grad_out, gradgrad_wrt_xyz, torch::Tensor()}; 
