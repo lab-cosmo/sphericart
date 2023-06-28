@@ -506,8 +506,8 @@ CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel(int l,
                 auto pql2m_1 = pk[m] * ql2m_1;
 
                 // Diagonal hessian terms
-                auto mmpqc2 = 0.0;
-                auto mmpqs2 = 0.0;
+                T mmpqc2 = 0.0;
+                T mmpqs2 = 0.0;
                 if (m != 1)
                 {
                     mmpqc2 = m * (m - 1) * pq * c[GET_INDEX(m - 2)];
@@ -584,8 +584,8 @@ CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel(int l,
                 auto pql2m_1 = pk[m] * ql2m_1;
 
                 // Diagonal hessian terms
-                auto mmpqc2 = 0.0;
-                auto mmpqs2 = 0.0;
+                T mmpqc2 = 0.0;
+                T mmpqs2 = 0.0;
 
                 if (m != 1)
                 {
