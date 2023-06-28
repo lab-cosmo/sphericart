@@ -15,7 +15,7 @@ requested.
 """
 
 try:
-    import e3nn
+    from e3nn import o3
 
     _HAS_E3NN = True
 except ImportError:
@@ -78,7 +78,7 @@ def sphericart_benchmark(
         )
 
         def function_e3nn(xyz):
-            sh_e3nn = e3nn.o3.spherical_harmonics(
+            sh_e3nn = o3.spherical_harmonics(
                 list(range(l_max + 1)),
                 xyz_tensor,
                 normalize=normalized,
