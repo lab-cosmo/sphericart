@@ -235,7 +235,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             calculator.CUDA_GRID_DIM_X_,
             calculator.CUDA_GRID_DIM_Y_,
             xyz.requires_grad() || do_gradients,
-            xyz.requires_grad() || do_hessians
+            do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_)
         );
 
         if (!shm_result){
@@ -246,7 +246,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
                 calculator.CUDA_GRID_DIM_X_,
                 calculator.CUDA_GRID_DIM_Y_,
                 xyz.requires_grad() || do_gradients ? "true" : "false",
-                xyz.requires_grad() || do_hessians ? "true" : "false"
+                do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_) ? "true" : "false"
             );
             printf("Re-attempting with GRID_DIM_Y = 4\n");
 
@@ -256,8 +256,8 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
                 calculator.l_max_,
                 calculator.CUDA_GRID_DIM_X_,
                 calculator.CUDA_GRID_DIM_Y_,
-                xyz.requires_grad()|| do_gradients,
-                xyz.requires_grad() || do_hessians
+                xyz.requires_grad() || do_gradients,
+                do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_)
             );
 
             if (!shm_result) {
@@ -283,8 +283,8 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             calculator.normalized_,
             calculator.CUDA_GRID_DIM_X_,
             calculator.CUDA_GRID_DIM_Y_,
-	        do_gradients,
-            do_hessians
+            do_gradients || xyz.requires_grad(),
+            do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_)
         );
         sph = results[0];
         dsph = results[1];
