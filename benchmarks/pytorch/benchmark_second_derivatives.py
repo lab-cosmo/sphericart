@@ -153,6 +153,7 @@ def sphericart_benchmark(
 
         for i in range(n_tries + warmup):
             elapsed = -time.time()
+            # cannot vectorize this hessian() call due to a torch bug
             hessian = torch.autograd.functional.hessian(function_e3nn, xyz)
             elapsed += time.time()
             time_hessian[i] = elapsed
@@ -163,6 +164,7 @@ def sphericart_benchmark(
             f" E3NN Hessian:         {mean_time * 1e9: 10.1f} ns/sample ± "
             + f"{std_time * 1e9: 10.1f} (std)"
         )
+        print(" [Warning: the above e3nn Hessian call was not vectorized due to a torch bug]")
         if verbose:
             print("Warm-up timings / sec.: \n", time_hessian[:warmup])
 
