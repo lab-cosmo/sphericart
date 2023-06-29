@@ -77,7 +77,7 @@ def test_autograd_hessian(xyz):
             + sph[0] ** 12
         )
 
-    hessian = torch.autograd.functional.hessian(f, xyz, vectorize=True)[
+    hessian = torch.autograd.functional.hessian(f, xyz)[
         0, :, 0, :
     ]  # Discard the two sample dimensions
 
