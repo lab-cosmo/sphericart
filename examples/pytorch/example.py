@@ -109,7 +109,8 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     def func(xyz):
         sh_sphericart_2 = sh_calculator_2.compute(xyz)
         return torch.sum(sh_sphericart_2**2)
-    hessian = torch.autograd.functional.hessian(func, xyz_ag2)
+    # use hessian() with vectorize=True for much much better performance
+    hessian = torch.autograd.functional.hessian(func, xyz_ag2, vectorize=True)
 
 
     # ===== torchscript integration =====

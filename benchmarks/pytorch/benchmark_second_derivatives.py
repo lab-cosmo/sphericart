@@ -53,7 +53,7 @@ def sphericart_benchmark(
         + f"dtype={dtype}, device={device}, omp_num_threads={omp_threads} ****"
     )
 
-    time_hessian = np.zeros(n_tries + warmup)
+    time_grad_grad = np.zeros(n_tries + warmup)
     for i in range(n_tries + warmup):
         elapsed = -time.time()
         sh_sphericart = sh_calculator.compute(xyz)
@@ -69,12 +69,32 @@ def sphericart_benchmark(
             xyz
         )[0]
         elapsed += time.time()
+        time_grad_grad[i] = elapsed
+
+    mean_time = time_grad_grad[warmup:].mean() / n_samples
+    std_time = time_grad_grad[warmup:].std() / n_samples
+    print(
+        f" sphericart gradgrad:  {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
+    )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_hessian[:warmup])
+
+    def function_sphericart(xyz):
+        sh_sphericart = sh_calculator.compute(xyz)
+        return torch.sum(sh_sphericart)
+
+    time_hessian = np.zeros(n_tries + warmup)
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        hessian = torch.autograd.functional.hessian(function_sphericart, xyz, vectorize=True)
+        elapsed += time.time()
         time_hessian[i] = elapsed
 
     mean_time = time_hessian[warmup:].mean() / n_samples
     std_time = time_hessian[warmup:].std() / n_samples
     print(
-        f" sphericart gradgrad:  {mean_time * 1e9:10.1f} ns/sample ± "
+        f" sphericart Hessian:   {mean_time * 1e9:10.1f} ns/sample ± "
         + f"{std_time * 1e9:10.1f} (std)"
     )
     if verbose:
@@ -111,12 +131,36 @@ def sphericart_benchmark(
                 xyz
             )[0]
             elapsed += time.time()
+            time_grad_grad[i] = elapsed
+
+        mean_time = time_grad_grad[warmup:].mean() / n_samples
+        std_time = time_grad_grad[warmup:].std() / n_samples
+        print(
+            f" E3NN gradgrad:        {mean_time * 1e9: 10.1f} ns/sample ± "
+            + f"{std_time * 1e9: 10.1f} (std)"
+        )
+        if verbose:
+            print("Warm-up timings / sec.: \n", time_hessian[:warmup])
+
+        def function_e3nn(xyz):
+            sh_e3nn = o3.spherical_harmonics(
+                list(range(l_max + 1)),
+                xyz,
+                normalize=normalized,
+                normalization="integral",
+            )
+            return torch.sum(sh_e3nn)
+
+        for i in range(n_tries + warmup):
+            elapsed = -time.time()
+            hessian = torch.autograd.functional.hessian(function_e3nn, xyz)
+            elapsed += time.time()
             time_hessian[i] = elapsed
 
         mean_time = time_hessian[warmup:].mean() / n_samples
         std_time = time_hessian[warmup:].std() / n_samples
         print(
-            f" E3NN gradgrad:        {mean_time * 1e9: 10.1f} ns/sample ± "
+            f" E3NN Hessian:         {mean_time * 1e9: 10.1f} ns/sample ± "
             + f"{std_time * 1e9: 10.1f} (std)"
         )
         if verbose:
@@ -130,8 +174,8 @@ def sphericart_benchmark(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=docstring)
 
-    parser.add_argument("-l", type=int, default=10, help="maximum angular momentum")
-    parser.add_argument("-s", type=int, default=10000, help="number of samples")
+    parser.add_argument("-l", type=int, default=3, help="maximum angular momentum")
+    parser.add_argument("-s", type=int, default=100, help="number of samples")
     parser.add_argument("-t", type=int, default=100, help="number of runs/sample")
     parser.add_argument(
         "-cpu", type=int, default=1, help="print CPU results (0=False, 1=True)"
