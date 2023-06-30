@@ -360,7 +360,7 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
     if (saved_variables.size() == 0) {
         // No saved variables, meaning that the user called the double backward without specifying 
         // that they want to do backward second derivatives when creating the class.
-        throw std::runtime_error("internal error: please specify backward_second_derivatives=True at class instantiation if you want to perform double backpropagation");
+        throw std::runtime_error("unable to perform double backward propagation, please set `backward_second_derivatives=True` when creating the class");
     }
     auto xyz = saved_variables[0];
     auto grad_out = saved_variables[1];
