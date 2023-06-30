@@ -220,6 +220,10 @@ class SphericalHarmonics:
         >>> sh = sc.SphericalHarmonics(l_max=8, normalized=False)
         >>> xyz = np.random.normal(size=(10,3))
         >>> sh_values, sh_grads, sh_hessians = sh.compute_with_hessians(xyz)
+        >>> sh_values.shape
+        (10, 81)
+        >>> sh_grads.shape
+        (10, 3, 81)
         >>> sh_hessians.shape
         (10, 3, 3, 81)
 
