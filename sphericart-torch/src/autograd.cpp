@@ -309,6 +309,24 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
 
 }
 
+torch::Tensor first_derivative_backpropagation(
+    torch::Tensor xyz,
+    torch::Tensor dsph,
+    torch::Tensor grad_outputs
+) {
+    torch::Tensor xyz_grad = torch::Tensor();
+    if (xyz.requires_grad()) {
+        if (xyz.device().is_cpu()) {
+            xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
+        } else if (xyz.device().is_cuda()) {
+            xyz_grad = spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs);
+        } else {
+            throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
+        }
+    }
+    return xyz_grad;
+}
+
 torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     torch::autograd::AutogradContext *ctx,
     torch::autograd::variable_list grad_outputs
@@ -319,8 +337,16 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     if (grad_outputs.size() > 1) {
         throw std::runtime_error("We can not run a backward pass through the gradients of spherical harmonics");
     }
+    bool double_backward = (saved_variables.size() == 3);  // If the double backward was not requested in advance, this vector will be shorter
+    torch::Tensor xyz_grad;
+    if (double_backward) {
+        xyz_grad = SphericalHarmonicsAutogradBackward::apply(grad_outputs[0], xyz, saved_variables);
+    } else {
+        auto dsph = saved_variables[1];
+        xyz_grad = first_derivative_backpropagation(xyz, dsph, grad_outputs[0]);
+    }
     // we extract xyz and pass it as a separate variable because it will need gradients
-    return {torch::Tensor(), SphericalHarmonicsAutogradBackward::apply(grad_outputs[0], xyz, saved_variables), torch::Tensor(), torch::Tensor()};
+    return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor()};
 }
 
 torch::Tensor SphericalHarmonicsAutogradBackward::forward(
@@ -330,24 +356,9 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
     std::vector<torch::Tensor> saved_variables
 ) {
     auto dsph = saved_variables[1];
-    auto ddsph = torch::Tensor();
-
-    bool double_backward = (saved_variables.size() == 3);  // If the double backward was not requested in advance, this vector will be shorter
-    if (double_backward) {
-        ddsph = saved_variables[2];
-        ctx->save_for_backward({xyz, grad_outputs, dsph, ddsph});
-    }
-
-    auto xyz_grad = torch::Tensor();
-    if (xyz.requires_grad()) {
-        if (xyz.device().is_cpu()) {
-            xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
-        } else if (xyz.device().is_cuda()) {
-            xyz_grad = spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs);
-        } else {
-            throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
-        }
-    }
+    auto ddsph = saved_variables[2];
+    auto xyz_grad = first_derivative_backpropagation(xyz, dsph, grad_outputs);
+    ctx->save_for_backward({xyz, grad_outputs, dsph, ddsph});
 
     return xyz_grad;
 }
@@ -357,11 +368,6 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
     torch::autograd::variable_list grad_2_outputs
 ) {
     auto saved_variables = ctx->get_saved_variables();
-    if (saved_variables.size() == 0) {
-        // No saved variables, meaning that the user called the double backward without specifying 
-        // that they want to do backward second derivatives when creating the class.
-        throw std::runtime_error("unable to perform double backward propagation, please set `backward_second_derivatives=True` when creating the class");
-    }
     auto xyz = saved_variables[0];
     auto grad_out = saved_variables[1];
     auto dsph = saved_variables[2];

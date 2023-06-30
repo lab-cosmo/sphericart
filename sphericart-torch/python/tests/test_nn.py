@@ -31,9 +31,11 @@ def test_nn():
                 retain_graph=True,
                 create_graph=True,
             )[0]
+            positions.requires_grad = False  # If not, further gradients with respect to xyz will be requested in backward()
             return energy, forces
 
     nn = NN()
     energy, forces = nn(xyz)
     loss = (target - energy) ** 2 + torch.sum((d_target - forces) ** 2)
+    print(xyz.requires_grad)
     loss.backward()
