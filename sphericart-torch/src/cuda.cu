@@ -11,7 +11,7 @@
 #define CUDA_DEVICE_PREFIX __device__
 #include "sphericart.hpp"
 
-#define HARDCODED_LMAX 3
+#define HARDCODED_LMAX 1
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_SAME_DTYPE(x, y) TORCH_CHECK(x.scalar_type() == y.scalar_type(), #x " and " #y " must have the same dtype.")
@@ -20,7 +20,7 @@
     CHECK_CUDA(x);     \
     CHECK_CONTIGUOUS(x)
 
-/* 
+/*
     Computes the index for buffer values which are shared across GRID_DIM_Y
 */
 __device__ int get_index(int i) { return i * blockDim.y + threadIdx.y; }
@@ -35,7 +35,20 @@ __device__ inline void clear_buffers(
     scalar_t *dsph_x,
     scalar_t *dsph_y,
     scalar_t *dsph_z,
-    bool requires_grad)
+
+    scalar_t *dsph_dxdx,
+    scalar_t *dsph_dxdy,
+    scalar_t *dsph_dxdz,
+
+    scalar_t *dsph_dydx,
+    scalar_t *dsph_dydy,
+    scalar_t *dsph_dydz,
+
+    scalar_t *dsph_dzdx,
+    scalar_t *dsph_dzdy,
+    scalar_t *dsph_dzdz,
+    bool requires_grad,
+    bool requires_hessian)
 {
     for (int i = threadIdx.x; i < nelements; i += blockDim.x)
     {
@@ -46,6 +59,21 @@ __device__ inline void clear_buffers(
             dsph_x[get_index(i)] = 0.0;
             dsph_y[get_index(i)] = 0.0;
             dsph_z[get_index(i)] = 0.0;
+        }
+
+        if (requires_hessian)
+        {
+            dsph_dxdx[get_index(i)] = 0.0;
+            dsph_dxdy[get_index(i)] = 0.0;
+            dsph_dxdz[get_index(i)] = 0.0;
+
+            dsph_dydx[get_index(i)] = 0.0;
+            dsph_dydy[get_index(i)] = 0.0;
+            dsph_dydz[get_index(i)] = 0.0;
+
+            dsph_dzdx[get_index(i)] = 0.0;
+            dsph_dzdy[get_index(i)] = 0.0;
+            dsph_dzdz[get_index(i)] = 0.0;
         }
     }
     __syncthreads();
@@ -65,12 +93,27 @@ __device__ inline void write_buffers(
     int n_elements,
     int offset,
     scalar_t *buffer_sph,
+
     scalar_t *buffer_dsph_x,
     scalar_t *buffer_dsph_y,
     scalar_t *buffer_dsph_z,
+
+    scalar_t *buffer_dsph_dxdx,
+    scalar_t *buffer_dsph_dxdy,
+    scalar_t *buffer_dsph_dxdz,
+
+    scalar_t *buffer_dsph_dydx,
+    scalar_t *buffer_dsph_dydy,
+    scalar_t *buffer_dsph_dydz,
+
+    scalar_t *buffer_dsph_dzdx,
+    scalar_t *buffer_dsph_dzdy,
+    scalar_t *buffer_dsph_dzdz,
     torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> sph,
     torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph,
+    torch::PackedTensorAccessor32<scalar_t, 4, torch::RestrictPtrTraits> ddsph,
     bool requires_grad,
+    bool requires_hessian,
     bool normalize)
 {
     if (atom_idx < natoms)
@@ -78,6 +121,55 @@ __device__ inline void write_buffers(
         for (int i = threadIdx.x; i < n_elements; i += blockDim.x)
         {
             sph[atom_idx][offset + i] = buffer_sph[get_index(i)];
+
+            if (requires_hessian)
+            {
+                auto tmp_dx = buffer_dsph_x[get_index(i)];
+                auto tmp_dy = buffer_dsph_y[get_index(i)];
+                auto tmp_dz = buffer_dsph_z[get_index(i)];
+
+                auto tmp_dxdx = buffer_dsph_dxdx[get_index(i)];
+                auto tmp_dxdy = buffer_dsph_dxdy[get_index(i)];
+                auto tmp_dxdz = buffer_dsph_dxdz[get_index(i)];
+
+                auto tmp_dydx = buffer_dsph_dydx[get_index(i)];
+                auto tmp_dydy = buffer_dsph_dydy[get_index(i)];
+                auto tmp_dydz = buffer_dsph_dydz[get_index(i)];
+
+                auto tmp_dzdx = buffer_dsph_dzdx[get_index(i)];
+                auto tmp_dzdy = buffer_dsph_dzdy[get_index(i)];
+                auto tmp_dzdz = buffer_dsph_dzdz[get_index(i)];
+
+                if (normalize)
+                {
+                    auto tmp = (tmp_dx * x + tmp_dy * y + tmp_dz * z);
+
+                    auto tmpx = x * tmp_dxdx + y * tmp_dydx + z * tmp_dzdx;
+                    auto tmpy = x * tmp_dxdy + y * tmp_dydy + z * tmp_dydz;
+                    auto tmpz = x * tmp_dxdz + y * tmp_dydz + z * tmp_dzdz;
+                    auto tmp2 = x * x * tmp_dxdx + y * y * tmp_dydy + z * z * tmp_dzdz + 2 * x * y * tmp_dxdy + 2 * x * z * tmp_dxdz + 2 * y * z * tmp_dydz;
+
+                    tmp_dxdx = (-2 * x * tmpx + tmp_dxdx + 3 * x * x * tmp - tmp - 2 * x * tmp_dx + x * x * tmp2) * (ir * ir);
+                    tmp_dydy = (-2 * y * tmpy + tmp_dydy + 3 * y * y * tmp - tmp - 2 * y * tmp_dy + y * y * tmp2) * (ir * ir);
+                    tmp_dzdz = (-2 * z * tmpz + tmp_dzdz + 3 * z * z * tmp - tmp - 2 * z * tmp_dz + z * z * tmp2) * (ir * ir);
+
+                    tmp_dxdy = tmp_dydx = (-x * tmpy - y * tmpx + tmp_dxdy + 3 * x * y * tmp - x * tmp_dy - y * tmp_dx + x * y * tmp2) * (ir * ir);
+                    tmp_dxdz = tmp_dzdx = (-x * tmpz - z * tmpx + tmp_dxdz + 3 * x * z * tmp - x * tmp_dz - z * tmp_dx + x * z * tmp2) * (ir * ir);
+                    tmp_dzdy = tmp_dydz = (-z * tmpy - y * tmpz + tmp_dzdy + 3 * y * z * tmp - z * tmp_dy - y * tmp_dz + y * z * tmp2) * (ir * ir);
+                }
+
+                ddsph[atom_idx][0][0][offset + i] = tmp_dxdx;
+                ddsph[atom_idx][0][1][offset + i] = tmp_dxdy;
+                ddsph[atom_idx][0][2][offset + i] = tmp_dxdz;
+
+                ddsph[atom_idx][1][0][offset + i] = tmp_dydx;
+                ddsph[atom_idx][1][1][offset + i] = tmp_dydy;
+                ddsph[atom_idx][1][2][offset + i] = tmp_dydz;
+
+                ddsph[atom_idx][2][0][offset + i] = tmp_dzdx;
+                ddsph[atom_idx][2][1][offset + i] = tmp_dzdy;
+                ddsph[atom_idx][2][2][offset + i] = tmp_dzdz;
+            }
 
             if (requires_grad)
             {
@@ -112,9 +204,11 @@ __global__ void spherical_harmonics_kernel(
     torch::PackedTensorAccessor32<scalar_t, 1, torch::RestrictPtrTraits> prefactors,
     int lmax,
     bool requires_grad,
+    bool requires_hessian,
     bool normalize,
     torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> sph,
-    torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph)
+    torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph,
+    torch::PackedTensorAccessor32<scalar_t, 4, torch::RestrictPtrTraits> ddsph)
 {
     extern __shared__ char buffer[];
 
@@ -147,6 +241,40 @@ __global__ void spherical_harmonics_kernel(
         buffer_dsph_y = reinterpret_cast<scalar_t *>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
         buffer_dsph_z = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+    }
+
+    scalar_t *buffer_dsph_dxdx;
+    scalar_t *buffer_dsph_dxdy;
+    scalar_t *buffer_dsph_dxdz;
+    scalar_t *buffer_dsph_dydx;
+    scalar_t *buffer_dsph_dydy;
+    scalar_t *buffer_dsph_dydz;
+    scalar_t *buffer_dsph_dzdx;
+    scalar_t *buffer_dsph_dzdy;
+    scalar_t *buffer_dsph_dzdz;
+
+    if (requires_hessian)
+    {
+        buffer_dsph_dxdx = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+        buffer_dsph_dxdy = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+        buffer_dsph_dxdz = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+
+        buffer_dsph_dydx = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+        buffer_dsph_dydy = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+        buffer_dsph_dydz = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+
+        buffer_dsph_dzdx = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+        buffer_dsph_dzdy = reinterpret_cast<scalar_t *>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+        buffer_dsph_dzdz = reinterpret_cast<scalar_t *>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
     }
 
@@ -233,11 +361,21 @@ __global__ void spherical_harmonics_kernel(
         buffer_dsph_x,
         buffer_dsph_y,
         buffer_dsph_z,
-        requires_grad);
+        buffer_dsph_dxdx,
+        buffer_dsph_dxdy,
+        buffer_dsph_dxdz,
+        buffer_dsph_dydx,
+        buffer_dsph_dydy,
+        buffer_dsph_dydz,
+        buffer_dsph_dzdx,
+        buffer_dsph_dzdy,
+        buffer_dsph_dzdz,
+        requires_grad,
+        requires_hessian);
 
     if (threadIdx.x == 0)
     {
-        if (lmax >= 3)
+        /*if (lmax >= 3)
         {
             HARDCODED_SPH_MACRO(3, x, y, z, x2, y2, z2, buffer_sph, get_index);
             if (requires_grad)
@@ -268,8 +406,8 @@ __global__ void spherical_harmonics_kernel(
                     buffer_dsph_z,
                     get_index);
             }
-        }
-        else if (lmax >= 1)
+        } */
+        if (lmax >= 1)
         {
             HARDCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
             if (requires_grad)
@@ -284,6 +422,22 @@ __global__ void spherical_harmonics_kernel(
                     buffer_dsph_z,
                     get_index);
             }
+
+            if (requires_hessian)
+            {
+                HARDCODED_SPH_SECOND_DERIVATIVE_MACRO(1,
+                                                      buffer_sph,
+                                                      buffer_dsph_dxdx,
+                                                      buffer_dsph_dxdy,
+                                                      buffer_dsph_dxdz,
+                                                      buffer_dsph_dydx,
+                                                      buffer_dsph_dydy,
+                                                      buffer_dsph_dydz,
+                                                      buffer_dsph_dzdx,
+                                                      buffer_dsph_dzdy,
+                                                      buffer_dsph_dzdz,
+                                                      get_index);
+            }
         }
         else
         {
@@ -291,6 +445,21 @@ __global__ void spherical_harmonics_kernel(
             if (requires_grad)
             {
                 COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index);
+
+                if (requires_hessian)
+                {
+                    COMPUTE_SPH_SECOND_DERIVATIVE_L0(buffer_sph,
+                                                     buffer_dsph_dxdx,
+                                                     buffer_dsph_dxdy,
+                                                     buffer_dsph_dxdz,
+                                                     buffer_dsph_dydx,
+                                                     buffer_dsph_dydy,
+                                                     buffer_dsph_dydz,
+                                                     buffer_dsph_dzdx,
+                                                     buffer_dsph_dzdy,
+                                                     buffer_dsph_dzdz,
+                                                     get_index);
+                }
             }
         }
     }
@@ -310,9 +479,20 @@ __global__ void spherical_harmonics_kernel(
         buffer_dsph_x,
         buffer_dsph_y,
         buffer_dsph_z,
+        buffer_dsph_dxdx,
+        buffer_dsph_dxdy,
+        buffer_dsph_dxdz,
+        buffer_dsph_dydx,
+        buffer_dsph_dydy,
+        buffer_dsph_dydz,
+        buffer_dsph_dzdx,
+        buffer_dsph_dzdy,
+        buffer_dsph_dzdz,
         sph,
         dsph,
+        ddsph,
         requires_grad,
+        requires_hessian,
         normalize);
 
     // now lets do the generic terms for l > HARDCODED_LMAX
@@ -335,30 +515,67 @@ __global__ void spherical_harmonics_kernel(
         */
 
         // clear out temporary storage buffers
-        clear_buffers(2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, requires_grad);
+        clear_buffers(2 * l + 1,
+                      buffer_sph,
+                      buffer_dsph_x,
+                      buffer_dsph_y,
+                      buffer_dsph_z,
+                      buffer_dsph_dxdx,
+                      buffer_dsph_dxdy,
+                      buffer_dsph_dxdz,
+                      buffer_dsph_dydx,
+                      buffer_dsph_dydy,
+                      buffer_dsph_dydz,
+                      buffer_dsph_dzdx,
+                      buffer_dsph_dzdy,
+                      buffer_dsph_dzdz,
+                      requires_grad,
+                      requires_hessian);
 
         // Currently only one warp computes the spherical harmonics.
         if (threadIdx.x == 0)
         {
-            if (requires_grad)
+            if (requires_grad && requires_hessian)
             {
-                generic_sph_l_channel<scalar_t, true, HARDCODED_LMAX, get_index>(
+                generic_sph_l_channel<scalar_t, true, true, HARDCODED_LMAX, get_index>(
                     l, x, y, z, rxy,
                     pk, qlmk,
                     buffer_c, buffer_s, buffer_twomz,
                     buffer_sph + sph_offset,
                     buffer_dsph_x + sph_offset,
                     buffer_dsph_y + sph_offset,
-                    buffer_dsph_z + sph_offset);
+                    buffer_dsph_z + sph_offset,
+                    buffer_dsph_dxdx + sph_offset,
+                    buffer_dsph_dxdy + sph_offset,
+                    buffer_dsph_dxdz + sph_offset,
+                    buffer_dsph_dydx + sph_offset,
+                    buffer_dsph_dydy + sph_offset,
+                    buffer_dsph_dydz + sph_offset,
+                    buffer_dsph_dzdx + sph_offset,
+                    buffer_dsph_dzdy + sph_offset,
+                    buffer_dsph_dzdz + sph_offset);
             }
-            else
+            else if (requires_grad)
             {
-                generic_sph_l_channel<scalar_t, false, HARDCODED_LMAX, get_index>(
+                generic_sph_l_channel<scalar_t, true, false, HARDCODED_LMAX, get_index>(
                     l, x, y, z, rxy,
                     pk, qlmk,
                     buffer_c, buffer_s, buffer_twomz,
                     buffer_sph + sph_offset,
-                    buffer_dsph_x, buffer_dsph_y, buffer_dsph_z // these are nullpointers
+                    buffer_dsph_x + sph_offset,
+                    buffer_dsph_y + sph_offset,
+                    buffer_dsph_z + sph_offset,
+                    buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz // these are nullpointers
+                );
+            }
+            else
+            {
+                generic_sph_l_channel<scalar_t, false, false, HARDCODED_LMAX, get_index>(
+                    l, x, y, z, rxy,
+                    pk, qlmk,
+                    buffer_c, buffer_s, buffer_twomz,
+                    buffer_sph + sph_offset,
+                    buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz // these are nullpointers
                 );
             }
         }
@@ -377,9 +594,20 @@ __global__ void spherical_harmonics_kernel(
             buffer_dsph_x,
             buffer_dsph_y,
             buffer_dsph_z,
+            buffer_dsph_dxdx,
+            buffer_dsph_dxdy,
+            buffer_dsph_dxdz,
+            buffer_dsph_dydx,
+            buffer_dsph_dydy,
+            buffer_dsph_dydz,
+            buffer_dsph_dzdx,
+            buffer_dsph_dzdy,
+            buffer_dsph_dzdz,
             sph,
             dsph,
+            ddsph,
             requires_grad,
+            requires_hessian,
             normalize);
 
         base_index += 2 * l + 1;
@@ -394,7 +622,7 @@ __global__ void spherical_harmonics_kernel(
     For lmax <= HARCODED_LMAX, we need to store all (HARDCODED_LMAX + 1)**2 scalars in shared memory. For lmax > HARDCODED_LMAX,
     we only need to store each spherical harmonics vector per sample in shared memory.
 */
-static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X, size_t GRID_DIM_Y, size_t dtype_size, bool requires_grad)
+static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X, size_t GRID_DIM_Y, size_t dtype_size, bool requires_grad, bool requires_hessian)
 {
     int nl = max(
         static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
@@ -402,15 +630,20 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X, size_t GRID_DIM
 
     size_t total_buff_size = 0;
 
-    total_buff_size +=  GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_c
-    total_buff_size +=  GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_s
-    total_buff_size +=  GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_twomz
-    total_buff_size += (l_max + 1)* (l_max + 2) * dtype_size; // buffer_prefactors
-    total_buff_size +=  GRID_DIM_Y * nl * dtype_size;           // buffer_sph_out
+    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_c
+    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_s
+    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_twomz
+    total_buff_size += (l_max + 1) * (l_max + 2) * dtype_size; // buffer_prefactors
+    total_buff_size += GRID_DIM_Y * nl * dtype_size;           // buffer_sph_out
 
     if (requires_grad)
     {
         total_buff_size += 3 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_derivs
+    }
+
+    if (requires_hessian)
+    {
+        total_buff_size += 9 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_hessian
     }
 
     return total_buff_size;
@@ -420,13 +653,13 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X, size_t GRID_DIM
     The default shared memory space on most recent NVIDIA cards is defaulted 49152 bytes, regarldess if there is more available per SM.
     This method attempts to adjust the shared memory to fit the requested configuration if the allocation exceeds the default 49152 bytes.
 */
-bool sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool requires_grad)
+bool sphericart_torch::adjust_cuda_shared_memory(torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool requires_grad, bool requires_hessian)
 {
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
 
     size_t dtype = torch::elementSize(scalar_type);
-    auto required_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, dtype, requires_grad);
+    auto required_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, dtype, requires_grad, requires_hessian);
 
     bool accepted = required_buff_size <= deviceProp.sharedMemPerBlockOptin;
 
@@ -473,7 +706,8 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     bool normalize,
     int64_t GRID_DIM_X,
     int64_t GRID_DIM_Y,
-    bool gradients)
+    bool gradients,
+    bool hessian)
 {
 
     CHECK_INPUT(xyz);
@@ -501,6 +735,21 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
     }
 
+    torch::Tensor hess_sph;
+
+    if (xyz.requires_grad() && hessian)
+    {
+        hess_sph = torch::empty(
+            {xyz.size(0), 3, 3, n_total},
+            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+    }
+    else
+    {
+        hess_sph = torch::empty(
+            {1, 1, 1, 1},
+            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+    }
+
     dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
 
     auto find_num_blocks = [](int x, int bdim)
@@ -512,27 +761,25 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
         xyz.scalar_type(), "spherical_harmonics_cuda", ([&]
                                                         {
             size_t total_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, 
-                                sizeof(scalar_t), xyz.requires_grad() || gradients);
+                                sizeof(scalar_t), xyz.requires_grad() || gradients, xyz.requires_grad() && hessian);
 
+        
             spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
                 xyz.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                 prefactors.packed_accessor32<scalar_t, 1, torch::RestrictPtrTraits>(),
                 l_max,
                 xyz.requires_grad() || gradients,
+                xyz.requires_grad() && hessian,
                 normalize,
                 sph.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
-                d_sph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>()); }));
+                d_sph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>(),
+                hess_sph.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>()); 
+                
+                }));
 
     cudaDeviceSynchronize();
 
-    if (xyz.requires_grad() || gradients)
-    {
-        return {sph, d_sph};
-    }
-    else
-    {
-        return {sph, torch::Tensor()};
-    }
+    return {sph, d_sph, hess_sph};
 }
 
 #define FULL_MASK 0xffffffff

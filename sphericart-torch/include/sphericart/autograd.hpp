@@ -14,12 +14,28 @@ public:
         torch::autograd::AutogradContext *ctx,
         SphericalHarmonics& calculator,
         torch::Tensor xyz,
-        bool gradients
+        bool do_gradients,
+        bool do_hessians
     );
 
     static torch::autograd::variable_list backward(
         torch::autograd::AutogradContext *ctx,
         torch::autograd::variable_list grad_outputs
+    );
+};
+
+class SphericalHarmonicsAutogradBackward : public torch::autograd::Function<SphericalHarmonicsAutogradBackward> {
+public:
+    static torch::Tensor forward(
+        torch::autograd::AutogradContext *ctx,
+        torch::Tensor grad_outputs,
+        torch::Tensor xyz,
+        std::vector<torch::Tensor> saved_variables
+    );
+
+    static torch::autograd::variable_list backward(
+        torch::autograd::AutogradContext *ctx,
+        torch::autograd::variable_list grad_2_outputs
     );
 };
 

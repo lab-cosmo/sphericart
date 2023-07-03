@@ -105,14 +105,27 @@ class SphericalHarmonics:
         the maximum degree of the spherical harmonics to be calculated
     :param normalized:
         whether to normalize the spherical harmonics (default: False)
+    :param backward_second_derivatives:
+        if this parameter is set to `True`, second derivatives of the spherical
+        harmonics are calculated during forward calls to `compute` (provided that
+        `xyz.requires_grad` is `True`), making it possible to perform double
+        reverse-mode differentiation. If false, only the first derivatives will be
+        computed and only a single reverse-mode differentiation will be possible.
 
     :return: a calculator, in the form of a SphericalHarmonics object
     """
 
-    def __new__(cls, l_max, normalized=False):
-        return torch.classes.sphericart_torch.SphericalHarmonics(l_max, normalized)
+    def __new__(cls, l_max, normalized=False, backward_second_derivatives=False):
+        return torch.classes.sphericart_torch.SphericalHarmonics(
+            l_max, normalized, backward_second_derivatives
+        )
 
-    def __init__(self, l_max: int, normalized: bool = False):
+    def __init__(
+        self,
+        l_max: int,
+        normalized: bool = False,
+        backward_second_derivatives: bool = False,
+    ):
         pass
 
     def compute(self, xyz: Tensor) -> Tensor:
@@ -125,6 +138,9 @@ class SphericalHarmonics:
         The type of the entries of `xyz` determines the precision used,
         and the device the tensor is stored on determines whether the
         CPU or CUDA implementation is used for the calculation backend.
+        It always supports single reverse-mode differentiation, as well as
+        double reverse-mode differentiation if `backward_second_derivatives`
+        was set to `True` during class creation.
 
         :param xyz:
             The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
@@ -143,14 +159,13 @@ class SphericalHarmonics:
     def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
         """
         Calculates the spherical harmonics for a set of 3D points,
-        and also returns the forward derivatives.
+        and also returns the forward-mode derivatives.
 
-        The coordinates should be stored in the ``xyz`` array. If ``xyz``
-        has `requires_grad = True` it stores the forward derivatives which
-        are then used in the backward pass.
+        The coordinates should be stored in the ``xyz`` array.
         The type of the entries of `xyz` determines the precision used,
         and the device the tensor is stored on determines whether the
         CPU or CUDA implementation is used for the calculation backend.
+        Reverse-mode differentiation is not supported for this function.
 
         :param xyz:
             The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
@@ -169,6 +184,44 @@ class SphericalHarmonics:
               last axis is organized in the same way as in the spherical
               harmonics return array, while the second-to-last axis refers to
               derivatives in the the x, y, and z directions, respectively.
+
+        """
+
+        pass
+
+    def compute_with_hessians(self, xyz: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
+        """
+        Calculates the spherical harmonics for a set of 3D points,
+        and also returns the forward derivatives and second derivatives.
+
+        The coordinates should be stored in the ``xyz`` array.
+        The type of the entries of `xyz` determines the precision used,
+        and the device the tensor is stored on determines whether the
+        CPU or CUDA implementation is used for the calculation backend.
+        Reverse-mode differentiation is not supported for this function.
+
+        :param xyz:
+            The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
+            shape ``(n_samples, 3)``.
+
+        :return:
+            A tuple that contains:
+
+            * A ``(n_samples, (l_max+1)**2)`` tensor containing all the
+              spherical harmonics up to degree `l_max` in lexicographic order.
+              For example, if ``l_max = 2``, The last axis will correspond to
+              spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
+              1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
+            * A tensor of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
+              the spherical harmonics' derivatives up to degree ``l_max``. The
+              last axis is organized in the same way as in the spherical
+              harmonics return array, while the second-to-last axis refers to
+              derivatives in the the x, y, and z directions, respectively.
+            * A tensor of shape ``(n_samples, 3, 3, (l_max+1)**2)`` containing all
+              the spherical harmonics' second derivatives up to degree ``l_max``. The
+              last axis is organized in the same way as in the spherical
+              harmonics return array, while the two intermediate axes represent the
+              hessian dimensions.
 
         """
 
