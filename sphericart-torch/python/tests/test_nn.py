@@ -31,9 +31,6 @@ def test_nn():
                 retain_graph=True,
                 create_graph=True,
             )[0]
-            positions.requires_grad = False
-            # If not, further gradients with respect to
-            # xyz should be requested in backward()
             return energy, forces
 
     nn = NN()

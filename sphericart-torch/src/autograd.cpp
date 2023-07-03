@@ -309,7 +309,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
 
 }
 
-torch::Tensor first_derivative_backpropagation(
+torch::Tensor first_derivative_chain_rule(
     torch::Tensor xyz,
     torch::Tensor dsph,
     torch::Tensor grad_outputs
@@ -339,13 +339,22 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     }
     bool double_backward = (saved_variables.size() == 3);  // If the double backward was not requested in advance, this vector will be shorter
     torch::Tensor xyz_grad;
+
+    /*
+    If the user requested backward second derivatives at class instantiation (double_backward == True), we create a new autograd node.
+    Otherwise, we compute the chain rule for the first derivatives in this function without creating a new node. This allows the user to
+    conveniently call backward() on a previously differentiated model even when the second derivatives of the spherical harmonics are not needed, 
+    while at the same time avoiding the computational overhead associated with the second derivatives and their chain rule. 
+    This is particularly useful when mixed positions-weights second derivatives are needed, but positions-positions second derivatives are not.
+    */
     if (double_backward) {
+        // we extract xyz and pass it as a separate variable because we will need gradients with respect to it
         xyz_grad = SphericalHarmonicsAutogradBackward::apply(grad_outputs[0], xyz, saved_variables);
     } else {
         auto dsph = saved_variables[1];
-        xyz_grad = first_derivative_backpropagation(xyz, dsph, grad_outputs[0]);
+        xyz_grad = first_derivative_chain_rule(xyz, dsph, grad_outputs[0]);
     }
-    // we extract xyz and pass it as a separate variable because it will need gradients
+    
     return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor()};
 }
 
@@ -357,7 +366,7 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
 ) {
     auto dsph = saved_variables[1];
     auto ddsph = saved_variables[2];
-    auto xyz_grad = first_derivative_backpropagation(xyz, dsph, grad_outputs);
+    auto xyz_grad = first_derivative_chain_rule(xyz, dsph, grad_outputs);
     ctx->save_for_backward({xyz, grad_outputs, dsph, ddsph});
 
     return xyz_grad;
