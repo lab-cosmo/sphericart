@@ -81,7 +81,7 @@ SPHERICART_EXPORT void sphericart_delete_f(sphericart_calculator_f_t* calculator
  * This function calculates the spherical harmonics and, optionally, their
  * derivatives for an array of 3D points.
  *
- * @param spherical_harmonics A pointer to a `sphericart_calculator_t` struct
+ * @param calculator A pointer to a `sphericart_calculator_t` struct
  *        that holds prefactors and options to compute the spherical harmonics.
  * @param xyz An array of size `n_samples x 3`. It contains the Cartesian
  *        coordinates of the 3D points for which the spherical harmonics are to
@@ -114,7 +114,7 @@ SPHERICART_EXPORT void sphericart_compute_array(
  * This function calculates the spherical harmonics and their
  * derivatives for an array of 3D points.
  *
- * @param spherical_harmonics A pointer to a `sphericart_calculator_t` struct
+ * @param calculator A pointer to a `sphericart_calculator_t` struct
  *        that holds prefactors and options to compute the spherical harmonics.
  * @param xyz An array of size `n_samples x 3`. It contains the Cartesian
  *        coordinates of the 3D points for which the spherical harmonics are to
@@ -161,7 +161,7 @@ SPHERICART_EXPORT void sphericart_compute_array_with_gradients(
  * This function calculates the spherical harmonics, their
  * derivatives and second derivatives for an array of 3D points.
  *
- * @param spherical_harmonics A pointer to a `sphericart_calculator_t` struct
+ * @param calculator A pointer to a `sphericart_calculator_t` struct
  *        that holds prefactors and options to compute the spherical harmonics.
  * @param xyz An array of size `n_samples x 3`. It contains the Cartesian
  *        coordinates of the 3D points for which the spherical harmonics are to
