@@ -43,10 +43,10 @@ implementation details.
 
 The normalized version of the spherical harmonics can also be computed by providing
 the appropriate flag when creating the `sphericart` calculators. These correspond to
-the real spherical harmonics as presented in the corresponding 
+the real spherical harmonics as defined in the corresponding 
 `Wikipedia article <https://en.wikipedia.org/wiki/Spherical_harmonics>`_.
-However, we recommend using the scaled versions, that are slightly faster and 
-provide a more natural scaling when used together with a radial expansion.
+However, we recommend using the scaled versions, which are slightly faster and 
+provide a more natural scaling if used together with a radial expansion.
 
 The :math:`\tilde{Y}^m_l(x)` are stored contiguously in memory, e.g. as
 :math:`\{ (l,m)=(0,0), (1,-1), (1,0), (1,1), (2,-2), \ldots \}`. 
