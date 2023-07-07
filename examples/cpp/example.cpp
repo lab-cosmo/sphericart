@@ -53,13 +53,13 @@ int main() {
     // the single-sample evaluation provides direct access to the main calculator,
     // avoiding the loop over samples and allowing e.g. custom parallelization
     calculator.compute(xyz_sample, sph_sample); // no gradients
-    calculator.compute_with_gradients(xyz_sample, sph_sample, dsph_sample);
-    calculator.compute_with_hessians(xyz_sample, sph_sample, dsph_sample, ddsph_sample);
+    calculator.compute_with_gradients(xyz_sample, sph_sample, dsph_sample); // gradients
+    calculator.compute_with_hessians(xyz_sample, sph_sample, dsph_sample, ddsph_sample);  // gradients and hessians
 
     // float version
     auto calculator_f = sphericart::SphericalHarmonics<float>(l_max);
     calculator_f.compute(xyz_f, sph_f); // no gradients
-    calculator_f.compute_with_gradients(xyz_f, sph_f, dsph_f);  // gradients
+    calculator_f.compute_with_gradients(xyz_f, sph_f, dsph_f); // gradients
     calculator_f.compute_with_hessians(xyz_f, sph_f, dsph_f, ddsph_f);  // gradients and hessians
 
     /* ===== check results ===== */

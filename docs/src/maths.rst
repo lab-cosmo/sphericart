@@ -15,8 +15,8 @@ to even further ambiguity in the definitions.
 Within `sphericart` we take an opinionated stance: we compute only real-valued
 harmonics, we express them as a function of the full Cartesian coordinates of a 
 point in three dimensions :math:`(x,y,z)` and compute by default "scaled" 
-versions :math:`\tilde{Y}^m_l(x)` which correspond to polynomials of the 
-Cartesian coordinates:
+versions :math:`\tilde{Y}^m_l(x, y, z)` which correspond to homogeneous polynomials
+of the Cartesian coordinates:
 
 .. math ::
     \tilde{Y}_l^m(x, y, z) = r^l\,{Y}_l^m(x, y, z) = F_l^{|m|} Q_l^{|m|}(z, r) \times
@@ -41,7 +41,7 @@ If we neglect some constant normalization factors, these correspond to the
 See also the `reference paper <https://arxiv.org/abs/2302.08381>`_ for further 
 implementation details.
 
-The normalized version of the spherical harmonics can also be computed by providing
+The radially normalized version of the spherical harmonics can also be computed by providing
 the appropriate flag when creating the `sphericart` calculators. These correspond to
 the real spherical harmonics as defined in the corresponding 
 `Wikipedia article <https://en.wikipedia.org/wiki/Spherical_harmonics>`_.
