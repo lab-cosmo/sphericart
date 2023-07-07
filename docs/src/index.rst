@@ -26,7 +26,7 @@ of how to use the library, and a brief explanation of the mathematics involved.
 
     installation
     api
-    using
+    examples
     maths
 
 If you are using sphericart for your academic work, you can cite it as
