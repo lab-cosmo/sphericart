@@ -57,6 +57,7 @@ After that, you can install the C/C++ library as
 (A C++17 compiler is required.)
 
 The following cmake configuration options are available:
+
 - ``-DSPHERICART_BUILD_TORCH=ON/OFF``: build the torch bindings in addition to the main library (OFF by default)
 - ``-DSPHERICART_BUILD_TESTS=ON/OFF``: build C++ unit tests (OFF by default)
 - ``-DSPHERICART_BUILD_EXAMPLES=ON/OFF``: build C++ examples and benchmarks (OFF by default)
