@@ -24,7 +24,7 @@ Cartesian coordinates:
       s_{|m|}(x, y) & \text{if $m < 0$}\\
       1/\sqrt{2} & \text{if $m = 0$}\\
       c_m(x, y) & \text{if $m > 0$}
-    \end{cases}     
+    \end{cases}
 
 where
 
@@ -36,13 +36,17 @@ where
     Q_l^m(z,r) =&\, r^l r_{xy}^{-m} \, P_l^m(z/r), \quad \\
     F_l^m = &\, (-1)^m \sqrt{\frac{2l+1}{2\pi}\frac{(l-m)!}{(l+m)!}}.
 
+If we neglect some constant normalization factors, these correspond to the 
+`regular solid harmonics<https://en.wikipedia.org/wiki/Solid_harmonics>`_. 
 See also the `reference paper <https://arxiv.org/abs/2302.08381>`_ for further 
 implementation details.
 
 The normalized version of the spherical harmonics can also be computed by providing
-the appropriate flag when creating the `sphericart` calculators, but we recommend using
-the scaled versions, that are slightly faster and provide a more natural scaling 
-when used together with a radial expansion.
+the appropriate flag when creating the `sphericart` calculators. These correspond to
+the real spherical harmonics as presented in the corresponding 
+`Wikipedia article<https://en.wikipedia.org/wiki/Spherical_harmonics>`_.
+However, we recommend using the scaled versions, that are slightly faster and 
+provide a more natural scaling when used together with a radial expansion.
 
 The :math:`\tilde{Y}^m_l(x)` are stored contiguously in memory, e.g. as
 :math:`\{ (l,m)=(0,0), (1,-1), (1,0), (1,1), (2,-2), \ldots \}`. 
