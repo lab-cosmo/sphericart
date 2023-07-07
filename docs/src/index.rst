@@ -5,6 +5,7 @@ sphericart documentation
    :alt: The figure shows a plot of the +-1 isosurfaces of the Y^0_3 solid harmonic, colored in orange and blue. Gradients along the surfaces are also shown as black arrows. 
    :width: 300px
    :align: center
+   
    A plot of the +-1 isosurfaces of the :math:`Y^0_3` solid harmonic, including also gradients
 
 ``sphericart`` is a multi-language library for the efficient calculation of 
