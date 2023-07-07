@@ -29,7 +29,7 @@ of how to use the library, and a brief explanation of the mathematics involved.
     using
     maths
 
-If you are using this library for your academic work, you can cite it as
+If you are using sphericart for your academic work, you can cite it as
 
 .. code-block::
 

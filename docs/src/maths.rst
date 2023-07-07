@@ -37,14 +37,14 @@ where
     F_l^m = &\, (-1)^m \sqrt{\frac{2l+1}{2\pi}\frac{(l-m)!}{(l+m)!}}.
 
 If we neglect some constant normalization factors, these correspond to the 
-`regular solid harmonics<https://en.wikipedia.org/wiki/Solid_harmonics>`_. 
+`regular solid harmonics <https://en.wikipedia.org/wiki/Solid_harmonics>`_. 
 See also the `reference paper <https://arxiv.org/abs/2302.08381>`_ for further 
 implementation details.
 
 The normalized version of the spherical harmonics can also be computed by providing
 the appropriate flag when creating the `sphericart` calculators. These correspond to
 the real spherical harmonics as presented in the corresponding 
-`Wikipedia article<https://en.wikipedia.org/wiki/Spherical_harmonics>`_.
+`Wikipedia article <https://en.wikipedia.org/wiki/Spherical_harmonics>`_.
 However, we recommend using the scaled versions, that are slightly faster and 
 provide a more natural scaling when used together with a radial expansion.
 
