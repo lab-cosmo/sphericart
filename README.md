@@ -12,12 +12,12 @@ For instructions and examples on the usage of the library, please refer to our
   <img src="./docs/src/_static/sphericart_3-0.png" alt="A plot of the +-1 isosurfaces of the Y^0\_3 solid harmonic, including also gradients." width="50%">
 </p>
 
-If you are using this library for your academic work, you can cite it as
+If you are using sphericart for your academic work, you can cite it as
 
 ```
 @article{sphericart,
     title={Fast evaluation of spherical harmonics with sphericart},
-    author={Bigi, Filippo and Fraux, Guillaume and Browning, Nicholas J and Ceriotti, Michele}
+    author={Bigi, Filippo and Fraux, Guillaume and Browning, Nicholas J. and Ceriotti, Michele}
 }
 ```
 
