@@ -34,7 +34,7 @@ public:
      *      The maximum degree of the spherical harmonics to be calculated.
      *  @param normalized
      *      If `false` (default) computes the scaled spherical harmonics, which are
-     *      polynomials in the Cartesian coordinates of the input points. If `true`,
+     *      homogeneous polynomials in the Cartesian coordinates of the input points. If `true`,
      *      computes the normalized spherical harmonics that are evaluated
      *      on the unit sphere. In practice, this simply computes the scaled harmonics
      *      at the normalized coordinates \f$(x/r, y/r, z/r)\f$, and adapts the derivatives
@@ -55,7 +55,7 @@ public:
      *        outer dimension is `n_samples` long, accounting for different
      *        samples, while the inner dimension has size 3 and it represents
      *        the x, y, and z coordinates respectively. If `xyz` it contains a
-     *        single point, the class will call a simpler functions that
+     *        single point, the class will call a simpler function that
      *        directly evaluates the point, without a loop.
      * @param sph On entry, a (possibly uninitialized) `std::vector`, which will
      *        be resized to `n_samples * (l_max + 1) * (l_max + 1)`. On exit,
