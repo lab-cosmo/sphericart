@@ -23,7 +23,7 @@ If you are using this library for your academic work, you can cite it as
 
 ## Installation
 
-### Python API
+### Python
 
 Pre-built (https://pypi.org/project/sphericart/).
 
@@ -50,7 +50,7 @@ pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 Building from source is also necessary to use sphericart's PyTorch GPU 
 functionalities, and it requires a CUDA compiler.
 
-### C and C++ API
+### C and C++
 
 From source
 
