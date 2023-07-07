@@ -15,6 +15,9 @@ This core C++ library is then made available to different environments through a
 This section contains a description of the interface of the ``sphericart`` library for the
 different languages it supports.
 
+In general, the functions and methods in ``sphericart`` calculate the spherical harmonics, their
+first and/or second derivatives for one or more points in 3D space.
+
 .. toctree::
     :maxdepth: 1
 
