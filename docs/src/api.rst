@@ -8,15 +8,12 @@ different normalization styles, and providing both a version with and without de
 Spherical harmonics and their derivatives are computed with optimized hard-coded expressions 
 for low values of the principal angular momentum number :math:`l`, then switch to an efficient
 recursive evaluation. The API involves initializing a calculator that allocates buffer space
-and computes some constant factors, and then using it to compute :math:`Y_l^m` for one or more
-points in 3D.
+and computes some constant factors, and then using it to compute :math:`Y_l^m` (and possibly its
+first and/or second derivatives) for one or more points in 3D space.
 
 This core C++ library is then made available to different environments through a C API.
 This section contains a description of the interface of the ``sphericart`` library for the
 different languages it supports.
-
-In general, the functions and methods in ``sphericart`` calculate the spherical harmonics, their
-first and/or second derivatives for one or more points in 3D space.
 
 .. toctree::
     :maxdepth: 1

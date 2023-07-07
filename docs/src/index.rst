@@ -6,7 +6,7 @@ sphericart documentation
    :width: 400px
    :align: center
 
-   `A plot of the +-1 isosurfaces of the :math:`Y^0_3` solid harmonic, including its gradient`
+   A plot of the +-1 isosurfaces of the :math:`Y^0_3` solid harmonic, including its gradient
 
 ``sphericart`` is a multi-language library for the efficient calculation of 
 spherical harmonics and their derivatives in Cartesian coordinates. 
