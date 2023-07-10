@@ -57,7 +57,9 @@ def test_nn_consistency():
                 backward_second_derivatives=backward_second_derivatives,
             )
             self.linear_layer = torch.nn.Linear(4, 1, bias=False)
-            self.linear_layer.weight = torch.nn.Parameter(torch.tensor([0.0, 1.0, 2.0, 3.0]))
+            self.linear_layer.weight = torch.nn.Parameter(
+                torch.tensor([0.0, 1.0, 2.0, 3.0])
+            )
 
         def forward(self, positions):
             positions.requires_grad = True
@@ -87,4 +89,6 @@ def test_nn_consistency():
     loss_true = (target - energy_true) ** 2 + torch.sum((d_target - forces_true) ** 2)
     loss_true.backward()
 
-    assert torch.allclose(nn_true.linear_layer.weight.grad, nn_false.linear_layer.weight.grad)
+    assert torch.allclose(
+        nn_true.linear_layer.weight.grad, nn_false.linear_layer.weight.grad
+    )
