@@ -12,15 +12,24 @@ For instructions and examples on the usage of the library, please refer to our
   <img src="./docs/src/_static/sphericart_3-0.png" alt="A plot of the +-1 isosurfaces of the Y^0\_3 solid harmonic, including also gradients." width="50%">
 </p>
 
+If you are using sphericart for your academic work, you can cite it as
+
+```
+@article{sphericart,
+    title={Fast evaluation of spherical harmonics with sphericart},
+    author={Bigi, Filippo and Fraux, Guillaume and Browning, Nicholas J. and Ceriotti, Michele}
+}
+```
+
 ## Installation
 
-### Python API
+### Python
 
 Pre-built (https://pypi.org/project/sphericart/).
 
 ```bash
 pip install sphericart             # numpy version
-pip install sphericart[torch]      # including also the torch bindings
+pip install sphericart[torch]      # including also the torch bindings (CPU-only)
 ```
 
 Note that the pre-built packages are compiled for a generic CPU, and might be
@@ -31,14 +40,17 @@ libraries that are optimized for the target system, you can build from source:
 git clone https://github.com/lab-cosmo/sphericart
 pip install .
 
-# if you also want the torch bindings
+# if you also want the torch bindings (CPU and GPU)
 pip install .[torch]
 
 # torch bindings, CPU-only version
 pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 ```
 
-### C and C++ API
+Building from source is also necessary to use sphericart's PyTorch GPU 
+functionalities, and it requires a CUDA compiler.
+
+### C and C++
 
 From source
 
@@ -55,6 +67,7 @@ cmake --build . --target install
 The following cmake configuration options are available:
 - `-DSPHERICART_BUILD_TORCH=ON/OFF`: build the torch bindings in addition to the main library
 - `-DSPHERICART_BUILD_TESTS=ON/OFF`: build C++ unit tests
+- `-DSPHERICART_BUILD_EXAMPLES=ON/OFF`: build C++ examples and benchmarks
 - `-DSPHERICART_OPENMP=ON/OFF`: enable OpenMP parallelism
 - `-DCMAKE_INSTALL_PREFIX=<where/you/want/to/install>` set the root path for installation
 

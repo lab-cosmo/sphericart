@@ -247,7 +247,7 @@ class SphericalHarmonics:
             the spherical harmonics' second derivatives up to degree ``l_max``.
             The last axis is organized in the same way as in the spherical
             harmonics return array, while the two intermediate axes represent the
-            hessian dimensions.
+            Hessian dimensions.
 
         """
 

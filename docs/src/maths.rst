@@ -15,8 +15,8 @@ to even further ambiguity in the definitions.
 Within `sphericart` we take an opinionated stance: we compute only real-valued
 harmonics, we express them as a function of the full Cartesian coordinates of a 
 point in three dimensions :math:`(x,y,z)` and compute by default "scaled" 
-versions :math:`\tilde{Y}^m_l(x)` which correspond to polynomials of the 
-Cartesian coordinates:
+versions :math:`\tilde{Y}^m_l(x, y, z)` which correspond to homogeneous polynomials
+of the Cartesian coordinates:
 
 .. math ::
     \tilde{Y}_l^m(x, y, z) = r^l\,{Y}_l^m(x, y, z) = F_l^{|m|} Q_l^{|m|}(z, r) \times
@@ -24,7 +24,7 @@ Cartesian coordinates:
       s_{|m|}(x, y) & \text{if $m < 0$}\\
       1/\sqrt{2} & \text{if $m = 0$}\\
       c_m(x, y) & \text{if $m > 0$}
-    \end{cases}     
+    \end{cases}
 
 where
 
@@ -36,13 +36,17 @@ where
     Q_l^m(z,r) =&\, r^l r_{xy}^{-m} \, P_l^m(z/r), \quad \\
     F_l^m = &\, (-1)^m \sqrt{\frac{2l+1}{2\pi}\frac{(l-m)!}{(l+m)!}}.
 
+If we neglect some constant normalization factors, these correspond to the 
+`regular solid harmonics <https://en.wikipedia.org/wiki/Solid_harmonics>`_. 
 See also the `reference paper <https://arxiv.org/abs/2302.08381>`_ for further 
 implementation details.
 
-The normalized version of the spherical harmonics can also be computed by providing
-the appropriate flag when creating the `sphericart` calculators, but we recommend using
-the scaled versions, that are slightly faster and provide a more natural scaling 
-when used together with a radial expansion.
+The radially normalized version of the spherical harmonics can also be computed by providing
+the appropriate flag when creating the `sphericart` calculators. These correspond to
+the real spherical harmonics as defined in the corresponding 
+`Wikipedia article <https://en.wikipedia.org/wiki/Spherical_harmonics>`_.
+However, we recommend using the scaled versions, which are slightly faster and 
+provide a more natural scaling if used together with a radial expansion.
 
 The :math:`\tilde{Y}^m_l(x)` are stored contiguously in memory, e.g. as
 :math:`\{ (l,m)=(0,0), (1,-1), (1,0), (1,1), (2,-2), \ldots \}`. 

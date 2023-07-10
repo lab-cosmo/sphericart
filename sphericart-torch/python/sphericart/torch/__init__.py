@@ -76,11 +76,13 @@ class SphericalHarmonics:
 
     By default, this class computes a non-normalized form of the real spherical
     harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
-    are polynomials in the Cartesian coordinates of the input points.
-    ``normalized=True`` can be set to compute :math:`Y^l_m`.
+    are homogeneous polynomials in the Cartesian coordinates of the input points.
+    ``normalized=True`` can be set to compute the normalized spherical harmonics
+    :math:`Y^l_m`, which are instead homogeneous polynomials of x/r, y/r, z/r.
 
-    Usage is similar to that of :py:class:`sphericart.SphericalHarmonics`,
-    and allows to return explicit forward gradients
+    This class can be used similarly to :py:class:`sphericart.SphericalHarmonics`
+    (its Python/NumPy counterpart), and it allows to return explicit forward gradients
+    and/or Hessians. For example:
 
     >>> import torch
     >>> import sphericart.torch as sct
@@ -90,8 +92,8 @@ class SphericalHarmonics:
     >>> sh_grads.shape
     torch.Size([10, 3, 81])
 
-    It is also possible to use backpropagation to compute derivatives
-    of a combination of spherical harmonics relative to the input coordinates.
+    Alternatively, if `compute()` is called, the outputs support
+    single and double backpropagation.
 
     >>> xyz = xyz.detach().clone().requires_grad_()
     >>> sh = sct.SphericalHarmonics(l_max=8, normalized=False)
@@ -100,6 +102,11 @@ class SphericalHarmonics:
     >>> torch.allclose(xyz.grad, sh_grads.sum(axis=-1))
     True
 
+    By default, only single backpropagation is
+    enabled. To activate the support for double backpropagation, please set
+    `backward_second_derivatives=True` at class creation.
+
+    This class supports TorchScript.
 
     :param l_max:
         the maximum degree of the spherical harmonics to be calculated
@@ -109,7 +116,7 @@ class SphericalHarmonics:
         if this parameter is set to `True`, second derivatives of the spherical
         harmonics are calculated during forward calls to `compute` (provided that
         `xyz.requires_grad` is `True`), making it possible to perform double
-        reverse-mode differentiation. If false, only the first derivatives will be
+        reverse-mode differentiation. If `False`, only the first derivatives will be
         computed and only a single reverse-mode differentiation will be possible.
 
     :return: a calculator, in the form of a SphericalHarmonics object
