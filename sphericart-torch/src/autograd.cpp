@@ -366,7 +366,7 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
     bool double_backward = ddsph.defined();  // If the double backward was not requested in advance, this  tensor will be uninitialized
 
     if (grad_out.requires_grad()) {
-        // IMPORTANT: gradgrad_wrt_grad_out, unlike gradgrad_wrt_xyz, is needed for mixed second derivatives
+        // gradgrad_wrt_grad_out, unlike gradgrad_wrt_xyz, is needed for mixed second derivatives
         int n_samples = xyz.sizes()[0];
         gradgrad_wrt_grad_out = torch::sum(dsph*grad_2_out.reshape({n_samples, 3, 1}), 1);
         // the above does the same as the following (but faster):
