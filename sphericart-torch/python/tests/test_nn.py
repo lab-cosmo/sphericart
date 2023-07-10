@@ -19,7 +19,7 @@ def test_nn():
             self.sh_calculator = sphericart.torch.SphericalHarmonics(
                 l_max=1, normalized=True
             )
-            self.linear_layer = torch.nn.Linear(4, 1)
+            self.linear_layer = torch.nn.Linear(4, 1, bias=False)
 
         def forward(self, positions):
             positions.requires_grad = True
@@ -56,7 +56,8 @@ def test_nn_consistency():
                 normalized=True,
                 backward_second_derivatives=backward_second_derivatives,
             )
-            self.linear_layer = torch.nn.Linear(4, 1)
+            self.linear_layer = torch.nn.Linear(4, 1, bias=False)
+            self.linear_layer.weight = torch.nn.Parameter(torch.tensor([0.0, 1.0, 2.0, 3.0]))
 
         def forward(self, positions):
             positions.requires_grad = True
@@ -72,6 +73,7 @@ def test_nn_consistency():
 
     nn_false = NN(backward_second_derivatives=False)
     xyz_false = xyz.detach().clone()
+    print(nn_false.linear_layer.weight)
     energy_false, forces_false = nn_false(xyz_false)
     loss_false = (target - energy_false) ** 2 + torch.sum(
         (d_target - forces_false) ** 2
@@ -79,9 +81,10 @@ def test_nn_consistency():
     loss_false.backward()
 
     nn_true = NN(backward_second_derivatives=True)
+    print(nn_true.linear_layer.weight)
     xyz_true = xyz.detach().clone()
     energy_true, forces_true = nn_true(xyz_true)
     loss_true = (target - energy_true) ** 2 + torch.sum((d_target - forces_true) ** 2)
     loss_true.backward()
 
-    assert torch.allclose(xyz_true.grad, xyz_false.grad)
+    assert torch.allclose(nn_true.linear_layer.weight.grad, nn_false.linear_layer.weight.grad)
