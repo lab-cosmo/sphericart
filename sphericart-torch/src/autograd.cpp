@@ -377,7 +377,7 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
         // gradgrad_wrt_xyz is needed to differentiate twice with respect to xyz. However, we only do this if the user
         // requested it when creating the class
         if (double_backward) {
-            int n_samples = xyz.sizes()[0];
+            int n_samples = xyz.size(0);
             int n_sph = grad_out.size(1);
             gradgrad_wrt_xyz = torch::sum(
                 grad_2_out.reshape({n_samples, 1, 3})*torch::sum(grad_out.reshape({n_samples, 1, 1, n_sph})*ddsph, 3),
