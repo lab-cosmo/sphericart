@@ -83,7 +83,6 @@ def test_nn_consistency():
     loss_false.backward()
 
     nn_true = NN(backward_second_derivatives=True)
-    print(nn_true.linear_layer.weight)
     xyz_true = xyz.detach().clone()
     energy_true, forces_true = nn_true(xyz_true)
     loss_true = (target - energy_true) ** 2 + torch.sum((d_target - forces_true) ** 2)
