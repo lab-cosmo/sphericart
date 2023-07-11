@@ -102,9 +102,15 @@ class SphericalHarmonics:
     >>> torch.allclose(xyz.grad, sh_grads.sum(axis=-1))
     True
 
-    By default, only single backpropagation is
-    enabled. To activate the support for double backpropagation, please set
-    `backward_second_derivatives=True` at class creation.
+    By default, only single backpropagation with respect to `xyz` is
+    enabled (this includes mixed second derivatives where `xyz` appears
+    as only one of the differentiation steps). To activate support
+    for double backpropagation with respect to `xyz`, please set
+    `backward_second_derivatives=True` at class creation. Warning: if
+    `backward_second_derivatives` is not set to `True` and double
+    differentiation with respect to `xyz` is requested, the results may
+    be incorrect and no warnings will be displayed. This is necessary to
+    provide optimal performance for both use cases.
 
     This class supports TorchScript.
 
@@ -114,10 +120,11 @@ class SphericalHarmonics:
         whether to normalize the spherical harmonics (default: False)
     :param backward_second_derivatives:
         if this parameter is set to `True`, second derivatives of the spherical
-        harmonics are calculated during forward calls to `compute` (provided that
-        `xyz.requires_grad` is `True`), making it possible to perform double
-        reverse-mode differentiation. If `False`, only the first derivatives will be
-        computed and only a single reverse-mode differentiation will be possible.
+        harmonics are calculated and stored during forward calls to `compute`
+        (provided that `xyz.requires_grad` is `True`), making it possible to perform
+        double reverse-mode differentiation with respect to `xyz`. If `False`, only
+        the first derivatives will be computed and only a single reverse-mode
+        differentiation step will be possible with respect to `xyz`.
 
     :return: a calculator, in the form of a SphericalHarmonics object
     """

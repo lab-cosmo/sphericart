@@ -293,10 +293,8 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
     }
 
-    if (xyz.requires_grad() && calculator.backward_second_derivatives_) {
+    if (xyz.requires_grad()) {
         ctx->save_for_backward({xyz, dsph, ddsph});
-    } else if (xyz.requires_grad()) {
-        ctx->save_for_backward({xyz, dsph});
     }
 
     if (do_hessians) {
@@ -309,52 +307,19 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
 
 }
 
-torch::Tensor first_derivative_chain_rule(
-    torch::Tensor xyz,
-    torch::Tensor dsph,
-    torch::Tensor grad_outputs
-) {
-    torch::Tensor xyz_grad = torch::Tensor();
-    if (xyz.requires_grad()) {
-        if (xyz.device().is_cpu()) {
-            xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
-        } else if (xyz.device().is_cuda()) {
-            xyz_grad = spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs);
-        } else {
-            throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
-        }
-    }
-    return xyz_grad;
-}
-
 torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     torch::autograd::AutogradContext *ctx,
     torch::autograd::variable_list grad_outputs
 ) {
-    /* get the saved data from the forward pass */
-    auto saved_variables = ctx->get_saved_variables();
-    auto xyz = saved_variables[0];
     if (grad_outputs.size() > 1) {
         throw std::runtime_error("We can not run a backward pass through the gradients of spherical harmonics");
     }
-    bool double_backward = (saved_variables.size() == 3);  // If the double backward was not requested in advance, this vector will be shorter
-    torch::Tensor xyz_grad;
 
-    /*
-    If the user requested backward second derivatives at class instantiation (double_backward == True), we create a new autograd node.
-    Otherwise, we compute the chain rule for the first derivatives in this function without creating a new node. This allows the user to
-    conveniently call backward() on a previously differentiated model even when the second derivatives of the spherical harmonics are not needed, 
-    while at the same time avoiding the computational overhead associated with the second derivatives and their chain rule. 
-    This is particularly useful when mixed positions-weights second derivatives are needed, but positions-positions second derivatives are not.
-    */
-    if (double_backward) {
-        // we extract xyz and pass it as a separate variable because we will need gradients with respect to it
-        xyz_grad = SphericalHarmonicsAutogradBackward::apply(grad_outputs[0], xyz, saved_variables);
-    } else {
-        auto dsph = saved_variables[1];
-        xyz_grad = first_derivative_chain_rule(xyz, dsph, grad_outputs[0]);
-    }
-    
+    /* get the saved data from the forward pass */
+    auto saved_variables = ctx->get_saved_variables();
+    // We extract xyz and pass it as a separate variable because we will need gradients with respect to it
+    auto xyz = saved_variables[0];
+    torch::Tensor xyz_grad = SphericalHarmonicsAutogradBackward::apply(grad_outputs[0], xyz, saved_variables);
     return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor()};
 }
 
@@ -366,7 +331,18 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
 ) {
     auto dsph = saved_variables[1];
     auto ddsph = saved_variables[2];
-    auto xyz_grad = first_derivative_chain_rule(xyz, dsph, grad_outputs);
+
+    auto xyz_grad = torch::Tensor();
+    if (xyz.requires_grad()) {
+        if (xyz.device().is_cpu()) {
+            xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
+        } else if (xyz.device().is_cuda()) {
+            xyz_grad = spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs);
+        } else {
+            throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
+        }
+    }
+
     ctx->save_for_backward({xyz, grad_outputs, dsph, ddsph});
 
     return xyz_grad;
@@ -387,7 +363,10 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
     auto gradgrad_wrt_grad_out = torch::Tensor();
     auto gradgrad_wrt_xyz = torch::Tensor();
 
+    bool double_backward = ddsph.defined();  // If the double backward was not requested in advance, this  tensor will be uninitialized
+
     if (grad_out.requires_grad()) {
+        // gradgrad_wrt_grad_out, unlike gradgrad_wrt_xyz, is needed for mixed second derivatives
         int n_samples = xyz.sizes()[0];
         gradgrad_wrt_grad_out = torch::sum(dsph*grad_2_out.reshape({n_samples, 3, 1}), 1);
         // the above does the same as the following (but faster):
@@ -395,14 +374,21 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
     }
 
     if (xyz.requires_grad()) {
-        int n_samples = xyz.sizes()[0];
-        int n_sph = grad_out.sizes()[1];
-        gradgrad_wrt_xyz = torch::sum(
-            grad_2_out.reshape({n_samples, 1, 3})*torch::sum(grad_out.reshape({n_samples, 1, 1, n_sph})*ddsph, 3),
-            2
-        );
-        // the above does the same as the following (but faster):
-        // gradgrad_wrt_xyz = torch::einsum("sa, sk, sabk -> sb", {grad_2_out, grad_out, ddsph});
+        // gradgrad_wrt_xyz is needed to differentiate twice with respect to xyz. However, we only do this if the user
+        // requested it when creating the class
+        if (double_backward) {
+            int n_samples = xyz.size(0);
+            int n_sph = grad_out.size(1);
+            gradgrad_wrt_xyz = torch::sum(
+                grad_2_out.reshape({n_samples, 1, 3})*torch::sum(grad_out.reshape({n_samples, 1, 1, n_sph})*ddsph, 3),
+                2
+            );
+            // the above does the same as the following (but faster):
+            // gradgrad_wrt_xyz = torch::einsum("sa, sk, sabk -> sb", {grad_2_out, grad_out, ddsph});
+        }
+        // if double_backward is false, xyz requires a gradient, but the user did not request second derivatives with respect to xyz
+        // (and therefore ddsph is an uninitialized tensor). In this case, we return gradgrad_wrt_xyz as an uninitialized tensor:
+        // this will signal to PyTorch that the relevant gradients are zero, so that xyz.grad will not be updated
     }
 
     return {gradgrad_wrt_grad_out, gradgrad_wrt_xyz, torch::Tensor()}; 
