@@ -121,7 +121,7 @@ class SphericalHarmonics:
     :param backward_second_derivatives:
         if this parameter is set to `True`, second derivatives of the spherical
         harmonics are calculated and stored during forward calls to `compute`
-        (provided that `xyz.requires_grad` is `True`), making it possible to perform 
+        (provided that `xyz.requires_grad` is `True`), making it possible to perform
         double reverse-mode differentiation with respect to `xyz`. If `False`, only
         the first derivatives will be computed and only a single reverse-mode
         differentiation step will be possible with respect to `xyz`.
