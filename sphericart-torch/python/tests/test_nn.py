@@ -38,6 +38,12 @@ def test_nn():
     loss = (target - energy) ** 2 + torch.sum((d_target - forces) ** 2)
     loss.backward()
 
+    if torch.cuda.is_available():
+        nn = NN().to("cuda")
+        energy, forces = nn(xyz.detach().to("cuda"))
+        loss = (target.to("cuda") - energy) ** 2 + torch.sum((d_target.to("cuda") - forces) ** 2)
+        loss.backward()
+
 
 def test_nn_consistency():
     # Make sure that, while training a NN with gradients of the target, the gradients
@@ -90,3 +96,24 @@ def test_nn_consistency():
     assert torch.allclose(
         nn_true.linear_layer.weight.grad, nn_false.linear_layer.weight.grad
     )
+
+    if torch.cuda.is_available():
+        nn_false = NN(backward_second_derivatives=False).to("cuda")
+        xyz_false = xyz.detach().clone().to("cuda")
+        energy_false, forces_false = nn_false(xyz_false)
+        loss_false = (target.to("cuda") - energy_false) ** 2 + torch.sum(
+            (d_target.to("cuda") - forces_false) ** 2
+        )
+        loss_false.backward()
+
+        nn_true = NN(backward_second_derivatives=True).to("cuda")
+        xyz_true = xyz.detach().clone().to("cuda")
+        energy_true, forces_true = nn_true(xyz_true)
+        loss_true = (target.to("cuda") - energy_true) ** 2 + torch.sum(
+            (d_target.to("cuda") - forces_true) ** 2
+        )
+        loss_true.backward()
+
+        assert torch.allclose(
+            nn_true.linear_layer.weight.grad, nn_false.linear_layer.weight.grad
+        )
