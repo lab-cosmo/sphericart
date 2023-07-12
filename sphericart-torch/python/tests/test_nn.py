@@ -41,7 +41,9 @@ def test_nn():
     if torch.cuda.is_available():
         nn = NN().to("cuda")
         energy, forces = nn(xyz.detach().to("cuda"))
-        loss = (target.to("cuda") - energy) ** 2 + torch.sum((d_target.to("cuda") - forces) ** 2)
+        loss = (target.to("cuda") - energy) ** 2 + torch.sum(
+            (d_target.to("cuda") - forces) ** 2
+        )
         loss.backward()
 
 
