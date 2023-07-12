@@ -221,11 +221,6 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         dsph = results[1];
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
-        if (do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_)) {
-            //TODO commenting this out so the CUDA code can be called for double backwards/hessians...
-           // throw std::runtime_error("Second derivatives are not yet implemented in CUDA");
-        }
-
         // re-do the shared memory update in case `requires_grad` changed        
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
 

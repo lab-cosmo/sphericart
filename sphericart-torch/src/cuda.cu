@@ -729,7 +729,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     }
     else
     {
-        // just so accessor doesn't complain
+        // just so accessor doesn't complain (will be reverted later)
         d_sph = torch::empty(
             {1, 1, 1},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
@@ -745,6 +745,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     }
     else
     {
+        // just so accessor doesn't complain (will be reverted later)
         hess_sph = torch::empty(
             {1, 1, 1, 1},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
@@ -779,6 +780,8 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     cudaDeviceSynchronize();
 
+    if (!gradients) d_sph = torch::Tensor();
+    if (!hessian) hess_sph = torch::Tensor();
     return {sph, d_sph, hess_sph};
 }
 
