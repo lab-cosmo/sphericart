@@ -284,8 +284,6 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         sph = results[0];
         dsph = results[1];
         ddsph = results[2];
-        // if (!(do_gradients || xyz.requires_grad())) dsph = torch::Tensor();
-        // if (!(do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_))) ddsph = torch::Tensor();
     } else {
         throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
     }
