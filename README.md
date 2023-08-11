@@ -20,7 +20,8 @@ If you are using sphericart for your academic work, you can cite it as
     author={Bigi, Filippo and Fraux, Guillaume and Browning, Nicholas J. and Ceriotti, Michele},
     journal={J. Chem. Phys.},
     year={2023},
-    number={in press}
+    number={159},
+    pages={064802},
 }
 ```
 
