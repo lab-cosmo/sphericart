@@ -35,5 +35,9 @@ If you are using sphericart for your academic work, you can cite it as
 
     @article{sphericart,
         title={Fast evaluation of spherical harmonics with sphericart},
-        author={Bigi, Filippo and Fraux, Guillaume and Browning, Nicholas J. and Ceriotti, Michele}
+        author={Bigi, Filippo and Fraux, Guillaume and Browning, Nicholas J. and Ceriotti, Michele},
+        journal={J. Chem. Phys.},
+        year={2023},
+        number={159},
+        pages={064802},
     }
