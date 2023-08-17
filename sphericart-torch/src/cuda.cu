@@ -84,8 +84,8 @@ __device__ inline void clear_buffers(
 */
 template <typename scalar_t>
 __device__ inline void write_buffers(
-    int atom_idx,
-    int natoms,
+    size_t atom_idx,
+    size_t natoms,
     scalar_t x,
     scalar_t y,
     scalar_t z,
@@ -109,9 +109,9 @@ __device__ inline void write_buffers(
     scalar_t *buffer_dsph_dzdx,
     scalar_t *buffer_dsph_dzdy,
     scalar_t *buffer_dsph_dzdz,
-    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> sph,
-    torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph,
-    torch::PackedTensorAccessor32<scalar_t, 4, torch::RestrictPtrTraits> ddsph,
+    torch::PackedTensorAccessor64<scalar_t, 2, torch::RestrictPtrTraits> sph,
+    torch::PackedTensorAccessor64<scalar_t, 3, torch::RestrictPtrTraits> dsph,
+    torch::PackedTensorAccessor64<scalar_t, 4, torch::RestrictPtrTraits> ddsph,
     bool requires_grad,
     bool requires_hessian,
     bool normalize)
@@ -200,15 +200,15 @@ __device__ inline void write_buffers(
 */
 template <typename scalar_t>
 __global__ void spherical_harmonics_kernel(
-    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> xyz,
-    torch::PackedTensorAccessor32<scalar_t, 1, torch::RestrictPtrTraits> prefactors,
+    torch::PackedTensorAccessor64<scalar_t, 2, torch::RestrictPtrTraits> xyz,
+    torch::PackedTensorAccessor64<scalar_t, 1, torch::RestrictPtrTraits> prefactors,
     int lmax,
     bool requires_grad,
     bool requires_hessian,
     bool normalize,
-    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> sph,
-    torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph,
-    torch::PackedTensorAccessor32<scalar_t, 4, torch::RestrictPtrTraits> ddsph)
+    torch::PackedTensorAccessor64<scalar_t, 2, torch::RestrictPtrTraits> sph,
+    torch::PackedTensorAccessor64<scalar_t, 3, torch::RestrictPtrTraits> dsph,
+    torch::PackedTensorAccessor64<scalar_t, 4, torch::RestrictPtrTraits> ddsph)
 {
     extern __shared__ char buffer[];
 
@@ -278,9 +278,9 @@ __global__ void spherical_harmonics_kernel(
         offset += blockDim.y * nl * sizeof(scalar_t);
     }
 
-    int atom_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    size_t atom_idx = blockIdx.x * blockDim.y + threadIdx.y;
 
-    int natoms = xyz.size(0);
+    size_t natoms = xyz.size(0);
 
     scalar_t x = 0.0;
     scalar_t y = 0.0;
@@ -766,15 +766,15 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
         
             spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
-                xyz.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
-                prefactors.packed_accessor32<scalar_t, 1, torch::RestrictPtrTraits>(),
+                xyz.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>(),
+                prefactors.packed_accessor64<scalar_t, 1, torch::RestrictPtrTraits>(),
                 l_max,
                 xyz.requires_grad() || gradients,
                 xyz.requires_grad() && hessian,
                 normalize,
-                sph.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
-                d_sph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>(),
-                hess_sph.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>()); 
+                sph.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>(),
+                d_sph.packed_accessor64<scalar_t, 3, torch::RestrictPtrTraits>(),
+                hess_sph.packed_accessor64<scalar_t, 4, torch::RestrictPtrTraits>()); 
                 
                 }));
 
@@ -792,13 +792,13 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 */
 template <typename scalar_t>
 __global__ void backward_kernel(
-    torch::PackedTensorAccessor32<scalar_t, 3, torch::RestrictPtrTraits> dsph,
-    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> sph_grad,
-    torch::PackedTensorAccessor32<scalar_t, 2, torch::RestrictPtrTraits> xyz_grad)
+    torch::PackedTensorAccessor64<scalar_t, 3, torch::RestrictPtrTraits> dsph,
+    torch::PackedTensorAccessor64<scalar_t, 2, torch::RestrictPtrTraits> sph_grad,
+    torch::PackedTensorAccessor64<scalar_t, 2, torch::RestrictPtrTraits> xyz_grad)
 {
 
-    int sample_idx = blockIdx.x * blockDim.y + threadIdx.y;
-    int nsamples = sph_grad.size(0);
+    size_t sample_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    size_t nsamples = sph_grad.size(0);
     int spatial = blockIdx.y;
 
     scalar_t sum = 0.0;
@@ -858,9 +858,9 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
         AT_DISPATCH_FLOATING_TYPES(
             xyz.scalar_type(), "spherical_harmonics_backward_cuda", ([&]
                                                                      { backward_kernel<<<block_dim, grid_dim>>>(
-                                                                           dsph.packed_accessor32<scalar_t, 3, torch::RestrictPtrTraits>(),
-                                                                           sph_grad.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
-                                                                           xyz_grad.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>()); }));
+                                                                           dsph.packed_accessor64<scalar_t, 3, torch::RestrictPtrTraits>(),
+                                                                           sph_grad.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>(),
+                                                                           xyz_grad.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>()); }));
 
         cudaDeviceSynchronize();
     }
