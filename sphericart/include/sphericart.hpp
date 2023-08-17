@@ -338,9 +338,9 @@ private:
     // function pointers are used to set up the right functions to be called
     // these are set in the constructor, so that the public compute functions can 
     // be redirected to the right implementation
-    void (*_array_no_derivatives)(const T*, T*, T*, T*, int, int, const T*, T*);
-    void (*_array_with_derivatives)(const T*, T*, T*, T*, int, int, const T*, T*);
-    void (*_array_with_hessians)(const T*, T*, T*, T*, int, int, const T*, T*);
+    void (*_array_no_derivatives)(const T*, T*, T*, T*, size_t, int, const T*, T*);
+    void (*_array_with_derivatives)(const T*, T*, T*, T*, size_t, int, const T*, T*);
+    void (*_array_with_hessians)(const T*, T*, T*, T*, size_t, int, const T*, T*);
     
     // these compute a single sample
     void (*_sample_no_derivatives)(const T*, T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
