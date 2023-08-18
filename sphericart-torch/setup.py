@@ -17,8 +17,7 @@ class cmake_ext(build_ext):
     def run(self):
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
-        install_dir = os.path.join(os.path.realpath(
-            self.build_lib), "sphericart/torch")
+        install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart/torch")
 
         os.makedirs(build_dir, exist_ok=True)
 
@@ -30,7 +29,7 @@ class cmake_ext(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
         ]
-        if (CUDA_HOME is not None):
+        if CUDA_HOME is not None:
             cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")
 
         if sys.platform.startswith("darwin"):
@@ -72,8 +71,7 @@ class bdist_egg_disabled(bdist_egg):
 
 if __name__ == "__main__":
     setup(
-        version=open(os.path.join(ROOT, "sphericart",
-                     "VERSION")).readline().strip(),
+        version=open(os.path.join(ROOT, "sphericart", "VERSION")).readline().strip(),
         ext_modules=[
             Extension(name="sphericart_torch", sources=[]),
         ],
