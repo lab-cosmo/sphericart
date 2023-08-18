@@ -237,7 +237,7 @@ void hardcoded_sph(
     T *sph,
     [[maybe_unused]] T *dsph,
     [[maybe_unused]] T *ddsph,
-    int n_samples,
+    size_t n_samples,
     [[maybe_unused]] int l_max_dummy = 0, // dummy variables to have a uniform interface with generic_sph
     [[maybe_unused]] const T *prefactors_dummy = nullptr,
     [[maybe_unused]] T *buffers_dummy = nullptr)
@@ -257,7 +257,7 @@ void hardcoded_sph(
         [[maybe_unused]] T *ddsph : pointer to the storage location for the second derivatives.
                         stored as for sph_i, with nine consecutive blocks associated to the nine possible
                         second derivative combinations
-        int n_samples: number of samples that have to be computed
+        size_t n_samples: number of samples that have to be computed
 
     */
     static_assert(!(DO_SECOND_DERIVATIVES && HARDCODED_LMAX > 1), "Hardcoded second derivatives are not implemented for l>1.");
@@ -272,7 +272,7 @@ void hardcoded_sph(
         T *ddsph_i = nullptr;
 
 #pragma omp for
-        for (int i_sample = 0; i_sample < n_samples; i_sample++)
+        for (size_t i_sample = 0; i_sample < n_samples; i_sample++)
         {
             // gets pointers to the current sample input and output arrays
             xyz_i = xyz + i_sample * 3;
@@ -921,7 +921,7 @@ void generic_sph(
     T *sph,
     [[maybe_unused]] T *dsph,
     [[maybe_unused]] T *ddsph,
-    int n_samples,
+    size_t n_samples,
     int l_max,
     const T *prefactors,
     T *buffers)
@@ -959,7 +959,7 @@ void generic_sph(
         [[maybe_unused]] T *dsph : pointer to the storage location for the second derivatives.
                         stored as for sph_i, with nine consecutive blocks associated to the possible
                         second derivative combinations
-        int n_samples: number of samples that have to be computed
+        size_t n_samples: number of samples that have to be computed
         int l_max: maximum l to compute
         prefactors: pointer to an array that contains the prefactors used for Ylm and Qlm calculation
         buffers: buffer space to compute cosine, sine and 2*m*z terms
@@ -986,7 +986,7 @@ void generic_sph(
         T *ddsph_i = nullptr;
 
 #pragma omp for
-        for (int i_sample = 0; i_sample < n_samples; i_sample++)
+        for (size_t i_sample = 0; i_sample < n_samples; i_sample++)
         {
             auto xyz_i = xyz + i_sample * 3;
             // pointer to the segment that should store the i_sample sph
