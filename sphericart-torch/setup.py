@@ -21,14 +21,14 @@ class cmake_ext(build_ext):
 
         os.makedirs(build_dir, exist_ok=True)
 
-        CUDA_HOME = os.environ.get("CUDA_HOME")
-
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
         ]
+        
+        CUDA_HOME = os.environ.get("CUDA_HOME")
         if CUDA_HOME is not None:
             cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")
 
