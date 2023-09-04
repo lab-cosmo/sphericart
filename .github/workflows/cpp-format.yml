@@ -1,4 +1,4 @@
-name: C/C++ format
+name: C++ format
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
   # check C/C++ formatting
   cpp-format:
     runs-on: ubuntu-latest
-    name: check C/C++ formatting
+    name: check C++ formatting
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v3
@@ -20,11 +20,7 @@ jobs:
 
     - name: Check formatting
       run: |
-        if ! git diff --exit-code --name-only origin/master...HEAD | grep -E '\.(c|cpp|h|hpp)$'; then
-          exit 0
-        fi
-
-        for file in $(git diff --name-only origin/master...HEAD | grep -E '\.(c|cpp|h|hpp)$'); do
+        for file in $(find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \)); do
           clang-format -style=file -i "$file"
           if git diff --quiet "$file"; then
             echo "✅ $file is properly formatted."
