@@ -12,9 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     name: check C/C++ formatting
       steps:
-      - uses: actions/checkout@v3
-      - run: |
-          sudo apt-get install clang-format
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install clang-format
+        run: sudo apt-get install clang-format
+
+      - name: Check formatting
+        run: |
           if ! git diff --exit-code --name-only origin/master...HEAD | grep -E '\.(c|cpp|h|hpp)$'; then
             exit 0
           fi
