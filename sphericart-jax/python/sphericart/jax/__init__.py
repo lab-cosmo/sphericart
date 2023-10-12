@@ -9,3 +9,4 @@ for _name, _value in cpu_ops.registrations().items():
 
 
 from .dsph import dsph
+from .ddsph import ddsph
