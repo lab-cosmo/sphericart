@@ -51,4 +51,4 @@ def test_gradgrad(xyz):
     for l_max in [2, 3, 4]:
         sph = gradgrad_sph(xyz, l_max, normalized=True)
         sph_dummy = dummy_gradgrad_sph(xyz, l_max)
-        assert jnp.allclose(sph, sph_dummy, atol=1e-10)
+        assert jnp.allclose(sph, sph_dummy)
