@@ -76,6 +76,7 @@ def ddsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
     )  # Not sure why this list is necessary here
 mlir.register_lowering(_ddsph_p, ddsph_lowering_cpu, platform="cpu")
 
+
 def ddsph_p_batch(arg_values, batch_axes, *, l_max_c):
     """Computes the batched version of the primitive.
     

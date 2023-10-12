@@ -1,8 +1,12 @@
+import jax
 import jax.numpy as jnp
+from functools import partial
 
 
+@partial(jax.vmap, in_axes=(0, None))
 def dummy_spherical_harmonics(xyz, l_max):
-    # Spherical harmonics
+    # Spherical harmonics in pure jax, using the same algorithm as sphericart
+    # These will always be normalized
 
     assert xyz.shape[0] == 3
     r = jnp.sqrt(jnp.sum(xyz**2, keepdims=True))

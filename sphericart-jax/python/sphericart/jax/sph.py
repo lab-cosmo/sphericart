@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 import math
 from functools import partial
 from jax import core
@@ -6,6 +7,9 @@ from jax.core import ShapedArray
 from jax.interpreters import mlir, xla
 from jax.interpreters.mlir import ir
 from jaxlib.hlo_helpers import custom_call
+from jax.interpreters import ad
+
+from .dsph import dsph
 from .utils import default_layouts
 
 
@@ -69,6 +73,7 @@ def sph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
     )]  # Not sure why this list is necessary here
 mlir.register_lowering(_sph_p, sph_lowering_cpu, platform="cpu")
 
+
 def sph_p_batch(arg_values, batch_axes, *, l_max_c):
     """Computes the batched version of the primitive.
     
@@ -89,3 +94,31 @@ def sph_p_batch(arg_values, batch_axes, *, l_max_c):
     res = sph(*arg_values)  # sph_p is closed w.r.t. batching
     return res, batch_axes[0]
 jax.interpreters.batching.primitive_batchers[_sph_p] = sph_p_batch
+
+
+def sph_p_batch(arg_values, batch_axes, *, l_max_c):
+    """Computes the batched version of the primitive.
+    
+    This must be a JAX-traceable function.
+    
+    Since the multiply_add primitive already operates pointwise on arbitrary
+    dimension tensors, to batch it we can use the primitive itself. This works as
+    long as both the inputs have the same dimensions and are batched along the
+    same axes. The result is batched along the axis that the inputs are batched.
+    
+    Args:
+        vector_arg_values: a tuple of two arguments, each being a tensor of matching
+        shape.
+        batch_axes: the axes that are being batched. See vmap documentation.
+    Returns:
+        a tuple of the result, and the result axis that was batched. 
+    """
+    res = sph(*arg_values)  # sph_p is closed w.r.t. batching
+    return res, batch_axes[0]
+jax.interpreters.batching.primitive_batchers[_sph_p] = sph_p_batch
+
+
+def sph_jvp(primals, tangents, *, l_max_c):
+    sph, d_sph = dsph(*primals)
+    return sph, jnp.einsum("...ay, ...a -> ...y", d_sph, tangents[0])
+ad.primitive_jvps[_sph_p] = sph_jvp

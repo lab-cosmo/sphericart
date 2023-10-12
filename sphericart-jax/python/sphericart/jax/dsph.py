@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 import math
 from functools import partial
 from jax import core
@@ -6,7 +7,10 @@ from jax.core import ShapedArray
 from jax.interpreters import mlir, xla
 from jax.interpreters.mlir import ir
 from jaxlib.hlo_helpers import custom_call
+from jax.interpreters import ad
+
 from .utils import default_layouts
+from .ddsph import ddsph
 
 
 # register the dsph primitive
@@ -73,6 +77,7 @@ def dsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
     )  # Not sure why this list is necessary here
 mlir.register_lowering(_dsph_p, dsph_lowering_cpu, platform="cpu")
 
+
 def dsph_p_batch(arg_values, batch_axes, *, l_max_c):
     """Computes the batched version of the primitive.
     
@@ -93,3 +98,9 @@ def dsph_p_batch(arg_values, batch_axes, *, l_max_c):
     res = dsph(*arg_values)  # dsph_p is closed w.r.t. batching
     return res, batch_axes[0]
 jax.interpreters.batching.primitive_batchers[_dsph_p] = dsph_p_batch
+
+
+def dsph_jvp(primals, tangents, *, l_max_c):
+    sph, d_sph, dd_sph = ddsph(*primals)
+    return (sph, d_sph), (jnp.einsum("...ay, ...a -> ...y", d_sph, tangents[0]), jnp.einsum("...aby, ...a -> ...by", dd_sph, tangents[0]))
+ad.primitive_jvps[_dsph_p] = dsph_jvp

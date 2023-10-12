@@ -1,13 +1,10 @@
 import pytest
 import jax
-
+import sphericart.jax
 jax.config.update("jax_platform_name", "cpu")
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import numpy as np
-
-import sphericart.jax as sphj
-from sphericart import SphericalHarmonics as SphericalHarmonicsCPU
 
 
 @pytest.fixture
@@ -21,8 +18,8 @@ def test_consistency(xyz):
 
     for l_max in [4, 7, 10]:
         for normalized in [True, False]:
-            calculator = SphericalHarmonicsCPU(l_max=l_max, normalized=normalized)
-            sph = sphj.spherical_harmonics(l_max=l_max, normalized=normalized, xyz=xyz)
+            calculator = sphericart.SphericalHarmonics(l_max=l_max, normalized=normalized)
+            sph = sphericart.jax.spherical_harmonics(l_max=l_max, normalized=normalized, xyz=xyz)
 
             sph_ref = calculator.compute(np.asarray(xyz))
             np.testing.assert_allclose(sph, sph_ref)
