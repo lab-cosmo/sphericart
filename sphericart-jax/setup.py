@@ -21,10 +21,14 @@ class cmake_ext(build_ext):
 
         os.makedirs(build_dir, exist_ok=True)
 
+        import pybind11
+        cmake_prefix_path = [pybind11.get_cmake_dir()]
+
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
+            f"-DCMAKE_PREFIX_PATH={';'.join(cmake_prefix_path)}",
         ]
 
         if sys.platform.startswith("darwin"):
