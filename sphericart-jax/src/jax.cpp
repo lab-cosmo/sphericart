@@ -46,3 +46,5 @@ void cpu_sph_with_gradients(void *out_tuple, const void **in) {
     calculator.compute_array_with_gradients(xyz, xyz_length, sph, sph_len, dsph,
                                             dsph_len);
 }
+
+} // namespace
