@@ -62,7 +62,7 @@ def sph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
     return [custom_call(
         op_name,
         # Output types
-        out_types=[
+        result_types=[
             mlir.ir.RankedTensorType.get(out_shape, dtype),
         ],
         # inputs to the binded functions

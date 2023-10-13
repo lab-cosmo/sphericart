@@ -1,11 +1,7 @@
 import jax
 from .lib import cpu_ops
 from .spherical_harmonics import spherical_harmonics
-import jaxlib
 
-import inspect
-print(inspect.signature(jaxlib.hlo_helpers.custom_call))
-raise ValueError()
 
 # register the CPU operation to xla
 for _name, _value in cpu_ops.registrations().items():

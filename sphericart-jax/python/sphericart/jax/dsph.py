@@ -65,7 +65,7 @@ def dsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
     return custom_call(
         op_name,
         # Output types
-        out_types=[
+        result_types=[
             mlir.ir.RankedTensorType.get(sph_shape, dtype),
             mlir.ir.RankedTensorType.get(dsph_shape, dtype),
         ],
