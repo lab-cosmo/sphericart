@@ -8,7 +8,10 @@ from jax.interpreters.mlir import ir, custom_call
 from .utils import default_layouts
 
 
-# register the dsph primitive
+# This file registers the _ddsph_p primitive and defines its implementation,
+# as well as some transformation rules. For more information and comments,
+# see sph.py
+
 _ddsph_p = core.Primitive("ddsph")
 _ddsph_p.multiple_results = True
 _ddsph_p.def_impl(partial(xla.apply_primitive, _ddsph_p))

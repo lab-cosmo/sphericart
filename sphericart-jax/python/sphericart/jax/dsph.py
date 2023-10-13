@@ -12,6 +12,10 @@ from .utils import default_layouts
 from .ddsph import ddsph
 
 
+# This file registers the _dsph_p primitive and defines its implementation,
+# as well as some transformation rules. For more information and comments,
+# see sph.py
+
 _dsph_p = core.Primitive("dsph")
 _dsph_p.multiple_results = True
 _dsph_p.def_impl(partial(xla.apply_primitive, _dsph_p))
