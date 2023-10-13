@@ -47,4 +47,8 @@ void cpu_sph_with_gradients(void *out_tuple, const void **in) {
                                             dsph_len);
 }
 
+PYBIND11_MODULE(sphericart_jax_cpu, m) {
+    m.def("registrations", &Registrations);
+}
+
 } // namespace
