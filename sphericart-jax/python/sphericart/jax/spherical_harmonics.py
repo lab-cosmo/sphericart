@@ -1,7 +1,7 @@
 from .sph import sph
 
 
-def spherical_harmonics(xyz, l_max, normalized):  # TODO: CHANGE xyz to first argument everywhere
+def spherical_harmonics(xyz, l_max, normalized):
     """Computes the Spherical harmonics and their derivatives within
     the JAX framework. See :py:class:`sphericart.SphericalHarmonics` for more details.
     This function supports ``jit``, ``vmap``, and up to two rounds of forward and/or
