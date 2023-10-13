@@ -32,20 +32,20 @@ add_subdirectory(sphericart EXCLUDE_FROM_ALL)
 # include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # CPU op library
-pybind11_add_module(cpu_ops ${CMAKE_CURRENT_LIST_DIR}/src/jax.cpp)
-install(TARGETS cpu_ops DESTINATION sphericart_jax)
+pybind11_add_module(sphericart_jax_cpu ${CMAKE_CURRENT_LIST_DIR}/src/jax.cpp)
+install(TARGETS sphericart_jax_cpu DESTINATION sphericart_jax)
 
 
 
-target_link_libraries(cpu_ops PUBLIC sphericart)
-target_compile_features(cpu_ops PUBLIC cxx_std_17)
+target_link_libraries(sphericart_jax_cpu PUBLIC sphericart)
+target_compile_features(sphericart_jax_cpu PUBLIC cxx_std_17)
 
-target_include_directories(cpu_ops PUBLIC
+target_include_directories(sphericart_jax_cpu PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
-install(TARGETS cpu_ops
+install(TARGETS sphericart_jax_cpu
     LIBRARY DESTINATION "lib"
 )
 

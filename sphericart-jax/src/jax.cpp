@@ -78,6 +78,6 @@ pybind11::dict Registrations() {
     return dict;
 }
 
-PYBIND11_MODULE(cpu_ops, m) { m.def("registrations", &Registrations); }
+PYBIND11_MODULE(sphericart_jax_cpu, m) { m.def("registrations", &Registrations); }
 
 }  // namespace
