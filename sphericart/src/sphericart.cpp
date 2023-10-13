@@ -6,7 +6,7 @@
 
 using namespace sphericart;
 
-// This macro to define different possible hardcoded function calls. It is used
+// This macro defines the different possible hardcoded function calls. It is used
 // to initialize the function pointers that are used by the `compute_` calls in
 // the SphericalHarmonics class
 #define _HARCODED_SWITCH_CASE(L_MAX)                                           \
