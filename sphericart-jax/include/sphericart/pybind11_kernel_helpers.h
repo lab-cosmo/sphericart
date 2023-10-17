@@ -1,21 +1,31 @@
 // taken from https://github.com/dfm/extending-jax
-// This header extends kernel_helpers.h with the pybind11 specific interface to
-// serializing descriptors. It also adds a pybind11 function for wrapping our
-// custom calls in a Python capsule. This is separate from kernel_helpers so
-// that the CUDA code itself doesn't include pybind11. I don't think that this
-// is strictly necessary, but they do it in jaxlib, so let's do it here too.
 
 #ifndef _PYBIND11_KERNEL_HELPERS_H_
 #define _PYBIND11_KERNEL_HELPERS_H_
 
-#include <pybind11/pybind11.h>
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
-#include "kernel_helpers.h"
+#include <pybind11/pybind11.h>
 
 namespace sphericart_jax {
 
-template <typename T> pybind11::bytes PackDescriptor(const T &descriptor) {
-    return pybind11::bytes(PackDescriptorAsString(descriptor));
+// https://en.cppreference.com/w/cpp/numeric/bit_cast
+template <class To, class From>
+typename std::enable_if<sizeof(To) == sizeof(From) &&
+                            std::is_trivially_copyable<From>::value &&
+                            std::is_trivially_copyable<To>::value,
+                        To>::type
+bit_cast(const From &src) noexcept {
+    static_assert(std::is_trivially_constructible<To>::value,
+                  "This implementation additionally requires destination type "
+                  "to be trivially constructible");
+
+    To dst;
+    memcpy(&dst, &src, sizeof(To));
+    return dst;
 }
 
 template <typename T> pybind11::capsule EncapsulateFunction(T *fn) {
