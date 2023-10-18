@@ -22,6 +22,7 @@ class cmake_ext(build_ext):
         os.makedirs(build_dir, exist_ok=True)
 
         import pybind11
+
         cmake_prefix_path = [pybind11.get_cmake_dir()]
 
         cmake_options = [

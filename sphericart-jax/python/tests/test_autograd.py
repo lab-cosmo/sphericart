@@ -1,5 +1,6 @@
 import pytest
 import jax
+
 jax.config.update("jax_platform_name", "cpu")
 import jax.numpy as jnp
 import jax._src.test_util as jtu
