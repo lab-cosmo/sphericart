@@ -11,9 +11,9 @@ def spherical_harmonics(xyz, l_max, normalized=False):
     Note that the l_max argument (position 1 in the signature) should be tagged as static
     when jit-ing the function:
 
-    ```python
-    jitted_sph_function = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=1)
-    ```
+    >>> import jax
+    >>> import sphericart.jax
+    >>> jitted_sph_function = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=1)
 
     Parameters
     ----------
