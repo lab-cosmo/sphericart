@@ -1,4 +1,5 @@
 import jax
+
 jax.config.update("jax_platform_name", "cpu")
 import jax.numpy as jnp
 import equinox as eqx
@@ -6,9 +7,7 @@ import sphericart.jax
 
 
 def test_nn():
-
     class NN(eqx.Module):
-
         def __init__(self):
             pass
 

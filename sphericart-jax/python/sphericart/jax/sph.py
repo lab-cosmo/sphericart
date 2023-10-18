@@ -30,6 +30,8 @@ def sph_abstract_eval(xyz, l_max, normalized, *, l_max_c):
     dtype = xyz.dtype
     out_shape = xyz.shape[:-1] + (sph_size,)
     return ShapedArray(out_shape, dtype)
+
+
 _sph_p.def_abstract_eval(sph_abstract_eval)
 
 
@@ -42,7 +44,9 @@ def sph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
     xyz_shape = xyz_type.shape
     dtype = xyz_type.element_type
     sph_size = (l_max_c + 1) * (l_max_c + 1)
-    out_shape = xyz_shape[:-1] + [sph_size,]
+    out_shape = xyz_shape[:-1] + [
+        sph_size,
+    ]
     n_samples = math.prod(xyz_shape[:-1])
 
     # make sure we dispatch to the correct implementation
@@ -60,11 +64,18 @@ def sph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
             mlir.ir.RankedTensorType.get(out_shape, dtype),
         ],
         # inputs to the binded functions
-        operands=[xyz, mlir.ir_constant(l_max_c), normalized, mlir.ir_constant(n_samples)],
+        operands=[
+            xyz,
+            mlir.ir_constant(l_max_c),
+            normalized,
+            mlir.ir_constant(n_samples),
+        ],
         # Layout specification:
         operand_layouts=default_layouts(xyz_shape, (), (), ()),
         result_layouts=default_layouts(out_shape),
     ).results
+
+
 mlir.register_lowering(_sph_p, sph_lowering_cpu, platform="cpu")
 
 
@@ -73,6 +84,8 @@ def sph_p_batch(arg_values, batch_axes, *, l_max_c):
     # since _sph_p is closed with respect to batching
     res = sph(*arg_values)
     return res, batch_axes[0]
+
+
 jax.interpreters.batching.primitive_batchers[_sph_p] = sph_p_batch
 
 
@@ -80,4 +93,6 @@ def sph_jvp(primals, tangents, *, l_max_c):
     # Define the differentiation rule for _sph_p
     sph, d_sph = dsph(*primals)
     return sph, jnp.einsum("...ay, ...a -> ...y", d_sph, tangents[0])
+
+
 ad.primitive_jvps[_sph_p] = sph_jvp
