@@ -1,32 +1,22 @@
 import jax
-import jax.numpy as jnp
 import sphericart.jax
 
 
-#
-
+# Create a random array of Cartesian positions:
 key = jax.random.PRNGKey(0)
 xyz = 6 * jax.random.normal(key, (10, 3))
+l_max = 3  # set l_max to 3
+normalized = True  # in this example, we always compute normalized spherical harmonics
 
-def test_vmap(xyz):
-    vmapped_sph = jax.vmap(sphericart.jax.spherical_harmonics, in_axes=(0, None, None))
-    for l_max in [4, 7, 10]:
-        for normalized in [True, False]:
-            calculator = sphericart.SphericalHarmonics(l_max=l_max, normalized=normalized)
-            sph = vmapped_sph(xyz, l_max, normalized)
-            sph_ref = calculator.compute(np.asarray(xyz))
-            np.testing.assert_allclose(sph, sph_ref)
+# calculate the spherical harmonics with the corresponding function
+sph = sphericart.jax.spherical_harmonics(xyz, l_max, normalized)
 
+# jit the function with jax.jit()
+jitted_sph_function = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=1)
 
-def test_jit_jacfwd(xyz):
-    transformed_sph = jax.jit(jax.jacfwd(sphericart.jax.spherical_harmonics), static_argnums=1)
-    for l_max in [4, 7, 10]:
-        for normalized in [True, False]:
-            sph = transformed_sph(xyz, l_max, normalized)
+# compute the spherical harmonics with the jitted function and check their values
+# against the non-jitted version:
+jitted_sph = jitted_sph_function(xyz, l_max, normalized)
+assert jax.numpy.allclose(sph, jitted_sph)
 
-
-def test_hessian_jit(xyz):
-    transformed_sph = jax.hessian(jax.jit(sphericart.jax.spherical_harmonics, static_argnums=1))
-    for l_max in [4, 7, 10]:
-        for normalized in [True, False]:
-            sph = transformed_sph(xyz, l_max, normalized)
+# calculate a scalar function 
