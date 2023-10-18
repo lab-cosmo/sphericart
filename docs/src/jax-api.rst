@@ -12,6 +12,6 @@ stored on, and its `dtype`, the calculations will be performed
 using 32- or 64- bits floating point arythmetics, and
 using the CPU implementation.
 
-.. autoclass:: sphericart.jax.spherical_harmonics
+.. autofunction:: sphericart.jax.spherical_harmonics
     :members:
 
