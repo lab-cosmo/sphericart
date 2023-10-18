@@ -13,5 +13,4 @@ using 32- or 64- bits floating point arythmetics, and
 using the CPU implementation.
 
 .. autofunction:: sphericart.jax.spherical_harmonics
-    :members:
 
