@@ -27,7 +27,7 @@ def scalar_output(xyz, l_max, normalized):
         sphericart.jax.spherical_harmonics(xyz, l_max, normalized)
     )
 grad = jax.grad(scalar_output)(xyz, l_max, normalized)
-hessian = jax.hesssian(scalar_output)(xyz, l_max, normalized)
+hessian = jax.hessian(scalar_output)(xyz, l_max, normalized)
 
 # calculate a function of the spherical harmonics that returns an array
 # and take its jacobian with respect to the input Cartesian coordinates,
