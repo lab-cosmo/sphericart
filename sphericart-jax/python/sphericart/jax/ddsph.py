@@ -80,5 +80,5 @@ def ddsph_p_batch(arg_values, batch_axes, *, l_max_c):
     res = ddsph(*arg_values)
     return res, (batch_axes[0], batch_axes[0], batch_axes[0])
 
-  
+
 jax.interpreters.batching.primitive_batchers[_ddsph_p] = ddsph_p_batch

@@ -76,7 +76,7 @@ mlir.register_lowering(_dsph_p, dsph_lowering_cpu, platform="cpu")
 def dsph_p_batch(arg_values, batch_axes, *, l_max_c):
     res = dsph(*arg_values)
     return res, (batch_axes[0], batch_axes[0])
-  
+
 
 jax.interpreters.batching.primitive_batchers[_dsph_p] = dsph_p_batch
 
