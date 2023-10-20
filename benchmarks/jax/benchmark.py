@@ -103,7 +103,14 @@ def sphericart_benchmark(
     if verbose:
         print("Warm-up timings / sec.:\n", time_deri[:warmup])
 
-    sh_hess = jax.jit(jax.hessian(scalar_output), static_argnums=1)
+    def single_scalar_output(x, l_max, normalized):        
+        return jax.numpy.sum(sphericart.jax.spherical_harmonics(x, l_max, normalized))
+
+    # Compute the Hessian for a single (3,) input
+    single_hessian = jax.hessian(single_scalar_output)
+
+    # Use vmap to vectorize the Hessian computation over the first axis
+    sh_hess = jax.jit(jax.vmap(single_hessian, in_axes=(0, None, None)), static_argnums=1)
 
     time_deri = np.zeros(n_tries + warmup)
     for i in range(n_tries + warmup):
@@ -116,6 +123,51 @@ def sphericart_benchmark(
     std_time = time_deri[warmup:].std() / n_samples
     print(  
         f" Hessian (scalar, jit):    {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
+    )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_deri[:warmup])
+
+    # calculate a function of the spherical harmonics that returns an array
+    # and take its jacobian with respect to the input Cartesian coordinates,
+    # both in forward mode and in reverse mode
+    def array_output(xyz, l_max, normalized):
+        return jax.numpy.sum(
+            sphericart.jax.spherical_harmonics(xyz, l_max, normalized), axis=0
+        )
+
+
+    jacfwd = jax.jit(jax.jacfwd(array_output), static_argnums=1)
+
+    time_deri = np.zeros(n_tries + warmup)
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        sh_jacfwd_jit = jacfwd(xyz, l_max, normalized)
+        elapsed += time.time()
+        time_deri[i] = elapsed
+
+    mean_time = time_deri[warmup:].mean() / n_samples
+    std_time = time_deri[warmup:].std() / n_samples
+    print(  
+        f" jacfwd (jit):    {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
+    )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_deri[:warmup])
+
+    jacrev = jax.jit(jax.jacrev(array_output), static_argnums=1)
+
+    time_deri = np.zeros(n_tries + warmup)
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        sh_jacrev_jit = jacrev(xyz, l_max, normalized)
+        elapsed += time.time()
+        time_deri[i] = elapsed
+
+    mean_time = time_deri[warmup:].mean() / n_samples
+    std_time = time_deri[warmup:].std() / n_samples
+    print(  
+        f" jacrev (jit):    {mean_time * 1e9:10.1f} ns/sample ± "
         + f"{std_time * 1e9:10.1f} (std)"
     )
     if verbose:
