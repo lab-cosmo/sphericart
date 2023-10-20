@@ -30,20 +30,23 @@ def scalar_output(xyz, l_max, normalized):
 grad = jax.grad(scalar_output)(xyz, l_max, normalized)
 
 # NB: this computes a (n_samples,3,n_samples,3) hessian, i.e. includes cross terms
-# between samples. 
+# between samples.
 hessian = jax.hessian(scalar_output)(xyz, l_max, normalized)
 
-# usually you want a (n_samples,3,3), taking derivatives wrt the coordinates 
+# usually you want a (n_samples,3,3), taking derivatives wrt the coordinates
 # of the same sample. one way to achieve this is as follows
 
-def single_scalar_output(xyz, l_max, normalized):        
+
+def single_scalar_output(xyz, l_max, normalized):
     return jax.numpy.sum(sphericart.jax.spherical_harmonics(xyz, l_max, normalized))
+
 
 # Compute the Hessian for a single (3,) input
 single_hessian = jax.hessian(single_scalar_output)
 
 # Use vmap to vectorize the Hessian computation over the first axis
 sh_hess = jax.vmap(single_hessian, in_axes=(0, None, None))
+
 
 # calculate a function of the spherical harmonics that returns an array
 # and take its jacobian with respect to the input Cartesian coordinates,
