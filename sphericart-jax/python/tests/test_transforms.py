@@ -50,8 +50,21 @@ def test_jit_jacfwd(xyz):
             sph = transformed_sph(xyz, l_max, normalized)
 
 
-def test_hessian_jit(xyz):
-    transformed_sph = jax.hessian(jax.jit(sphericart.jax.spherical_harmonics, static_argnums=1))
+def test_vmap_grad(xyz):
+    def single_scalar_output(x, l_max, normalized):        
+        return jax.numpy.sum(sphericart.jax.spherical_harmonics(x, l_max, normalized))
+    single_grad = jax.grad(single_scalar_output)
+    sh_grad = jax.vmap(single_grad, in_axes=(0, None, None), out_axes=0)
     for l_max in [4, 7, 10]:
         for normalized in [True, False]:
-            sph = transformed_sph(xyz, l_max, normalized)
+            _ = sh_grad(xyz, l_max, normalized)
+
+
+def test_vmap_hessian(xyz):
+    def single_scalar_output(x, l_max, normalized):        
+        return jax.numpy.sum(sphericart.jax.spherical_harmonics(x, l_max, normalized))
+    single_hessian = jax.hessian(single_scalar_output)
+    sh_hessian = jax.vmap(single_hessian, in_axes=(0, None, None), out_axes=0)
+    for l_max in [4, 7, 10]:
+        for normalized in [True, False]:
+            _ = sh_hessian(xyz, l_max, normalized)
