@@ -82,6 +82,44 @@ def sphericart_benchmark(
     if verbose:
         print("Warm-up timings / sec.:\n", time_noderi[:warmup])
 
+    def scalar_output(xyz, l_max, normalized):
+        return jax.numpy.sum(sphericart.jax.spherical_harmonics(xyz, l_max, normalized))
+    
+    sh_grad = jax.jit(jax.grad(scalar_output), static_argnums=1)
+
+    time_deri = np.zeros(n_tries + warmup)
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        sh_sphericart_grad_jit = sh_grad(xyz, l_max, normalized)
+        elapsed += time.time()
+        time_deri[i] = elapsed
+
+    mean_time = time_deri[warmup:].mean() / n_samples
+    std_time = time_deri[warmup:].std() / n_samples
+    print(
+        f" Gradient (scalar, jit):    {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
+    )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_deri[:warmup])
+
+    sh_hess = jax.jit(jax.hessian(scalar_output), static_argnums=1)
+
+    time_deri = np.zeros(n_tries + warmup)
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        sh_sphericart_hess_jit = sh_hess(xyz, l_max, normalized)
+        elapsed += time.time()
+        time_deri[i] = elapsed
+
+    mean_time = time_deri[warmup:].mean() / n_samples
+    std_time = time_deri[warmup:].std() / n_samples
+    print(  
+        f" Hessian (scalar, jit):    {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
+    )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_deri[:warmup])
 
     if compare and _HAS_E3NN_JAX:
         xyz_tensor = xyz.copy()
