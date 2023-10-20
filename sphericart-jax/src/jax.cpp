@@ -4,6 +4,9 @@
 // for each supported dtype.
 
 #include <cstdlib>
+#include <map>
+#include <mutex>
+#include <tuple>
 
 #include "sphericart.hpp"
 #include "sphericart/pybind11_kernel_helpers.h"
@@ -11,6 +14,28 @@
 using namespace sphericart_jax;
 
 namespace {
+
+template <typename T>
+using CacheMap = std::map<std::tuple<size_t, bool>,
+                          std::unique_ptr<sphericart::SphericalHarmonics<T>>>;
+
+template <typename T>
+std::unique_ptr<sphericart::SphericalHarmonics<T>> &
+_get_or_create_sph(CacheMap<T> &sph_cache, std::mutex &cache_mutex,
+                   size_t l_max, bool normalized) {
+    // Check if instance exists in cache, if not create and store it
+    std::lock_guard<std::mutex> lock(cache_mutex);
+    auto key = std::make_tuple(l_max, normalized);
+    auto it = sph_cache.find(key);
+    if (it == sph_cache.end()) {
+        it = sph_cache
+                 .insert(
+                     {key, std::make_unique<sphericart::SphericalHarmonics<T>>(
+                               l_max, normalized)})
+                 .first;
+    }
+    return it->second;
+}
 
 template <typename T> void cpu_sph(void *out, const void **in) {
     // Parse the inputs
@@ -23,8 +48,13 @@ template <typename T> void cpu_sph(void *out, const void **in) {
     // The output is stored as a single pointer since there is only one output
     T *sph = reinterpret_cast<T *>(out);
 
-    auto calculator = sphericart::SphericalHarmonics<T>(l_max, normalized);
-    calculator.compute_array(xyz, xyz_length, sph, sph_len);
+    // Static map to cache instances based on parameters
+    static CacheMap<T> sph_cache;
+    static std::mutex cache_mutex;
+
+    auto &calculator =
+        _get_or_create_sph(sph_cache, cache_mutex, l_max, normalized);
+    calculator->compute_array(xyz, xyz_length, sph, sph_len);
 }
 
 template <typename T>
@@ -42,9 +72,14 @@ void cpu_sph_with_gradients(void *out_tuple, const void **in) {
     T *sph = reinterpret_cast<T *>(out[0]);
     T *dsph = reinterpret_cast<T *>(out[1]);
 
-    auto calculator = sphericart::SphericalHarmonics<T>(l_max, normalized);
-    calculator.compute_array_with_gradients(xyz, xyz_length, sph, sph_len, dsph,
-                                            dsph_len);
+    // Static map to cache instances based on parameters
+    static CacheMap<T> sph_cache;
+    static std::mutex cache_mutex;
+
+    auto &calculator =
+        _get_or_create_sph(sph_cache, cache_mutex, l_max, normalized);
+    calculator->compute_array_with_gradients(xyz, xyz_length, sph, sph_len,
+                                             dsph, dsph_len);
 }
 
 template <typename T>
@@ -64,9 +99,14 @@ void cpu_sph_with_hessians(void *out_tuple, const void **in) {
     T *dsph = reinterpret_cast<T *>(out[1]);
     T *ddsph = reinterpret_cast<T *>(out[2]);
 
-    auto calculator = sphericart::SphericalHarmonics<T>(l_max, normalized);
-    calculator.compute_array_with_hessians(xyz, xyz_length, sph, sph_len, dsph,
-                                           dsph_len, ddsph, ddsph_len);
+    // Static map to cache instances based on parameters
+    static CacheMap<T> sph_cache;
+    static std::mutex cache_mutex;
+
+    auto &calculator =
+        _get_or_create_sph(sph_cache, cache_mutex, l_max, normalized);
+    calculator->compute_array_with_hessians(xyz, xyz_length, sph, sph_len, dsph,
+                                            dsph_len, ddsph, ddsph_len);
 }
 
 pybind11::dict Registrations() {

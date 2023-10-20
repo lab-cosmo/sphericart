@@ -1,7 +1,7 @@
 import argparse
 import time
 
-import numpy as np 
+import numpy as np
 
 import jax
 import sphericart.jax
@@ -45,11 +45,11 @@ def sphericart_benchmark(
         f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, "
         + f"dtype={dtype} ****"
     )
-    
+
     time_noderi = np.zeros(n_tries + warmup)
     time_fw = np.zeros(n_tries + warmup)
     time_bw = np.zeros(n_tries + warmup)
-    
+
     for i in range(n_tries + warmup):
         elapsed = -time.time()
         sh_sphericart = sh_calculator(xyz, l_max, normalized)
@@ -82,6 +82,97 @@ def sphericart_benchmark(
     if verbose:
         print("Warm-up timings / sec.:\n", time_noderi[:warmup])
 
+    def scalar_output(xyz, l_max, normalized):
+        return jax.numpy.sum(sphericart.jax.spherical_harmonics(xyz, l_max, normalized))
+
+    sh_grad = jax.jit(jax.grad(scalar_output), static_argnums=1)
+
+    time_deri = np.zeros(n_tries + warmup)
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        sh_sphericart_grad_jit = sh_grad(xyz, l_max, normalized)
+        elapsed += time.time()
+        time_deri[i] = elapsed
+
+    mean_time = time_deri[warmup:].mean() / n_samples
+    std_time = time_deri[warmup:].std() / n_samples
+    print(
+        f" Gradient (scalar, jit):    {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
+    )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_deri[:warmup])
+
+    def single_scalar_output(x, l_max, normalized):
+        return jax.numpy.sum(sphericart.jax.spherical_harmonics(x, l_max, normalized))
+
+    # Compute the Hessian for a single (3,) input
+    single_hessian = jax.hessian(single_scalar_output)
+
+    # Use vmap to vectorize the Hessian computation over the first axis
+    sh_hess = jax.jit(
+        jax.vmap(single_hessian, in_axes=(0, None, None)), static_argnums=1
+    )
+
+    time_deri = np.zeros(n_tries + warmup)
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        sh_sphericart_hess_jit = sh_hess(xyz, l_max, normalized)
+        elapsed += time.time()
+        time_deri[i] = elapsed
+
+    mean_time = time_deri[warmup:].mean() / n_samples
+    std_time = time_deri[warmup:].std() / n_samples
+    print(
+        f" Hessian (scalar, jit):    {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
+    )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_deri[:warmup])
+
+    # calculate a function of the spherical harmonics that returns an array
+    # and take its jacobian with respect to the input Cartesian coordinates,
+    # both in forward mode and in reverse mode
+    def array_output(xyz, l_max, normalized):
+        return jax.numpy.sum(
+            sphericart.jax.spherical_harmonics(xyz, l_max, normalized), axis=0
+        )
+
+    jacfwd = jax.jit(jax.jacfwd(array_output), static_argnums=1)
+
+    time_deri = np.zeros(n_tries + warmup)
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        sh_jacfwd_jit = jacfwd(xyz, l_max, normalized)
+        elapsed += time.time()
+        time_deri[i] = elapsed
+
+    mean_time = time_deri[warmup:].mean() / n_samples
+    std_time = time_deri[warmup:].std() / n_samples
+    print(
+        f" jacfwd (jit):    {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
+    )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_deri[:warmup])
+
+    jacrev = jax.jit(jax.jacrev(array_output), static_argnums=1)
+
+    time_deri = np.zeros(n_tries + warmup)
+    for i in range(n_tries + warmup):
+        elapsed = -time.time()
+        sh_jacrev_jit = jacrev(xyz, l_max, normalized)
+        elapsed += time.time()
+        time_deri[i] = elapsed
+
+    mean_time = time_deri[warmup:].mean() / n_samples
+    std_time = time_deri[warmup:].std() / n_samples
+    print(
+        f" jacrev (jit):    {mean_time * 1e9:10.1f} ns/sample ± "
+        + f"{std_time * 1e9:10.1f} (std)"
+    )
+    if verbose:
+        print("Warm-up timings / sec.:\n", time_deri[:warmup])
 
     if compare and _HAS_E3NN_JAX:
         xyz_tensor = xyz.copy()
