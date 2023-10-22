@@ -73,7 +73,7 @@ def sphericart_benchmark(
     mean_time = time_noderi[warmup:].mean() / n_samples
     std_time = time_noderi[warmup:].std() / n_samples
     print(
-        f" No derivatives, jit: {mean_time * 1e9: 10.1f} ns/sample ± "
+        f" No derivatives (jit): {mean_time * 1e9: 10.1f} ns/sample ± "
         + f"{std_time * 1e9: 10.1f} (std)"
     )
     if verbose: print("Warm-up timings / sec.:\n", time_noderi[:warmup])
@@ -218,7 +218,7 @@ def sphericart_benchmark(
     mean_time = time_noderi[warmup:].mean() / n_samples
     std_time = time_noderi[warmup:].std() / n_samples
     print(
-        f" E3NN no der, jit:    {mean_time * 1e9: 10.1f} ns/sample ± "
+        f" E3NN no der (jit):    {mean_time * 1e9: 10.1f} ns/sample ± "
         + f"{std_time * 1e9: 10.1f} (std)"
     )
     if verbose: print("Warm-up timings / sec.:\n", time_noderi[:warmup])
