@@ -707,7 +707,8 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     int64_t GRID_DIM_X,
     int64_t GRID_DIM_Y,
     bool gradients,
-    bool hessian)
+    bool hessian,
+    cudaStream_t stream)
 {
 
     CHECK_INPUT(xyz);
@@ -764,8 +765,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
             size_t total_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, 
                                 sizeof(scalar_t), xyz.requires_grad() || gradients, xyz.requires_grad() && hessian);
 
-        
-            spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size>>>(
+            spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size, stream>>>(
                 xyz.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>(),
                 prefactors.packed_accessor64<scalar_t, 1, torch::RestrictPtrTraits>(),
                 l_max,
@@ -834,7 +834,8 @@ __global__ void backward_kernel(
 torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     torch::Tensor xyz,
     torch::Tensor dsph,
-    torch::Tensor sph_grad)
+    torch::Tensor sph_grad,
+    cudaStream_t stream)
 {
 
     if (!xyz.device().is_cuda())
@@ -857,7 +858,7 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
 
         AT_DISPATCH_FLOATING_TYPES(
             xyz.scalar_type(), "spherical_harmonics_backward_cuda", ([&]
-                                                                     { backward_kernel<<<block_dim, grid_dim>>>(
+                                                                     { backward_kernel<<<block_dim, grid_dim, 0, stream>>>(
                                                                            dsph.packed_accessor64<scalar_t, 3, torch::RestrictPtrTraits>(),
                                                                            sph_grad.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>(),
                                                                            xyz_grad.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>()); }));

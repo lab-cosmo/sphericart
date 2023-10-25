@@ -1,3 +1,6 @@
+#include <c10/cuda/CUDAGuard.h>
+#include <c10/cuda/CUDAStream.h>
+
 #include "sphericart.hpp"
 
 #include "sphericart/autograd.hpp"
@@ -221,6 +224,9 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         dsph = results[1];
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
+        c10::cuda::CUDAGuard deviceGuard{xyz.device()};
+        cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
+
         // re-do the shared memory update in case `requires_grad` changed        
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
 
@@ -279,7 +285,8 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             calculator.CUDA_GRID_DIM_X_,
             calculator.CUDA_GRID_DIM_Y_,
             do_gradients || xyz.requires_grad(),
-            do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_)
+            do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_),
+            stream
         );
         sph = results[0];
         dsph = results[1];
@@ -332,7 +339,9 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
         if (xyz.device().is_cpu()) {
             xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
         } else if (xyz.device().is_cuda()) {
-            xyz_grad = spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs);
+            c10::cuda::CUDAGuard deviceGuard{xyz.device()};
+            cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
+            xyz_grad = spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs, stream);
         } else {
             throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");
         }
