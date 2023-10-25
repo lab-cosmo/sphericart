@@ -19,3 +19,4 @@ floating-point arithmetics, and they evaluate the mean relative error between th
     c-examples
     python-examples
     pytorch-examples
+    jax-examples

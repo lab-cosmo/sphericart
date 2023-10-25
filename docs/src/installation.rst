@@ -29,6 +29,8 @@ you should build the code from source:
 
     # if you also want the torch bindings (CPU and GPU)
     pip install .[torch]
+    # if you also want the jax bindings
+    pip install .[jax]
 
     # torch bindings (CPU-only)
     pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]

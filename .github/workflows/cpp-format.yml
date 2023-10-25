@@ -1,0 +1,32 @@
+name: C++ format
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    # Check all PR
+
+jobs:
+  # check C/C++ formatting
+  cpp-format:
+    runs-on: ubuntu-latest
+    name: check C++ formatting
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Install clang-format
+      run: sudo apt-get install clang-format
+
+    - name: Check formatting
+      run: |
+        for file in $(find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" \)); do
+          clang-format -style=file -i "$file"
+          if git diff --quiet "$file"; then
+            echo "✅ $file is properly formatted."
+          else
+            echo "❌ $file is not properly formatted. Please run clang-format in the sphericart root directory with" 
+            echo "find . -name "*.c" -o -name "*.h" -o -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format -i"
+            exit 1
+          fi
+        done

@@ -80,17 +80,31 @@ class bdist_egg_disabled(bdist_egg):
 
 if __name__ == "__main__":
     SPHERICART_TORCH = os.path.realpath(os.path.join(ROOT, "sphericart-torch"))
-    extras_require = {"torch": []}
+    SPHERICART_JAX = os.path.realpath(os.path.join(ROOT, "sphericart-jax"))
+    extras_require = {"torch": [], "jax": []}
     if os.path.exists(SPHERICART_TORCH):
         # we are building from a checkout
 
         # add a random uuid to the file url to prevent pip from using a cached
         # wheel for sphericart-torch, and force it to re-build from scratch
-        uuid = uuid.uuid4()
-        extras_require["torch"] = f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid}"
+        uuid_ = uuid.uuid4()
+        extras_require[
+            "torch"
+        ] = f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid_}"
     else:
         # installing wheel/sdist
         extras_require["torch"] = "sphericart-torch"
+
+    if os.path.exists(SPHERICART_JAX):
+        # we are building from a checkout
+
+        # add a random uuid to the file url to prevent pip from using a cached
+        # wheel for sphericart-jax, and force it to re-build from scratch
+        uuid_ = uuid.uuid4()
+        extras_require["jax"] = f"sphericart-jax @ file://{SPHERICART_JAX}?{uuid_}"
+    else:
+        # installing wheel/sdist
+        extras_require["jax"] = "sphericart-jax"
 
     setup(
         version=open(os.path.join("sphericart", "VERSION")).readline().strip(),
