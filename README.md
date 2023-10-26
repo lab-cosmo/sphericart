@@ -33,7 +33,8 @@ Pre-built (https://pypi.org/project/sphericart/).
 
 ```bash
 pip install sphericart             # numpy version
-pip install sphericart[torch]      # including also the torch bindings (CPU-only)
+pip install sphericart[torch]      # including also the torch bindings
+pip install sphericart[jax]        # JAX bindings (CPU-only)
 ```
 
 Note that the pre-built packages are compiled for a generic CPU, and might be
