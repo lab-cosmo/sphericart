@@ -1,0 +1,40 @@
+FROM nvcr.io/nvidia/pytorch:23.10-py3
+
+RUN apt-get update
+
+# install boost test framework
+RUN apt-get install -y libboost-test-dev
+
+# update pip
+RUN /usr/bin/python -m pip install --upgrade pip
+
+# install librascal
+RUN git clone https://github.com/lab-cosmo/librascal.git
+WORKDIR /workspace/librascal
+RUN pip install .
+RUN pip install -r requirements.txt
+WORKDIR /workspace/
+RUN mkdir librascal-build
+WORKDIR /workspace/librascal-build
+RUN cmake -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug /workspace/librascal
+RUN make
+RUN apt-get install -y clang-format
+RUN pip install black
+WORKDIR /workspace/
+
+# install RUST
+RUN apt-get install -y cargo
+
+# install rascaline
+RUN pip install git+https://github.com/Luthaf/rascaline/
+
+# install and setup metatensor (formerly equistore)
+WORKDIR /workspace/
+RUN git clone https://github.com/lab-cosmo/metatensor \
+	&& cd metatensor \
+	&& pip install . \
+	&& cd metatensor-core \
+	&& mkdir build && cd build \
+	&& cmake .. \
+	&& cmake --build . --target install
+

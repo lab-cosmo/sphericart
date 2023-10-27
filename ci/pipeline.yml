@@ -5,20 +5,18 @@ stages:
   - build
   - test
 
-variables:
-  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/sphericart:$CI_COMMIT_REF_NAME
-
-build_job:
+build_base_image_job:
   stage: build
-  extends: .container-builder
+  extends: .container-builder-dynamic-name
   variables:
-    DOCKERFILE: ci/docker/Dockerfile.build
-    CSCS_REBUILD_POLICY: always
+    DOCKERFILE: ci/docker/Dockerfile.base
+    WATCH_FILECHANGES: $DOCKERFILE
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/base/public/sphericart
 
 test_job:
   stage: test
   extends: .container-runner-daint-gpu
-  image: $PERSIST_IMAGE_NAME
+  image: $BASE_IMAGE
   timeout: 1h
   script:
     - cd /sphericart
@@ -37,3 +35,4 @@ test_job:
     SLURM_PARTITION: normal
     SLURM_NTASKS: 1
     SLURM_TIMELIMIT: '00:30:00'
+    GIT_STRATEGY: fetch

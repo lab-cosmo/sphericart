@@ -1,5 +1,0 @@
-FROM docker.io/prashanthkanduri/librascal-pytorch2:python310
-
-COPY . /sphericart
-
-WORKDIR /sphericart
