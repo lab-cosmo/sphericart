@@ -1,0 +1,9 @@
+name = "SpheriCart"
+uuid = "5caf2b29-02d9-47a3-9434-5931c85ba645"
+authors = ["Christoph Ortner <christohortner@gmail.com> and contributors"]
+version = "0.0.1-dev"
+
+[deps]
+ObjectPools = "658cac36-ff0f-48ad-967c-110375d98c9d"
+OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
