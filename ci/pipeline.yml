@@ -19,7 +19,6 @@ test_job:
   image: $BASE_IMAGE
   timeout: 1h
   script:
-    - cd /sphericart
     - python3 -m pip install --upgrade pip
     - python3 -m pip install tox
     - tox
