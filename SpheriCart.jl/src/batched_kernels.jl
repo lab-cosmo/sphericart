@@ -31,6 +31,9 @@ function solid_harmonics!(Z::AbstractMatrix, ::Val{L},
    @inbounds @simd ivdep for j = 1:nX
       𝐫 = Rs[j] 
       xj, yj, zj = 𝐫[1], 𝐫[2], 𝐫[3]
+      x[j] = xj
+      y[j] = yj
+      z[j] = zj
       r²[j] = xj^2 + yj^2 + zj^2
       # c_m and s_m, m = 0 
       s[j, 1] = zero(T)    # 0 -> 1

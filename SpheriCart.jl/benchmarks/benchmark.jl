@@ -1,20 +1,22 @@
 
-using UltraFastACE, StaticArrays, BenchmarkTools, Test
-using UltraFastACE.SpheriCart: ZlmBasis, static_solid_harmonics, evaluate!, evaluate 
-using ACEbase.Testing: print_tf, println_slim 
+using StaticArrays, BenchmarkTools, SpheriCart
+using SpheriCart: SolidHarmonics, compute, compute!
 using StrideArrays: PtrArray
-using LoopVectorization
-import Polynomials4ML
 
 ##
 
 @info("static_solid_harmonics")
+@info("NOTE: bizarrely the nice api has an overhead only for a few L values 5..10")
 𝐫 = @SVector randn(3)
-for L = 1:6 
+for L = 1:12
    @show L
-   static_solid_harmonics(Val(L), 𝐫)
+   basis = SolidHarmonics(L; static=true)
+   basis(𝐫)
    @btime static_solid_harmonics($(Val(L)), $𝐫)
+   @btime ($basis)($𝐫)
+   @btime compute($basis, $𝐫)
 end
+
 
 ##
 
@@ -25,13 +27,29 @@ Rs = [ (@SVector randn(3)) for _ = 1:32 ]
 
 for L = 3:3:15
    @show L
-   basis = ZlmBasis(L)
+   basis = SolidHarmonics(L)
    Zs = static_solid_harmonics.(Val(L), Rs)
    print("    single: "); @btime static_solid_harmonics($(Val(L)), $(Rs[1]))
    print("broadcast!: "); @btime broadcast!(𝐫 -> static_solid_harmonics($(Val(L)), 𝐫), $Zs, $Rs)
-   Zb = evaluate(basis, Rs)
-   print("   batched: "); (@btime evaluate!($Zb, $basis, $Rs));
+   Zb = compute(basis, Rs)
+   print("   batched: "); (@btime compute!($Zb, $basis, $Rs));
 end
+
+##
+
+@info("static vs generic basis for single input (nX = 1)")
+@info("  this shouws that the generic single-input implementation needs work")
+
+for L = 3:3:30 
+   @show L 
+   𝐫 = @SVector randn(3)
+   basis_st = SolidHarmonics(L; static=true)
+   basis_dy = SolidHarmonics(L; static=false)
+   print("  static: "); @btime compute($basis_st, $𝐫)
+   # static_solid_harmonics($(Val(L)), $𝐫)
+   print(" dynamic: "); @btime compute($basis_dy, $𝐫)
+end 
+
 
 ## -------------- 
 

@@ -46,14 +46,18 @@ end
 
 # the code to be tested against the symbolic code above 
 # all other implementations will be tested against this. 
-zlm_4(𝐫) = static_solid_harmonics(Val(4), 𝐫)
+zlm_4 = SolidHarmonics(4; static=true)
 
 𝐫0 = @SVector randn(3)
 Z1 = zlm_4(𝐫0)
 Z2 = symbolic_zlm_4(𝐫0)
 F = Z1 ./ Z2
 
+# check that zlm_4 evaluates the right thing. 
+@test static_solid_harmonics(Val(4), 𝐫0) == zlm_4(𝐫0)
+
 for ntest = 1:30 
+   local 𝐫, Z1, Z2 
    𝐫 = @SVector randn(3)
    Z1 = zlm_4(𝐫)
    Z2 = symbolic_zlm_4(𝐫)
@@ -64,13 +68,15 @@ end
 
 @info("confirm that the two implementations are consistent with one another")
 for L = 2:10, ntest = 1:10
+   local 𝐫, Z1, Z2, basis 
    basis = SolidHarmonics(L)
+   basis2 = SolidHarmonics(L; static=false)
    𝐫 = @SVector randn(3)
-   Z1 = static_solid_harmonics(Val(L), 𝐫)
-   Z2 = compute(basis, [𝐫,])[:]
-   @test Z1 ≈ Z2
+   Z1 = basis(𝐫)
+   Z2 = basis([𝐫,])[:]
+   Z3 = basis2(𝐫)
+   @test Z1 ≈ Z2 ≈ Z3 
 end
-
 
 ##
 
@@ -82,9 +88,10 @@ basis = SolidHarmonics(L)
 rand_sphere() = ( (𝐫 = @SVector randn(3)); 𝐫/norm(𝐫) )
 
 for ntest = 1:10
-   rr = [ rand_sphere() for _ = 1:10_000 ] 
-   Z = compute(basis, rr)
-   G = (Z' * Z) / length(rr) * 4 * π
+   local Z
+   Rs = [ rand_sphere() for _ = 1:10_000 ] 
+   Z = compute(basis, Rs)
+   G = (Z' * Z) / length(Rs) * 4 * π
    @test norm(G - I) < 0.33
    @test cond(G) < 1.5
 end
@@ -94,6 +101,7 @@ end
 
 @info("confirm batched evaluation is consistent with single")
 for L = 2:10, ntest = 1:10
+   local basis, Z1, Z2
    basis = SolidHarmonics(L)
    nbatch = rand(8:20)
    Rs = [ @SVector randn(3) for _=1:nbatch ]
@@ -101,7 +109,7 @@ for L = 2:10, ntest = 1:10
                      static_solid_harmonics.(Val(L), Rs), )'
    Z2 = compute(basis, Rs)
 
-   print_tf(@test Z1 ≈ Z2)
+   @test Z1 ≈ Z2
 end
 
 ##

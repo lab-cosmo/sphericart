@@ -12,5 +12,46 @@ provided by the authors.
 
 `SpheriCart.jl` is released under MIT license. 
 
-## Usage
+## Installation 
 
+Once registered, install the package by opening a REPL, switch to the package manager by typing `]` and then `add SpheriCart`.
+
+## Basic Usage
+
+There are two implementations of solid harmonics
+- a generated  implementation for a single `𝐫::SVector{3, T}` input, returning the spherical harmonics as an `SVector{T}`. 
+- a generic implementation that is optimized for evaluating over batches of inputs, exploiting SIMD vectorization. 
+
+For large enough batches (system dependent) the second implementation is comparable to or faster than broadcasting over the generated implementation. For single inputs, the generated implementation is far superior in performance. 
+
+
+```julia
+using SpheriCart, StaticArrays 
+
+# generate the basis object 
+L = 5
+zbasis = SolidHarmonics(L)
+
+# evaluate for a single input 
+𝐫 = @SVector randn(3) 
+Z = zbasis(𝐫)  # returns an SVector of length (L+1)²
+Z = compute(zbasis, 𝐫)
+
+# evaluate for many inputs 
+nX = 32
+Rs = [ @SVector randn(3)  for _ = 1:nX ]
+Z = zbasis(Rs)  # returns a Matrix of size nX × (L+1)²
+Z = compute(zbasis, Rs)
+
+# in-place evaluation to avoid the allocation 
+compute!(Z, zbasis, Rs)
+```
+
+Note that Julia uses column-major indexing, which means that for batched output the loop over inputs is contiguous in memory. 
+
+## Advanced Usage
+
+TODO:  
+- different normalizations
+- enforce static versus dynamic 
+- wrapping outputs into zvec for easier indexing 
