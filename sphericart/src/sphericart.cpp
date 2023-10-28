@@ -81,26 +81,34 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
     } else {
         if (this->normalized) {
             this->_array_no_derivatives =
-                &generic_sph<T, false, false, true, SPHERICART_LMAX_HARDCODED, SPHERICART_LMAX_TEMPLATED>;
+                &generic_sph<T, false, false, true, SPHERICART_LMAX_HARDCODED,
+                             SPHERICART_LMAX_TEMPLATED>;
             this->_array_with_derivatives =
-                &generic_sph<T, true, false, true, SPHERICART_LMAX_HARDCODED, SPHERICART_LMAX_TEMPLATED>;
+                &generic_sph<T, true, false, true, SPHERICART_LMAX_HARDCODED,
+                             SPHERICART_LMAX_TEMPLATED>;
             this->_sample_no_derivatives =
                 &generic_sph_sample<T, false, false, true,
-                                    SPHERICART_LMAX_HARDCODED, SPHERICART_LMAX_TEMPLATED>;
+                                    SPHERICART_LMAX_HARDCODED,
+                                    SPHERICART_LMAX_TEMPLATED>;
             this->_sample_with_derivatives =
                 &generic_sph_sample<T, true, false, true,
-                                    SPHERICART_LMAX_HARDCODED, SPHERICART_LMAX_TEMPLATED>;
+                                    SPHERICART_LMAX_HARDCODED,
+                                    SPHERICART_LMAX_TEMPLATED>;
         } else {
             this->_array_no_derivatives =
-                &generic_sph<T, false, false, false, SPHERICART_LMAX_HARDCODED, SPHERICART_LMAX_TEMPLATED>;
+                &generic_sph<T, false, false, false, SPHERICART_LMAX_HARDCODED,
+                             SPHERICART_LMAX_TEMPLATED>;
             this->_array_with_derivatives =
-                &generic_sph<T, true, false, false, SPHERICART_LMAX_HARDCODED, SPHERICART_LMAX_TEMPLATED>;
+                &generic_sph<T, true, false, false, SPHERICART_LMAX_HARDCODED,
+                             SPHERICART_LMAX_TEMPLATED>;
             this->_sample_no_derivatives =
                 &generic_sph_sample<T, false, false, false,
-                                    SPHERICART_LMAX_HARDCODED, SPHERICART_LMAX_TEMPLATED>;
+                                    SPHERICART_LMAX_HARDCODED,
+                                    SPHERICART_LMAX_TEMPLATED>;
             this->_sample_with_derivatives =
                 &generic_sph_sample<T, true, false, false,
-                                    SPHERICART_LMAX_HARDCODED, SPHERICART_LMAX_TEMPLATED>;
+                                    SPHERICART_LMAX_HARDCODED,
+                                    SPHERICART_LMAX_TEMPLATED>;
         }
     }
 
@@ -117,9 +125,11 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
         } else { // second derivatives are not hardcoded past l = 1. Call
                  // generic
             // implementations
-            this->_array_with_hessians = &generic_sph<T, true, true, true, 1, SPHERICART_LMAX_TEMPLATED>;
+            this->_array_with_hessians =
+                &generic_sph<T, true, true, true, 1, SPHERICART_LMAX_TEMPLATED>;
             this->_sample_with_hessians =
-                &generic_sph_sample<T, true, true, true, 1, SPHERICART_LMAX_TEMPLATED>;
+                &generic_sph_sample<T, true, true, true, 1,
+                                    SPHERICART_LMAX_TEMPLATED>;
         }
     } else {
         if (this->l_max == 0) {
@@ -135,9 +145,12 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
         } else { // second derivatives are not hardcoded past l = 1. Call
                  // generic
             // implementations
-            this->_array_with_hessians = &generic_sph<T, true, true, false, 1, SPHERICART_LMAX_TEMPLATED>;
+            this->_array_with_hessians =
+                &generic_sph<T, true, true, false, 1,
+                             SPHERICART_LMAX_TEMPLATED>;
             this->_sample_with_hessians =
-                &generic_sph_sample<T, true, true, false, 1, SPHERICART_LMAX_TEMPLATED>;
+                &generic_sph_sample<T, true, true, false, 1,
+                                    SPHERICART_LMAX_TEMPLATED>;
         }
     }
 }

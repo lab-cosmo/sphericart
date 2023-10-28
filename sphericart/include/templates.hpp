@@ -19,8 +19,8 @@
 #define SPHERICART_LMAX_TEMPLATED 10
 
 #include <cmath>
-#include <vector>
 #include <iostream>
+#include <vector>
 
 #ifdef _OPENMP
 
@@ -639,7 +639,8 @@ CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel(
 }
 
 template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES,
-          int HARDCODED_LMAX, int TEMPLATED_L, int (*GET_INDEX)(int) = dummy_idx>
+          int HARDCODED_LMAX, int TEMPLATED_L,
+          int (*GET_INDEX)(int) = dummy_idx>
 CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel_templated(
     [[maybe_unused]] T x, // these might be unused for low LMAX. not worth a
                           // full separate implementation
@@ -653,11 +654,10 @@ CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel_templated(
     [[maybe_unused]] T *dzdy_sph_i, [[maybe_unused]] T *dzdz_sph_i) {
 
     generic_sph_l_channel<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                        HARDCODED_LMAX>(
-    TEMPLATED_L, x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-    dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-    dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
-
+                          HARDCODED_LMAX>(
+        TEMPLATED_L, x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+        dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
+        dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
 }
 
 template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES,
@@ -766,7 +766,8 @@ generic_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i,
     // also initialize the sine and cosine, even if these never change
     c[0] = 1.0;
     s[0] = 0.0;
-    for (m = 1; m < TEMPLATED_LMAX + 1; ++m) {  // allow unrolling of the static part of the loop
+    for (m = 1; m < TEMPLATED_LMAX + 1;
+         ++m) { // allow unrolling of the static part of the loop
         c[m] = c[m - 1] * x - s[m - 1] * y;
         s[m] = c[m - 1] * y + s[m - 1] * x;
         twomz[m] = twomz[m - 1] + twoz;
@@ -812,82 +813,103 @@ generic_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i,
     auto pk = pylm + k;
     auto qlmk = pqlm + k; // starts at HARDCODED_LMAX+1
     for (int l = HARDCODED_LMAX + 1; l < l_max + 1; l++) {
-        if (l <= TEMPLATED_LMAX) { 
+        if (l <= TEMPLATED_LMAX) {
             // call templated version
-            // generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
+            // generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+            // DO_SECOND_DERIVATIVES,
             //                       HARDCODED_LMAX, l>(
-            //     x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-            //     dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-            //     dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+            //     x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+            //     dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+            //     dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+            //     dzdz_sph_i);
             if (l == 2) {
-                generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                                   HARDCODED_LMAX, 2>(
-                 x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-                 dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-                 dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+                generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+                                                DO_SECOND_DERIVATIVES,
+                                                HARDCODED_LMAX, 2>(
+                    x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                    dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                    dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                    dzdz_sph_i);
             }
             if (l == 3) {
-                generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                                   HARDCODED_LMAX, 3>(
-                 x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-                 dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-                 dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+                generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+                                                DO_SECOND_DERIVATIVES,
+                                                HARDCODED_LMAX, 3>(
+                    x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                    dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                    dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                    dzdz_sph_i);
             }
             if (l == 4) {
-                generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                                   HARDCODED_LMAX, 4>(
-                 x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-                 dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-                 dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+                generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+                                                DO_SECOND_DERIVATIVES,
+                                                HARDCODED_LMAX, 4>(
+                    x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                    dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                    dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                    dzdz_sph_i);
             }
             if (l == 5) {
-                generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                                   HARDCODED_LMAX, 5>(
-                 x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-                 dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-                 dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+                generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+                                                DO_SECOND_DERIVATIVES,
+                                                HARDCODED_LMAX, 5>(
+                    x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                    dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                    dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                    dzdz_sph_i);
             }
             if (l == 6) {
-                generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                                   HARDCODED_LMAX, 6>(
-                 x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-                 dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-                 dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+                generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+                                                DO_SECOND_DERIVATIVES,
+                                                HARDCODED_LMAX, 6>(
+                    x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                    dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                    dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                    dzdz_sph_i);
             }
             if (l == 7) {
-                generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                                   HARDCODED_LMAX, 7>(
-                 x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-                 dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-                 dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+                generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+                                                DO_SECOND_DERIVATIVES,
+                                                HARDCODED_LMAX, 7>(
+                    x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                    dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                    dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                    dzdz_sph_i);
             }
             if (l == 8) {
-                generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                                   HARDCODED_LMAX, 8>(
-                 x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-                 dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-                 dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+                generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+                                                DO_SECOND_DERIVATIVES,
+                                                HARDCODED_LMAX, 8>(
+                    x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                    dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                    dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                    dzdz_sph_i);
             }
             if (l == 9) {
-                generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                                   HARDCODED_LMAX, 9>(
-                 x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-                 dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-                 dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+                generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+                                                DO_SECOND_DERIVATIVES,
+                                                HARDCODED_LMAX, 9>(
+                    x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                    dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                    dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                    dzdz_sph_i);
             }
             if (l == 10) {
-                generic_sph_l_channel_templated<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                                   HARDCODED_LMAX, 10>(
-                 x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-                 dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-                 dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+                generic_sph_l_channel_templated<T, DO_DERIVATIVES,
+                                                DO_SECOND_DERIVATIVES,
+                                                HARDCODED_LMAX, 10>(
+                    x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                    dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                    dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                    dzdz_sph_i);
             }
         } else {
-        generic_sph_l_channel<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
-                              HARDCODED_LMAX>(
-            l, x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i, dy_sph_i,
-            dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i, dydx_sph_i,
-            dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i, dzdz_sph_i);
+            generic_sph_l_channel<T, DO_DERIVATIVES, DO_SECOND_DERIVATIVES,
+                                  HARDCODED_LMAX>(
+                l, x, y, z, rxy, pk, qlmk, c, s, twomz, sph_i, dx_sph_i,
+                dy_sph_i, dz_sph_i, dxdx_sph_i, dxdy_sph_i, dxdz_sph_i,
+                dydx_sph_i, dydy_sph_i, dydz_sph_i, dzdx_sph_i, dzdy_sph_i,
+                dzdz_sph_i);
         }
 
         // shift pointers & indexes to the next l block
