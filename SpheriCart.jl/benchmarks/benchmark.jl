@@ -1,20 +1,27 @@
+# to run this benchmark add `BenchmarkTools` to the standard julia 
+# environment (e.g. `julia` and `] add BenchmarkTools`)
+# then run this scrict via from the current folder via 
+# `julia --project=.. -O3 benchmark.jl`
+
 
 using StaticArrays, BenchmarkTools, SpheriCart
-using SpheriCart: SolidHarmonics, compute, compute!
-using StrideArrays: PtrArray
+using SpheriCart: SolidHarmonics, compute, compute!, 
+                  static_solid_harmonics
 
 ##
 
 @info("static_solid_harmonics")
-@info("NOTE: bizarrely the nice api has an overhead only for a few L values 5..10")
 𝐫 = @SVector randn(3)
 for L = 1:12
    @show L
    basis = SolidHarmonics(L; static=true)
-   basis(𝐫)
-   @btime static_solid_harmonics($(Val(L)), $𝐫)
+   basis(𝐫) # warmup 
    @btime ($basis)($𝐫)
-   @btime compute($basis, $𝐫)
+   # these two are equivalent - just keeping them here for testing 
+   # since there is an odd effect that in some environments there there 
+   # is an unexplained overhead in the `compute` interface. 
+   # @btime static_solid_harmonics($(Val(L)), $𝐫)
+   # @btime compute($basis, $𝐫)
 end
 
 
@@ -22,6 +29,7 @@ end
 
 @info("batched evaluation vs broadcast")
 @info("nX = 32 (try a nice number)")
+@info("broadcast! cost is almost exactly single * nX")
 
 Rs = [ (@SVector randn(3)) for _ = 1:32 ]
 
@@ -41,13 +49,13 @@ end
 @info("  this shouws that the generic single-input implementation needs work")
 
 for L = 3:3:30 
+   local 𝐫
    @show L 
    𝐫 = @SVector randn(3)
    basis_st = SolidHarmonics(L; static=true)
    basis_dy = SolidHarmonics(L; static=false)
    print("  static: "); @btime compute($basis_st, $𝐫)
-   # static_solid_harmonics($(Val(L)), $𝐫)
-   print(" dynamic: "); @btime compute($basis_dy, $𝐫)
+   print(" generic: "); @btime compute($basis_dy, $𝐫)
 end 
 
 
