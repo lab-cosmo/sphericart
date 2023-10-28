@@ -23,13 +23,13 @@ inline void compute_generic(int n_samples, int l_max, DTYPE *prefactors,
                             DTYPE *xyz, DTYPE *sph, DTYPE *dsph, DTYPE *ddsph,
                             DTYPE *buffers) {
     if (dsph == nullptr) {
-        generic_sph<DTYPE, false, false, false, 1>(
+        generic_sph<DTYPE, false, false, false, 1, 10>(
             xyz, sph, dsph, ddsph, n_samples, l_max, prefactors, buffers);
     } else if (ddsph == nullptr) {
-        generic_sph<DTYPE, true, false, false, 1>(
+        generic_sph<DTYPE, true, false, false, 1, 10>(
             xyz, sph, dsph, ddsph, n_samples, l_max, prefactors, buffers);
     } else {
-        generic_sph<DTYPE, true, true, false, 1>(
+        generic_sph<DTYPE, true, true, false, 1, 10>(
             xyz, sph, dsph, ddsph, n_samples, l_max, prefactors, buffers);
     }
 }
