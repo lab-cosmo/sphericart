@@ -766,8 +766,9 @@ generic_sph_sample(const T *xyz_i, T *sph_i, [[maybe_unused]] T *dsph_i,
     // also initialize the sine and cosine, even if these never change
     c[0] = 1.0;
     s[0] = 0.0;
-    for (m = 1; m < HARDCODED_LMAX + 1;  // can we change this to TEMPLATED_LMAX somehow?
-         ++m) { // allow unrolling of the static part of the loop
+    for (m = 1; m < HARDCODED_LMAX +
+                        1; // can we change this to TEMPLATED_LMAX somehow?
+         ++m) {            // allow unrolling of the static part of the loop
         c[m] = c[m - 1] * x - s[m - 1] * y;
         s[m] = c[m - 1] * y + s[m - 1] * x;
         twomz[m] = twomz[m - 1] + twoz;
