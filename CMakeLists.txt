@@ -27,3 +27,4 @@ endif()
 if (SPHERICART_BUILD_TORCH)
     add_subdirectory(sphericart-torch)
 endif()
+

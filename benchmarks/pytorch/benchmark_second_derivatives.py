@@ -46,7 +46,9 @@ def sphericart_benchmark(
     warmup=16,
 ):
     xyz = torch.randn((n_samples, 3), dtype=dtype, device=device, requires_grad=True)
-    sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized, backward_second_derivatives=True)
+    sh_calculator = sphericart.torch.SphericalHarmonics(
+        l_max, normalized=normalized, backward_second_derivatives=True
+    )
     omp_threads = sh_calculator.omp_num_threads()
     print(
         f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, "
@@ -58,16 +60,10 @@ def sphericart_benchmark(
         elapsed = -time.time()
         sh_sphericart = sh_calculator.compute(xyz)
         sph_sum = torch.sum(sh_sphericart)
-        grad = torch.autograd.grad(
-            sph_sum,
-            xyz,
-            retain_graph=True,
-            create_graph=True
-        )[0]
-        grad_grad = torch.autograd.grad(
-            torch.sum(grad),
-            xyz
-        )[0]
+        grad = torch.autograd.grad(sph_sum, xyz, retain_graph=True, create_graph=True)[
+            0
+        ]
+        grad_grad = torch.autograd.grad(torch.sum(grad), xyz)[0]
         elapsed += time.time()
         time_grad_grad[i] = elapsed
 
@@ -101,7 +97,9 @@ def sphericart_benchmark(
         print("Warm-up timings / sec.:\n", time_hessian[:warmup])
 
     if compare and _HAS_E3NN:
-        xyz = torch.randn((n_samples, 3), dtype=dtype, device=device, requires_grad=True)
+        xyz = torch.randn(
+            (n_samples, 3), dtype=dtype, device=device, requires_grad=True
+        )
 
         sh_e3nn = e3nn.o3.spherical_harmonics(
             list(range(l_max + 1)),
@@ -121,15 +119,9 @@ def sphericart_benchmark(
             )
             sph_sum = torch.sum(sh_e3nn)
             grad = torch.autograd.grad(
-                sph_sum,
-                xyz,
-                retain_graph=True,
-                create_graph=True
+                sph_sum, xyz, retain_graph=True, create_graph=True
             )[0]
-            grad_grad = torch.autograd.grad(
-                torch.sum(grad),
-                xyz
-            )[0]
+            grad_grad = torch.autograd.grad(torch.sum(grad), xyz)[0]
             elapsed += time.time()
             time_grad_grad[i] = elapsed
 
