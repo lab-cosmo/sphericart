@@ -638,8 +638,8 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
                 xyz.requires_grad() || gradients,
                 xyz.requires_grad() && hessian);
 
-            spherical_harmonics_kernel<<<block_dim, grid_dim,
-                                         total_buff_size, stream>>>(
+            spherical_harmonics_kernel<<<block_dim, grid_dim, total_buff_size,
+                                         stream>>>(
 
                 xyz.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>(),
                 prefactors
@@ -705,7 +705,8 @@ __global__ void backward_kernel(
     Wrapper for the CUDA kernel backwards pass.
 */
 torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
-    torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad, cudaStream_t stream) {
+    torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad,
+    cudaStream_t stream) {
 
     if (!xyz.device().is_cuda()) {
         throw std::runtime_error(

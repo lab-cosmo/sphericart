@@ -209,7 +209,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         c10::cuda::CUDAGuard deviceGuard{xyz.device()};
         cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
-        // re-do the shared memory update in case `requires_grad` changed        
+        // re-do the shared memory update in case `requires_grad` changed
 
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
 
@@ -268,8 +268,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             do_gradients || xyz.requires_grad(),
             do_hessians || (xyz.requires_grad() &&
                             calculator.backward_second_derivatives_),
-            stream
-        );
+            stream);
 
         sph = results[0];
         dsph = results[1];
@@ -325,8 +324,8 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
             c10::cuda::CUDAGuard deviceGuard{xyz.device()};
             cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
 
-            xyz_grad =
-                spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs, stream);
+            xyz_grad = spherical_harmonics_backward_cuda(xyz, dsph,
+                                                         grad_outputs, stream);
         } else {
             throw std::runtime_error(
                 "Spherical harmonics are only implemented for CPU and CUDA");

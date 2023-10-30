@@ -14,10 +14,12 @@ bool adjust_cuda_shared_memory(at::ScalarType scalar_type, int64_t l_max,
 std::vector<at::Tensor>
 spherical_harmonics_cuda(at::Tensor xyz, at::Tensor prefactors, int64_t l_max,
                          bool normalize, int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
-                         bool gradients, bool hessians, cudaStream_t stream=0);
+                         bool gradients, bool hessians,
+                         cudaStream_t stream = 0);
 
 at::Tensor spherical_harmonics_backward_cuda(at::Tensor xyz, at::Tensor dsph,
-                                             at::Tensor sph_grad, cudaStream_t stream=0);
+                                             at::Tensor sph_grad,
+                                             cudaStream_t stream = 0);
 
 at::Tensor prefactors_cuda(int64_t l_max, at::ScalarType dtype);
 
