@@ -46,5 +46,21 @@ TORCH_LIBRARY(sphericart_torch, m) {
              {torch::arg("xyz")})
         .def("omp_num_threads", &SphericalHarmonics::get_omp_num_threads)
         .def("l_max", &SphericalHarmonics::get_l_max)
-        .def("normalized", &SphericalHarmonics::get_normalized_flag);
+        .def("normalized", &SphericalHarmonics::get_normalized_flag)
+        .def_pickle(
+            // __getstate__
+            [](const c10::intrusive_ptr<SphericalHarmonics> &self)
+                -> std::tuple<int64_t, bool, bool> {
+                return {self->get_l_max(), self->get_normalized_flag(),
+                        self->get_backward_second_derivative_flag()};
+            },
+            // __setstate__
+            [](std::tuple<int64_t, bool, bool> state)
+                -> c10::intrusive_ptr<SphericalHarmonics> {
+                const auto l_max = std::get<0>(state);
+                const auto normalized = std::get<1>(state);
+                const auto backward_second_derivatives = std::get<2>(state);
+                return c10::make_intrusive<SphericalHarmonics>(
+                    l_max, normalized, backward_second_derivatives);
+            });
 }
