@@ -336,7 +336,7 @@ int inline dummy_idx(int i) { return i; }
  */
 template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES,
           int HARDCODED_LMAX, int (*GET_INDEX)(int) = dummy_idx>
-CUDA_DEVICE_PREFIX static inline void generic_sph_l_channel(
+CUDA_DEVICE_PREFIX static __attribute__((always_inline)) void generic_sph_l_channel(
     int l,
     [[maybe_unused]] T x, // these might be unused for low LMAX. not worth a
                           // full separate implementation
