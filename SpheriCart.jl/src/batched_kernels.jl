@@ -26,7 +26,7 @@ function solid_harmonics!(Z::AbstractMatrix, ::Val{L},
    @assert size(Z, 2) >= len && size(Q, 2) >= len 
    @assert size(s, 2) >= L+1 && size(c, 2) >= L+1
 
-   rt2 = sqrt(2) 
+   rt2 = sqrt(T(2)) 
    
    @inbounds @simd ivdep for j = 1:nX
       𝐫 = Rs[j] 

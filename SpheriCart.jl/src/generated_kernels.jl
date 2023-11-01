@@ -4,7 +4,7 @@
 function _codegen_Zlm(L, T, normalisation) 
    Flm = generate_Flms(L; normalisation = normalisation)
    len = sizeY(L)
-   rt2 = sqrt(2) 
+   rt2 = sqrt(T(2)) 
 
    code = Expr[] 
    push!(code, :(r² = x^2 + y^2 + z^2))
