@@ -134,3 +134,5 @@ Z2, dZ2 = fwd_grad(zlm_4, 𝐫0)
 
 Z1 ≈ Z2
 dZ1 ≈ dZ2
+
+# dZ1[1:4] ≈ dZ2[1:4]

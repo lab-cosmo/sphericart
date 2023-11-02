@@ -184,7 +184,34 @@ function solid_harmonics_with_grad!(
       dZ[j, i00] = zero(SVector{3, T})
    end
 
-   @inbounds for l = 1:L 
+   # need to treat l = 1 separately 
+   i11 = lm2idx(1, 1)
+   i1⁻1 = lm2idx(1, -1)
+   i00 = lm2idx(0, 0)
+   i10 = lm2idx(1, 0)
+   F_1_1 = Flm[1,1]
+   F_1_0 = Flm[1,0]
+
+   @inbounds @simd ivdep for j = 1:nX 
+      # Q_1^1, Y_1^1, Y_1^-1
+      # Q_j_00 = _1
+      Q[j, i11] = - _1
+      Z[j, i11] = - F_1_1 * c[j, 2]    # 2 => l = 1
+      Z[j, i1⁻1] = - F_1_1 * s[j, 2]
+
+      # Q_l^l-1 and Y_l^l-1
+      # m = l-1 
+      Q[j, i10]  = Q_j_10 = z[j]
+      Z[j, i10]  = F_1_0 * Q_j_10 * c[j, 1]  # l-1 -> l
+
+      # gradients 
+      dZ[j, i11]  = SA[- F_1_1, _0, _0]
+      dZ[j, i1⁻1] = SA[_0, - F_1_1, _0]
+      dZ[j, i10]  = SA[_0, _0,  F_1_0 / rt2 ]                                   
+   end
+
+   # now from l = 2 onwards 
+   @inbounds for l = 2:L 
       ill = lm2idx(l, l)
       il⁻l = lm2idx(l, -l)
       ill⁻¹ = lm2idx(l, l-1)
@@ -194,6 +221,7 @@ function solid_harmonics_with_grad!(
       
       F_l_l = Flm[l,l]
       F_l_l⁻¹ = Flm[l,l-1]
+      _f = (l == 1) ? rt2 : _1  # a silly √2 correction (REVISIT THIS)
 
       @simd ivdep for j = 1:nX 
          # Q_l^l and Y_l^l
@@ -215,8 +243,8 @@ function solid_harmonics_with_grad!(
 
          # l = m 
          # Q_j_ll = const => ∇Q_j_ll = 0
-         dZ[j, ill]  = F_l_l * Q_j_ll * SA[l * c[j, l], -l * s[j, l], _0]
-         dZ[j, il⁻l] = F_l_l * Q_j_ll * SA[l * s[j, l],  l * c[j, l], _0]
+         dZ[j, ill]  = _f * F_l_l * Q_j_ll * SA[l * c[j, l], -l * s[j, l], _0]
+         dZ[j, il⁻l] = _f * F_l_l * Q_j_ll * SA[l * s[j, l],  l * c[j, l], _0]
 
          # m = l-1
          # Q_j_l⁻¹l⁻¹ = const => ∇_{xy}Q_j_l⁻¹l⁻¹ = 0
