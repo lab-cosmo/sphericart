@@ -1,6 +1,9 @@
 
 #  This is a generated code for best possible performance with a single input
 
+import ForwardDiff
+import ForwardDiff: Dual
+
 function _codegen_Zlm(L, T, normalisation) 
    Flm = generate_Flms(L; normalisation = normalisation)
    len = sizeY(L)
@@ -75,7 +78,7 @@ static_solid_harmonics(valL::Val{L}, 𝐫::SVector{3},
 
 @generated function static_solid_harmonics(::Val{L}, x::T, y::T, z::T, 
                      valNorm::Val{NORM} = Val{:sphericart}()
-                     ) where {L, T <: AbstractFloat, NORM}
+                     ) where {L, T, NORM}
    code = _codegen_Zlm(L, T, NORM)
    return quote
       $(Expr(:block, code...))

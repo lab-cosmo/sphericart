@@ -1,7 +1,8 @@
 
 using Test, StaticArrays, LinearAlgebra, Random, SpheriCart
 using SpheriCart: compute, compute!, SolidHarmonics, sizeY, 
-                  static_solid_harmonics
+                  static_solid_harmonics, 
+                  compute_with_gradients
 
 ##
 
@@ -114,3 +115,22 @@ end
 
 ##
 
+using ForwardDiff
+
+@info("test gradients")
+
+zlm_4 = SolidHarmonics(4; static=false)
+
+function fwd_grad(basis, 𝐫)
+   Z = basis(𝐫)
+   dZ = ForwardDiff.jacobian(basis, 𝐫)'
+   return Z, [ SVector{3, eltype(𝐫)}(dZ[:, i]...) for i = 1:length(Z) ]
+end
+
+
+𝐫0 = @SVector randn(3)
+Z1, dZ1 = compute_with_gradients(zlm_4, 𝐫0)
+Z2, dZ2 = fwd_grad(zlm_4, 𝐫0)
+
+Z1 ≈ Z2
+dZ1 ≈ dZ2
