@@ -31,11 +31,10 @@ jobs:
       - name: run Julia tests
         run: |
           cd SpheriCart.jl/test/
-          echo "PYTHON=$(which python)" >> $GITHUB_ENV
-          julia --project=.. -e 'using Pkg; ENV["PYTHON"] = ENV["PYTHON"]; Pkg.build("PyCall"); Pkg.instantiate(); Pkg.precompile();'
+          julia -e 'using Pkg; Pkg.add("PyCall");'
+          julia --project=.. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
           julia --project=.. runtests.jl
           python -m pip install numpy pytest sphericart julia
-          export JULIA_PROJECT=@../../
           python -m pytest python/test_python.py
 
       - name: install tests dependencies
