@@ -31,6 +31,7 @@ jobs:
       - name: run Julia tests
         run: |
           cd SpheriCart.jl/test/
+          julia --project=.. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
           julia --project=.. runtests.jl
 
       - name: install tests dependencies
