@@ -6,7 +6,8 @@
 
 using StaticArrays, BenchmarkTools, SpheriCart
 using SpheriCart: SolidHarmonics, compute, compute!, 
-                  static_solid_harmonics
+                  static_solid_harmonics, 
+                  compute_with_gradients, compute_with_gradients!
 
 ##
 
@@ -57,6 +58,22 @@ for L = 3:3:30
    print("  static: "); @btime compute($basis_st, $𝐫)
    print(" generic: "); @btime compute($basis_dy, $𝐫)
 end 
+
+##
+
+
+@info("compute! vs compute_with_gradients! (using 32 inputs)")
+
+for L = 1:15
+   @show L 
+   nX = 32
+   basis = SolidHarmonics(L)
+   Rs = [ (@SVector randn(3)) for _ = 1:nX ]
+   Z, dZ = compute_with_gradients(basis, Rs)
+   print("        compute!: "); @btime compute!($Z, $basis, $Rs)
+   print(" _with_gradient!: "); @btime compute_with_gradients!($Z, $dZ, $basis, $Rs)
+end 
+
 
 
 ## -------------- 

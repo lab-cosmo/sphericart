@@ -141,16 +141,34 @@ end
 
 @info("test batched gradients")
 
-zlm_4 = SolidHarmonics(12; static=false)
+basis = SolidHarmonics(12; static=false)
 
 for ntest = 1:30
    local nX, Rs, Z0, Z1, dZ1, dZ2
    nX = rand(2:37)
    Rs = [ @SVector randn(3) for _ = 1:nX ]
-   Z0 = compute(zlm_4, Rs)
-   Z1, dZ1 = compute_with_gradients(zlm_4, Rs)
-   dZ2 = vcat([ reshape(compute_with_gradients(zlm_4, 𝐫)[2], 1, :) for 𝐫 in Rs ]...)
+   Z0 = compute(basis, Rs)
+   Z1, dZ1 = compute_with_gradients(basis, Rs)
+   dZ2 = vcat([ reshape(compute_with_gradients(basis, 𝐫)[2], 1, :) for 𝐫 in Rs ]...)
    
    @test Z0 ≈ Z1
+   @test dZ1 ≈ dZ2
+end
+
+
+##
+
+@info("test generated gradients")
+
+basis_st = SolidHarmonics(12; static=true)
+basis_dy = SolidHarmonics(12; static=false)
+for ntest = 1:30 
+   local 𝐫, Z0, Z1, Z2, dZ1, dZ2
+   𝐫 = @SVector randn(3)
+   Z0 = basis_st(𝐫)
+   Z1, dZ1 = compute_with_gradients(basis_st, 𝐫)
+   Z2, dZ2 = compute_with_gradients(basis_dy, 𝐫)
+
+   @test Z1 ≈ Z0 ≈ Z2
    @test dZ1 ≈ dZ2
 end

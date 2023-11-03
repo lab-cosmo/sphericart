@@ -123,6 +123,12 @@ function compute_with_gradients(basis::SolidHarmonics{L, NORM, false, T1},
    return Z, dZ 
 end 
 
+function compute_with_gradients(basis::SolidHarmonics{L, NORM, true, T1}, 
+                                𝐫::SVector{3, T2}
+                               ) where {L, NORM, T1, T2}
+   return static_solid_harmonics_with_grads(Val{L}(), 𝐫, Val{NORM}())
+end 
+
 
 function compute_with_gradients(basis::SolidHarmonics{L, NORM, STATIC, T1}, 
                                 Rs::AbstractVector{SVector{3, T2}}
