@@ -50,6 +50,8 @@ jobs:
 
       - name: run Julia tests
         run: |
+          pwd
+          ls
           cd Sphericart.jl/test
           julia --project=.. runtests.jl
 
