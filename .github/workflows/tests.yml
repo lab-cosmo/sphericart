@@ -28,6 +28,11 @@ jobs:
         with:
           version: '1.9.2'
 
+      - name: run Julia tests
+        run: |
+          cd SpheriCart.jl/test/
+          julia --project=.. runtests.jl
+
       - name: install tests dependencies
         run: |
           python -m pip install --upgrade pip
@@ -41,13 +46,6 @@ jobs:
           cmake -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON ..
           cmake --build .
           ctest
-
-      - name: run Julia tests
-        run: |
-          pwd
-          ls
-          cd Sphericart.jl/test
-          julia --project=.. runtests.jl
 
       - name: run Python tests
         run: tox
