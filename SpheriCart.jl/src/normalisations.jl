@@ -16,17 +16,6 @@ end
 
 
 
-function _generate_Flms(L::Integer, ::Val{:p4ml}, T=Float64)
-   Flm = OffsetMatrix(zeros(L+1, L+1), (-1, -1))
-   for l = 0:L
-      Flm[l, 0] = sqrt((2*l+1)/(2 * π))
-      for m = 1:l
-         Flm[l, m] = (-1)^m * sqrt((2*l+1)/(4*π) )
-      end
-   end
-   return Flm
-end
-
 """
 ```
 generate_Flms(L; normalisation = :L2, T = Float64)
