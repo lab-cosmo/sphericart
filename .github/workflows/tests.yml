@@ -50,12 +50,12 @@ jobs:
       - name: run Julia tests
         run: |
           cd SpheriCart.jl/test/
-          julia -e 'using Pkg; Pkg.add("PyCall");'
           julia --project=.. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
           julia --project=.. runtests.jl
           cd python/
+          julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.instantiate();'
           python -m pip install numpy pytest sphericart julia
-          python -m pytest test_python.py
+          python -m pytest .
 
   # check that we can build Python wheels on any Python version
   python-build:
