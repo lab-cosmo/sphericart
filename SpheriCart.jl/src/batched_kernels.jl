@@ -170,12 +170,8 @@ function solid_harmonics_with_grad!(
       end
    end
 
-   # change c[0] to 1/rt2 to avoid a special case l-1=m=0 later 
    i00 = lm2idx(0, 0)
-
    @inbounds @simd ivdep for j = 1:nX
-      c[j, 1] = one(T)/rt2
-
       # fill Q_0^0 and Z_0^0 
       Q[j, i00] = one(T)
       Z[j, i00] = (Flm[0,0]/rt2) * Q[j, i00]
@@ -202,7 +198,7 @@ function solid_harmonics_with_grad!(
       # Q_l^l-1 and Y_l^l-1
       # m = l-1 
       Q[j, i10]  = Q_j_10 = z[j]
-      Z[j, i10]  = F_1_0 * Q_j_10 * c[j, 1]  # l-1 -> l
+      Z[j, i10]  = F_1_0 * Q_j_10 * c[j, 1] / rt2    # l-1 -> l
 
       # gradients 
       dZ[j, i11]  = SA[- F_1_1, _0, _0]
@@ -221,7 +217,6 @@ function solid_harmonics_with_grad!(
       
       F_l_l = Flm[l,l]
       F_l_l⁻¹ = Flm[l,l-1]
-      _f = (l == 1) ? rt2 : _1  # a silly √2 correction (REVISIT THIS)
 
       @simd ivdep for j = 1:nX 
          # Q_l^l and Y_l^l
@@ -237,58 +232,86 @@ function solid_harmonics_with_grad!(
          Q[j, ill⁻¹]  = Q_j_ll⁻¹ = (2*l-1) * z[j] * Q_j_l⁻¹l⁻¹
          Z[j, il⁻l⁺¹] = F_l_l⁻¹ * Q_j_ll⁻¹ * s[j, l]  # l-1 -> l
          Z[j, ill⁻¹]  = F_l_l⁻¹ * Q_j_ll⁻¹ * c[j, l]  # l-1 -> l
-         # overwrite if m = 0 -> ok 
 
          # gradients 
 
          # l = m 
          # Q_j_ll = const => ∇Q_j_ll = 0
-         dZ[j, ill]  = _f * F_l_l * Q_j_ll * SA[l * c[j, l], -l * s[j, l], _0]
-         dZ[j, il⁻l] = _f * F_l_l * Q_j_ll * SA[l * s[j, l],  l * c[j, l], _0]
+         dZ[j, ill]  = F_l_l * Q_j_ll * SA[l * c[j, l], -l * s[j, l], _0]
+         dZ[j, il⁻l] = F_l_l * Q_j_ll * SA[l * s[j, l],  l * c[j, l], _0]
 
          # m = l-1
          # Q_j_l⁻¹l⁻¹ = const => ∇_{xy}Q_j_l⁻¹l⁻¹ = 0
-         dZ[j, il⁻l⁺¹] = F_l_l⁻¹ * SA[Q_j_ll⁻¹ * (l-1) * c[j, l-1], 
-                                      Q_j_ll⁻¹ * (-(l-1)) * s[j, l-1], 
-                                      (2*l-1) * Q_j_l⁻¹l⁻¹ * s[j, l] ]
-         dZ[j, ill⁻¹]  = F_l_l⁻¹ * SA[Q_j_ll⁻¹ * (l-1) * s[j, l-1],
+         dZ[j, il⁻l⁺¹] = F_l_l⁻¹ * SA[Q_j_ll⁻¹ * (l-1) * s[j, l-1], 
                                       Q_j_ll⁻¹ * (l-1) * c[j, l-1], 
-                                      (2*l-1) * Q_j_l⁻¹l⁻¹ * c[j, l] ]                             
+                                      (2*l-1) * Q_j_l⁻¹l⁻¹ * s[j, l] ]
+         dZ[j, ill⁻¹]  = F_l_l⁻¹ * SA[Q_j_ll⁻¹ * (l-1) * c[j, l-1],
+                                      Q_j_ll⁻¹ * (-l+1) * s[j, l-1], 
+                                      (2*l-1) * Q_j_l⁻¹l⁻¹ * c[j, l] ]
       end
 
       # now we can go to the second recursion 
-      for m = l-2:-1:0 
+      # unfortunately we have to treat m = 0 separately again 
+      for m = l-2:-1:1 
          ilm = lm2idx(l, m)
          il⁻m = lm2idx(l, -m)
          il⁻¹m = lm2idx(l-1, m)
          il⁻²m = lm2idx(l-2, m)
          il⁻¹m⁺¹ = lm2idx(l-1, m+1)
-
+         _f = (m == 0) ? _1/rt2 : _1
 
          F_l_m = Flm[l,m]
+         F_l_m_f = F_l_m * _f
+
          @simd ivdep for j = 1:nX 
             cj = c[j, m+1]; sj = s[j, m+1]   # m -> m+1
             Q[j, ilm] = Q_lm = ((2*l-1) * z[j] * Q[j, il⁻¹m] - (l+m-1) * r²[j] * Q[j, il⁻²m]) / (l-m)
-            Z[j, il⁻m] = F_l_m * Q[j, ilm] * sj   
-            Z[j, ilm] = F_l_m * Q[j, ilm] * cj   
+            Z[j, il⁻m] = F_l_m * Q_lm * sj   
+            Z[j, ilm] = F_l_m_f * Q_lm * cj 
 
             # gradients
             Q_lm_x = x[j] * Q[j, il⁻¹m⁺¹]
             Q_lm_y = y[j] * Q[j, il⁻¹m⁺¹]
             Q_lm_z = (l+m) * Q[j, il⁻¹m]
-            s_x = m * sj
-            s_y = m * cj
-            c_x = m * cj
-            c_y = -m * sj 
+            s_x = m * s[j, m]
+            s_y = m * c[j, m]
+            c_x = m * c[j, m]
+            c_y = -m * s[j, m]
 
             dZ[j, il⁻m] = F_l_m * SA[Q_lm * s_x + Q_lm_x * sj, 
                                      Q_lm * s_y + Q_lm_y * sj, 
                                                   Q_lm_z * sj ]
-            dZ[j, ilm] = F_l_m * SA[Q_lm * c_x + Q_lm_x * cj,
+            dZ[j, ilm] = F_l_m_f * SA[Q_lm * c_x + Q_lm_x * cj,
                                     Q_lm * c_y + Q_lm_y * cj, 
                                                  Q_lm_z * cj ]                                                 
          end
       end
+
+      # special case m = 0: only if l = 2 or larger. 
+      # for l = 1 it is already taken care of above. 
+      if l >= 2 
+         # m = 0 
+         il0 = lm2idx(l, 0)
+         il⁻¹0 = lm2idx(l-1, 0)
+         il⁻²0 = lm2idx(l-2, 0)
+         il⁻¹1 = lm2idx(l-1, 1)
+
+         F_l_0_f = Flm[l,0] / rt2
+
+         @simd ivdep for j = 1:nX 
+            cj = c[j, 1]; sj = s[j, 1]   # 1 => m = 0
+            Q[j, il0] = Q_l0 = ((2*l-1) * z[j] * Q[j, il⁻¹0] - (l-1) * r²[j] * Q[j, il⁻²0]) / l
+            Z[j, il0] = F_l_0_f * Q_l0 * cj
+
+            # gradients
+            Q_l0_x = x[j] * Q[j, il⁻¹1]
+            Q_l0_y = y[j] * Q[j, il⁻¹1]
+            Q_l0_z = l * Q[j, il⁻¹0]
+
+            dZ[j, il0] = F_l_0_f * cj * SA[Q_l0_x, Q_l0_y, Q_l0_z ]                                                 
+         end
+      end
+
    end
 
    return nothing 

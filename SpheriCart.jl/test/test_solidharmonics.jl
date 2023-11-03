@@ -1,5 +1,6 @@
 
 using Test, StaticArrays, LinearAlgebra, Random, SpheriCart
+using ForwardDiff
 using SpheriCart: compute, compute!, SolidHarmonics, sizeY, 
                   static_solid_harmonics, 
                   compute_with_gradients
@@ -115,11 +116,9 @@ end
 
 ##
 
-using ForwardDiff
-
 @info("test gradients")
 
-zlm_4 = SolidHarmonics(4; static=false)
+zlm_4 = SolidHarmonics(12; static=false)
 
 function fwd_grad(basis, 𝐫)
    Z = basis(𝐫)
@@ -127,12 +126,31 @@ function fwd_grad(basis, 𝐫)
    return Z, [ SVector{3, eltype(𝐫)}(dZ[:, i]...) for i = 1:length(Z) ]
 end
 
+for ntest = 1:30
+   local 𝐫0, Z0, Z1, Z2, dZ1, dZ2
+   𝐫0 = @SVector randn(3)
+   Z0 = zlm_4(𝐫0)
+   Z1, dZ1 = compute_with_gradients(zlm_4, 𝐫0)
+   Z2, dZ2 = fwd_grad(zlm_4, 𝐫0)
 
-𝐫0 = @SVector randn(3)
-Z1, dZ1 = compute_with_gradients(zlm_4, 𝐫0)
-Z2, dZ2 = fwd_grad(zlm_4, 𝐫0)
+   @test Z0 ≈ Z1 ≈ Z2
+   @test dZ1 ≈ dZ2
+end
 
-Z1 ≈ Z2
-dZ1 ≈ dZ2
+##
 
-# dZ1[1:4] ≈ dZ2[1:4]
+@info("test batched gradients")
+
+zlm_4 = SolidHarmonics(12; static=false)
+
+for ntest = 1:30
+   local nX, Rs, Z0, Z1, dZ1, dZ2
+   nX = rand(2:37)
+   Rs = [ @SVector randn(3) for _ = 1:nX ]
+   Z0 = compute(zlm_4, Rs)
+   Z1, dZ1 = compute_with_gradients(zlm_4, Rs)
+   dZ2 = vcat([ reshape(compute_with_gradients(zlm_4, 𝐫)[2], 1, :) for 𝐫 in Rs ]...)
+   
+   @test Z0 ≈ Z1
+   @test dZ1 ≈ dZ2
+end
