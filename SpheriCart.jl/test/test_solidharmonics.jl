@@ -5,6 +5,7 @@ using SpheriCart: compute, compute!, SolidHarmonics, sizeY,
                   static_solid_harmonics, 
                   compute_with_gradients
 
+@info("============= Testset Solid Harmonics =============")
 ##
 
 # This is an implementation that ignores any normalisation factors. 

@@ -30,28 +30,31 @@ using SpheriCart, StaticArrays
 
 # generate the basis object 
 L = 5
-zbasis = SolidHarmonics(L)
+basis = SolidHarmonics(L)
+# Replace this with 
+#  basis = SphericalHarmonics(L) 
+# to evaluate the spherical instead of solid harmonics 
 
 # evaluate for a single input 
 𝐫 = @SVector randn(3) 
 # Z : SVector of length (L+1)²
-Z = zbasis(𝐫)  
-Z = compute(zbasis, 𝐫)
+Z = basis(𝐫)  
+Z = compute(basis, 𝐫)
 # ∇Z : SVector of length (L+1)², each ∇Z[i] is an SVector{3, T}
-Z, ∇Z = compute_with_gradients(zbasis, 𝐫)
+Z, ∇Z = compute_with_gradients(basis, 𝐫)
 
 # evaluate for many inputs 
 nX = 32
 Rs = [ @SVector randn(3)  for _ = 1:nX ]
 # Z : Matrix of size nX × (L+1)² of scalar 
 # dZ : Matrix of size nX × (L+1)² of SVector{3, T}
-Z = zbasis(Rs)  
-Z = compute(zbasis, Rs)
-Z, ∇Z = compute_with_gradients(zbasis, Rs)
+Z = basis(Rs)  
+Z = compute(basis, Rs)
+Z, ∇Z = compute_with_gradients(basis, Rs)
 
 # in-place evaluation to avoid the allocation 
-compute!(Z, zbasis, Rs)
-compute_with_gradients!(Z, ∇Z, zbasis, Rs)
+compute!(Z, basis, Rs)
+compute_with_gradients!(Z, ∇Z, basis, Rs)
 ```
 
 Note that Julia uses column-major indexing, which means that for batched output the loop over inputs is contiguous in memory. 
