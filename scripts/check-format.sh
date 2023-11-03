@@ -5,7 +5,7 @@ for file in $(find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -
     if git diff --quiet "$file"; then
     echo "✅ $file is properly formatted."
     else
-    echo "❌ $file is not properly formatted. Please run './scripts/format.sh' from the sphericart root directory" 
+    echo "❌ $file is not properly formatted. Please run './scripts/format.sh' from the sphericart root directory"
     exit 1
     fi
 done
