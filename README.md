@@ -25,6 +25,8 @@ If you are using sphericart for your academic work, you can cite it as
 }
 ```
 
+This library is dual-licensed under the Apache License 2.0 and the MIT license. You can use to use it under either of the two licenses.
+
 ## Installation
 
 ### Python
