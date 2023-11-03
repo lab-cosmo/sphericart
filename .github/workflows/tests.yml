@@ -23,6 +23,11 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: setup Julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.9.2'
+
       - name: install tests dependencies
         run: |
           python -m pip install --upgrade pip
@@ -41,6 +46,16 @@ jobs:
         env:
           # Use the CPU only version of torch when building/running the code
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
+
+      - name: run Julia tests
+        run: |
+          cd SpheriCart.jl/test/
+          julia --project=.. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
+          julia --project=.. runtests.jl
+          cd python/
+          julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.instantiate();'
+          python -m pip install numpy pytest sphericart julia
+          python -m pytest .
 
   # check that we can build Python wheels on any Python version
   python-build:
