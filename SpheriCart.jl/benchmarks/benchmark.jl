@@ -64,7 +64,7 @@ end
 
 @info("compute! vs compute_with_gradients! (using 32 inputs)")
 
-for L = 1:15
+for L = 1:2:15
    @show L 
    nX = 32
    basis = SolidHarmonics(L)
@@ -72,6 +72,21 @@ for L = 1:15
    Z, dZ = compute_with_gradients(basis, Rs)
    print("        compute!: "); @btime compute!($Z, $basis, $Rs)
    print(" _with_gradient!: "); @btime compute_with_gradients!($Z, $dZ, $basis, $Rs)
+end 
+
+
+##
+
+
+@info("compute vs compute_with_gradients for code-generated basis")
+for L = 1:10
+   @show L 
+   basis = SolidHarmonics(L; static=true)
+   𝐫 = @SVector randn(3)
+   Z1 = compute(basis, 𝐫)
+   Z, dZ = compute_with_gradients(basis, 𝐫)
+   print("        compute: "); @btime compute($basis, $𝐫)
+   print(" _with_gradient: "); @btime compute_with_gradients($basis, $𝐫)
 end 
 
 

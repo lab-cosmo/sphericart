@@ -34,17 +34,24 @@ zbasis = SolidHarmonics(L)
 
 # evaluate for a single input 
 𝐫 = @SVector randn(3) 
-Z = zbasis(𝐫)  # returns an SVector of length (L+1)²
+# Z : SVector of length (L+1)²
+Z = zbasis(𝐫)  
 Z = compute(zbasis, 𝐫)
+# ∇Z : SVector of length (L+1)², each ∇Z[i] is an SVector{3, T}
+Z, ∇Z = compute_with_gradients(zbasis, 𝐫)
 
 # evaluate for many inputs 
 nX = 32
 Rs = [ @SVector randn(3)  for _ = 1:nX ]
-Z = zbasis(Rs)  # returns a Matrix of size nX × (L+1)²
+# Z : Matrix of size nX × (L+1)² of scalar 
+# dZ : Matrix of size nX × (L+1)² of SVector{3, T}
+Z = zbasis(Rs)  
 Z = compute(zbasis, Rs)
+Z, ∇Z = compute_with_gradients(zbasis, Rs)
 
 # in-place evaluation to avoid the allocation 
 compute!(Z, zbasis, Rs)
+compute_with_gradients!(Z, ∇Z, zbasis, Rs)
 ```
 
 Note that Julia uses column-major indexing, which means that for batched output the loop over inputs is contiguous in memory. 
