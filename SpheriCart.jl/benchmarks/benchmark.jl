@@ -3,6 +3,10 @@
 # then run this scrict via from the current folder via 
 # `julia --project=.. -O3 benchmark.jl`
 
+# This is just a preliminary benchmark for initial testing. 
+# We need to write a proper benchmark suite to check performance 
+# regressions and compare against the C++ implementation on the same 
+# system. 
 
 using StaticArrays, BenchmarkTools, SpheriCart
 using SpheriCart: SolidHarmonics, compute, compute!, 
