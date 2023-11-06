@@ -6,19 +6,17 @@ Fast evaluation of spherical harmonics with sphericart,
 Filippo Bigi, Guillaume Fraux, Nicholas J. Browning and Michele Ceriotti; 
 J. Chem. Phys. 159, 064802 (2023); arXiv:2302.08381
 ```
-The current version of the code was written only with reference to 
-the published paper and without consulting the reference implementation 
-provided by the authors.
 
-`SpheriCart.jl` is released under MIT license. 
+
+`SpheriCart.jl` is released under MIT license and under Apache 2.0 license.
 
 ## Installation 
 
-Once registered, install the package by opening a REPL, switch to the package manager by typing `]` and then `add SpheriCart`.
+Install the package by opening a REPL, switch to the package manager by typing `]` and then `add SpheriCart`.
 
 ## Basic Usage
 
-There are two implementations of solid harmonics
+There are two implementations of real solid harmonics and real spherical harmonics
 - a generated  implementation for a single `𝐫::SVector{3, T}` input, returning the spherical harmonics as an `SVector{T}`. 
 - a generic implementation that is optimized for evaluating over batches of inputs, exploiting SIMD vectorization. 
 
@@ -59,9 +57,9 @@ compute_with_gradients!(Z, ∇Z, basis, Rs)
 
 Note that Julia uses column-major indexing, which means that for batched output the loop over inputs is contiguous in memory. 
 
-## Advanced Usage
+<!-- ## Advanced Usage
 
 TODO:  
 - different normalizations
 - enforce static versus dynamic 
-- wrapping outputs into zvec for easier indexing 
+- wrapping outputs into zvec for easier indexing  -->
