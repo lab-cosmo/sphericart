@@ -655,21 +655,27 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 */
 template <typename scalar_t>
 __global__ void backward_kernel(
-    torch::PackedTensorAccessor64<scalar_t, 3, torch::RestrictPtrTraits> dsph,
-    torch::PackedTensorAccessor64<scalar_t, 2, torch::RestrictPtrTraits>
-        sph_grad,
-    torch::PackedTensorAccessor64<scalar_t, 2, torch::RestrictPtrTraits>
-        xyz_grad) {
+    scalar_t *dsph, scalar_t *sph_grad,
+    /// torch::PackedTensorAccessor64<scalar_t, 3, torch::RestrictPtrTraits>
+    /// dsph,
+    // torch::PackedTensorAccessor64<scalar_t, 2, torch::RestrictPtrTraits>
+    //     sph_grad,
+    size_t nedges, size_t n_total,
+    // torch::PackedTensorAccessor64<scalar_t, 2, torch::RestrictPtrTraits>
+    //     xyz_grad,
+    scalar_t *xyz_grad) {
 
-    size_t sample_idx = blockIdx.x * blockDim.y + threadIdx.y;
-    size_t nsamples = sph_grad.size(0);
+    size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
     int spatial = blockIdx.y;
 
     scalar_t sum = 0.0;
 
-    if (sample_idx < nsamples) {
-        for (int j = threadIdx.x; j < sph_grad.size(1); j += blockDim.x) {
-            sum += dsph[sample_idx][spatial][j] * sph_grad[sample_idx][j];
+    if (edge_idx < nedges) {
+        // for (int j = threadIdx.x; j < sph_grad.size(1); j += blockDim.x) {
+        for (int j = threadIdx.x; j < n_total; j += blockDim.x) {
+            // sum += dsph[edge_idx][spatial][j] * sph_grad[edge_idx][j];
+            sum += dsph[edge_idx * 3 * n_total + spatial * n_total + j] *
+                   sph_grad[edge_idx * n_total + j];
         }
     }
 
@@ -680,9 +686,10 @@ __global__ void backward_kernel(
         sum += __shfl_down_sync(FULL_MASK, sum, offset);
     }
 
-    if (sample_idx < nsamples) {
+    if (edge_idx < nedges) {
         if (threadIdx.x == 0) {
-            xyz_grad[sample_idx][spatial] = sum;
+            // xyz_grad[sample_idx][spatial] = sum;
+            xyz_grad[edge_idx * 3 + spatial] = sum;
         }
     }
 }
@@ -714,12 +721,9 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
         AT_DISPATCH_FLOATING_TYPES(
             xyz.scalar_type(), "spherical_harmonics_backward_cuda", ([&] {
                 backward_kernel<<<block_dim, grid_dim>>>(
-                    dsph.packed_accessor64<scalar_t, 3,
-                                           torch::RestrictPtrTraits>(),
-                    sph_grad.packed_accessor64<scalar_t, 2,
-                                               torch::RestrictPtrTraits>(),
-                    xyz_grad.packed_accessor64<scalar_t, 2,
-                                               torch::RestrictPtrTraits>());
+                    dsph.data_ptr<scalar_t>(), sph_grad.data_ptr<scalar_t>(),
+                    dsph.size(0), sph_grad.size(1),
+                    xyz_grad.data_ptr<scalar_t>());
             }));
 
         cudaDeviceSynchronize();
