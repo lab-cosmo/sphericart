@@ -49,7 +49,7 @@ jobs:
 
       - name: run Julia tests
         run: |
-          cd SpheriCart.jl/test/
+          cd julia/test/
           julia --project=.. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
           julia --project=.. runtests.jl
           cd python/
