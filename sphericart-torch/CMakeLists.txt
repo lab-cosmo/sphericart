@@ -119,7 +119,7 @@ add_library(sphericart_torch SHARED
 )
 
 if (CMAKE_CUDA_COMPILER)
-    target_sources(sphericart_torch PUBLIC "src/cuda.cu")
+    target_sources(sphericart_torch PUBLIC "src/cuda_base.cu")
 else()
     target_sources(sphericart_torch PUBLIC "src/cuda_stub.cpp")
 endif()
