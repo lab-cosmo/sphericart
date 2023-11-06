@@ -20,3 +20,6 @@ floating-point arithmetics, and they evaluate the mean relative error between th
     python-examples
     pytorch-examples
     jax-examples
+
+Although comprehensive Julia examples are not fully available yet, basic usage is illustrated
+`here <https://github.com/lab-cosmo/sphericart/blob/main/julia/README.md>`_.
