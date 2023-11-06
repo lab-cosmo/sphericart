@@ -89,11 +89,11 @@ __device__ inline void write_buffers(
 
     scalar_t *buffer_dsph_dzdx, scalar_t *buffer_dsph_dzdy,
     scalar_t *buffer_dsph_dzdz, scalar_t *sph, scalar_t *dsph, scalar_t *ddsph,
-    size_t nl, bool requires_grad, bool requires_hessian, bool normalize) {
+    size_t n_total, bool requires_grad, bool requires_hessian, bool normalize) {
     if (edge_idx < nedges) {
         for (int i = threadIdx.x; i < n_elements; i += blockDim.x) {
 
-            sph[edge_idx * nl + offset + i] = buffer_sph[get_index(i)];
+            sph[edge_idx * n_total + offset + i] = buffer_sph[get_index(i)];
             // sph[edge_idx][offset + i] = buffer_sph[get_index(i)];
 
             if (requires_hessian) {
@@ -150,26 +150,26 @@ __device__ inline void write_buffers(
                 // ddsph: nedges, 3, 3, nl -> [nedges * 9 * nl + i * 3 * nl + j
                 // * nl + k]
 
-                ddsph[edge_idx * 9 * nl + 0 * 3 * nl + 0 * nl + offset + i] =
-                    tmp_dxdx;
-                ddsph[edge_idx * 9 * nl + 0 * 3 * nl + 1 * nl + offset + i] =
-                    tmp_dxdy;
-                ddsph[edge_idx * 9 * nl + 0 * 3 * nl + 2 * nl + offset + i] =
-                    tmp_dxdz;
+                ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 0 * n_total +
+                      offset + i] = tmp_dxdx;
+                ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 1 * n_total +
+                      offset + i] = tmp_dxdy;
+                ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 2 * n_total +
+                      offset + i] = tmp_dxdz;
 
-                ddsph[edge_idx * 9 * nl + 1 * 3 * nl + 0 * nl + offset + i] =
-                    tmp_dydx;
-                ddsph[edge_idx * 9 * nl + 1 * 3 * nl + 1 * nl + offset + i] =
-                    tmp_dydy;
-                ddsph[edge_idx * 9 * nl + 1 * 3 * nl + 2 * nl + offset + i] =
-                    tmp_dydz;
+                ddsph[edge_idx * 9 * n_total + 1 * 3 * n_total + 0 * n_total +
+                      offset + i] = tmp_dydx;
+                ddsph[edge_idx * 9 * n_total + 1 * 3 * n_total + 1 * n_total +
+                      offset + i] = tmp_dydy;
+                ddsph[edge_idx * 9 * n_total + 1 * 3 * n_total + 2 * n_total +
+                      offset + i] = tmp_dydz;
 
-                ddsph[edge_idx * 9 * nl + 2 * 3 * nl + 0 * nl + offset + i] =
-                    tmp_dzdx;
-                ddsph[edge_idx * 9 * nl + 2 * 3 * nl + 1 * nl + offset + i] =
-                    tmp_dzdy;
-                ddsph[edge_idx * 9 * nl + 2 * 3 * nl + 2 * nl + offset + i] =
-                    tmp_dzdz;
+                ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 0 * n_total +
+                      offset + i] = tmp_dzdx;
+                ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 1 * n_total +
+                      offset + i] = tmp_dzdy;
+                ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 2 * n_total +
+                      offset + i] = tmp_dzdz;
 
                 /*ddsph[edge_idx][0][0][offset + i] = tmp_dxdx;
                 ddsph[edge_idx][0][1][offset + i] = tmp_dxdy;
@@ -202,9 +202,12 @@ __device__ inline void write_buffers(
                 dsph[edge_idx][1][offset + i] = tmp_dy;
                 dsph[edge_idx][2][offset + i] = tmp_dz;*/
 
-                dsph[edge_idx * 3 * nl + 0 * nl + offset + i] = tmp_dx;
-                dsph[edge_idx * 3 * nl + 1 * nl + offset + i] = tmp_dy;
-                dsph[edge_idx * 3 * nl + 2 * nl + offset + i] = tmp_dz;
+                dsph[edge_idx * 3 * n_total + 0 * n_total + offset + i] =
+                    tmp_dx;
+                dsph[edge_idx * 3 * n_total + 1 * n_total + offset + i] =
+                    tmp_dy;
+                dsph[edge_idx * 3 * n_total + 2 * n_total + offset + i] =
+                    tmp_dz;
             }
         }
     }
@@ -215,11 +218,10 @@ __device__ inline void write_buffers(
    derivatives.
 */
 template <typename scalar_t>
-__global__ void
-spherical_harmonics_kernel(scalar_t *xyz, size_t nedges, scalar_t *prefactors,
-                           size_t nprefactors, int lmax, bool requires_grad,
-                           bool requires_hessian, bool normalize, scalar_t *sph,
-                           scalar_t *dsph, scalar_t *ddsph) {
+__global__ void spherical_harmonics_kernel(
+    scalar_t *xyz, size_t nedges, scalar_t *prefactors, size_t nprefactors,
+    int lmax, int ntotal, bool requires_grad, bool requires_hessian,
+    bool normalize, scalar_t *sph, scalar_t *dsph, scalar_t *ddsph) {
     extern __shared__ char buffer[];
 
     size_t offset = 0;
@@ -396,12 +398,12 @@ spherical_harmonics_kernel(scalar_t *xyz, size_t nedges, scalar_t *prefactors,
 
     // write out the values of the hardcoded derivatives from shared memory into
     // global memory.
-    write_buffers(edge_idx, nedges, x, y, z, ir, (ml + 1) * (ml + 1), 0,
-                  buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
-                  buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
-                  buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
-                  buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz, sph,
-                  dsph, ddsph, nl, requires_grad, requires_hessian, normalize);
+    write_buffers(
+        edge_idx, nedges, x, y, z, ir, (ml + 1) * (ml + 1), 0, buffer_sph,
+        buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, buffer_dsph_dxdx,
+        buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
+        buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz,
+        sph, dsph, ddsph, ntotal, requires_grad, requires_hessian, normalize);
 
     // now lets do the generic terms for l > HARDCODED_LMAX
     int size_q = (lmax + 1) * (lmax + 2) / 2;
@@ -474,7 +476,7 @@ spherical_harmonics_kernel(scalar_t *xyz, size_t nedges, scalar_t *prefactors,
                       buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
                       buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
                       buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz, sph,
-                      dsph, ddsph, nl, requires_grad, requires_hessian,
+                      dsph, ddsph, ntotal, requires_grad, requires_hessian,
                       normalize);
 
         base_index += 2 * l + 1;
@@ -631,7 +633,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
                                          total_buff_size>>>(
                 xyz.data_ptr<scalar_t>(), xyz.size(0),
                 prefactors.data_ptr<scalar_t>(), prefactors.size(0), l_max,
-                xyz.requires_grad() || gradients,
+                n_total, xyz.requires_grad() || gradients,
                 xyz.requires_grad() && hessian, normalize,
                 sph.data_ptr<scalar_t>(), d_sph.data_ptr<scalar_t>(),
                 hess_sph.data_ptr<scalar_t>());
