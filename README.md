@@ -57,6 +57,14 @@ pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 Building from source is also necessary to use sphericart's PyTorch GPU 
 functionalities, and it requires a CUDA compiler.
 
+### Julia 
+
+A native Julia implementation of `sphericart` is provided, called `SpheriCart`. 
+Install the package by opening a REPL, switch to the package manager by 
+typing `]` and then `add SpheriCart`. 
+See [julia/README.md](julia/README.md) for usage.
+
+
 ### C and C++
 
 From source
