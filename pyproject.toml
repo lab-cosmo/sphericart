@@ -5,7 +5,7 @@ requires-python = ">=3.7"
 dependencies = ["numpy"]
 
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = {text = "Apache-2.0 or MIT"}
 description = "Fast calculation of spherical harmonics"
 authors = [
     {name = "Filippo Bigi"},
