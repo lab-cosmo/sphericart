@@ -46,7 +46,7 @@ struct SphericalHarmonics{L, NORM, STATIC, T1}
 end
 
 SphericalHarmonics(L::Integer; kwargs...) = 
-      SphericalHarmonics(SolidHarmonics(L, kwargs...), 
+      SphericalHarmonics(SolidHarmonics(L; kwargs...), 
                          ArrayPool(FlexArrayCache))
 
 
