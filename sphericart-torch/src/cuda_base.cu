@@ -219,9 +219,12 @@ __device__ inline void write_buffers(
 */
 template <typename scalar_t>
 __global__ void spherical_harmonics_kernel(
-    scalar_t *xyz, size_t nedges, scalar_t *prefactors, size_t nprefactors,
-    int lmax, int ntotal, bool requires_grad, bool requires_hessian,
-    bool normalize, scalar_t *sph, scalar_t *dsph, scalar_t *ddsph) {
+    const scalar_t *__restrict__ xyz, int nedges,
+    const scalar_t *__restrict__ prefactors, int nprefactors, int lmax,
+    int ntotal, bool requires_grad, bool requires_hessian, bool normalize,
+    scalar_t *__restrict__ sph, scalar_t *__restrict__ dsph,
+    scalar_t *__restrict__ ddsph) {
+
     extern __shared__ char buffer[];
 
     size_t offset = 0;
@@ -528,15 +531,16 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
    attempts to adjust the shared memory to fit the requested configuration if
    the allocation exceeds the default 49152 bytes.
 */
+
 bool sphericart_torch::adjust_cuda_shared_memory(
-    torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X,
-    int64_t GRID_DIM_Y, bool requires_grad, bool requires_hessian) {
+    size_t element_size, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
+    bool requires_grad, bool requires_hessian) {
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
 
-    size_t dtype = torch::elementSize(scalar_type);
-    auto required_buff_size = total_buffer_size(
-        l_max, GRID_DIM_X, GRID_DIM_Y, dtype, requires_grad, requires_hessian);
+    auto required_buff_size =
+        total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, element_size,
+                          requires_grad, requires_hessian);
 
     bool accepted = required_buff_size <= deviceProp.sharedMemPerBlockOptin;
 
@@ -547,13 +551,13 @@ bool sphericart_torch::adjust_cuda_shared_memory(
                   << deviceProp.sharedMemPerBlockOptin;
         std::cerr << ") on device " << deviceProp.name << std::endl;
     } else {
-        switch (scalar_type) {
-        case torch::ScalarType::Double:
+        switch (element_size) {
+        case 8:
             cudaFuncSetAttribute(spherical_harmonics_kernel<double>,
                                  cudaFuncAttributeMaxDynamicSharedMemorySize,
                                  required_buff_size);
             break;
-        case torch::ScalarType::Float:
+        case 4:
             cudaFuncSetAttribute(spherical_harmonics_kernel<float>,
                                  cudaFuncAttributeMaxDynamicSharedMemorySize,
                                  required_buff_size);
@@ -575,6 +579,55 @@ bool sphericart_torch::adjust_cuda_shared_memory(
 
     Total number of threads used is GRID_DIM_X * GRID_DIM_Y.
 */
+
+template <typename scalar_t>
+void spherical_harmonics_cuda_base(
+    const scalar_t *__restrict__ xyz, const int nedges,
+    const scalar_t *__restrict__ prefactors, const int nprefactors,
+    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
+    const int64_t GRID_DIM_Y, const bool xyz_requires_grad,
+    const bool gradients, const bool hessian, scalar_t *__restrict__ sph,
+    scalar_t *__restrict__ dsph, scalar_t *__restrict__ ddsph) {
+
+    int n_total = (l_max + 1) * (l_max + 1);
+
+    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
+
+    auto find_num_blocks = [](int x, int bdim) {
+        return (x + bdim - 1) / bdim;
+    };
+
+    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
+
+    size_t total_buff_size = total_buffer_size(
+        l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t),
+        xyz_requires_grad || gradients, xyz_requires_grad && hessian);
+
+    spherical_harmonics_kernel<scalar_t>
+        <<<block_dim, grid_dim, total_buff_size>>>(
+            xyz, nedges, prefactors, nprefactors, l_max, n_total,
+            xyz_requires_grad || gradients, xyz_requires_grad && hessian,
+            normalize, sph, dsph, ddsph);
+
+    cudaDeviceSynchronize();
+}
+
+template void spherical_harmonics_cuda_base<float>(
+    const float *__restrict__ xyz, const int nedges,
+    const float *__restrict__ prefactors, const int nprefactors,
+    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
+    const int64_t GRID_DIM_Y, const bool xyz_requires_grad,
+    const bool gradients, const bool hessian, float *__restrict__ sph,
+    float *__restrict__ dsph, float *__restrict__ ddsph);
+
+template void spherical_harmonics_cuda_base<double>(
+    const double *__restrict__ xyz, const int nedges,
+    const double *__restrict__ prefactors, const int nprefactors,
+    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
+    const int64_t GRID_DIM_Y, const bool xyz_requires_grad,
+    const bool gradients, const bool hessian, double *__restrict__ sph,
+    double *__restrict__ dsph, double *__restrict__ ddsph);
+
 std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     torch::Tensor xyz, torch::Tensor prefactors, int64_t l_max, bool normalize,
     int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool gradients, bool hessian) {
@@ -622,22 +675,41 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     dim3 block_dim(find_num_blocks(xyz.size(0), GRID_DIM_Y));
 
-    AT_DISPATCH_FLOATING_TYPES(
-        xyz.scalar_type(), "spherical_harmonics_cuda", ([&] {
-            size_t total_buff_size = total_buffer_size(
-                l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t),
-                xyz.requires_grad() || gradients,
-                xyz.requires_grad() && hessian);
+    switch (xyz.scalar_type()) {
+    case torch::ScalarType::Double:
+        spherical_harmonics_cuda_base<double>(
+            xyz.data_ptr<double>(), xyz.size(0), prefactors.data_ptr<double>(),
+            prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
+            xyz.requires_grad(), gradients, hessian, sph.data_ptr<double>(),
+            d_sph.data_ptr<double>(), hess_sph.data_ptr<double>());
+        break;
+    case torch::ScalarType::Float:
+        spherical_harmonics_cuda_base<float>(
+            xyz.data_ptr<float>(), xyz.size(0), prefactors.data_ptr<float>(),
+            prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
+            xyz.requires_grad(), gradients, hessian, sph.data_ptr<float>(),
+            d_sph.data_ptr<float>(), hess_sph.data_ptr<float>());
+        break;
+    }
 
-            spherical_harmonics_kernel<<<block_dim, grid_dim,
-                                         total_buff_size>>>(
-                xyz.data_ptr<scalar_t>(), xyz.size(0),
-                prefactors.data_ptr<scalar_t>(), prefactors.size(0), l_max,
-                n_total, xyz.requires_grad() || gradients,
-                xyz.requires_grad() && hessian, normalize,
-                sph.data_ptr<scalar_t>(), d_sph.data_ptr<scalar_t>(),
-                hess_sph.data_ptr<scalar_t>());
-        }));
+    /*
+        AT_DISPATCH_FLOATING_TYPES(
+            xyz.scalar_type(), "spherical_harmonics_cuda", ([&] {
+                size_t total_buff_size = total_buffer_size(
+                    l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t),
+                    xyz.requires_grad() || gradients,
+                    xyz.requires_grad() && hessian);
+
+                spherical_harmonics_kernel<<<block_dim, grid_dim,
+                                             total_buff_size>>>(
+                    xyz.data_ptr<scalar_t>(), xyz.size(0),
+                    prefactors.data_ptr<scalar_t>(), prefactors.size(0), l_max,
+                    n_total, xyz.requires_grad() || gradients,
+                    xyz.requires_grad() && hessian, normalize,
+                    sph.data_ptr<scalar_t>(), d_sph.data_ptr<scalar_t>(),
+                    hess_sph.data_ptr<scalar_t>());
+
+            })); */
 
     cudaDeviceSynchronize();
 

@@ -4,7 +4,24 @@
 #include "sphericart/cuda.hpp"
 #include "sphericart/torch.hpp"
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <torch/torch.h>
+
 using namespace sphericart_torch;
+
+#define CHECK_CUDA(x)                                                          \
+    TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
+#define CHECK_CONTIGUOUS(x)                                                    \
+    TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
+#define CHECK_SAME_DTYPE(x, y)                                                 \
+    TORCH_CHECK(x.scalar_type() == y.scalar_type(),                            \
+                #x " and " #y " must have the same dtype.")
+
+#define CHECK_INPUT(x)                                                         \
+    CHECK_CUDA(x);                                                             \
+    CHECK_CONTIGUOUS(x)
+
 
 std::vector<torch::Tensor>
 SphericalHarmonics::compute_raw_cpu(torch::Tensor xyz, bool do_gradients,
@@ -163,7 +180,7 @@ bool CudaSharedMemorySettings::update_if_required(
         return true;
     }
 
-    bool result = adjust_cuda_shared_memory(scalar_type, l_max, GRID_DIM_X,
+    bool result = adjust_cuda_shared_memory(scalar_size, l_max, GRID_DIM_X,
                                             GRID_DIM_Y, gradients, hessian);
 
     if (result) {
@@ -176,6 +193,7 @@ bool CudaSharedMemorySettings::update_if_required(
     }
     return result;
 }
+
 
 /* ===========================================================================*/
 
