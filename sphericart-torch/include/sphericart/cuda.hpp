@@ -7,13 +7,23 @@
 
 namespace sphericart_torch {
 
-std::vector<at::Tensor>
-spherical_harmonics_cuda(at::Tensor xyz, at::Tensor prefactors, int64_t l_max,
-                         bool normalize, int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
-                         bool gradients, bool hessians);
+template <typename scalar_t>
+void spherical_harmonics_cuda_base(
+    const scalar_t *__restrict__ xyz, const int nedges,
+    const scalar_t *__restrict__ prefactors, const int nprefactors,
+    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
+    const int64_t GRID_DIM_Y, const bool xyz_requires_grad,
+    const bool gradients, const bool hessian, scalar_t *__restrict__ sph,
+    scalar_t *__restrict__ dsph, scalar_t *__restrict__ ddsph);
 
-at::Tensor spherical_harmonics_backward_cuda(at::Tensor xyz, at::Tensor dsph,
-                                             at::Tensor sph_grad);
+template <typename scalar_t>
+void spherical_harmonics_backward_cuda_base(
+    const scalar_t * __restrict__ dsph,
+    const scalar_t * __restrict__ sph_grad,
+    const int nedges,
+    const int ntotal,
+    scalar_t * __restrict__ xyz_grad);
+                         
 
 at::Tensor prefactors_cuda(int64_t l_max, at::ScalarType dtype);
 

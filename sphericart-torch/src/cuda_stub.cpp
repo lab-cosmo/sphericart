@@ -2,22 +2,29 @@
 
 #include "sphericart/cuda.hpp"
 
-bool sphericart_torch::adjust_cuda_shared_memory(at::ScalarType, int64_t,
+template <typename scalar_t>
+void sphericart_torch::spherical_harmonics_cuda_base(
+    const scalar_t *__restrict__ xyz, const int nedges,
+    const scalar_t *__restrict__ prefactors, const int nprefactors,
+    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
+    const int64_t GRID_DIM_Y, const bool xyz_requires_grad,
+    const bool gradients, const bool hessian, scalar_t *__restrict__ sph,
+    scalar_t *__restrict__ dsph, scalar_t *__restrict__ ddsph) {
+
+    throw std::runtime_error(
+        "sphericart_torch was not compiled with CUDA support");
+}
+
+template <typename scalar_t>
+void sphericart_torch::spherical_harmonics_backward_cuda_base(
+    const scalar_t *__restrict__ dsph, const scalar_t *__restrict__ sph_grad,
+    const int nedges, const int ntotal, scalar_t *__restrict__ xyz_grad) {
+    throw std::runtime_error(
+        "sphericart_torch was not compiled with CUDA support");
+}
+
+bool sphericart_torch::adjust_cuda_shared_memory(size_t, int64_t,
                                                  int64_t, int64_t, bool, bool) {
-    throw std::runtime_error(
-        "sphericart_torch was not compiled with CUDA support");
-}
-
-std::vector<at::Tensor>
-sphericart_torch::spherical_harmonics_cuda(at::Tensor, at::Tensor, int64_t,
-                                           bool, int64_t, int64_t, bool, bool) {
-    throw std::runtime_error(
-        "sphericart_torch was not compiled with CUDA support");
-}
-
-at::Tensor sphericart_torch::spherical_harmonics_backward_cuda(at::Tensor,
-                                                               at::Tensor,
-                                                               at::Tensor) {
     throw std::runtime_error(
         "sphericart_torch was not compiled with CUDA support");
 }

@@ -195,6 +195,80 @@ bool CudaSharedMemorySettings::update_if_required(
 }
 
 
+
+std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
+    torch::Tensor xyz, torch::Tensor prefactors, int64_t l_max, bool normalize,
+    int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool gradients, bool hessian) {
+
+    CHECK_INPUT(xyz);
+    CHECK_INPUT(prefactors);
+    CHECK_SAME_DTYPE(xyz, prefactors);
+
+    int n_total = (l_max + 1) * (l_max + 1);
+
+    auto sph = torch::empty(
+        {xyz.size(0), n_total},
+        torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+
+    torch::Tensor d_sph;
+    if (xyz.requires_grad() || gradients) {
+        d_sph = torch::empty(
+            {xyz.size(0), 3, n_total},
+            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+    } else {
+        // just so accessor doesn't complain (will be reverted later)
+        d_sph = torch::empty(
+            {1, 1, 1},
+            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+    }
+
+    torch::Tensor hess_sph;
+
+    if (xyz.requires_grad() && hessian) {
+        hess_sph = torch::empty(
+            {xyz.size(0), 3, 3, n_total},
+            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+    } else {
+        // just so accessor doesn't complain (will be reverted later)
+        hess_sph = torch::empty(
+            {1, 1, 1, 1},
+            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+    }
+
+    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
+
+    auto find_num_blocks = [](int x, int bdim) {
+        return (x + bdim - 1) / bdim;
+    };
+
+    dim3 block_dim(find_num_blocks(xyz.size(0), GRID_DIM_Y));
+
+    switch (xyz.scalar_type()) {
+    case torch::ScalarType::Double:
+        spherical_harmonics_cuda_base<double>(
+            xyz.data_ptr<double>(), xyz.size(0), prefactors.data_ptr<double>(),
+            prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
+            xyz.requires_grad(), gradients, hessian, sph.data_ptr<double>(),
+            d_sph.data_ptr<double>(), hess_sph.data_ptr<double>());
+        break;
+    case torch::ScalarType::Float:
+        spherical_harmonics_cuda_base<float>(
+            xyz.data_ptr<float>(), xyz.size(0), prefactors.data_ptr<float>(),
+            prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
+            xyz.requires_grad(), gradients, hessian, sph.data_ptr<float>(),
+            d_sph.data_ptr<float>(), hess_sph.data_ptr<float>());
+        break;
+    }
+
+    cudaDeviceSynchronize();
+
+    if (!gradients)
+        d_sph = torch::Tensor();
+    if (!hessian)
+        hess_sph = torch::Tensor();
+    return {sph, d_sph, hess_sph};
+}
+
 /* ===========================================================================*/
 
 torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
@@ -300,6 +374,43 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     }
 }
 
+
+/*
+    Wrapper for the CUDA kernel backwards pass.
+*/
+torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
+    torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad) {
+
+    if (!xyz.device().is_cuda()) {
+        throw std::runtime_error(
+            "internal error: CUDA version called on non-CUDA tensor");
+    }
+
+    auto xyz_grad = torch::Tensor();
+
+    if (xyz.requires_grad()) {
+        xyz_grad = torch::empty_like(xyz);
+
+        switch (xyz.scalar_type()) {
+        case torch::ScalarType::Double:
+            sphericart_torch::spherical_harmonics_backward_cuda_base<double>(
+                dsph.data_ptr<double>(), sph_grad.data_ptr<double>(),
+                dsph.size(0), sph_grad.size(1), xyz_grad.data_ptr<double>());
+
+            break;
+        case torch::ScalarType::Float:
+            sphericart_torch::spherical_harmonics_backward_cuda_base<float>(
+                dsph.data_ptr<float>(), sph_grad.data_ptr<float>(),
+                dsph.size(0), sph_grad.size(1), xyz_grad.data_ptr<float>());
+            break;
+        }
+
+        cudaDeviceSynchronize();
+    }
+
+    return xyz_grad;
+}
+
 torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     torch::autograd::AutogradContext *ctx,
     torch::autograd::variable_list grad_outputs) {
@@ -331,7 +442,7 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
             xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
         } else if (xyz.device().is_cuda()) {
             xyz_grad =
-                spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs);
+                sphericart_torch::spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs);
         } else {
             throw std::runtime_error(
                 "Spherical harmonics are only implemented for CPU and CUDA");
