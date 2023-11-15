@@ -3,7 +3,6 @@
 
 #include <ATen/Tensor.h>
 #include <vector>
-#include <cuda.h>
 
 namespace sphericart_torch {
 
