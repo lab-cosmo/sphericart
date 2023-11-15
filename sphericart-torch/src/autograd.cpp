@@ -3,13 +3,14 @@
 #include "sphericart.hpp"
 #include "sphericart/cuda.hpp"
 #include "sphericart/torch.hpp"
-
+#include "sphericart/torch_cuda_wrapper.hpp"
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <torch/torch.h>
 
 using namespace sphericart_torch;
 
+/*
 #define CHECK_CUDA(x)                                                          \
     TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x)                                                    \
@@ -20,7 +21,8 @@ using namespace sphericart_torch;
 
 #define CHECK_INPUT(x)                                                         \
     CHECK_CUDA(x);                                                             \
-    CHECK_CONTIGUOUS(x)
+    CHECK_CONTIGUOUS(x) 
+*/
 
 
 std::vector<torch::Tensor>
@@ -195,7 +197,7 @@ bool CudaSharedMemorySettings::update_if_required(
 }
 
 
-
+/*
 std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     torch::Tensor xyz, torch::Tensor prefactors, int64_t l_max, bool normalize,
     int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool gradients, bool hessian) {
@@ -267,7 +269,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     if (!hessian)
         hess_sph = torch::Tensor();
     return {sph, d_sph, hess_sph};
-}
+} */
 
 /* ===========================================================================*/
 
@@ -347,7 +349,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
                 "this code only runs on float64 and float32 arrays");
         }
 
-        auto results = spherical_harmonics_cuda(
+        auto results = sphericart_torch::spherical_harmonics_cuda(
             xyz, prefactors, calculator.l_max_, calculator.normalized_,
             calculator.CUDA_GRID_DIM_X_, calculator.CUDA_GRID_DIM_Y_,
             do_gradients || xyz.requires_grad(),
@@ -377,7 +379,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
 
 /*
     Wrapper for the CUDA kernel backwards pass.
-*/
+
 torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad) {
 
@@ -409,7 +411,7 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     }
 
     return xyz_grad;
-}
+} */
 
 torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     torch::autograd::AutogradContext *ctx,

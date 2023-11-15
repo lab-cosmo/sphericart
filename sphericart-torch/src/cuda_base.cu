@@ -12,17 +12,7 @@
 #include "sphericart.hpp"
 
 #define HARDCODED_LMAX 1
-#define CHECK_CUDA(x)                                                          \
-    TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
-#define CHECK_CONTIGUOUS(x)                                                    \
-    TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
-#define CHECK_SAME_DTYPE(x, y)                                                 \
-    TORCH_CHECK(x.scalar_type() == y.scalar_type(),                            \
-                #x " and " #y " must have the same dtype.")
 
-#define CHECK_INPUT(x)                                                         \
-    CHECK_CUDA(x);                                                             \
-    CHECK_CONTIGUOUS(x)
 
 /* MASK used for warp reductions */
 #define FULL_MASK 0xffffffff
