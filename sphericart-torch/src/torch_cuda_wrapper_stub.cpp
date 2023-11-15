@@ -26,3 +26,9 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
 
     return {torch::Tensor()};
 }
+
+torch::Tensor sphericart_torch::prefactors_cuda(int64_t l_max,
+                                                at::ScalarType dtype) {
+
+    return torch::Tensor();
+}

@@ -1,9 +1,6 @@
 #ifndef SPHERICART_TORCH_CUDA_HPP
 #define SPHERICART_TORCH_CUDA_HPP
 
-#include <ATen/Tensor.h>
-#include <vector>
-
 namespace sphericart_torch {
 
 template <typename scalar_t>
@@ -24,7 +21,7 @@ void spherical_harmonics_backward_cuda_base(
     scalar_t * __restrict__ xyz_grad);
                          
 
-at::Tensor prefactors_cuda(int64_t l_max, at::ScalarType dtype);
+//at::Tensor prefactors_cuda(int64_t l_max, at::ScalarType dtype);
 
 bool adjust_cuda_shared_memory(
     size_t element_size, int64_t l_max, int64_t GRID_DIM_X,

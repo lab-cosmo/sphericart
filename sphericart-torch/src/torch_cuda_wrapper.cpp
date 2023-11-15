@@ -1,10 +1,14 @@
-#include "sphericart.hpp"
-#include "sphericart/cuda.hpp"
-#include "sphericart/torch_cuda_wrapper.hpp"
-
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <torch/torch.h>
+
+#include "sphericart/torch_cuda_wrapper.hpp"
+#include "sphericart/cuda.hpp"
+
+#define _SPHERICART_INTERNAL_IMPLEMENTATION // gives us access to templates/macros
+#include "sphericart.hpp"
+
+
 
 #define CHECK_CUDA(x)                                                          \
     TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
@@ -94,7 +98,6 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
     return {sph, d_sph, hess_sph};
 }
 
-
 /*
     Torch wrapper for the CUDA kernel backwards pass.
 */
@@ -129,4 +132,27 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     }
 
     return xyz_grad;
+}
+
+/*
+    wrapper to compute prefactors with correct dtype.
+
+*/
+
+torch::Tensor sphericart_torch::prefactors_cuda(int64_t l_max,
+                                                at::ScalarType dtype) {
+    auto result =
+        torch::empty({(l_max + 1) * (l_max + 2)},
+                     torch::TensorOptions().device("cpu").dtype(dtype));
+
+    if (dtype == c10::kDouble) {
+        compute_sph_prefactors(l_max, static_cast<double *>(result.data_ptr()));
+    } else if (dtype == c10::kFloat) {
+        compute_sph_prefactors(l_max, static_cast<float *>(result.data_ptr()));
+    } else {
+        throw std::runtime_error(
+            "this code only runs on float64 and float32 arrays");
+    }
+
+    return result.to("cuda");
 }

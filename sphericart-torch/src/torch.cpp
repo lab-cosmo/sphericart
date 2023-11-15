@@ -4,7 +4,7 @@
 #include <torch/script.h>
 
 #include "sphericart/autograd.hpp"
-#include "sphericart/cuda.hpp"
+#include "sphericart/torch_cuda_wrapper.hpp"
 
 using namespace sphericart_torch;
 SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalized,

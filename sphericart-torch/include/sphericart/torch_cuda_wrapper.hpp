@@ -5,6 +5,7 @@
 #include <vector>
 #include<torch/torch.h>
 
+
 namespace sphericart_torch {
 
 std::vector<at::Tensor> spherical_harmonics_cuda(at::Tensor xyz, at::Tensor prefactors, int64_t l_max,
@@ -14,6 +15,7 @@ std::vector<at::Tensor> spherical_harmonics_cuda(at::Tensor xyz, at::Tensor pref
 at::Tensor spherical_harmonics_backward_cuda(at::Tensor xyz, at::Tensor dsph,
                                              at::Tensor sph_grad); 
 
+torch::Tensor prefactors_cuda(int64_t l_max, at::ScalarType dtype);
 
 }
 

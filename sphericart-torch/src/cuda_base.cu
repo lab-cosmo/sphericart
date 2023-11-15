@@ -3,12 +3,12 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <torch/torch.h>
 
 #include "sphericart/cuda.hpp"
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 #define CUDA_DEVICE_PREFIX __device__
+
 #include "sphericart.hpp"
 
 #define HARDCODED_LMAX 1
@@ -691,7 +691,7 @@ template void sphericart_torch::spherical_harmonics_backward_cuda_base<double>(
 
 /*
     wrapper to compute prefactors with correct dtype.
-*/
+
 torch::Tensor sphericart_torch::prefactors_cuda(int64_t l_max,
                                                 at::ScalarType dtype) {
     auto result =
@@ -708,4 +708,4 @@ torch::Tensor sphericart_torch::prefactors_cuda(int64_t l_max,
     }
 
     return result.to("cuda");
-}
+} */
