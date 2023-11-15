@@ -21,8 +21,6 @@ void spherical_harmonics_backward_cuda_base(
     scalar_t * __restrict__ xyz_grad);
                          
 
-//at::Tensor prefactors_cuda(int64_t l_max, at::ScalarType dtype);
-
 bool adjust_cuda_shared_memory(
     size_t element_size, int64_t l_max, int64_t GRID_DIM_X,
     int64_t GRID_DIM_Y, bool requires_grad, bool requires_hessian);

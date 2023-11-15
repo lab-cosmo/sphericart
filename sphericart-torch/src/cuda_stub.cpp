@@ -28,7 +28,3 @@ bool sphericart_torch::adjust_cuda_shared_memory(size_t, int64_t,
     throw std::runtime_error(
         "sphericart_torch was not compiled with CUDA support");
 }
-
-at::Tensor sphericart_torch::prefactors_cuda(int64_t, at::ScalarType) {
-    return at::Tensor();
-}
