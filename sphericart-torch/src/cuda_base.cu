@@ -688,24 +688,3 @@ template void sphericart_torch::spherical_harmonics_backward_cuda_base<float>(
 template void sphericart_torch::spherical_harmonics_backward_cuda_base<double>(
     const double *__restrict__ dsph, const double *__restrict__ sph_grad,
     const int nedges, const int ntotal, double *__restrict__ xyz_grad);
-
-/*
-    wrapper to compute prefactors with correct dtype.
-
-torch::Tensor sphericart_torch::prefactors_cuda(int64_t l_max,
-                                                at::ScalarType dtype) {
-    auto result =
-        torch::empty({(l_max + 1) * (l_max + 2)},
-                     torch::TensorOptions().device("cpu").dtype(dtype));
-
-    if (dtype == c10::kDouble) {
-        compute_sph_prefactors(l_max, static_cast<double *>(result.data_ptr()));
-    } else if (dtype == c10::kFloat) {
-        compute_sph_prefactors(l_max, static_cast<float *>(result.data_ptr()));
-    } else {
-        throw std::runtime_error(
-            "this code only runs on float64 and float32 arrays");
-    }
-
-    return result.to("cuda");
-} */
