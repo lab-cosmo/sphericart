@@ -42,12 +42,12 @@ See documentation for more details.
 struct SphericalHarmonics{L, NORM, STATIC, T1}
    solids::SolidHarmonics{L, NORM, STATIC, T1}
    # Flm::OffsetMatrix{T1, Matrix{T1}}
-   cache::ArrayPool{FlexArrayCache}
+   cache::TSafe{ArrayPool{FlexArrayCache}}
 end
 
 SphericalHarmonics(L::Integer; kwargs...) = 
       SphericalHarmonics(SolidHarmonics(L; kwargs...), 
-                         ArrayPool(FlexArrayCache))
+                         TSafe(ArrayPool(FlexArrayCache)))
 
 
 @inline (basis::SphericalHarmonics)(args...) = compute(basis, args...)
