@@ -36,7 +36,7 @@ See documentation for more details.
 """
 struct SolidHarmonics{L, NORM, STATIC, T1}
    Flm::OffsetMatrix{T1, Matrix{T1}}
-   cache::ArrayPool{FlexArrayCache}
+   cache::TSafe{ArrayPool{FlexArrayCache}}
 end
 
 function SolidHarmonics(L::Integer; 
@@ -45,7 +45,7 @@ function SolidHarmonics(L::Integer;
                         T = Float64) 
    Flm = generate_Flms(L; normalisation = normalisation, T = T)
    @assert eltype(Flm) == T   
-   SolidHarmonics{L, normalisation, static, T}(Flm, ArrayPool(FlexArrayCache))
+   SolidHarmonics{L, normalisation, static, T}(Flm, TSafe(ArrayPool(FlexArrayCache)))
 end
 
 @inline (basis::SolidHarmonics)(args...) = compute(basis, args...)

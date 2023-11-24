@@ -69,6 +69,7 @@ end
 @info("compute! vs compute_with_gradients! (using 32 inputs)")
 
 for L = 1:2:15
+   local Rs
    @show L 
    nX = 32
    basis = SolidHarmonics(L)
@@ -84,6 +85,7 @@ end
 
 @info("compute vs compute_with_gradients for code-generated basis")
 for L = 1:10
+   local 𝐫
    @show L 
    basis = SolidHarmonics(L; static=true)
    𝐫 = @SVector randn(3)
