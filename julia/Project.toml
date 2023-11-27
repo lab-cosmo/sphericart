@@ -1,7 +1,7 @@
 name = "SpheriCart"
 uuid = "5caf2b29-02d9-47a3-9434-5931c85ba645"
 authors = ["Christoph Ortner <christohortner@gmail.com> and contributors"]
-version = "0.0.2-dev"
+version = "0.0.3"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
