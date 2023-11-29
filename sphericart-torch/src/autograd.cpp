@@ -154,9 +154,9 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph,
 /* ===========================================================================*/
 
 bool CudaSharedMemorySettings::update_if_required(
-    torch::ScalarType scalar_type, int64_t l_max, int64_t GRID_DIM_X,
+    size_t scalar_size, int64_t l_max, int64_t GRID_DIM_X,
     int64_t GRID_DIM_Y, bool gradients, bool hessian) {
-    auto scalar_size = torch::elementSize(scalar_type);
+
     if (this->l_max_ >= l_max && this->grid_dim_x_ >= GRID_DIM_X &&
         this->grid_dim_y_ >= GRID_DIM_Y && this->scalar_size_ >= scalar_size &&
         (this->requires_grad_ || !gradients) &&
@@ -208,8 +208,9 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         // re-do the shared memory update in case `requires_grad` changed
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
 
+
         bool shm_result = calculator.cuda_shmem_.update_if_required(
-            xyz.scalar_type(), calculator.l_max_, calculator.CUDA_GRID_DIM_X_,
+            torch::elementSize(xyz.scalar_type()), calculator.l_max_, calculator.CUDA_GRID_DIM_X_,
             calculator.CUDA_GRID_DIM_Y_, xyz.requires_grad() || do_gradients,
             do_hessians || (xyz.requires_grad() &&
                             calculator.backward_second_derivatives_));
@@ -232,7 +233,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
 
             calculator.CUDA_GRID_DIM_Y_ = 4;
             shm_result = calculator.cuda_shmem_.update_if_required(
-                xyz.scalar_type(), calculator.l_max_,
+                torch::elementSize(xyz.scalar_type()), calculator.l_max_,
                 calculator.CUDA_GRID_DIM_X_, calculator.CUDA_GRID_DIM_Y_,
                 xyz.requires_grad() || do_gradients,
                 do_hessians || (xyz.requires_grad() &&

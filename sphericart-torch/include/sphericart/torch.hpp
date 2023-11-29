@@ -18,7 +18,7 @@ class CudaSharedMemorySettings {
         : scalar_size_(0), l_max_(-1), grid_dim_x_(-1), grid_dim_y_(-1),
           requires_grad_(false), requires_hessian_(false) {}
 
-    bool update_if_required(torch::ScalarType scalar_type, int64_t l_max,
+    bool update_if_required(size_t scalar_size, int64_t l_max,
                             int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
                             bool gradients, bool hessian);
 
