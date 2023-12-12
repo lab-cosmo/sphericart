@@ -25,6 +25,8 @@ If you are using sphericart for your academic work, you can cite it as
 }
 ```
 
+This library is dual-licensed under the Apache License 2.0 and the MIT license. You can use to use it under either of the two licenses.
+
 ## Installation
 
 ### Python
@@ -54,6 +56,14 @@ pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 
 Building from source is also necessary to use sphericart's PyTorch GPU 
 functionalities, and it requires a CUDA compiler.
+
+### Julia 
+
+A native Julia implementation of `sphericart` is provided, called `SpheriCart`. 
+Install the package by opening a REPL, switch to the package manager by 
+typing `]` and then `add SpheriCart`. 
+See [julia/README.md](julia/README.md) for usage.
+
 
 ### C and C++
 

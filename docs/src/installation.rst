@@ -36,6 +36,12 @@ you should build the code from source:
     pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 
 
+Julia package
+-------------
+
+The native Julia package can be installed by opening a REPL,
+switching to the package manager by typing ``]`` and then ``add SpheriCart``.
+
 
 C/C++ library
 -------------
