@@ -23,8 +23,8 @@ void sphericart_torch::spherical_harmonics_backward_cuda_base(
         "sphericart_torch was not compiled with CUDA support");
 }
 
-bool sphericart_torch::adjust_cuda_shared_memory(size_t, int64_t,
-                                                 int64_t, int64_t, bool, bool) {
+bool sphericart_torch::adjust_cuda_shared_memory(size_t, int64_t, int64_t,
+                                                 int64_t, bool, bool) {
     throw std::runtime_error(
         "sphericart_torch was not compiled with CUDA support");
 }

@@ -13,7 +13,6 @@
 
 #define HARDCODED_LMAX 1
 
-
 /* MASK used for warp reductions */
 #define FULL_MASK 0xffffffff
 
@@ -620,9 +619,6 @@ template void sphericart_torch::spherical_harmonics_cuda_base<double>(
     const int64_t GRID_DIM_Y, const bool xyz_requires_grad,
     const bool gradients, const bool hessian, double *__restrict__ sph,
     double *__restrict__ dsph, double *__restrict__ ddsph);
-
-
-
 
 /*
     CUDA kernel to computes the backwards pass for autograd.

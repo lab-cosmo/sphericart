@@ -14,18 +14,12 @@ void spherical_harmonics_cuda_base(
 
 template <typename scalar_t>
 void spherical_harmonics_backward_cuda_base(
-    const scalar_t * __restrict__ dsph,
-    const scalar_t * __restrict__ sph_grad,
-    const int nedges,
-    const int ntotal,
-    scalar_t * __restrict__ xyz_grad);
-                         
+    const scalar_t *__restrict__ dsph, const scalar_t *__restrict__ sph_grad,
+    const int nedges, const int ntotal, scalar_t *__restrict__ xyz_grad);
 
-bool adjust_cuda_shared_memory(
-    size_t element_size, int64_t l_max, int64_t GRID_DIM_X,
-    int64_t GRID_DIM_Y, bool requires_grad, bool requires_hessian);
-
-
+bool adjust_cuda_shared_memory(size_t element_size, int64_t l_max,
+                               int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
+                               bool requires_grad, bool requires_hessian);
 
 } // namespace sphericart_torch
 

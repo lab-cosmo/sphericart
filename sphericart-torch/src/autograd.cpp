@@ -154,8 +154,8 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph,
 /* ===========================================================================*/
 
 bool CudaSharedMemorySettings::update_if_required(
-    size_t scalar_size, int64_t l_max, int64_t GRID_DIM_X,
-    int64_t GRID_DIM_Y, bool gradients, bool hessian) {
+    size_t scalar_size, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
+    bool gradients, bool hessian) {
 
     if (this->l_max_ >= l_max && this->grid_dim_x_ >= GRID_DIM_X &&
         this->grid_dim_y_ >= GRID_DIM_Y && this->scalar_size_ >= scalar_size &&
@@ -208,10 +208,10 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         // re-do the shared memory update in case `requires_grad` changed
         const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
 
-
         bool shm_result = calculator.cuda_shmem_.update_if_required(
-            torch::elementSize(xyz.scalar_type()), calculator.l_max_, calculator.CUDA_GRID_DIM_X_,
-            calculator.CUDA_GRID_DIM_Y_, xyz.requires_grad() || do_gradients,
+            torch::elementSize(xyz.scalar_type()), calculator.l_max_,
+            calculator.CUDA_GRID_DIM_X_, calculator.CUDA_GRID_DIM_Y_,
+            xyz.requires_grad() || do_gradients,
             do_hessians || (xyz.requires_grad() &&
                             calculator.backward_second_derivatives_));
 
@@ -315,8 +315,8 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
         if (xyz.device().is_cpu()) {
             xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
         } else if (xyz.device().is_cuda()) {
-            xyz_grad =
-                sphericart_torch::spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs);
+            xyz_grad = sphericart_torch::spherical_harmonics_backward_cuda(
+                xyz, dsph, grad_outputs);
         } else {
             throw std::runtime_error(
                 "Spherical harmonics are only implemented for CPU and CUDA");

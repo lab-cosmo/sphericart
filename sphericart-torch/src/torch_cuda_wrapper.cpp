@@ -2,13 +2,12 @@
 #include <cuda_runtime.h>
 #include <torch/torch.h>
 
-#include "sphericart/torch_cuda_wrapper.hpp"
 #include "sphericart/cuda.hpp"
+#include "sphericart/torch_cuda_wrapper.hpp"
 
-#define _SPHERICART_INTERNAL_IMPLEMENTATION // gives us access to templates/macros
+#define _SPHERICART_INTERNAL_IMPLEMENTATION // gives us access to
+                                            // templates/macros
 #include "sphericart.hpp"
-
-
 
 #define CHECK_CUDA(x)                                                          \
     TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
