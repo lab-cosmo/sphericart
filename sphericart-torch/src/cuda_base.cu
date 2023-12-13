@@ -521,7 +521,7 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
     The default shared memory space on most recent NVIDIA cards is defaulted
    49152 bytes, regarldess if there is more available per SM. This method
    attempts to adjust the shared memory to fit the requested configuration if
-   the allocation exceeds the default 49152 bytes.
+   the kernel launch parameters exceeds the default 49152 bytes.
 */
 
 bool sphericart_torch::adjust_cuda_shared_memory(
