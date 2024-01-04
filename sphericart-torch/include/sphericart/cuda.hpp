@@ -24,10 +24,10 @@ namespace sphericart_torch {
  * the scaled harmonics at the normalized coordinates \f$(x/r, y/r, z/r)\f$, and
  * adapts the derivatives accordingly.
  * @param GRID_DIM_X
- *        The size of the threadblock in the x dimension. Used to parallelize 
+ *        The size of the threadblock in the x dimension. Used to parallelize
  *        over the sample dimension
  * @param GRID_DIM_Y
- *        The size of the threadblock in the y dimension. Used only to improve 
+ *        The size of the threadblock in the y dimension. Used only to improve
  *          memory throughput on reads and writes.
  * @param xyz_requires_grad
  *        Boolean representing whether or not the input XYZ requires grad -

@@ -19,24 +19,25 @@ class CudaSharedMemorySettings {
           requires_grad_(false), requires_hessian_(false) {}
 
     /**
-    * Host function to check whether the kernel launch parameters and l_max value exceeds
-    * the default amount of shared memory available on the card. If true, the function will
-    * attempt to increase the shared memory allocation.
-    * 
-    * @param scalar_size
-    *        The size of the scalar type of the input coodinates and output spherical harmonics 
-    *        (4 or 8 bytes).
-    * @param l_max
-    *        The maximum degree of the spherical harmonics to be calculated.
-    * @param GRID_DIM_X
-    *        The size of the threadblock in the x dimension.
-    * @param GRID_DIM_Y
-    *        The size of the threadblock in the y dimension.
-    * @param gradients
-    *        If we are computing of the first-order derivatives.
-    * @param hessian
-    *        If we are computing of the second-order derivatives.
-    */
+     * Host function to check whether the kernel launch parameters and l_max
+     * value exceeds the default amount of shared memory available on the card.
+     * If true, the function will attempt to increase the shared memory
+     * allocation.
+     *
+     * @param scalar_size
+     *        The size of the scalar type of the input coodinates and output
+     * spherical harmonics (4 or 8 bytes).
+     * @param l_max
+     *        The maximum degree of the spherical harmonics to be calculated.
+     * @param GRID_DIM_X
+     *        The size of the threadblock in the x dimension.
+     * @param GRID_DIM_Y
+     *        The size of the threadblock in the y dimension.
+     * @param gradients
+     *        If we are computing of the first-order derivatives.
+     * @param hessian
+     *        If we are computing of the second-order derivatives.
+     */
     bool update_if_required(size_t scalar_size, int64_t l_max,
                             int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
                             bool gradients, bool hessian);
