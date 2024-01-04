@@ -64,9 +64,7 @@ if _HAS_E3NN:
         """Checks that the different normalization options match."""
 
         l_list = list(range(10))
-        e3nn_reference = o3.spherical_harmonics(
-            l_list, xyz, normalize, normalization
-        )
+        e3nn_reference = o3.spherical_harmonics(l_list, xyz, normalize, normalization)
         sh = sphericart.torch.e3nn_spherical_harmonics(
             l_list, xyz, normalize, normalization
         )
