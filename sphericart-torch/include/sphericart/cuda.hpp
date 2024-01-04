@@ -24,16 +24,16 @@ namespace sphericart_torch {
  * the scaled harmonics at the normalized coordinates \f$(x/r, y/r, z/r)\f$, and
  * adapts the derivatives accordingly.
  * @param GRID_DIM_X
- *        Number of threads to launch the kernel in the x dimension.
+ *        The size of the threadblock in the x dimension.
  * @param GRID_DIM_Y
- *        Number of threads to launch the kernel in the y dimension.
+ *        The size of the threadblock in the y dimension.
  * @param xyz_requires_grad
  *        Boolean representing whether or not the input XYZ requires grad -
  *        required for torch.
  * @param gradients
- *        Force a computation of the first-order derivatives.
+ *        Perform the computation of the first-order derivatives.
  * @param hessian
- *        Force a computation of the second-order derivatives.
+ *        Perform the computation of the second-order derivatives.
  * @param sph
  *        Pointer to a contiguous device-allocated spherical harmonics array of
  *        shape [N * (L + 1) ** 2].
