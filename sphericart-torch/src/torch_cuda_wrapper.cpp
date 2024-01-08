@@ -2,11 +2,11 @@
 #include <cuda_runtime.h>
 #include <torch/torch.h>
 
-#include "sphericart/cuda.hpp"
 #include "sphericart/torch_cuda_wrapper.hpp"
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION // gives us access to
                                             // templates/macros
+#include "cuda.hpp"
 #include "sphericart.hpp"
 
 #define CHECK_CUDA(x)                                                          \
@@ -73,14 +73,14 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     switch (xyz.scalar_type()) {
     case torch::ScalarType::Double:
-        spherical_harmonics_cuda_base<double>(
+        sphericart::cuda::spherical_harmonics_cuda_base<double>(
             xyz.data_ptr<double>(), xyz.size(0), prefactors.data_ptr<double>(),
             prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
             xyz.requires_grad(), gradients, hessian, sph.data_ptr<double>(),
             d_sph.data_ptr<double>(), hess_sph.data_ptr<double>());
         break;
     case torch::ScalarType::Float:
-        spherical_harmonics_cuda_base<float>(
+        sphericart::cuda::spherical_harmonics_cuda_base<float>(
             xyz.data_ptr<float>(), xyz.size(0), prefactors.data_ptr<float>(),
             prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
             xyz.requires_grad(), gradients, hessian, sph.data_ptr<float>(),
@@ -115,13 +115,13 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
 
         switch (xyz.scalar_type()) {
         case torch::ScalarType::Double:
-            sphericart_torch::spherical_harmonics_backward_cuda_base<double>(
+            sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
                 dsph.data_ptr<double>(), sph_grad.data_ptr<double>(),
                 dsph.size(0), sph_grad.size(1), xyz_grad.data_ptr<double>());
 
             break;
         case torch::ScalarType::Float:
-            sphericart_torch::spherical_harmonics_backward_cuda_base<float>(
+            sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
                 dsph.data_ptr<float>(), sph_grad.data_ptr<float>(),
                 dsph.size(0), sph_grad.size(1), xyz_grad.data_ptr<float>());
             break;

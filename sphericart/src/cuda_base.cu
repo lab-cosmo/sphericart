@@ -4,12 +4,10 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#include "sphericart/cuda.hpp"
-
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 #define CUDA_DEVICE_PREFIX __device__
 
-#include "sphericart.hpp"
+#include "cuda.hpp"
 
 #define HARDCODED_LMAX 1
 
@@ -524,7 +522,7 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
    the kernel launch parameters exceeds the default 49152 bytes.
 */
 
-bool sphericart_torch::adjust_cuda_shared_memory(
+bool sphericart::cuda::adjust_cuda_shared_memory(
     size_t element_size, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
     bool requires_grad, bool requires_hessian) {
     cudaDeviceProp deviceProp;
@@ -573,7 +571,7 @@ bool sphericart_torch::adjust_cuda_shared_memory(
 */
 
 template <typename scalar_t>
-void sphericart_torch::spherical_harmonics_cuda_base(
+void sphericart::cuda::spherical_harmonics_cuda_base(
     const scalar_t *__restrict__ xyz, const int nedges,
     const scalar_t *__restrict__ prefactors, const int nprefactors,
     const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
@@ -604,7 +602,7 @@ void sphericart_torch::spherical_harmonics_cuda_base(
     cudaDeviceSynchronize();
 }
 
-template void sphericart_torch::spherical_harmonics_cuda_base<float>(
+template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
     const float *__restrict__ xyz, const int nedges,
     const float *__restrict__ prefactors, const int nprefactors,
     const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
@@ -612,7 +610,7 @@ template void sphericart_torch::spherical_harmonics_cuda_base<float>(
     const bool gradients, const bool hessian, float *__restrict__ sph,
     float *__restrict__ dsph, float *__restrict__ ddsph);
 
-template void sphericart_torch::spherical_harmonics_cuda_base<double>(
+template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
     const double *__restrict__ xyz, const int nedges,
     const double *__restrict__ prefactors, const int nprefactors,
     const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
@@ -659,7 +657,7 @@ __global__ void backward_kernel(const scalar_t *__restrict__ dsph,
 }
 
 template <typename scalar_t>
-void sphericart_torch::spherical_harmonics_backward_cuda_base(
+void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     const scalar_t *__restrict__ dsph, const scalar_t *__restrict__ sph_grad,
     const int nedges, const int ntotal, scalar_t *__restrict__ xyz_grad) {
 
@@ -677,10 +675,10 @@ void sphericart_torch::spherical_harmonics_backward_cuda_base(
     cudaDeviceSynchronize();
 }
 
-template void sphericart_torch::spherical_harmonics_backward_cuda_base<float>(
+template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
     const float *__restrict__ dsph, const float *__restrict__ sph_grad,
     const int nedges, const int ntotal, float *__restrict__ xyz_grad);
 
-template void sphericart_torch::spherical_harmonics_backward_cuda_base<double>(
+template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
     const double *__restrict__ dsph, const double *__restrict__ sph_grad,
     const int nedges, const int ntotal, double *__restrict__ xyz_grad);

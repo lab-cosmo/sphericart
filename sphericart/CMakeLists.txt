@@ -13,7 +13,9 @@ option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" OFF)
 OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 OPTION(SPHERICART_ARCH_NATIVE "Try to use -march=native when compiling Sphericart" ON)
+option(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of sphericart?" ON)
 
+set (CMAKE_CUDA_ARCHITECTURES 80)
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install DLL/binaries")
 set(INCLUDE_INSTALL_DIR "include" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install headers")
@@ -30,12 +32,43 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     endif()
 endif()
 
-add_library(sphericart
+set(COMMON_SOURCES
     "src/sphericart.cpp"
     "src/sphericart-capi.cpp"
     "include/sphericart.hpp"
     "include/sphericart.h"
 )
+
+#add_library(sphericart
+#    "src/sphericart.cpp"
+#    "src/sphericart-capi.cpp"
+#    "include/sphericart.hpp"
+#    "include/sphericart.h"
+#)
+
+# Find CUDA
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+    enable_language(CUDA)
+    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
+else()
+    message(STATUS "Could not find a CUDA compiler")
+endif()
+if (CMAKE_CUDA_COMPILER AND NOT SPHERICART_ENABLE_CUDA)
+    message(STATUS "Found a CUDA compiler but SPHERICART_ENABLE_CUDA=OFF, set SPHERICART_ENABLE_CUDA=TRUE in order to compile with CUDA support.")
+endif()
+
+# Append the relevant CUDA files to sources
+list(APPEND COMMON_SOURCES "include/cuda.hpp")
+if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+    list(APPEND COMMON_SOURCES "src/cuda_base.cu")
+else()
+    list(APPEND COMMON_SOURCES "src/cuda_stub.cpp")
+endif()
+message("Value of SPHERICART_ENABLE_CUDA: ${SPHERICART_ENABLE_CUDA}")
+
+add_library(sphericart ${COMMON_SOURCES})
 
 set_target_properties(sphericart PROPERTIES
     VERSION ${SPHERICART_VERSION}
@@ -124,6 +157,7 @@ enable_testing()
 if (SPHERICART_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
 
 #------------------------------------------------------------------------------#
 # Installation configuration

@@ -1,7 +1,7 @@
 #include "sphericart/autograd.hpp"
 
 #include "sphericart.hpp"
-#include "sphericart/cuda.hpp"
+#include "cuda.hpp"
 #include "sphericart/torch.hpp"
 #include "sphericart/torch_cuda_wrapper.hpp"
 #include <torch/torch.h>
@@ -165,7 +165,7 @@ bool CudaSharedMemorySettings::update_if_required(
         return true;
     }
 
-    bool result = adjust_cuda_shared_memory(scalar_size, l_max, GRID_DIM_X,
+    bool result = sphericart::cuda::adjust_cuda_shared_memory(scalar_size, l_max, GRID_DIM_X,
                                             GRID_DIM_Y, gradients, hessian);
 
     if (result) {
