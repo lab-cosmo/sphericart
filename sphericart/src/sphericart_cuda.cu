@@ -10,6 +10,10 @@
 /*host macro that checks for errors in CUDA calls, and prints the file + line
  * and error string if one occurs
  */
+
+using namespace std;
+using namespace sphericart::cuda;
+
 #define CUDA_CHECK(call)                                                       \
     do {                                                                       \
         cudaError_t cudaStatus = (call);                                       \
@@ -21,7 +25,31 @@
         }                                                                      \
     } while (0)
 
-using namespace sphericart::cuda;
+bool CudaSharedMemorySettings::update_if_required(
+    size_t scalar_size, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
+    bool gradients, bool hessian) {
+
+    if (this->l_max_ >= l_max && this->grid_dim_x_ >= GRID_DIM_X &&
+        this->grid_dim_y_ >= GRID_DIM_Y && this->scalar_size_ >= scalar_size &&
+        (this->requires_grad_ || !gradients) &&
+        (this->requires_hessian_ || !hessian)) {
+        // no need to adjust shared memory
+        return true;
+    }
+
+    bool result = sphericart::cuda::adjust_cuda_shared_memory(
+        scalar_size, l_max, GRID_DIM_X, GRID_DIM_Y, gradients, hessian);
+
+    if (result) {
+        this->l_max_ = l_max;
+        this->grid_dim_x_ = GRID_DIM_X;
+        this->grid_dim_y_ = GRID_DIM_Y;
+        this->requires_grad_ = gradients;
+        this->requires_hessian_ = hessian;
+        this->scalar_size_ = scalar_size;
+    }
+    return result;
+}
 
 template <typename T>
 SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
@@ -39,9 +67,10 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
     // compute prefactors on host first
     compute_sph_prefactors<T>((int)l_max, this->prefactors_cpu);
     // allocate them on device and copy to device
-    CUDA_CHECK(cudaMalloc((void **)this->prefactors_cuda,
-                          this->nprefactors * sizeof(T)));
-    CUDA_CHECK(cudaMemcpy(this->prefactors_cpu, this->prefactors_cuda,
+    CUDA_CHECK(
+        cudaMalloc(&this->prefactors_cuda, this->nprefactors * sizeof(T)));
+
+    CUDA_CHECK(cudaMemcpy(this->prefactors_cuda, this->prefactors_cpu,
                           this->nprefactors * sizeof(T),
                           cudaMemcpyHostToDevice));
 }
@@ -54,9 +83,8 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
 template <typename T>
 void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
                                     bool compute_with_gradients,
-                                    bool compute_with_hessian,
-                                    size_t GRID_DIM_X, size_t GRID_DIM_Y,
-                                    T *sph, T *dsph, T *ddsph) {
+                                    bool compute_with_hessian, T *sph, T *dsph,
+                                    T *ddsph) {
 
     if (sph == nullptr) {
         throw std::runtime_error(
@@ -79,10 +107,41 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
             "initialise ddsph with cudaMalloc.");
     }
 
+    const std::lock_guard<std::mutex> guard(this->cuda_shmem_mutex_);
+
+    bool shm_result = this->cuda_shmem_.update_if_required(
+        sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
+        compute_with_gradients, compute_with_hessian);
+
+    if (!shm_result) {
+        printf("Warning: Failed to update shared memory specification with");
+        printf("element_size = %ld, GRID_DIM_X = %ld, GRID_DIM_Y = %ld, "
+               "compute_with_gradients = %s, "
+               "compute_with_hessian = %s\n",
+               sizeof(T), this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
+               compute_with_gradients, compute_with_hessian);
+
+        printf("Re-attempting with GRID_DIM_Y = 4\n");
+
+        this->CUDA_GRID_DIM_Y_ = 4;
+        shm_result = this->cuda_shmem_.update_if_required(
+            sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_,
+            this->CUDA_GRID_DIM_Y_, compute_with_gradients,
+            compute_with_hessian);
+
+        if (!shm_result) {
+            throw std::runtime_error(
+                "Insufficient shared memory available to compute "
+                "spherical_harmonics with requested parameters.");
+        } else {
+            printf("shared memory update OK.\n");
+        }
+    }
+
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz, nsamples, this->prefactors_cuda, this->nprefactors, this->l_max,
-        this->normalized, GRID_DIM_X, GRID_DIM_Y, compute_with_gradients,
-        compute_with_hessian, sph, dsph, ddsph);
+        this->normalized, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
+        compute_with_gradients, compute_with_hessian, sph, dsph, ddsph);
 }
 
 // instantiates the SphericalHarmonics class for basic floating point types

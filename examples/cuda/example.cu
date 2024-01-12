@@ -75,15 +75,24 @@ int main() {
     auto calculator_cuda = sphericart::cuda::SphericalHarmonics<double>(l_max);
 
     double *xyz_cuda;
-    CUDA_CHECK(cudaMalloc((void **)xyz_cuda, n_samples * 3 * sizeof(double)));
-    CUDA_CHECK(cudaMemcpy(xyz.data(), xyz_cuda, n_samples * 3 * sizeof(double),
+    CUDA_CHECK(cudaMalloc(&xyz_cuda, n_samples * 3 * sizeof(double)));
+    CUDA_CHECK(cudaMemcpy(xyz_cuda, xyz.data(), n_samples * 3 * sizeof(double),
                           cudaMemcpyHostToDevice));
     double *sph_cuda;
-    CUDA_CHECK(cudaMalloc((void **)sph_cuda, n_samples * (l_max + 1) *
-                                                 (l_max + 1) * sizeof(double)));
+    CUDA_CHECK(cudaMalloc(&sph_cuda, n_samples * (l_max + 1) * (l_max + 1) *
+                                         sizeof(double)));
 
-    calculator_cuda.compute(xyz_cuda, n_samples, false, false, 8, 8,
-                            sph_cuda); // no gradients
+    calculator_cuda.compute(xyz_cuda, n_samples, false, false,
+                            sph_cuda); // no gradients */
+
+    CUDA_CHECK(
+        cudaMemcpy(sph.data(), sph_cuda,
+                   n_samples * (l_max + 1) * (l_max + 1) * sizeof(double),
+                   cudaMemcpyDeviceToHost));
+
+    for (int i = 0; i < 4; i++) {
+        std::cout << sph[i] << std::endl;
+    }
 
     return 0;
 }
