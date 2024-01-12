@@ -49,26 +49,6 @@ int main() {
     auto ddsph =
         std::vector<double>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
 
-    // the class is templated, so one can also use 32-bit float operations
-    auto xyz_f = std::vector<float>(n_samples * 3, 0.0);
-    for (size_t i = 0; i < n_samples * 3; ++i) {
-        xyz_f[i] = (float)xyz[i];
-    }
-    auto sph_f = std::vector<float>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
-    auto dsph_f =
-        std::vector<float>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
-    auto ddsph_f =
-        std::vector<float>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
-
-    // the class can be used to compute the for a full arrays of points (as
-    // above) or on individual samples - this is deduced from the size of the
-    // array
-    auto xyz_sample = std::vector<double>(3, 0.0);
-    auto sph_sample = std::vector<double>((l_max + 1) * (l_max + 1), 0.0);
-    auto dsph_sample = std::vector<double>(3 * (l_max + 1) * (l_max + 1), 0.0);
-    auto ddsph_sample =
-        std::vector<double>(3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
-
     /* ===== API calls ===== */
 
     // internal buffers and numerical factors are initalized at construction
