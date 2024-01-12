@@ -13,7 +13,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" OFF)
 OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 OPTION(SPHERICART_ARCH_NATIVE "Try to use -march=native when compiling Sphericart" ON)
-option(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" ON)
+option(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" OFF)
 
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install DLL/binaries")
