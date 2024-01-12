@@ -1,7 +1,7 @@
-#include <stdexcept>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <iostream>
+#include <stdexcept>
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "cuda_base.hpp"

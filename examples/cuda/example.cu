@@ -2,13 +2,13 @@
  *  @brief Usage example for the C++ API
  */
 
+#include "sphericart_cuda.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <iostream>
 #include <vector>
-#include "sphericart_cuda.hpp"
 
 using namespace std;
 using namespace sphericart::cuda;
@@ -82,8 +82,8 @@ int main() {
     CUDA_CHECK(cudaMalloc((void **)sph_cuda, n_samples * (l_max + 1) *
                                                  (l_max + 1) * sizeof(double)));
 
-    calculator_cuda.compute(xyz_cuda, n_samples, false, false, 8, 8, sph_cuda); // no gradients
-    
+    calculator_cuda.compute(xyz_cuda, n_samples, false, false, 8, 8,
+                            sph_cuda); // no gradients
 
     return 0;
 }
