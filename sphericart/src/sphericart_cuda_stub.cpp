@@ -1,6 +1,4 @@
 #include "sphericart_cuda.hpp"
-#include <cuda.h>
-#include <cuda_runtime.h>
 
 using namespace sphericart::cuda;
 
