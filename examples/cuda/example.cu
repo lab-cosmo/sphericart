@@ -7,9 +7,11 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <iostream>
-
+#include <vector>
 #include "sphericart_cuda.hpp"
 
+using namespace std;
+using namespace sphericart::cuda;
 
 /*host macro that checks for errors in CUDA calls, and prints the file + line
  * and error string if one occurs
@@ -24,7 +26,7 @@
             exit(EXIT_FAILURE);                                                \
         }                                                                      \
     } while (0)
-    
+
 int main() {
     /* ===== set up the calculation ===== */
 

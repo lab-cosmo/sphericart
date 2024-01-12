@@ -4,7 +4,7 @@
 #ifndef SPHERICART_CUDA_HPP
 #define SPHERICART_CUDA_HPP
 
-#include "sphericart.hpp"
+//#include "sphericart.hpp"
 
 namespace sphericart {
 
@@ -16,7 +16,7 @@ namespace cuda {
  * stores the buffers that are necessary to compute the spherical harmonics
  * efficiently.
  */
-template <typename T> SPHERICART_EXPORT class SphericalHarmonics {
+template <typename T> class SphericalHarmonics {
   public:
     /** Initialize the SphericalHarmonics class setting maximum degree and
      * normalization
