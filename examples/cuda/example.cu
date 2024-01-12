@@ -4,9 +4,27 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <iostream>
 
 #include "sphericart_cuda.hpp"
 
+
+/*host macro that checks for errors in CUDA calls, and prints the file + line
+ * and error string if one occurs
+ */
+#define CUDA_CHECK(call)                                                       \
+    do {                                                                       \
+        cudaError_t cudaStatus = (call);                                       \
+        if (cudaStatus != cudaSuccess) {                                       \
+            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__       \
+                      << " - " << cudaGetErrorString(cudaStatus) << std::endl; \
+            cudaDeviceReset();                                                 \
+            exit(EXIT_FAILURE);                                                \
+        }                                                                      \
+    } while (0)
+    
 int main() {
     /* ===== set up the calculation ===== */
 

@@ -1,28 +1,10 @@
 /** \file sphericart_cuda.hpp
  *  Defines the CUDA API for `sphericart`.
  */
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <iostream>
-
 #ifndef SPHERICART_CUDA_HPP
 #define SPHERICART_CUDA_HPP
 
 #include "sphericart.hpp"
-
-/*host macro that checks for errors in CUDA calls, and prints the file + line
- * and error string if one occurs
- */
-#define CUDA_CHECK(call)                                                       \
-    do {                                                                       \
-        cudaError_t cudaStatus = (call);                                       \
-        if (cudaStatus != cudaSuccess) {                                       \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__       \
-                      << " - " << cudaGetErrorString(cudaStatus) << std::endl; \
-            cudaDeviceReset();                                                 \
-            exit(EXIT_FAILURE);                                                \
-        }                                                                      \
-    } while (0)
 
 namespace sphericart {
 
