@@ -6,7 +6,7 @@
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION // gives us access to
                                             // templates/macros
-#include "cuda.hpp"
+#include "cuda_base.hpp"
 #include "sphericart.hpp"
 
 #define CHECK_CUDA(x)                                                          \
@@ -39,7 +39,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
         torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
 
     torch::Tensor d_sph;
-    if (xyz.requires_grad() || gradients) {
+    if (gradients) {
         d_sph = torch::empty(
             {xyz.size(0), 3, n_total},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
@@ -52,7 +52,7 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     torch::Tensor hess_sph;
 
-    if (xyz.requires_grad() && hessian) {
+    if (hessian) {
         hess_sph = torch::empty(
             {xyz.size(0), 3, 3, n_total},
             torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
@@ -76,14 +76,14 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
         sphericart::cuda::spherical_harmonics_cuda_base<double>(
             xyz.data_ptr<double>(), xyz.size(0), prefactors.data_ptr<double>(),
             prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
-            xyz.requires_grad(), gradients, hessian, sph.data_ptr<double>(),
+            gradients, hessian, sph.data_ptr<double>(),
             d_sph.data_ptr<double>(), hess_sph.data_ptr<double>());
         break;
     case torch::ScalarType::Float:
         sphericart::cuda::spherical_harmonics_cuda_base<float>(
             xyz.data_ptr<float>(), xyz.size(0), prefactors.data_ptr<float>(),
             prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
-            xyz.requires_grad(), gradients, hessian, sph.data_ptr<float>(),
+            gradients, hessian, sph.data_ptr<float>(),
             d_sph.data_ptr<float>(), hess_sph.data_ptr<float>());
         break;
     }

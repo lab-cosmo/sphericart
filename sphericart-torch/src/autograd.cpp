@@ -1,6 +1,6 @@
 #include "sphericart/autograd.hpp"
 
-#include "cuda.hpp"
+#include "cuda_base.hpp"
 #include "sphericart.hpp"
 #include "sphericart/torch.hpp"
 #include "sphericart/torch_cuda_wrapper.hpp"

@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "cuda.hpp"
+#include "cuda_base.hpp"
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(

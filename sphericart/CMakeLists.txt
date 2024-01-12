@@ -39,13 +39,6 @@ set(COMMON_SOURCES
     "include/sphericart.h"
 )
 
-#add_library(sphericart
-#    "src/sphericart.cpp"
-#    "src/sphericart-capi.cpp"
-#    "include/sphericart.hpp"
-#    "include/sphericart.h"
-#)
-
 # Find CUDA
 include(CheckLanguage)
 check_language(CUDA)
@@ -60,13 +53,16 @@ if (CMAKE_CUDA_COMPILER AND NOT SPHERICART_ENABLE_CUDA)
 endif()
 
 # Append the relevant CUDA files to sources
-list(APPEND COMMON_SOURCES "include/cuda.hpp")
+list(APPEND COMMON_SOURCES "include/cuda_base.hpp")
+list(APPEND COMMON_SOURCES "include/sphericart_cuda.hpp")
+
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     list(APPEND COMMON_SOURCES "src/cuda_base.cu")
+    list(APPEND COMMON_SOURCES "src/sphericart_cuda.cu")
 else()
     list(APPEND COMMON_SOURCES "src/cuda_stub.cpp")
+    list(APPEND COMMON_SOURCES "src/sphericart_cuda_stub.cpp")
 endif()
-message("Value of SPHERICART_ENABLE_CUDA: ${SPHERICART_ENABLE_CUDA}")
 
 add_library(sphericart ${COMMON_SOURCES})
 
