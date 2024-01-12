@@ -84,3 +84,7 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
         this->normalized, GRID_DIM_X, GRID_DIM_Y, compute_with_gradients,
         compute_with_hessian, sph, dsph, ddsph);
 }
+
+// instantiates the SphericalHarmonics class for basic floating point types
+template class sphericart::cuda::SphericalHarmonics<float>;
+template class sphericart::cuda::SphericalHarmonics<double>;

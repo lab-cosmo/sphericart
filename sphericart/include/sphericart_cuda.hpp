@@ -17,7 +17,7 @@ namespace cuda {
  * stores the buffers that are necessary to compute the spherical harmonics
  * efficiently.
  */
-template <typename T> class SphericalHarmonics {
+template <typename T> class SPHERICART_EXPORT SphericalHarmonics {
   public:
     /** Initialize the SphericalHarmonics class setting maximum degree and
      * normalization

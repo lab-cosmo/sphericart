@@ -43,15 +43,14 @@ include(CheckLanguage)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     enable_language(CUDA)
-    #set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14)
     set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
 else()
     message(STATUS "Could not find a CUDA compiler")
 endif()
+
 if (CMAKE_CUDA_COMPILER AND NOT SPHERICART_ENABLE_CUDA)
     message(STATUS "Found a CUDA compiler but SPHERICART_ENABLE_CUDA=OFF, set SPHERICART_ENABLE_CUDA=TRUE in order to compile with CUDA support.")
 endif()
-
 
 
 # Append the relevant CUDA files to sources
@@ -68,8 +67,7 @@ endif()
 
 add_library(sphericart ${COMMON_SOURCES})
 
-if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    set(CMAKE_CUDA_ARCHITECTURES native)
+if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA AND SPHERICART_ARCH_NATIVE)
     set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES native)
 endif()
 
@@ -82,10 +80,6 @@ set_target_properties(sphericart PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
-#if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-#    set_target_properties( sphericart PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-#endif()
-
 # we need to compile sphericart with C++17 for if constexpr
 target_compile_features(sphericart PRIVATE cxx_std_17)
 
@@ -95,10 +89,12 @@ target_include_directories(sphericart PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# Create a header defining SPHERICAR_EXPORT for exported classes/functions
+# Create a header defining SPHERICART_EXPORT for exported classes/functions
 set_target_properties(sphericart PROPERTIES
     # hide non-exported symbols by default
-    CXX_VISIBILITY_PRESET hidden
+    C_VISIBILIY_PRESET hidden
+    CXX_VISIBILIY_PRESET hidden
+    CUDA_VISIBILIY_PRESET hidden
 )
 
 include(GenerateExportHeader)
