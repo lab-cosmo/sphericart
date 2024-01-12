@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
-project(sphericart_examples LANGUAGES C CXX CUDA)
+
+if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+    project(sphericart_examples LANGUAGES C CXX CUDA)
+else()
+    project(sphericart_examples LANGUAGES C CXX)
+endif()
 
 add_executable(example_cpp cpp/example.cpp)
 target_link_libraries(example_cpp sphericart)

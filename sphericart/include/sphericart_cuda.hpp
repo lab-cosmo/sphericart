@@ -83,8 +83,21 @@ template <typename T> class SPHERICART_EXPORT SphericalHarmonics {
     /** Computes the spherical harmonics for one or more 3D points, using
      *  pre-allocated device-side pointers
      *
-     * @param xyz todo docs
-     * @param sph todo docs
+     * @param xyz A pre-allocated device-side array of size `n_samples x 3`. It
+     * contains the Cartesian coordinates of the 3D points for which the
+     * spherical harmonics are to be computed, organized along two dimensions.
+     * The outer dimension is `n_samples` long, accounting for different
+     *        samples, while the inner dimension has size 3 and it represents
+     *        the x, y, and z coordinates respectively.
+     * @param sph On entry, a preallocated device-side array of size  `n_samples
+     * * (l_max + 1) * (l_max + 1)`. On exit, this array will contain the
+     * spherical harmonics organized along two dimensions. The leading dimension
+     * is `n_samples` long and it represents the different samples, while the
+     * inner dimension is
+     * `(l_max + 1) * (l_max + 1)` long and it contains the spherical harmonics.
+     * These are laid out in lexicographic order. For example, if `l_max=2`, it
+     * will contain `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1),
+     * (2, 0), (2, 1), (2, 2)`, in this order.
      */
     void compute(const T *xyz, size_t nsamples, bool compute_with_gradients,
                  bool compute_with_hessian, T *sph, T *dsph = nullptr,
