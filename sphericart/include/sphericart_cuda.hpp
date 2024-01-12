@@ -4,7 +4,8 @@
 #ifndef SPHERICART_CUDA_HPP
 #define SPHERICART_CUDA_HPP
 
-//#include "sphericart.hpp"
+#define _SPHERICART_INTERNAL_IMPLEMENTATION
+#include "sphericart.hpp"
 
 namespace sphericart {
 
