@@ -84,7 +84,6 @@ __device__ inline void write_buffers(
         for (int i = threadIdx.x; i < n_elements; i += blockDim.x) {
 
             sph[edge_idx * n_total + offset + i] = buffer_sph[get_index(i)];
-            // sph[edge_idx][offset + i] = buffer_sph[get_index(i)];
 
             if (requires_hessian) {
                 auto tmp_dx = buffer_dsph_x[get_index(i)];
@@ -137,9 +136,6 @@ __device__ inline void write_buffers(
                         (ir * ir);
                 }
 
-                // ddsph: nedges, 3, 3, nl -> [nedges * 9 * nl + i * 3 * nl + j
-                // * nl + k]
-
                 ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 0 * n_total +
                       offset + i] = tmp_dxdx;
                 ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 1 * n_total +
@@ -160,18 +156,6 @@ __device__ inline void write_buffers(
                       offset + i] = tmp_dzdy;
                 ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 2 * n_total +
                       offset + i] = tmp_dzdz;
-
-                /*ddsph[edge_idx][0][0][offset + i] = tmp_dxdx;
-                ddsph[edge_idx][0][1][offset + i] = tmp_dxdy;
-                ddsph[edge_idx][0][2][offset + i] = tmp_dxdz;
-
-                ddsph[edge_idx][1][0][offset + i] = tmp_dydx;
-                ddsph[edge_idx][1][1][offset + i] = tmp_dydy;
-                ddsph[edge_idx][1][2][offset + i] = tmp_dydz;
-
-                ddsph[edge_idx][2][0][offset + i] = tmp_dzdx;
-                ddsph[edge_idx][2][1][offset + i] = tmp_dzdy;
-                ddsph[edge_idx][2][2][offset + i] = tmp_dzdz;*/
             }
 
             if (requires_grad) {
@@ -187,10 +171,6 @@ __device__ inline void write_buffers(
                     tmp_dy = (tmp_dy - y * tmp) * ir;
                     tmp_dz = (tmp_dz - z * tmp) * ir;
                 }
-
-                /*dsph[edge_idx][0][offset + i] = tmp_dx;
-                dsph[edge_idx][1][offset + i] = tmp_dy;
-                dsph[edge_idx][2][offset + i] = tmp_dz;*/
 
                 dsph[edge_idx * 3 * n_total + 0 * n_total + offset + i] =
                     tmp_dx;

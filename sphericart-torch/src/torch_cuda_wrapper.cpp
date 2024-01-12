@@ -71,29 +71,26 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
 
     dim3 block_dim(find_num_blocks(xyz.size(0), GRID_DIM_Y));
 
-    switch (xyz.scalar_type()) {
-    case torch::ScalarType::Double:
-        sphericart::cuda::spherical_harmonics_cuda_base<double>(
-            xyz.data_ptr<double>(), xyz.size(0), prefactors.data_ptr<double>(),
-            prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
-            gradients, hessian, sph.data_ptr<double>(),
-            d_sph.data_ptr<double>(), hess_sph.data_ptr<double>());
-        break;
-    case torch::ScalarType::Float:
-        sphericart::cuda::spherical_harmonics_cuda_base<float>(
-            xyz.data_ptr<float>(), xyz.size(0), prefactors.data_ptr<float>(),
-            prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
-            gradients, hessian, sph.data_ptr<float>(), d_sph.data_ptr<float>(),
-            hess_sph.data_ptr<float>());
-        break;
-    }
+    AT_DISPATCH_FLOATING_TYPES(
+        xyz.type(), "spherical_harmonics_cuda_switch", ([&] {
+            sphericart::cuda::spherical_harmonics_cuda_base<scalar_t>(
+                xyz.data_ptr<scalar_t>(), xyz.size(0),
+                prefactors.data_ptr<scalar_t>(), prefactors.size(0), l_max,
+                normalize, GRID_DIM_X, GRID_DIM_Y, gradients, hessian,
+                sph.data_ptr<scalar_t>(), d_sph.data_ptr<scalar_t>(),
+                hess_sph.data_ptr<scalar_t>());
+        }));
 
     cudaDeviceSynchronize();
 
-    if (!gradients)
+    if (!gradients) {
         d_sph = torch::Tensor();
-    if (!hessian)
+    }
+
+    if (!hessian) {
         hess_sph = torch::Tensor();
+    }
+
     return {sph, d_sph, hess_sph};
 }
 
@@ -113,19 +110,13 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     if (xyz.requires_grad()) {
         xyz_grad = torch::empty_like(xyz);
 
-        switch (xyz.scalar_type()) {
-        case torch::ScalarType::Double:
-            sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
-                dsph.data_ptr<double>(), sph_grad.data_ptr<double>(),
-                dsph.size(0), sph_grad.size(1), xyz_grad.data_ptr<double>());
-
-            break;
-        case torch::ScalarType::Float:
-            sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
-                dsph.data_ptr<float>(), sph_grad.data_ptr<float>(),
-                dsph.size(0), sph_grad.size(1), xyz_grad.data_ptr<float>());
-            break;
-        }
+        AT_DISPATCH_FLOATING_TYPES(
+            xyz.type(), "spherical_harmonics_backward_cuda_switch", ([&] {
+                sphericart::cuda::spherical_harmonics_backward_cuda_base<
+                    scalar_t>(dsph.data_ptr<scalar_t>(),
+                              sph_grad.data_ptr<scalar_t>(), dsph.size(0),
+                              sph_grad.size(1), xyz_grad.data_ptr<scalar_t>());
+            }));
 
         cudaDeviceSynchronize();
     }

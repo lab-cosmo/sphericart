@@ -120,11 +120,8 @@ add_library(sphericart_torch SHARED
 )
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-#if (CMAKE_CUDA_COMPILER)
-    #target_sources(sphericart_torch PUBLIC "src/cuda_base.cu")
     target_sources(sphericart_torch PUBLIC "src/torch_cuda_wrapper.cpp")
 else()
-    #target_sources(sphericart_torch PUBLIC "src/cuda_stub.cpp")
     target_sources(sphericart_torch PUBLIC "src/torch_cuda_wrapper_stub.cpp")
 endif()
 
