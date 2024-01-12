@@ -83,8 +83,8 @@ std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
         sphericart::cuda::spherical_harmonics_cuda_base<float>(
             xyz.data_ptr<float>(), xyz.size(0), prefactors.data_ptr<float>(),
             prefactors.size(0), l_max, normalize, GRID_DIM_X, GRID_DIM_Y,
-            gradients, hessian, sph.data_ptr<float>(),
-            d_sph.data_ptr<float>(), hess_sph.data_ptr<float>());
+            gradients, hessian, sph.data_ptr<float>(), d_sph.data_ptr<float>(),
+            hess_sph.data_ptr<float>());
         break;
     }
 

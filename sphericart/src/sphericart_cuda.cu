@@ -1,12 +1,11 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
-#include "sphericart_cuda.hpp"
 #include "cuda_base.hpp"
-
+#include "sphericart_cuda.hpp"
 
 /*host macro that checks for errors in CUDA calls, and prints the file + line
  * and error string if one occurs
@@ -40,8 +39,8 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
     // compute prefactors on host first
     compute_sph_prefactors<T>((int)l_max, this->prefactors_cpu);
     // allocate them on device and copy to device
-    CUDA_CHECK(
-        cudaMalloc((void **)this->prefactors_cuda, this->nprefactors * sizeof(T)));
+    CUDA_CHECK(cudaMalloc((void **)this->prefactors_cuda,
+                          this->nprefactors * sizeof(T)));
     CUDA_CHECK(cudaMemcpy(this->prefactors_cpu, this->prefactors_cuda,
                           this->nprefactors * sizeof(T),
                           cudaMemcpyHostToDevice));
@@ -57,8 +56,7 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
                                     bool compute_with_gradients,
                                     bool compute_with_hessian,
                                     size_t GRID_DIM_X, size_t GRID_DIM_Y,
-                                    T *sph, T *dsph,
-                                    T *ddsph) {
+                                    T *sph, T *dsph, T *ddsph) {
 
     if (sph == nullptr) {
         throw std::runtime_error(

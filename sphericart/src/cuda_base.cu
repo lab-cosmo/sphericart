@@ -604,17 +604,17 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
     const float *__restrict__ xyz, const int nedges,
     const float *__restrict__ prefactors, const int nprefactors,
     const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y,
-    const bool gradients, const bool hessian, float *__restrict__ sph,
-    float *__restrict__ dsph, float *__restrict__ ddsph);
+    const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
+    float *__restrict__ sph, float *__restrict__ dsph,
+    float *__restrict__ ddsph);
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
     const double *__restrict__ xyz, const int nedges,
     const double *__restrict__ prefactors, const int nprefactors,
     const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y, 
-    const bool gradients, const bool hessian, double *__restrict__ sph,
-    double *__restrict__ dsph, double *__restrict__ ddsph);
+    const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
+    double *__restrict__ sph, double *__restrict__ dsph,
+    double *__restrict__ ddsph);
 
 /*
     CUDA kernel to computes the backwards pass for autograd.
