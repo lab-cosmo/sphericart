@@ -1,25 +1,8 @@
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <iostream>
 #include <stdexcept>
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "cuda_base.hpp"
 #include "sphericart_cuda.hpp"
-
-/*host macro that checks for errors in CUDA calls, and prints the file + line
- * and error string if one occurs
- */
-#define CUDA_CHECK(call)                                                       \
-    do {                                                                       \
-        cudaError_t cudaStatus = (call);                                       \
-        if (cudaStatus != cudaSuccess) {                                       \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__       \
-                      << " - " << cudaGetErrorString(cudaStatus) << std::endl; \
-            cudaDeviceReset();                                                 \
-            exit(EXIT_FAILURE);                                                \
-        }                                                                      \
-    } while (0)
 
 using namespace sphericart::cuda;
 

@@ -44,6 +44,7 @@ include(CheckLanguage)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     enable_language(CUDA)
+    #set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14)
     set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
 else()
     message(STATUS "Could not find a CUDA compiler")
@@ -71,6 +72,10 @@ set_target_properties(sphericart PROPERTIES
     SOVERSION ${SPHERICART_VERSION_MAJOR}.${SPHERICART_VERSION_MINOR}
     POSITION_INDEPENDENT_CODE ON
 )
+
+#if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+#    set_target_properties( sphericart PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+#endif()
 
 # we need to compile sphericart with C++17 for if constexpr
 target_compile_features(sphericart PRIVATE cxx_std_17)
