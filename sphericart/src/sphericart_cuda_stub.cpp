@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "sphericart_cuda.hpp"
 
 using namespace sphericart::cuda;
