@@ -22,79 +22,6 @@
     CHECK_CONTIGUOUS(x)
 
 /*
-    Torch wrapper for the CUDA kernel forwards pass.
-*/
-std::vector<torch::Tensor> sphericart_torch::spherical_harmonics_cuda(
-    torch::Tensor xyz, torch::Tensor prefactors, int64_t l_max, bool normalize,
-    int64_t GRID_DIM_X, int64_t GRID_DIM_Y, bool gradients, bool hessian) {
-
-    CHECK_INPUT(xyz);
-    CHECK_INPUT(prefactors);
-    CHECK_SAME_DTYPE(xyz, prefactors);
-
-    int n_total = (l_max + 1) * (l_max + 1);
-
-    auto sph = torch::empty(
-        {xyz.size(0), n_total},
-        torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
-
-    torch::Tensor d_sph;
-    if (gradients) {
-        d_sph = torch::empty(
-            {xyz.size(0), 3, n_total},
-            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
-    } else {
-        // just so accessor doesn't complain (will be reverted later)
-        d_sph = torch::empty(
-            {1, 1, 1},
-            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
-    }
-
-    torch::Tensor hess_sph;
-
-    if (hessian) {
-        hess_sph = torch::empty(
-            {xyz.size(0), 3, 3, n_total},
-            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
-    } else {
-        // just so accessor doesn't complain (will be reverted later)
-        hess_sph = torch::empty(
-            {1, 1, 1, 1},
-            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
-    }
-
-    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
-
-    auto find_num_blocks = [](int x, int bdim) {
-        return (x + bdim - 1) / bdim;
-    };
-
-    dim3 block_dim(find_num_blocks(xyz.size(0), GRID_DIM_Y));
-
-    AT_DISPATCH_FLOATING_TYPES(
-        xyz.type(), "spherical_harmonics_cuda_switch", ([&] {
-            sphericart::cuda::spherical_harmonics_cuda_base<scalar_t>(
-                xyz.data_ptr<scalar_t>(), xyz.size(0),
-                prefactors.data_ptr<scalar_t>(), prefactors.size(0), l_max,
-                normalize, GRID_DIM_X, GRID_DIM_Y, gradients, hessian,
-                sph.data_ptr<scalar_t>(), d_sph.data_ptr<scalar_t>(),
-                hess_sph.data_ptr<scalar_t>());
-        }));
-
-    cudaDeviceSynchronize();
-
-    if (!gradients) {
-        d_sph = torch::Tensor();
-    }
-
-    if (!hessian) {
-        hess_sph = torch::Tensor();
-    }
-
-    return {sph, d_sph, hess_sph};
-}
-
-/*
     Torch wrapper for the CUDA kernel backwards pass.
 */
 torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
@@ -122,27 +49,4 @@ torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
     }
 
     return xyz_grad;
-}
-
-/*
-    wrapper to compute prefactors with correct dtype.
-
-*/
-
-torch::Tensor sphericart_torch::prefactors_cuda(int64_t l_max,
-                                                at::ScalarType dtype) {
-    auto result =
-        torch::empty({(l_max + 1) * (l_max + 2)},
-                     torch::TensorOptions().device("cpu").dtype(dtype));
-
-    if (dtype == c10::kDouble) {
-        compute_sph_prefactors(l_max, static_cast<double *>(result.data_ptr()));
-    } else if (dtype == c10::kFloat) {
-        compute_sph_prefactors(l_max, static_cast<float *>(result.data_ptr()));
-    } else {
-        throw std::runtime_error(
-            "this code only runs on float64 and float32 arrays");
-    }
-
-    return result.to("cuda");
 }

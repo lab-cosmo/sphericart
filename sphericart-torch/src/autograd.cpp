@@ -6,6 +6,9 @@
 #include "sphericart/torch_cuda_wrapper.hpp"
 #include <torch/torch.h>
 
+#include <iostream>
+
+using namespace std;
 using namespace sphericart_torch;
 
 std::vector<torch::Tensor>
@@ -151,36 +154,6 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph,
     return xyz_grad;
 }
 
-/* ===========================================================================*/
-
-bool CudaSharedMemorySettings::update_if_required(
-    size_t scalar_size, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
-    bool gradients, bool hessian) {
-
-    if (this->l_max_ >= l_max && this->grid_dim_x_ >= GRID_DIM_X &&
-        this->grid_dim_y_ >= GRID_DIM_Y && this->scalar_size_ >= scalar_size &&
-        (this->requires_grad_ || !gradients) &&
-        (this->requires_hessian_ || !hessian)) {
-        // no need to adjust shared memory
-        return true;
-    }
-
-    bool result = sphericart::cuda::adjust_cuda_shared_memory(
-        scalar_size, l_max, GRID_DIM_X, GRID_DIM_Y, gradients, hessian);
-
-    if (result) {
-        this->l_max_ = l_max;
-        this->grid_dim_x_ = GRID_DIM_X;
-        this->grid_dim_y_ = GRID_DIM_Y;
-        this->requires_grad_ = gradients;
-        this->requires_hessian_ = hessian;
-        this->scalar_size_ = scalar_size;
-    }
-    return result;
-}
-
-/* ===========================================================================*/
-
 torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     torch::autograd::AutogradContext *ctx, SphericalHarmonics &calculator,
     torch::Tensor xyz, bool do_gradients, bool do_hessians) {
@@ -196,77 +169,72 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     auto dsph = torch::Tensor();
     auto ddsph = torch::Tensor();
 
+    bool requires_grad = do_gradients || xyz.requires_grad();
+
+    bool requires_hessian =
+        do_hessians ||
+        (xyz.requires_grad() && calculator.backward_second_derivatives_);
+
     if (xyz.device().is_cpu()) {
-        auto results = calculator.compute_raw_cpu(
-            xyz, do_gradients || xyz.requires_grad(),
-            do_hessians || (xyz.requires_grad() &&
-                            calculator.backward_second_derivatives_));
+        auto results =
+            calculator.compute_raw_cpu(xyz, requires_grad, requires_hessian);
         sph = results[0];
         dsph = results[1];
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
-        // re-do the shared memory update in case `requires_grad` changed
-        const std::lock_guard<std::mutex> guard(calculator.cuda_shmem_mutex_);
 
-        bool shm_result = calculator.cuda_shmem_.update_if_required(
-            torch::elementSize(xyz.scalar_type()), calculator.l_max_,
-            calculator.CUDA_GRID_DIM_X_, calculator.CUDA_GRID_DIM_Y_,
-            xyz.requires_grad() || do_gradients,
-            do_hessians || (xyz.requires_grad() &&
-                            calculator.backward_second_derivatives_));
+        int n_total = (calculator.l_max_ + 1) * (calculator.l_max_ + 1);
 
-        if (!shm_result) {
-            printf(
-                "Warning: Failed to update shared memory specification with");
-            printf("element_size = %ld, GRID_DIM_X = %ld, GRID_DIM_Y = %ld, "
-                   "xyz.requires_grad() || do_gradients = %s, "
-                   "xyz.requires_grad() || "
-                   "do_hessians = %s\n",
-                   torch::elementSize(xyz.scalar_type()),
-                   calculator.CUDA_GRID_DIM_X_, calculator.CUDA_GRID_DIM_Y_,
-                   xyz.requires_grad() || do_gradients ? "true" : "false",
-                   do_hessians || (xyz.requires_grad() &&
-                                   calculator.backward_second_derivatives_)
-                       ? "true"
-                       : "false");
-            printf("Re-attempting with GRID_DIM_Y = 4\n");
+        sph = torch::empty(
+            {xyz.size(0), n_total},
+            torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
 
-            calculator.CUDA_GRID_DIM_Y_ = 4;
-            shm_result = calculator.cuda_shmem_.update_if_required(
-                torch::elementSize(xyz.scalar_type()), calculator.l_max_,
-                calculator.CUDA_GRID_DIM_X_, calculator.CUDA_GRID_DIM_Y_,
-                xyz.requires_grad() || do_gradients,
-                do_hessians || (xyz.requires_grad() &&
-                                calculator.backward_second_derivatives_));
-
-            if (!shm_result) {
-                throw std::runtime_error(
-                    "Insufficient shared memory available to compute "
-                    "spherical_harmonics with requested parameters.");
-            } else {
-                printf("shared memory update OK.\n");
-            }
+        if (requires_grad) {
+            dsph = torch::empty(
+                {xyz.size(0), 3, n_total},
+                torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+        } else {
+            // just so accessor doesn't complain (will be reverted later)
+            dsph = torch::empty(
+                {1, 1, 1},
+                torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
         }
 
-        auto prefactors = torch::Tensor();
+        if (requires_hessian) {
+            ddsph = torch::empty(
+                {xyz.size(0), 3, 3, n_total},
+                torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+        } else {
+            // just so accessor doesn't complain (will be reverted later)
+            ddsph = torch::empty(
+                {1, 1, 1, 1},
+                torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
+        }
+
         if (xyz.dtype() == c10::kDouble) {
-            prefactors = calculator.prefactors_cuda_double_;
+            calculator.calculator_cuda_double_.compute(
+                xyz.data_ptr<double>(), xyz.size(0), requires_grad,
+                requires_hessian, sph.data_ptr<double>(),
+                dsph.data_ptr<double>(), ddsph.data_ptr<double>());
+
         } else if (xyz.dtype() == c10::kFloat) {
-            prefactors = calculator.prefactors_cuda_float_;
+            calculator.calculator_cuda_float_.compute(
+                xyz.data_ptr<float>(), xyz.size(0), requires_grad,
+                requires_hessian, sph.data_ptr<float>(), dsph.data_ptr<float>(),
+                ddsph.data_ptr<float>());
         } else {
             throw std::runtime_error(
-                "this code only runs on float64 and float32 arrays");
+                "this code only runs on c10::kDouble and c10::kFloat tensors");
         }
 
-        auto results = sphericart_torch::spherical_harmonics_cuda(
-            xyz, prefactors, calculator.l_max_, calculator.normalized_,
-            calculator.CUDA_GRID_DIM_X_, calculator.CUDA_GRID_DIM_Y_,
-            do_gradients || xyz.requires_grad(),
-            do_hessians || (xyz.requires_grad() &&
-                            calculator.backward_second_derivatives_));
-        sph = results[0];
-        dsph = results[1];
-        ddsph = results[2];
+        if (!requires_grad) {
+            dsph = torch::Tensor();
+        }
+
+        if (!requires_hessian) {
+            ddsph = torch::Tensor();
+        }
+
     } else {
         throw std::runtime_error(
             "Spherical harmonics are only implemented for CPU and CUDA");
