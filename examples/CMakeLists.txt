@@ -11,6 +11,9 @@ target_link_libraries(example_c sphericart)
 add_test(NAME example_c COMMAND ./example_c)
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+
+    set(CMAKE_CUDA_ARCHITECTURES native)
+    
     add_executable(example_cuda cuda/example.cu)
     target_link_libraries(example_cuda sphericart)
     add_test(NAME example_cuda COMMAND ./example_cuda)
