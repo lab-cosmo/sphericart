@@ -41,7 +41,7 @@ set(COMMON_SOURCES
 # Find CUDA
 include(CheckLanguage)
 check_language(CUDA)
-if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
     set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
 else()
@@ -49,7 +49,7 @@ else()
 endif()
 
 if (CMAKE_CUDA_COMPILER AND NOT SPHERICART_ENABLE_CUDA)
-    message(STATUS "Found a CUDA compiler but SPHERICART_ENABLE_CUDA=OFF, set SPHERICART_ENABLE_CUDA=TRUE in order to compile with CUDA support.")
+    message(STATUS "Found a CUDA compiler but SPHERICART_ENABLE_CUDA=OFF, set SPHERICART_ENABLE_CUDA=ON in order to compile with CUDA support.")
 endif()
 
 
