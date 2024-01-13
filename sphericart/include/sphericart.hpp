@@ -9,8 +9,6 @@
 #include <tuple>
 #include <vector>
 
-#include "sphericart/exports.h"
-
 #ifdef _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "macros.hpp"
 #include "templates.hpp"

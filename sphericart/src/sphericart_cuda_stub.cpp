@@ -16,3 +16,7 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
                                     T *ddsph) {
     throw std::runtime_error("sphericart was not compiled with CUDA support");
 }
+
+// instantiates the SphericalHarmonics class for basic floating point types
+template class sphericart::cuda::SphericalHarmonics<float>;
+template class sphericart::cuda::SphericalHarmonics<double>;

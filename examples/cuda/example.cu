@@ -52,7 +52,11 @@ int main() {
     /* ===== API calls ===== */
 
     // internal buffers and numerical factors are initalized at construction
-    auto calculator_cuda = sphericart::cuda::SphericalHarmonics<double>(l_max);
+    sphericart::cuda::SphericalHarmonics<double> calculator_cuda(l_max);
+    // note: the following line
+    // auto calculator_cuda =
+    // sphericart::cuda::SphericalHarmonics<double>(l_max); calls the copy
+    // constructor, which has been deleted, in some nvcc versions
 
     double *xyz_cuda;
     CUDA_CHECK(cudaMalloc(&xyz_cuda, n_samples * 3 * sizeof(double)));

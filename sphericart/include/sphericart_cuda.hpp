@@ -59,7 +59,7 @@ class CudaSharedMemorySettings {
  * stores the buffers that are necessary to compute the spherical harmonics
  * efficiently.
  */
-template <typename T> class SPHERICART_EXPORT SphericalHarmonics {
+template <typename T> class SphericalHarmonics {
   public:
     /** Initialize the SphericalHarmonics class setting maximum degree and
      * normalization
