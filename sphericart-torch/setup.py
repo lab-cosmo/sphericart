@@ -26,7 +26,6 @@ class cmake_ext(build_ext):
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
-            f"-DSPHERICART_ENABLE_CUDA=ON",
         ]
 
         CUDA_HOME = os.environ.get("CUDA_HOME")
