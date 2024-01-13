@@ -79,6 +79,50 @@ def sph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
 mlir.register_lowering(_sph_p, sph_lowering_cpu, platform="cpu")
 
 
+def sph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
+    # Define the compilation to XLA of the primitive.
+    # (`ctx` is a context object)
+
+    # build shapes and dtypes of the inputs and outputs
+    xyz_type = ir.RankedTensorType(xyz.type)
+    xyz_shape = xyz_type.shape
+    dtype = xyz_type.element_type
+    sph_size = (l_max_c + 1) * (l_max_c + 1)
+    out_shape = xyz_shape[:-1] + [
+        sph_size,
+    ]
+    n_samples = math.prod(xyz_shape[:-1])
+
+    # make sure we dispatch to the correct implementation
+    if dtype == ir.F32Type.get():
+        op_name = "cuda_sph_f32"
+    elif dtype == ir.F64Type.get():
+        op_name = "cuda_sph_f64"
+    else:
+        raise NotImplementedError(f"Unsupported dtype {dtype}")
+
+    return custom_call(
+        op_name,
+        # Output types
+        result_types=[
+            mlir.ir.RankedTensorType.get(out_shape, dtype),
+        ],
+        # inputs to the binded functions
+        operands=[
+            xyz,
+            mlir.ir_constant(l_max_c),
+            normalized,
+            mlir.ir_constant(n_samples),
+        ],
+        # Layout specification:
+        operand_layouts=default_layouts(xyz_shape, (), (), ()),
+        result_layouts=default_layouts(out_shape),
+    ).results
+
+
+mlir.register_lowering(_sph_p, sph_lowering_cuda, platform="gpu")
+
+
 def sph_p_batch(arg_values, batch_axes, *, l_max_c):
     # Define a batching rule for _sph_p. This is very simple
     # since _sph_p is closed with respect to batching

@@ -1,7 +1,7 @@
 import pytest
 import jax
 
-jax.config.update("jax_platform_name", "cpu")
+# jax.config.update("jax_platform_name", "cpu")
 import jax.numpy as jnp
 import jax._src.test_util as jtu
 import sphericart.jax
@@ -14,6 +14,7 @@ def xyz():
 
 
 def test_autograd_cartesian(xyz):
+    # print(xyz.device_buffer.device())
     def compute(xyz):
         sph = sphericart.jax.spherical_harmonics(l_max=4, normalized=False, xyz=xyz)
         assert jnp.linalg.norm(sph) != 0.0

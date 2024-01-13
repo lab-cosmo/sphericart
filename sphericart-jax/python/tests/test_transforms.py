@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import jax
 
-jax.config.update("jax_platform_name", "cpu")
+# jax.config.update("jax_platform_name", "cpu")
 import sphericart.jax
 
 

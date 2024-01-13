@@ -12,6 +12,8 @@
 #include "sphericart_cuda.hpp"
 #include "sphericart/pybind11_kernel_helpers.h"
 
+#include <iostream>
+
 using namespace sphericart_jax;
 
 namespace {
@@ -41,6 +43,7 @@ _get_or_create_sph_cpu(CacheMapCPU<T> &sph_cache, std::mutex &cache_mutex,
 }
 
 template <typename T> void cpu_sph(void *out, const void **in) {
+    std::cout << "STILL OK 0" << std::endl;
     // Parse the inputs
     const T *xyz = reinterpret_cast<const T *>(in[0]);
     const size_t l_max = *reinterpret_cast<const int *>(in[1]);
@@ -57,11 +60,15 @@ template <typename T> void cpu_sph(void *out, const void **in) {
 
     auto &calculator =
         _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max, normalized);
+
+    std::cout << "STILL OK" << std::endl;
     calculator->compute_array(xyz, xyz_length, sph, sph_len);
+    std::cout << "STILL OK 2" << std::endl;
 }
 
 template <typename T>
 void cpu_sph_with_gradients(void *out_tuple, const void **in) {
+    std::cout << "STILL OK 0" << std::endl;
     // Parse the inputs
     const T *xyz = reinterpret_cast<const T *>(in[0]);
     const size_t l_max = *reinterpret_cast<const int *>(in[1]);
@@ -81,12 +88,14 @@ void cpu_sph_with_gradients(void *out_tuple, const void **in) {
 
     auto &calculator =
         _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max, normalized);
+    std::cout << "STILL OK" << std::endl;
     calculator->compute_array_with_gradients(xyz, xyz_length, sph, sph_len,
                                              dsph, dsph_len);
 }
 
 template <typename T>
 void cpu_sph_with_hessians(void *out_tuple, const void **in) {
+    std::cout << "STILL OK 0" << std::endl;
     // Parse the inputs
     const T *xyz = reinterpret_cast<const T *>(in[0]);
     const size_t l_max = *reinterpret_cast<const int *>(in[1]);
@@ -108,6 +117,7 @@ void cpu_sph_with_hessians(void *out_tuple, const void **in) {
 
     auto &calculator =
         _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max, normalized);
+    std::cout << "STILL OK" << std::endl;
     calculator->compute_array_with_hessians(xyz, xyz_length, sph, sph_len, dsph,
                                             dsph_len, ddsph, ddsph_len);
 }
@@ -139,6 +149,7 @@ _get_or_create_sph_cuda(CacheMapCUDA<T> &sph_cache, std::mutex &cache_mutex,
 
 template <typename T> void cuda_sph(void *out, const void **in) {
     // Parse the inputs
+    std::cout << "STILL OK 0" << std::endl;
     const T *xyz = reinterpret_cast<const T *>(in[0]);
     const size_t l_max = *reinterpret_cast<const int *>(in[1]);
     const bool normalized = *reinterpret_cast<const bool *>(in[2]);
@@ -154,11 +165,14 @@ template <typename T> void cuda_sph(void *out, const void **in) {
 
     auto &calculator =
         _get_or_create_sph_cuda(sph_cache, cache_mutex, l_max, normalized);
+    std::cout << "STILL OK 1" << std::endl;
     calculator->compute(xyz, n_samples, false, false, sph, nullptr, nullptr);
+    std::cout << "STILL OK 2" << std::endl;
 }
 
 template <typename T>
 void cuda_sph_with_gradients(void *out_tuple, const void **in) {
+    std::cout << "STILL OK 0 grad" << std::endl;
     // Parse the inputs
     const T *xyz = reinterpret_cast<const T *>(in[0]);
     const size_t l_max = *reinterpret_cast<const int *>(in[1]);
@@ -178,11 +192,14 @@ void cuda_sph_with_gradients(void *out_tuple, const void **in) {
 
     auto &calculator =
         _get_or_create_sph_cuda(sph_cache, cache_mutex, l_max, normalized);
+        std::cout << "STILL OK 1 grAD" << std::endl;
     calculator->compute(xyz, n_samples, true, false, sph, dsph, nullptr);
+    std::cout << "STILL OK 2 GRAD" << std::endl;
 }
 
 template <typename T>
 void cuda_sph_with_hessians(void *out_tuple, const void **in) {
+    std::cout << "STILL OK 0 hess" << std::endl;
     // Parse the inputs
     const T *xyz = reinterpret_cast<const T *>(in[0]);
     const size_t l_max = *reinterpret_cast<const int *>(in[1]);
@@ -204,7 +221,9 @@ void cuda_sph_with_hessians(void *out_tuple, const void **in) {
 
     auto &calculator =
         _get_or_create_sph_cuda(sph_cache, cache_mutex, l_max, normalized);
+        std::cout << "STILL OK 1 hes" << std::endl;
     calculator->compute(xyz, n_samples, true, true, sph, dsph, ddsph);
+    std::cout << "STILL OK 2 hess" << std::endl;
 }
 
 

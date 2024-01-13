@@ -1,7 +1,7 @@
 import pytest
 import jax
 
-jax.config.update("jax_platform_name", "cpu")
+# jax.config.update("jax_platform_name", "cpu")
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import sphericart.jax
@@ -15,7 +15,6 @@ def xyz():
 
 def test_precision(xyz):
     def compute(xyz):
-        print(xyz.shape)
         sph = sphericart.jax.spherical_harmonics(xyz, l_max=4, normalized=False)
         return sph
 
