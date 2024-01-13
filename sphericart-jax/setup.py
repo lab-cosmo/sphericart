@@ -30,6 +30,7 @@ class cmake_ext(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
             f"-DCMAKE_PREFIX_PATH={';'.join(cmake_prefix_path)}",
+            "-DSPHERICART_ENABLE_CUDA=ON"
         ]
 
         if sys.platform.startswith("darwin"):
