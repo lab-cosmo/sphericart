@@ -42,6 +42,10 @@ class cmake_ext(build_ext):
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
         ]
 
+        CUDA_HOME = os.environ.get("CUDA_HOME")
+        if CUDA_HOME is not None:
+            cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")
+
         if sys.platform.startswith("darwin"):
             cmake_options.append("-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=11.0")
 
