@@ -25,7 +25,7 @@ test_job:
     - mkdir buildcpp
     - cd buildcpp
     - export Torch_DIR=/usr/local/lib/python3.10/dist-packages/torch/share/cmake/Torch/
-    - cmake .. -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TORCH=ON -DSPHERICART_ENABLE_CUDA=ON
+    - cmake .. -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_ENABLE_CUDA=ON -DSPHERICART_BUILD_TORCH=ON
     - cmake --build .
     - ctest
 
