@@ -75,49 +75,12 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
                           cudaMemcpyHostToDevice));
 }
 
-template <typename T>
-// Copy constructor
-SphericalHarmonics<T>::SphericalHarmonics(const SphericalHarmonics &other)
-    : l_max(other.l_max), normalized(other.normalized) {
-    // Copy ownership of the mutex
-    std::lock_guard<std::mutex> lock_other(other.cuda_shmem_mutex_);
-    std::lock_guard<std::mutex> lock_this(cuda_shmem_mutex_);
-}
-
-template <typename T>
-SphericalHarmonics<T>::SphericalHarmonics(SphericalHarmonics &&other)
-    : l_max(other.l_max), normalized(other.normalized) {
-    cuda_shmem_mutex_ = std::move(other.cuda_shmem_mutex_);
-}
-template <typename T>
-SphericalHarmonics<T> &
-SphericalHarmonics<T>::operator=(const SphericalHarmonics &other) {
-    if (this != &other) {
-        l_max = other.l_max;
-        normalized = other.normalized;
-        // Copy ownership of the mutex
-        std::lock_guard<std::mutex> lock_other(other.cuda_shmem_mutex_);
-        std::lock_guard<std::mutex> lock_this(cuda_shmem_mutex_);
-    }
-    return *this;
-}
-template <typename T>
-SphericalHarmonics<T> &
-SphericalHarmonics<T>::operator=(SphericalHarmonics &&other) {
-    if (this != &other) {
-        l_max = std::move(other.l_max);
-        normalized = std::move(other.normalized);
-        // Move ownership of the mutex
-        cuda_shmem_mutex_ = std::move(other.cuda_shmem_mutex_);
-    }
-    return *this;
-}
-
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     // Destructor, frees the prefactors
     delete[] (this->prefactors_cpu);
     CUDA_CHECK(cudaFree(this->prefactors_cuda));
 }
+
 template <typename T>
 void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
                                     bool compute_with_gradients,
