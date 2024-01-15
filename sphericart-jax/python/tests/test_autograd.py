@@ -39,7 +39,7 @@ def test_autograd_second_derivatives(normalized):
         assert jnp.linalg.norm(sph) != 0.0
         return sph.sum()
 
-    jtu.check_grads(compute, (xyz,), modes=["fwd", "bwd"], order=2)
+    jtu.check_grads(compute, (xyz,), modes=["fwd", "bwd"], order=2, atol=1e-6, rtol=1e-6)
 
     # reset to 32-bit so this doesn't carry over to other tests
     jax.config.update("jax_enable_x64", False)
