@@ -27,7 +27,7 @@ def test_script(xyz):
 @pytest.mark.parametrize("normalized", [True, False])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_jit(xyz, l_max, normalized):
-    jitted_sph = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1,))
+    jitted_sph = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1, 2))
     calculator = sphericart.SphericalHarmonics(
         l_max=l_max, normalized=normalized
     )
@@ -52,7 +52,7 @@ def test_vmap(xyz, l_max, normalized):
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_jit_jacfwd(xyz, l_max, normalized):
     transformed_sph = jax.jit(
-        jax.jacfwd(sphericart.jax.spherical_harmonics), static_argnums=1
+        jax.jacfwd(sphericart.jax.spherical_harmonics), static_argnums=(1, 2)
     )
     transformed_sph(xyz, l_max, normalized)
 
@@ -61,7 +61,7 @@ def test_jit_jacfwd(xyz, l_max, normalized):
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_hessian_jit(xyz, l_max, normalized):
     transformed_sph = jax.hessian(
-        jax.jit(sphericart.jax.spherical_harmonics, static_argnums=1)
+        jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1, 2))
     )
     transformed_sph(xyz, l_max, normalized)
 

@@ -18,11 +18,11 @@ _ddsph_p.def_impl(partial(xla.apply_primitive, _ddsph_p))
 
 
 def ddsph(xyz, l_max, normalized):
-    sph, dsph, ddsph = _ddsph_p.bind(xyz, l_max, normalized, l_max_c=l_max)
+    sph, dsph, ddsph = _ddsph_p.bind(xyz, l_max, normalized, l_max_c=l_max, normalized_c=normalized)
     return sph, dsph, ddsph
 
 
-def ddsph_abstract_eval(xyz, l_max, normalized, *, l_max_c):
+def ddsph_abstract_eval(xyz, l_max, normalized, *, l_max_c, normalized_c):
     sph_size = (l_max_c + 1) * (l_max_c + 1)
     dtype = xyz.dtype
     sph_shape = xyz.shape[:-1] + (sph_size,)
@@ -38,7 +38,7 @@ def ddsph_abstract_eval(xyz, l_max, normalized, *, l_max_c):
 _ddsph_p.def_abstract_eval(ddsph_abstract_eval)
 
 
-def ddsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
+def ddsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
     xyz_type = ir.RankedTensorType(xyz.type)
     xyz_shape = xyz_type.shape
     dtype = xyz_type.element_type
@@ -65,7 +65,7 @@ def ddsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
         operands=[
             xyz,
             mlir.ir_constant(l_max_c),
-            normalized,
+            mlir.ir_constant(normalized_c),
             mlir.ir_constant(n_samples),
         ],
         operand_layouts=default_layouts(xyz_shape, (), (), ()),
@@ -76,7 +76,7 @@ def ddsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
 mlir.register_lowering(_ddsph_p, ddsph_lowering_cpu, platform="cpu")
 
 
-def ddsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
+def ddsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
     xyz_type = ir.RankedTensorType(xyz.type)
     xyz_shape = xyz_type.shape
     dtype = xyz_type.element_type
@@ -93,7 +93,7 @@ def ddsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
     else:
         raise NotImplementedError(f"Unsupported dtype {dtype}")
 
-    descriptor = build_sph_descriptor(n_samples, l_max_c, bool(normalized))
+    descriptor = build_sph_descriptor(n_samples, l_max_c, normalized_c)
 
     return custom_call(
         op_name,
@@ -112,7 +112,7 @@ def ddsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
 mlir.register_lowering(_ddsph_p, ddsph_lowering_cuda, platform="gpu")
 
 
-def ddsph_p_batch(arg_values, batch_axes, *, l_max_c):
+def ddsph_p_batch(arg_values, batch_axes, *, l_max_c, normalized_c):
     res = ddsph(*arg_values)
     return res, (batch_axes[0], batch_axes[0], batch_axes[0])
 

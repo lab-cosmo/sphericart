@@ -16,8 +16,8 @@ def xyz():
 
 @pytest.mark.parametrize("l_max", [2, 7])
 def test_jit(xyz, l_max):
-    jitted_sph = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1,))
-    pure_jax_jitted_sph = jax.jit(pure_jax_spherical_harmonics, static_argnums=(1,))
+    jitted_sph = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1, 2))
+    pure_jax_jitted_sph = jax.jit(pure_jax_spherical_harmonics, static_argnums=(1, 2))
     sph = jitted_sph(xyz=xyz, l_max=l_max, normalized=True)
     sph_pure_jax = pure_jax_jitted_sph(xyz, l_max)
     assert jnp.allclose(sph, sph_pure_jax)
