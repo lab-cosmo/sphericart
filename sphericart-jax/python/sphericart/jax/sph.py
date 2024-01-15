@@ -9,9 +9,8 @@ from jax.interpreters.mlir import ir, custom_call
 from jax.interpreters import ad
 
 from .dsph import dsph
-from .utils import default_layouts
+from .utils import default_layouts, build_sph_descriptor
 
-from .lib.sphericart_jax_gpu import build_sph_descriptor
 
 # register the sph primitive
 _sph_p = core.Primitive("sph_fwd")

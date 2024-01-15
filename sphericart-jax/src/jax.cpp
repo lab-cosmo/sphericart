@@ -9,9 +9,7 @@
 #include <tuple>
 
 #include "sphericart.hpp"
-#include "sphericart/jax_cuda.hpp"
 #include "sphericart/pybind11_kernel_helpers.h"
-#include "sphericart_cuda.hpp"
 
 #include <iostream>
 
@@ -138,8 +136,6 @@ pybind11::dict Registrations() {
     return dict;
 }
 
-PYBIND11_MODULE(sphericart_jax, m) {
-    m.def("registrations", &Registrations);
-}
+PYBIND11_MODULE(sphericart_jax, m) { m.def("registrations", &Registrations); }
 
 } // namespace

@@ -1,5 +1,7 @@
 import jax
 from .lib import sphericart_jax
+from .spherical_harmonics import spherical_harmonics
+
 
 # register the operations to xla
 for _name, _value in sphericart_jax.registrations().items():

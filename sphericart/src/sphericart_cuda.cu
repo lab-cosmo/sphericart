@@ -20,7 +20,7 @@ using namespace sphericart::cuda;
         cudaError_t cudaStatus =                                               \
             cudaPointerGetAttributes(&attributes, pointer);                    \
         if (cudaStatus == cudaSuccess) {                                       \
-            if (attributes.type == cudaMemoryTypeDevice) {               \
+            if (attributes.type == cudaMemoryTypeDevice) {                     \
                 std::cout << "The pointer " << name << " is in GPU memory."    \
                           << std::endl;                                        \
             } else {                                                           \

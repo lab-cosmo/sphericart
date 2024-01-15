@@ -1,9 +1,7 @@
-import pytest
 import jax
 
 # jax.config.update("jax_platform_name", "cpu")
 import jax.numpy as jnp
-import jax._src.test_util as jtu
 from sphericart.jax.spherical_harmonics import spherical_harmonics
 
 def xyz():
@@ -15,7 +13,7 @@ def compute(xyz):
     assert jnp.linalg.norm(sph) != 0.0
     return sph
 
-xyzs = jax.device_put(xyz(), device=jax.devices('gpu')[0]) 
+# xyzs = jax.device_put(xyz(), device=jax.devices('gpu')[0]) 
 
 sph = compute(xyz())
 

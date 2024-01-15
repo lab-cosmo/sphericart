@@ -23,10 +23,14 @@ pybind11::dict Registrations() {
     pybind11::dict dict;
     dict["cuda_sph_f32"] = EncapsulateFunction(apply_cuda_sph_f32);
     dict["cuda_sph_f64"] = EncapsulateFunction(apply_cuda_sph_f64);
-    dict["cuda_dsph_f32"] = EncapsulateFunction(apply_cuda_sph_with_gradients_f32);
-    dict["cuda_dsph_f64"] = EncapsulateFunction(apply_cuda_sph_with_gradients_f64);
-    dict["cuda_ddsph_f32"] = EncapsulateFunction(apply_cuda_sph_with_hessians_f32);
-    dict["cuda_ddsph_f64"] = EncapsulateFunction(apply_cuda_sph_with_hessians_f64);
+    dict["cuda_dsph_f32"] =
+        EncapsulateFunction(apply_cuda_sph_with_gradients_f32);
+    dict["cuda_dsph_f64"] =
+        EncapsulateFunction(apply_cuda_sph_with_gradients_f64);
+    dict["cuda_ddsph_f32"] =
+        EncapsulateFunction(apply_cuda_sph_with_hessians_f32);
+    dict["cuda_ddsph_f64"] =
+        EncapsulateFunction(apply_cuda_sph_with_hessians_f64);
     return dict;
 }
 

@@ -8,8 +8,6 @@
 #include <mutex>
 #include <tuple>
 
-
-
 #include "sphericart/jax_cuda.hpp"
 #include "sphericart/pybind11_kernel_helpers.h"
 
@@ -19,11 +17,10 @@
 
 using namespace std;
 
-
 namespace sphericart_jax {
 
 namespace cuda {
-    
+
 template <typename T>
 using CacheMapCUDA =
     std::map<std::tuple<size_t, bool>,
@@ -87,15 +84,13 @@ inline void cuda_sph(cudaStream_t stream, void **in, const char *opaque,
     std::cout << "STILL OK 2" << std::endl;
 }
 
-void apply_cuda_sph_f32(cudaStream_t stream, void **in,
-                                              const char *opaque,
-                                              std::size_t opaque_len) {
+void apply_cuda_sph_f32(cudaStream_t stream, void **in, const char *opaque,
+                        std::size_t opaque_len) {
     cuda_sph<float>(stream, in, opaque, opaque_len);
 }
 
-void apply_cuda_sph_f64(cudaStream_t stream, void **in,
-                                              const char *opaque,
-                                              std::size_t opaque_len) {
+void apply_cuda_sph_f64(cudaStream_t stream, void **in, const char *opaque,
+                        std::size_t opaque_len) {
     cuda_sph<double>(stream, in, opaque, opaque_len);
 }
 
@@ -126,15 +121,15 @@ inline void cuda_sph_with_gradients(cudaStream_t stream, void **in,
     std::cout << "STILL OK 2 GRAD" << std::endl;
 }
 
-void apply_cuda_sph_with_gradients_f32(
-    cudaStream_t stream, void **in, const char *opaque,
-    std::size_t opaque_len) {
+void apply_cuda_sph_with_gradients_f32(cudaStream_t stream, void **in,
+                                       const char *opaque,
+                                       std::size_t opaque_len) {
     cuda_sph_with_gradients<float>(stream, in, opaque, opaque_len);
 }
 
-void apply_cuda_sph_with_gradients_f64(
-    cudaStream_t stream, void **in, const char *opaque,
-    std::size_t opaque_len) {
+void apply_cuda_sph_with_gradients_f64(cudaStream_t stream, void **in,
+                                       const char *opaque,
+                                       std::size_t opaque_len) {
     cuda_sph_with_gradients<double>(stream, in, opaque, opaque_len);
 }
 
@@ -165,15 +160,15 @@ inline void cuda_sph_with_hessians(cudaStream_t stream, void **in,
     std::cout << "STILL OK 2 hess" << std::endl;
 }
 
-void apply_cuda_sph_with_hessians_f32(
-    cudaStream_t stream, void **in, const char *opaque,
-    std::size_t opaque_len) {
+void apply_cuda_sph_with_hessians_f32(cudaStream_t stream, void **in,
+                                      const char *opaque,
+                                      std::size_t opaque_len) {
     cuda_sph_with_hessians<float>(stream, in, opaque, opaque_len);
 }
 
-void apply_cuda_sph_with_hessians_f64(
-    cudaStream_t stream, void **in, const char *opaque,
-    std::size_t opaque_len) {
+void apply_cuda_sph_with_hessians_f64(cudaStream_t stream, void **in,
+                                      const char *opaque,
+                                      std::size_t opaque_len) {
     cuda_sph_with_hessians<double>(stream, in, opaque, opaque_len);
 }
 } // namespace cuda
