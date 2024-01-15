@@ -75,6 +75,44 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
                           cudaMemcpyHostToDevice));
 }
 
+template <typename T>
+// Copy constructor
+SphericalHarmonics<T>::SphericalHarmonics(const SphericalHarmonics &other)
+    : l_max(other.l_max), normalized(other.normalized) {
+    // Copy ownership of the mutex
+    std::lock_guard<std::mutex> lock_other(other.cuda_shmem_mutex_);
+    std::lock_guard<std::mutex> lock_this(cuda_shmem_mutex_);
+}
+
+template <typename T>
+SphericalHarmonics<T>::SphericalHarmonics(SphericalHarmonics &&other)
+    : l_max(other.l_max), normalized(other.normalized) {
+    cuda_shmem_mutex_ = std::move(other.cuda_shmem_mutex_);
+}
+template <typename T>
+SphericalHarmonics<T> &
+SphericalHarmonics<T>::operator=(const SphericalHarmonics &other) {
+    if (this != &other) {
+        l_max = other.l_max;
+        normalized = other.normalized;
+        // Copy ownership of the mutex
+        std::lock_guard<std::mutex> lock_other(other.cuda_shmem_mutex_);
+        std::lock_guard<std::mutex> lock_this(cuda_shmem_mutex_);
+    }
+    return *this;
+}
+template <typename T>
+SphericalHarmonics<T> &
+SphericalHarmonics<T>::operator=(SphericalHarmonics &&other) {
+    if (this != &other) {
+        l_max = std::move(other.l_max);
+        normalized = std::move(other.normalized);
+        // Move ownership of the mutex
+        cuda_shmem_mutex_ = std::move(other.cuda_shmem_mutex_);
+    }
+    return *this;
+}
+
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     // Destructor, frees the prefactors
     delete[] (this->prefactors_cpu);
@@ -114,14 +152,9 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
         compute_with_gradients, compute_with_hessian);
 
     if (!shm_result) {
-        printf("Warning: Failed to update shared memory specification with");
-        printf("element_size = %ld, GRID_DIM_X = %ld, GRID_DIM_Y = %ld, "
-               "compute_with_gradients = %s, "
-               "compute_with_hessian = %s\n",
-               sizeof(T), this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
-               compute_with_gradients, compute_with_hessian);
-
-        printf("Re-attempting with GRID_DIM_Y = 4\n");
+        std::cerr << "Warning: Failed to update shared memory size, "
+                     "re-attempting with  GRID_DIM_Y = 4\n"
+                  << std::endl;
 
         this->CUDA_GRID_DIM_Y_ = 4;
         shm_result = this->cuda_shmem_.update_if_required(
@@ -133,8 +166,6 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
             throw std::runtime_error(
                 "Insufficient shared memory available to compute "
                 "spherical_harmonics with requested parameters.");
-        } else {
-            printf("shared memory update OK.\n");
         }
     }
 

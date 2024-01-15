@@ -75,11 +75,7 @@ template <typename T> class SphericalHarmonics {
      * adapts the derivatives accordingly.
      */
     SphericalHarmonics(size_t l_max, bool normalized = false);
-    SphericalHarmonics(const SphericalHarmonics& other);
-    SphericalHarmonics(SphericalHarmonics&& other);
-    
-    SphericalHarmonics& operator=(const SphericalHarmonics& other);
-    SphericalHarmonics& operator=(SphericalHarmonics&& other);
+
     /* @cond */
     ~SphericalHarmonics();
     /* @endcond */
