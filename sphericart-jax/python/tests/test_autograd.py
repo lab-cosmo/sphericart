@@ -7,15 +7,14 @@ import jax._src.test_util as jtu
 import sphericart.jax
 
 
-@pytest.fixture
-def xyz():
-    key = jax.random.PRNGKey(0)
-    return 6 * jax.random.normal(key, (100, 3))
-
-
 @pytest.mark.parametrize("normalized", [True, False])
-def test_autograd(xyz, normalized):
-    # print(xyz.device_buffer.device())
+def test_autograd(normalized):
+    # here, 32-bit numerical gradients are very noisy, so we use 64-bit
+    jax.config.update("jax_enable_x64", True)
+
+    key = jax.random.PRNGKey(0)
+    xyz = 6 * jax.random.normal(key, (100, 3))
+
     def compute(xyz):
         sph = sphericart.jax.spherical_harmonics(xyz=xyz, l_max=4, normalized=normalized)
         assert jnp.linalg.norm(sph) != 0.0
@@ -23,12 +22,24 @@ def test_autograd(xyz, normalized):
 
     jtu.check_grads(compute, (xyz,), modes=["fwd", "bwd"], order=1)
 
+    # reset to 32-bit so this doesn't carry over to other tests
+    jax.config.update("jax_enable_x64", False)
+
 
 @pytest.mark.parametrize("normalized", [True, False])
-def test_autograd_second_derivatives(xyz, normalized):
+def test_autograd_second_derivatives(normalized):
+    # here, 32-bit numerical gradients are very noisy, so we use 64-bit
+    jax.config.update("jax_enable_x64", True)
+
+    key = jax.random.PRNGKey(0)
+    xyz = 6 * jax.random.normal(key, (100, 3))
+
     def compute(xyz):
         sph = sphericart.jax.spherical_harmonics(xyz=xyz, l_max=4, normalized=normalized)
         assert jnp.linalg.norm(sph) != 0.0
         return sph.sum()
 
     jtu.check_grads(compute, (xyz,), modes=["fwd", "bwd"], order=2)
+
+    # reset to 32-bit so this doesn't carry over to other tests
+    jax.config.update("jax_enable_x64", False)

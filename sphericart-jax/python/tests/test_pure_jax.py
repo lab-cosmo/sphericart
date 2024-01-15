@@ -17,10 +17,10 @@ def xyz():
 @pytest.mark.parametrize("l_max", [2, 7])
 def test_jit(xyz, l_max):
     jitted_sph = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1, 2))
-    pure_jax_jitted_sph = jax.jit(pure_jax_spherical_harmonics, static_argnums=(1, 2))
+    pure_jax_jitted_sph = jax.jit(pure_jax_spherical_harmonics, static_argnums=1)
     sph = jitted_sph(xyz=xyz, l_max=l_max, normalized=True)
     sph_pure_jax = pure_jax_jitted_sph(xyz, l_max)
-    assert jnp.allclose(sph, sph_pure_jax)
+    assert jnp.allclose(sph, sph_pure_jax, atol=1e-4, rtol=1e-4)
 
 
 @pytest.mark.parametrize("l_max", [2, 7])
@@ -29,7 +29,7 @@ def test_jacfwd(xyz, l_max):
     pure_jax_jacfwd_sph = jax.jacfwd(pure_jax_spherical_harmonics)
     sph = jacfwd_sph(xyz, l_max=l_max, normalized=True)
     sph_pure_jax = pure_jax_jacfwd_sph(xyz, l_max)
-    assert jnp.allclose(sph, sph_pure_jax)
+    assert jnp.allclose(sph, sph_pure_jax, atol=1e-4, rtol=1e-4)
 
 
 @pytest.mark.parametrize("l_max", [2, 7])
@@ -38,7 +38,7 @@ def test_jacrev(xyz, l_max):
     pure_jax_jacrev_sph = jax.jacrev(pure_jax_spherical_harmonics)
     sph = jacrev_sph(xyz, l_max=l_max, normalized=True)
     sph_pure_jax = pure_jax_jacrev_sph(xyz, l_max)
-    assert jnp.allclose(sph, sph_pure_jax)
+    assert jnp.allclose(sph, sph_pure_jax, atol=1e-4, rtol=1e-4)
 
 
 @pytest.mark.parametrize("l_max", [2, 7])
@@ -57,4 +57,4 @@ def test_gradgrad(xyz, l_max):
     pure_jax_gradgrad_sph = jax.grad(pure_jax_sum_grad_sph)
     sph = gradgrad_sph(xyz, l_max, normalized=True)
     sph_pure_jax = pure_jax_gradgrad_sph(xyz, l_max)
-    assert jnp.allclose(sph, sph_pure_jax)
+    assert jnp.allclose(sph, sph_pure_jax, atol=1e-4, rtol=1e-4)

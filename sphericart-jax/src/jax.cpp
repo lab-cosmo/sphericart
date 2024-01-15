@@ -44,7 +44,6 @@ _get_or_create_sph_cpu(CacheMapCPU<T> &sph_cache, std::mutex &cache_mutex,
 }
 
 template <typename T> void cpu_sph(void *out, const void **in) {
-    std::cout << "STILL OK 0" << std::endl;
     // Parse the inputs
     const T *xyz = reinterpret_cast<const T *>(in[0]);
     const size_t l_max = *reinterpret_cast<const int *>(in[1]);
@@ -61,15 +60,11 @@ template <typename T> void cpu_sph(void *out, const void **in) {
 
     auto &calculator =
         _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max, normalized);
-
-    std::cout << "STILL OK" << std::endl;
     calculator->compute_array(xyz, xyz_length, sph, sph_len);
-    std::cout << "STILL OK 2" << std::endl;
 }
 
 template <typename T>
 void cpu_sph_with_gradients(void *out_tuple, const void **in) {
-    std::cout << "STILL OK 0" << std::endl;
     // Parse the inputs
     const T *xyz = reinterpret_cast<const T *>(in[0]);
     const size_t l_max = *reinterpret_cast<const int *>(in[1]);
@@ -89,14 +84,12 @@ void cpu_sph_with_gradients(void *out_tuple, const void **in) {
 
     auto &calculator =
         _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max, normalized);
-    std::cout << "STILL OK" << std::endl;
     calculator->compute_array_with_gradients(xyz, xyz_length, sph, sph_len,
                                              dsph, dsph_len);
 }
 
 template <typename T>
 void cpu_sph_with_hessians(void *out_tuple, const void **in) {
-    std::cout << "STILL OK 0" << std::endl;
     // Parse the inputs
     const T *xyz = reinterpret_cast<const T *>(in[0]);
     const size_t l_max = *reinterpret_cast<const int *>(in[1]);
@@ -118,7 +111,6 @@ void cpu_sph_with_hessians(void *out_tuple, const void **in) {
 
     auto &calculator =
         _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max, normalized);
-    std::cout << "STILL OK" << std::endl;
     calculator->compute_array_with_hessians(xyz, xyz_length, sph, sph_len, dsph,
                                             dsph_len, ddsph, ddsph_len);
 }
