@@ -11,6 +11,7 @@ from jax.interpreters import ad
 from .dsph import dsph
 from .utils import default_layouts
 
+from .lib.sphericart_jax_gpu import build_sph_descriptor
 
 # register the sph primitive
 _sph_p = core.Primitive("sph_fwd")
@@ -91,6 +92,7 @@ def sph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
     out_shape = xyz_shape[:-1] + [
         sph_size,
     ]
+    print (out_shape)
     n_samples = math.prod(xyz_shape[:-1])
 
     # make sure we dispatch to the correct implementation
@@ -101,6 +103,8 @@ def sph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
     else:
         raise NotImplementedError(f"Unsupported dtype {dtype}")
 
+    descriptor = build_sph_descriptor(n_samples, l_max_c, bool(normalized))
+    
     return custom_call(
         op_name,
         # Output types
@@ -109,14 +113,15 @@ def sph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
         ],
         # inputs to the binded functions
         operands=[
-            xyz,
-            mlir.ir_constant(l_max_c),
-            normalized,
-            mlir.ir_constant(n_samples),
+            xyz
+        #   mlir.ir_constant(l_max_c),
+        #    normalized,
+        #    mlir.ir_constant(n_samples),
         ],
         # Layout specification:
-        operand_layouts=default_layouts(xyz_shape, (), (), ()),
+        operand_layouts=default_layouts(xyz_shape),
         result_layouts=default_layouts(out_shape),
+        backend_config=descriptor
     ).results
 
 

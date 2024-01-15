@@ -9,25 +9,28 @@
 #include <tuple>
 
 #include "sphericart.hpp"
-#include "sphericart_cuda.hpp"
+#include "sphericart/jax_cuda.hpp"
 #include "sphericart/pybind11_kernel_helpers.h"
+#include "sphericart_cuda.hpp"
 
 #include <iostream>
 
 using namespace sphericart_jax;
+using namespace std;
 
 namespace {
 
 // CPU section
 
 template <typename T>
-using CacheMapCPU = std::map<std::tuple<size_t, bool>,
-                          std::unique_ptr<sphericart::SphericalHarmonics<T>>>;
+using CacheMapCPU =
+    std::map<std::tuple<size_t, bool>,
+             std::unique_ptr<sphericart::SphericalHarmonics<T>>>;
 
 template <typename T>
 std::unique_ptr<sphericart::SphericalHarmonics<T>> &
 _get_or_create_sph_cpu(CacheMapCPU<T> &sph_cache, std::mutex &cache_mutex,
-                   size_t l_max, bool normalized) {
+                       size_t l_max, bool normalized) {
     // Check if instance exists in cache, if not create and store it
     std::lock_guard<std::mutex> lock(cache_mutex);
     auto key = std::make_tuple(l_max, normalized);
@@ -122,111 +125,6 @@ void cpu_sph_with_hessians(void *out_tuple, const void **in) {
                                             dsph_len, ddsph, ddsph_len);
 }
 
-
-// CUDA section
-
-template <typename T>
-using CacheMapCUDA = std::map<std::tuple<size_t, bool>,
-                          std::unique_ptr<sphericart::cuda::SphericalHarmonics<T>>>;
-
-template <typename T>
-std::unique_ptr<sphericart::cuda::SphericalHarmonics<T>> &
-_get_or_create_sph_cuda(CacheMapCUDA<T> &sph_cache, std::mutex &cache_mutex,
-                   size_t l_max, bool normalized) {
-    // Check if instance exists in cache, if not create and store it
-    std::lock_guard<std::mutex> lock(cache_mutex);
-    auto key = std::make_tuple(l_max, normalized);
-    auto it = sph_cache.find(key);
-    if (it == sph_cache.end()) {
-        it = sph_cache
-                 .insert(
-                     {key, std::make_unique<sphericart::cuda::SphericalHarmonics<T>>(
-                               l_max, normalized)})
-                 .first;
-    }
-    return it->second;
-}
-
-template <typename T> void cuda_sph(void *out, const void **in) {
-    // Parse the inputs
-    std::cout << "STILL OK 0" << std::endl;
-    const T *xyz = reinterpret_cast<const T *>(in[0]);
-    const size_t l_max = *reinterpret_cast<const int *>(in[1]);
-    const bool normalized = *reinterpret_cast<const bool *>(in[2]);
-    const size_t n_samples = *reinterpret_cast<const int *>(in[3]);
-    size_t xyz_length{n_samples * 3};
-    size_t sph_len{(l_max + 1) * (l_max + 1) * n_samples};
-    // The output is stored as a single pointer since there is only one output
-    T *sph = reinterpret_cast<T *>(out);
-
-    // Static map to cache instances based on parameters
-    static CacheMapCUDA<T> sph_cache;
-    static std::mutex cache_mutex;
-
-    auto &calculator =
-        _get_or_create_sph_cuda(sph_cache, cache_mutex, l_max, normalized);
-    std::cout << "STILL OK 1" << std::endl;
-    calculator->compute(xyz, n_samples, false, false, sph, nullptr, nullptr);
-    std::cout << "STILL OK 2" << std::endl;
-}
-
-template <typename T>
-void cuda_sph_with_gradients(void *out_tuple, const void **in) {
-    std::cout << "STILL OK 0 grad" << std::endl;
-    // Parse the inputs
-    const T *xyz = reinterpret_cast<const T *>(in[0]);
-    const size_t l_max = *reinterpret_cast<const int *>(in[1]);
-    const bool normalized = *reinterpret_cast<const bool *>(in[2]);
-    const size_t n_samples = *reinterpret_cast<const int *>(in[3]);
-    size_t xyz_length{n_samples * 3};
-    size_t sph_len{(l_max + 1) * (l_max + 1) * n_samples};
-    size_t dsph_len{sph_len * 3};
-    // The output is stored as a list of pointers since we have multiple outputs
-    void **out = reinterpret_cast<void **>(out_tuple);
-    T *sph = reinterpret_cast<T *>(out[0]);
-    T *dsph = reinterpret_cast<T *>(out[1]);
-
-    // Static map to cache instances based on parameters
-    static CacheMapCUDA<T> sph_cache;
-    static std::mutex cache_mutex;
-
-    auto &calculator =
-        _get_or_create_sph_cuda(sph_cache, cache_mutex, l_max, normalized);
-        std::cout << "STILL OK 1 grAD" << std::endl;
-    calculator->compute(xyz, n_samples, true, false, sph, dsph, nullptr);
-    std::cout << "STILL OK 2 GRAD" << std::endl;
-}
-
-template <typename T>
-void cuda_sph_with_hessians(void *out_tuple, const void **in) {
-    std::cout << "STILL OK 0 hess" << std::endl;
-    // Parse the inputs
-    const T *xyz = reinterpret_cast<const T *>(in[0]);
-    const size_t l_max = *reinterpret_cast<const int *>(in[1]);
-    const bool normalized = *reinterpret_cast<const bool *>(in[2]);
-    const size_t n_samples = *reinterpret_cast<const int *>(in[3]);
-    size_t xyz_length{n_samples * 3};
-    size_t sph_len{(l_max + 1) * (l_max + 1) * n_samples};
-    size_t dsph_len{sph_len * 3};
-    size_t ddsph_len{sph_len * 3 * 3};
-    // The output is stored as a list of pointers since we have multiple outputs
-    void **out = reinterpret_cast<void **>(out_tuple);
-    T *sph = reinterpret_cast<T *>(out[0]);
-    T *dsph = reinterpret_cast<T *>(out[1]);
-    T *ddsph = reinterpret_cast<T *>(out[2]);
-
-    // Static map to cache instances based on parameters
-    static CacheMapCUDA<T> sph_cache;
-    static std::mutex cache_mutex;
-
-    auto &calculator =
-        _get_or_create_sph_cuda(sph_cache, cache_mutex, l_max, normalized);
-        std::cout << "STILL OK 1 hes" << std::endl;
-    calculator->compute(xyz, n_samples, true, true, sph, dsph, ddsph);
-    std::cout << "STILL OK 2 hess" << std::endl;
-}
-
-
 // Registration of the custom calls with pybind11
 
 pybind11::dict Registrations() {
@@ -237,12 +135,6 @@ pybind11::dict Registrations() {
     dict["cpu_dsph_f64"] = EncapsulateFunction(cpu_sph_with_gradients<double>);
     dict["cpu_ddsph_f32"] = EncapsulateFunction(cpu_sph_with_hessians<float>);
     dict["cpu_ddsph_f64"] = EncapsulateFunction(cpu_sph_with_hessians<double>);
-    dict["cuda_sph_f32"] = EncapsulateFunction(cuda_sph<float>);
-    dict["cuda_sph_f64"] = EncapsulateFunction(cuda_sph<double>);
-    dict["cuda_dsph_f32"] = EncapsulateFunction(cuda_sph_with_gradients<float>);
-    dict["cuda_dsph_f64"] = EncapsulateFunction(cuda_sph_with_gradients<double>);
-    dict["cuda_ddsph_f32"] = EncapsulateFunction(cuda_sph_with_hessians<float>);
-    dict["cuda_ddsph_f64"] = EncapsulateFunction(cuda_sph_with_hessians<double>);
     return dict;
 }
 

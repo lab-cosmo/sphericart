@@ -8,12 +8,12 @@ string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" SPHERICART_VERSION_MAJOR "${SPHERICA
 string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_MINOR "${SPHERICART_VERSION}")
 string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_PATCH "${SPHERICART_VERSION}")
 
-option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
+OPTION(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 
 OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" OFF)
 OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 OPTION(SPHERICART_ARCH_NATIVE "Try to use -march=native when compiling Sphericart" ON)
-option(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" OFF)
+OPTION(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" ON)
 
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install DLL/binaries")
@@ -68,6 +68,7 @@ endif()
 add_library(sphericart ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA AND SPHERICART_ARCH_NATIVE)
+    #set(CMAKE_CUDA_ARCHITECTURES 80)
     set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES native)
 endif()
 

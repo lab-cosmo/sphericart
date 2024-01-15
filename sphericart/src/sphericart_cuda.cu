@@ -14,6 +14,25 @@
 using namespace std;
 using namespace sphericart::cuda;
 
+#define CHECK_GPU_POINTER(pointer, name)                                       \
+    do {                                                                       \
+        cudaPointerAttributes attributes;                                      \
+        cudaError_t cudaStatus =                                               \
+            cudaPointerGetAttributes(&attributes, pointer);                    \
+        if (cudaStatus == cudaSuccess) {                                       \
+            if (attributes.type == cudaMemoryTypeDevice) {               \
+                std::cout << "The pointer " << name << " is in GPU memory."    \
+                          << std::endl;                                        \
+            } else {                                                           \
+                std::cout << "The pointer " << name                            \
+                          << " is not in GPU memory." << std::endl;            \
+            }                                                                  \
+        } else {                                                               \
+            std::cerr << "cudaPointerGetAttributes failed on " << name << ": " \
+                      << cudaGetErrorString(cudaStatus) << std::endl;          \
+        }                                                                      \
+    } while (0)
+
 #define CUDA_CHECK(call)                                                       \
     do {                                                                       \
         cudaError_t cudaStatus = (call);                                       \
@@ -137,6 +156,9 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
             printf("shared memory update OK.\n");
         }
     }
+
+    CHECK_GPU_POINTER(xyz, "xyz");
+    CHECK_GPU_POINTER(sph, "sph");
 
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz, nsamples, this->prefactors_cuda, this->nprefactors, this->l_max,
