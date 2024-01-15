@@ -3,10 +3,11 @@ from .sph import sph
 
 def spherical_harmonics(xyz, l_max, normalized=False):
     """Computes the Spherical harmonics and their derivatives within
-    the JAX framework. See :py:class:`sphericart.SphericalHarmonics` for more details.
+    the JAX framework.
+    
     This function supports ``jit``, ``vmap``, and up to two rounds of forward and/or
     backward automatic differentiation (``grad``, ``jacfwd``, ``jacrev``, ``hessian``, ...).
-    It does not support ``pmap``.
+    For the moment, it does not support ``pmap``.
 
     Note that the l_max argument (position 1 in the signature) should be tagged as static
     when jit-ing the function:
