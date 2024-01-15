@@ -13,11 +13,12 @@ def xyz():
 def compute(xyz):
     sph = spherical_harmonics(l_max=4, normalized=False, xyz=xyz)
     assert jnp.linalg.norm(sph) != 0.0
-    return sph.sum()
+    return sph
 
 xyzs = jax.device_put(xyz(), device=jax.devices('gpu')[0]) 
 
 sph = compute(xyz())
 
-print ("sum sph:", sph)
-print ("cuda jax succesful")
+print (sph)
+print ("sum sph:", sph.sum())
+print ("cuda jax successful")
