@@ -5,7 +5,7 @@ from jax import core
 from jax.core import ShapedArray
 from jax.interpreters import mlir, xla
 from jax.interpreters.mlir import ir, custom_call
-from .utils import default_layouts
+from .utils import default_layouts, build_sph_descriptor
 
 
 # This file registers the _ddsph_p primitive and defines its implementation,
@@ -93,6 +93,8 @@ def ddsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
     else:
         raise NotImplementedError(f"Unsupported dtype {dtype}")
 
+    descriptor = build_sph_descriptor(n_samples, l_max_c, bool(normalized))
+
     return custom_call(
         op_name,
         result_types=[
@@ -100,14 +102,10 @@ def ddsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
             mlir.ir.RankedTensorType.get(dsph_shape, dtype),
             mlir.ir.RankedTensorType.get(ddsph_shape, dtype),
         ],
-        operands=[
-            xyz,
-            mlir.ir_constant(l_max_c),
-            normalized,
-            mlir.ir_constant(n_samples),
-        ],
-        operand_layouts=default_layouts(xyz_shape, (), (), ()),
+        operands=[xyz],
+        operand_layouts=default_layouts(xyz_shape),
         result_layouts=default_layouts(sph_shape, dsph_shape, ddsph_shape),
+        backend_config=descriptor
     ).results
 
 

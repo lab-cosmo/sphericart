@@ -8,7 +8,7 @@ from jax.interpreters import mlir, xla
 from jax.interpreters.mlir import ir, custom_call
 from jax.interpreters import ad
 
-from .utils import default_layouts
+from .utils import default_layouts, build_sph_descriptor
 from .ddsph import ddsph
 
 
@@ -89,20 +89,18 @@ def dsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c):
     else:
         raise NotImplementedError(f"Unsupported dtype {dtype}")
 
+    descriptor = build_sph_descriptor(n_samples, l_max_c, bool(normalized))
+
     return custom_call(
         op_name,
         result_types=[
             mlir.ir.RankedTensorType.get(sph_shape, dtype),
             mlir.ir.RankedTensorType.get(dsph_shape, dtype),
         ],
-        operands=[
-            xyz,
-            mlir.ir_constant(l_max_c),
-            normalized,
-            mlir.ir_constant(n_samples),
-        ],
-        operand_layouts=default_layouts(xyz_shape, (), (), ()),
+        operands=[xyz],
+        operand_layouts=default_layouts(xyz_shape),
         result_layouts=default_layouts(sph_shape, dsph_shape),
+        backend_config=descriptor
     ).results
 
 
