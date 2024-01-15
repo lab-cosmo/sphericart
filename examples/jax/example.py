@@ -12,7 +12,7 @@ normalized = True  # in this example, we always compute normalized spherical har
 sph = sphericart.jax.spherical_harmonics(xyz, l_max, normalized)
 
 # jit the function with jax.jit()
-# the l_max and nornalized arguments (positions 1 and 2 in the signature) must be static
+# the l_max and normalized arguments (positions 1 and 2 in the signature) must be static
 jitted_sph_function = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1, 2))
 
 # compute the spherical harmonics with the jitted function and check their values
