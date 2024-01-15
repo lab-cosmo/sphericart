@@ -41,7 +41,7 @@ int main() {
     }
 
     // to avoid unnecessary allocations, calculators can use pre-allocated
-    // memory, however one can provide uninitialized vectors that will be
+    // memory, one also can provide uninitialized vectors that will be
     // automatically reshaped
     auto sph = std::vector<double>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
     auto dsph =
