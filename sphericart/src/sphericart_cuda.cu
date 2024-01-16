@@ -131,17 +131,12 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
                 "spherical_harmonics with requested parameters.");
         }
     }
-    cudaStream_t cstream = nullptr;
-
-    if (cuda_stream != nullptr) {
-        cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-    }
 
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz, nsamples, this->prefactors_cuda, this->nprefactors, this->l_max,
         this->normalized, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
         compute_with_gradients, compute_with_hessian, sph, dsph, ddsph,
-        cstream);
+        cuda_stream);
 }
 
 // instantiates the SphericalHarmonics class for basic floating point types
