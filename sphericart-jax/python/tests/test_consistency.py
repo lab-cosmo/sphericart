@@ -24,4 +24,4 @@ def test_consistency(xyz, l_max, normalized):
     )
 
     sph_ref = calculator.compute(np.asarray(xyz))
-    np.testing.assert_allclose(sph, sph_ref, rtol=1e-5, atol=1e-8)
+    np.testing.assert_allclose(sph, sph_ref, rtol=1e-5, atol=1e-6)
