@@ -583,7 +583,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
             xyz, nedges, prefactors, nprefactors, l_max, n_total, gradients,
             hessian, normalize, sph, dsph, ddsph);
 
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(cstream);
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
@@ -663,7 +663,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     backward_kernel<scalar_t><<<block_dim, grid_dim, 0, cstream>>>(
         dsph, sph_grad, nedges, ntotal, xyz_grad);
 
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(cstream);
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
