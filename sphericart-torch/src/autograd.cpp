@@ -1,5 +1,8 @@
+#ifdef CUDA_AVAILABLE
 #include <c10/cuda/CUDAGuard.h>
 #include <c10/cuda/CUDAStream.h>
+#endif
+
 #include <iostream>
 
 #include "sphericart/autograd.hpp"
@@ -185,10 +188,12 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
 
+        void *stream = nullptr;
+#ifdef CUDA_AVAILABLE
         c10::cuda::CUDAGuard deviceGuard{xyz.device()};
-        cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
-
-        cout << "stream:" << stream << endl;
+        cudaStream_t currstream = c10::cuda::getCurrentCUDAStream();
+        stream = reinterpret_cast<void *>(currstream);
+#endif
 
         int n_total = (calculator.l_max_ + 1) * (calculator.l_max_ + 1);
 
@@ -222,14 +227,13 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             calculator.calculator_cuda_double_.compute(
                 xyz.data_ptr<double>(), xyz.size(0), requires_grad,
                 requires_hessian, sph.data_ptr<double>(),
-                dsph.data_ptr<double>(), ddsph.data_ptr<double>(),
-                reinterpret_cast<void *>(stream));
+                dsph.data_ptr<double>(), ddsph.data_ptr<double>(), stream);
 
         } else if (xyz.dtype() == c10::kFloat) {
             calculator.calculator_cuda_float_.compute(
                 xyz.data_ptr<float>(), xyz.size(0), requires_grad,
                 requires_hessian, sph.data_ptr<float>(), dsph.data_ptr<float>(),
-                ddsph.data_ptr<float>(), reinterpret_cast<void *>(stream));
+                ddsph.data_ptr<float>(), stream);
         } else {
             throw std::runtime_error(
                 "this code only runs on c10::kDouble and c10::kFloat tensors");
@@ -291,10 +295,14 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
         if (xyz.device().is_cpu()) {
             xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
         } else if (xyz.device().is_cuda()) {
+            void *stream = nullptr;
+#ifdef CUDA_AVAILABLE
             c10::cuda::CUDAGuard deviceGuard{xyz.device()};
-            cudaStream_t stream = c10::cuda::getCurrentCUDAStream();
+            cudaStream_t currstream = c10::cuda::getCurrentCUDAStream();
+            stream = reinterpret_cast<void *>(currstream);
+#endif
             xyz_grad = sphericart_torch::spherical_harmonics_backward_cuda(
-                xyz, dsph, grad_outputs, reinterpret_cast<void *>(stream));
+                xyz, dsph, grad_outputs, stream);
         } else {
             throw std::runtime_error(
                 "Spherical harmonics are only implemented for CPU and CUDA");
