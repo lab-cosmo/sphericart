@@ -112,16 +112,17 @@ find_package(Torch 1.13 REQUIRED)
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERSION = '${Torch_VERSION}'")
 
 add_library(sphericart_torch SHARED
+    "include/sphericart/torch_cuda_wrapper.hpp"
     "include/sphericart/torch.hpp"
     "include/sphericart/autograd.hpp"
     "src/autograd.cpp"
     "src/torch.cpp"
 )
 
-if (CMAKE_CUDA_COMPILER)
-    target_sources(sphericart_torch PUBLIC "src/cuda.cu")
+if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+    target_sources(sphericart_torch PUBLIC "src/torch_cuda_wrapper.cpp")
 else()
-    target_sources(sphericart_torch PUBLIC "src/cuda_stub.cpp")
+    target_sources(sphericart_torch PUBLIC "src/torch_cuda_wrapper_stub.cpp")
 endif()
 
 target_link_libraries(sphericart_torch PUBLIC torch sphericart)

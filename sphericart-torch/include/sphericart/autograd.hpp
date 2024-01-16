@@ -1,8 +1,10 @@
 #ifndef SPHERICART_TORCH_AUTOGRAD_HPP
 #define SPHERICART_TORCH_AUTOGRAD_HPP
 
+#include <ATen/Tensor.h>
 #include <torch/autograd.h>
 #include <torch/data.h>
+#include <vector>
 
 namespace sphericart_torch {
 

@@ -4,17 +4,21 @@
 #include <torch/script.h>
 
 #include "sphericart/autograd.hpp"
-#include "sphericart/cuda.hpp"
+#include "sphericart/torch_cuda_wrapper.hpp"
 
 using namespace sphericart_torch;
 SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalized,
                                        bool backward_second_derivatives)
     : l_max_(l_max), normalized_(normalized),
       backward_second_derivatives_(backward_second_derivatives),
+
       calculator_double_(l_max_, normalized_),
       calculator_float_(l_max_, normalized_),
-      prefactors_cuda_double_(prefactors_cuda(l_max, c10::kDouble)),
-      prefactors_cuda_float_(prefactors_cuda(l_max, c10::kFloat)) {
+
+      calculator_cuda_double_(l_max_, normalized_),
+      calculator_cuda_float_(l_max_, normalized_) //,
+
+{
     this->omp_num_threads_ = calculator_double_.get_omp_num_threads();
 }
 
