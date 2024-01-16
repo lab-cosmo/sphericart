@@ -571,11 +571,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         return (x + bdim - 1) / bdim;
     };
 
-    cudaStream_t cstream = nullptr;
-
-    if (cuda_stream != nullptr) {
-        cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-    }
+    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
     dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
 
@@ -658,11 +654,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     dim3 block_dim(find_num_blocks(nedges, 32), 3);
 
-    cudaStream_t cstream = nullptr;
-
-    if (cuda_stream != nullptr) {
-        cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-    }
+    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
     backward_kernel<scalar_t><<<block_dim, grid_dim, 0, cstream>>>(
         dsph, sph_grad, nedges, ntotal, xyz_grad);
