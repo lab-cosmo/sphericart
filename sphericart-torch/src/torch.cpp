@@ -18,8 +18,6 @@ SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalized,
       calculator_cuda_double_(l_max_, normalized_),
       calculator_cuda_float_(l_max_, normalized_) //,
 
-// prefactors_cuda_double_(prefactors_cuda(l_max, c10::kDouble)),
-// prefactors_cuda_float_(prefactors_cuda(l_max, c10::kFloat))
 {
     this->omp_num_threads_ = calculator_double_.get_omp_num_threads();
 }

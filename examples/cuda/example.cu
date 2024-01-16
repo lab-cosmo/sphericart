@@ -41,7 +41,7 @@ int main() {
     }
 
     // to avoid unnecessary allocations, calculators can use pre-allocated
-    // memory, however one can provide uninitialized vectors that will be
+    // memory, one also can provide uninitialized vectors that will be
     // automatically reshaped
     auto sph = std::vector<double>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
     auto dsph =
@@ -53,10 +53,6 @@ int main() {
 
     // internal buffers and numerical factors are initalized at construction
     sphericart::cuda::SphericalHarmonics<double> calculator_cuda(l_max);
-    // note: the following line
-    // auto calculator_cuda =
-    // sphericart::cuda::SphericalHarmonics<double>(l_max); calls the copy
-    // constructor, which has been deleted, in some nvcc versions
 
     double *xyz_cuda;
     CUDA_CHECK(cudaMalloc(&xyz_cuda, n_samples * 3 * sizeof(double)));
