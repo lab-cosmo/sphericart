@@ -49,6 +49,9 @@ namespace cuda {
  * @param ddsph
  *        Pointer to a contiguous device-allocated spherical harmonics
  *        second-derivatives array of shape [N * 3 * (L + 1) ** 2].
+ * @param cuda_stream
+ *        Pointer to a cudaStream_t or nullptr. If this is nullptr, the kernel
+ * launch will be performed on the default stream.
  */
 template <typename scalar_t>
 void spherical_harmonics_cuda_base(
@@ -57,12 +60,13 @@ void spherical_harmonics_cuda_base(
     const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
     const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
     scalar_t *__restrict__ sph, scalar_t *__restrict__ dsph,
-    scalar_t *__restrict__ ddsph);
+    scalar_t *__restrict__ ddsph, void *cuda_stream = nullptr);
 
 template <typename scalar_t>
 void spherical_harmonics_backward_cuda_base(
     const scalar_t *__restrict__ dsph, const scalar_t *__restrict__ sph_grad,
-    const int nedges, const int ntotal, scalar_t *__restrict__ xyz_grad);
+    const int nedges, const int ntotal, scalar_t *__restrict__ xyz_grad,
+    void *cuda_stream = nullptr);
 
 /**
  * Host function to ensure the current kernel launch parameters have sufficient

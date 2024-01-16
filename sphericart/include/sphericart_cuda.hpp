@@ -101,7 +101,7 @@ template <typename T> class SphericalHarmonics {
      */
     void compute(const T *xyz, size_t nsamples, bool compute_with_gradients,
                  bool compute_with_hessian, T *sph, T *dsph = nullptr,
-                 T *ddsph = nullptr);
+                 T *ddsph = nullptr, void *cuda_stream = nullptr);
 
   private:
     size_t l_max; // maximum l value computed by this class
