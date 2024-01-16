@@ -100,7 +100,6 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     CUDA_CHECK(cudaFree(this->prefactors_cuda));
 }
 
-
 template <typename T>
 void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
                                     bool compute_with_gradients,
@@ -149,7 +148,6 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
             throw std::runtime_error(
                 "Insufficient shared memory available to compute "
                 "spherical_harmonics with requested parameters.");
-
         }
     }
 
