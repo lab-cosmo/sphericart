@@ -68,12 +68,9 @@ endif()
 add_library(sphericart ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA AND SPHERICART_ARCH_NATIVE)
-    #set(CMAKE_CUDA_ARCHITECTURES 80)
     set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES native)
 endif()
 
-#set_property(TARGET sphericart PROPERTY CUDA_ARCHITECTURES native)
-#set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES "80")
 
 set_target_properties(sphericart PROPERTIES
     VERSION ${SPHERICART_VERSION}

@@ -99,6 +99,8 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     delete[] (this->prefactors_cpu);
     CUDA_CHECK(cudaFree(this->prefactors_cuda));
 }
+
+
 template <typename T>
 void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
                                     bool compute_with_gradients,
@@ -133,14 +135,9 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
         compute_with_gradients, compute_with_hessian);
 
     if (!shm_result) {
-        printf("Warning: Failed to update shared memory specification with");
-        printf("element_size = %ld, GRID_DIM_X = %ld, GRID_DIM_Y = %ld, "
-               "compute_with_gradients = %s, "
-               "compute_with_hessian = %s\n",
-               sizeof(T), this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
-               compute_with_gradients, compute_with_hessian);
-
-        printf("Re-attempting with GRID_DIM_Y = 4\n");
+        std::cerr << "Warning: Failed to update shared memory size, "
+                     "re-attempting with  GRID_DIM_Y = 4\n"
+                  << std::endl;
 
         this->CUDA_GRID_DIM_Y_ = 4;
         shm_result = this->cuda_shmem_.update_if_required(
@@ -152,13 +149,9 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
             throw std::runtime_error(
                 "Insufficient shared memory available to compute "
                 "spherical_harmonics with requested parameters.");
-        } else {
-            printf("shared memory update OK.\n");
+
         }
     }
-
-    CHECK_GPU_POINTER(xyz, "xyz");
-    CHECK_GPU_POINTER(sph, "sph");
 
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz, nsamples, this->prefactors_cuda, this->nprefactors, this->l_max,
