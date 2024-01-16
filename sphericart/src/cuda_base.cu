@@ -549,8 +549,9 @@ bool sphericart::cuda::adjust_cuda_shared_memory(
 
     Total number of threads used is GRID_DIM_X * GRID_DIM_Y.
 
-    cuda_stream should be of type (void *), therefore if you want to pass in 
-    a cudaStream_t, first do void * stream_ptr = reinterpret_cast<void *> (stream);
+    cuda_stream should be of type (void *), therefore if you want to pass in
+    a cudaStream_t, first do void * stream_ptr = reinterpret_cast<void *>
+   (stream);
 */
 
 template <typename scalar_t>
