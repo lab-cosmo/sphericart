@@ -12,7 +12,6 @@ def xyz():
     return 6 * torch.randn(100, 3, dtype=torch.float64, requires_grad=True)
 
 
-@pytest.fixture
 def test_cpu_vs_cuda(xyz):
     if torch.cuda.is_available():
         calculator = sphericart.torch.SphericalHarmonics(l_max=20, normalized=False)
