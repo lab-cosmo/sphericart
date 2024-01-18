@@ -76,7 +76,9 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # then the spherical harmonics **but not their derivatives**
     # can be used with the usual PyTorch backward() workflow
-    sph_norm = torch.sum(sh_sphericart**2)
+    # nb: we sum only the even terms in the array because the total norm of a
+    # Ylm is constant
+    sph_norm = torch.sum(sh_sphericart[:, ::2] ** 2)
     sph_norm.backward()
 
     # checks the derivative is correct using the forward call
@@ -94,7 +96,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # double grad() call:
     xyz_ag2 = xyz[:5].clone().detach().type(torch.float64).to("cpu").requires_grad_()
     sh_sphericart_2 = sh_calculator_2.compute(xyz_ag2)
-    sph_norm = torch.sum(sh_sphericart_2**2)
+    sph_norm = torch.sum(sh_sphericart_2[:, ::2] ** 2)
     grad = torch.autograd.grad(sph_norm, xyz_ag2, retain_graph=True, create_graph=True)[
         0
     ]
@@ -105,7 +107,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     def func(xyz):
         sh_sphericart_2 = sh_calculator_2.compute(xyz)
-        return torch.sum(sh_sphericart_2**2)
+        return torch.sum(sh_sphericart_2[:, ::2] ** 2)
 
     hessian = torch.autograd.functional.hessian(func, xyz_ag2)
 
@@ -123,24 +125,26 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # ===== GPU implementation ======
 
     if torch.cuda.is_available():
-        xyz = xyz.clone().detach().type(torch.float64).to("cuda")
+        xyz_cuda = xyz.clone().detach().type(torch.float64).to("cuda")
 
         sh_sphericart_cuda, dsh_sphericart_cuda = sh_calculator.compute_with_gradients(
-            xyz
+            xyz_cuda
         )
 
         norm_dsph = torch.norm(dsh_sphericart_cuda.to("cpu") - dsh_sphericart)
         print(f"Check fw derivative difference CPU vs CUDA: {norm_dsph}")
 
-        xyz_cuda = xyz.clone().detach().type(torch.float64).to("cuda").requires_grad_()
-        sh_sphericart_cuda = sh_calculator.compute(xyz_cuda)
+        xyz_cuda_bw = (
+            xyz.clone().detach().type(torch.float64).to("cuda").requires_grad_()
+        )
+        sh_sphericart_cuda_bw = sh_calculator.compute(xyz_cuda_bw)
 
         # then the spherical harmonics **but not their derivatives**
         # can be used with the usual PyTorch backward() workflow
-        sph_norm_cuda = torch.sum(sh_sphericart_cuda**2)
+        sph_norm_cuda = torch.sum(sh_sphericart_cuda_bw[:, ::2] ** 2)
         sph_norm_cuda.backward()
 
-        delta = torch.norm(xyz_ag.grad - xyz_cuda.grad.to("cpu")) / torch.norm(
+        delta = torch.norm(xyz_ag.grad - xyz_cuda_bw.grad.to("cpu")) / torch.norm(
             xyz_ag.grad
         )
         print(f"Check derivative difference CPU vs CUDA: {delta}")
