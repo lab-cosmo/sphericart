@@ -13,7 +13,7 @@ template <typename T>
 void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
                                     bool compute_with_gradients,
                                     bool compute_with_hessian, T *sph, T *dsph,
-                                    T *ddsph) {
+                                    T *ddsph, void *cuda_stream) {
     throw std::runtime_error("sphericart was not compiled with CUDA support");
 }
 

@@ -89,6 +89,11 @@ template <typename T> class SphericalHarmonics {
      * The outer dimension is `n_samples` long, accounting for different
      *        samples, while the inner dimension has size 3 and it represents
      *        the x, y, and z coordinates respectively.
+     * @param nsamples Number of samples contained within `xyz`.
+     * @param compute_with_gradients Whether we should compute dsph. If true,
+     * the pointer dsph must also be allocated on device.
+     * @param compute_with_hessians Whether we should compute ddsph. If true,
+     * the pointer ddsph must also be allocated on device.
      * @param sph On entry, a preallocated device-side array of size  `n_samples
      * * (l_max + 1) * (l_max + 1)`. On exit, this array will contain the
      * spherical harmonics organized along two dimensions. The leading dimension
@@ -98,10 +103,21 @@ template <typename T> class SphericalHarmonics {
      * These are laid out in lexicographic order. For example, if `l_max=2`, it
      * will contain `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1),
      * (2, 0), (2, 1), (2, 2)`, in this order.
+     * @param dsph On entry, nullptr or a preallocated device-side array of size
+     * `n_samples * 3 * (l_max + 1) * (l_max + 1)`. If the pointer is not
+     * nullptr, then compute_with_gradients must also be true in order for
+     * gradients to be computed.
+     * @param ddsph On entry, nullptr or a preallocated device-side array of
+     * size `n_samples * 3 * 3 * (l_max + 1) * (l_max + 1)`. If the pointer is
+     * not nullptr, then compute_with_hessians must also be true in order for
+     * gradients to be computed.
+     * @param cuda_stream Pointer to a cudaStream_t or nullptr. If this is
+     * nullptr, the kernel launch will be performed on the default stream.
      */
+
     void compute(const T *xyz, size_t nsamples, bool compute_with_gradients,
                  bool compute_with_hessian, T *sph, T *dsph = nullptr,
-                 T *ddsph = nullptr);
+                 T *ddsph = nullptr, void *cuda_stream = nullptr);
 
   private:
     size_t l_max; // maximum l value computed by this class
