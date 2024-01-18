@@ -7,9 +7,6 @@ endif()
 
 project(sphericart_torch CXX)
 
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(sphericart_torch PUBLIC OpenMP::OpenMP_CXX)
-endif()
 if(COMPILER_SUPPORTS_WPRAGMAS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
 endif()
@@ -19,7 +16,6 @@ check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
     set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
-    target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
 else()
     message(STATUS "Could not find a CUDA compiler")
 endif()
@@ -127,6 +123,13 @@ else()
 endif()
 
 target_link_libraries(sphericart_torch PUBLIC torch sphericart)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(sphericart_torch PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
+if(CMAKE_CUDA_COMPILER)
+    target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
+endif()
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
 
 target_include_directories(sphericart_torch PUBLIC
