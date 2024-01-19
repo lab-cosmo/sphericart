@@ -502,25 +502,27 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
    the kernel launch parameters exceeds the default 49152 bytes.
 */
 
-bool sphericart::cuda::adjust_cuda_shared_memory(
+int sphericart::cuda::adjust_shared_memory(
     size_t element_size, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
-    bool requires_grad, bool requires_hessian) {
+    bool requires_grad, bool requires_hessian, int current_shared_mem_alloc) {
+    int device;
+    cudaGetDevice(&device);
+
     cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, 0);
+    cudaGetDeviceProperties(&deviceProp, device);
 
     auto required_buff_size =
         total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, element_size,
                           requires_grad, requires_hessian);
 
-    bool accepted = required_buff_size <= deviceProp.sharedMemPerBlockOptin;
+    if (required_buff_size > current_shared_mem_alloc &&
+        required_buff_size > (deviceProp.sharedMemPerBlock -
+                              deviceProp.reservedSharedMemPerBlock)) {
 
-    if (!accepted) {
-        std::cerr << "Warning: requested shared memory buffer ("
-                  << required_buff_size;
-        std::cerr << ") exceeds max available ("
-                  << deviceProp.sharedMemPerBlockOptin;
-        std::cerr << ") on device " << deviceProp.name << std::endl;
-    } else {
+        if (required_buff_size > deviceProp.sharedMemPerBlockOptin) {
+            return -1; // failure - need to adjust parameters
+        }
+
         switch (element_size) {
         case 8:
             cudaFuncSetAttribute(spherical_harmonics_kernel<double>,
@@ -533,8 +535,17 @@ bool sphericart::cuda::adjust_cuda_shared_memory(
                                  required_buff_size);
             break;
         }
+
+        return required_buff_size;
+
+    } else {
+        return (current_shared_mem_alloc >
+                (deviceProp.sharedMemPerBlock -
+                 deviceProp.reservedSharedMemPerBlock))
+                   ? current_shared_mem_alloc
+                   : (deviceProp.sharedMemPerBlock -
+                      deviceProp.reservedSharedMemPerBlock);
     }
-    return accepted;
 }
 
 /*

@@ -62,17 +62,11 @@ inline void cuda_sph(cudaStream_t stream, void **in, const char *opaque,
     const std::int64_t lmax = d.lmax;
     const bool normalize = d.normalize;
 
-    // cout << "n_samples: " << n_samples << endl;
-    // cout << "lmax: " << lmax << endl;
-    // cout << "normalize: " << normalize << endl;
-
     auto &calculator =
         _get_or_create_sph_cuda(sph_cache, cache_mutex, lmax, normalize);
 
-    // cout << "xyz_pointer: " << xyz << endl;
-    // cout << "sph_pointer: " << sph << endl;
-
-    calculator->compute(xyz, n_samples, false, false, sph, nullptr, nullptr);
+    calculator->compute(xyz, n_samples, false, false, sph, nullptr, nullptr,
+                        reinterpret_cast<void *>(stream));
 }
 
 void apply_cuda_sph_f32(cudaStream_t stream, void **in, const char *opaque,
@@ -106,7 +100,8 @@ inline void cuda_sph_with_gradients(cudaStream_t stream, void **in,
 
     auto &calculator =
         _get_or_create_sph_cuda(sph_cache, cache_mutex, lmax, normalize);
-    calculator->compute(xyz, n_samples, true, false, sph, dsph, nullptr);
+    calculator->compute(xyz, n_samples, true, false, sph, dsph, nullptr,
+                        reinterpret_cast<void *>(stream));
 }
 
 void apply_cuda_sph_with_gradients_f32(cudaStream_t stream, void **in,
@@ -142,7 +137,8 @@ inline void cuda_sph_with_hessians(cudaStream_t stream, void **in,
 
     auto &calculator =
         _get_or_create_sph_cuda(sph_cache, cache_mutex, lmax, normalize);
-    calculator->compute(xyz, n_samples, true, true, sph, dsph, ddsph);
+    calculator->compute(xyz, n_samples, true, true, sph, dsph, ddsph,
+                        reinterpret_cast<void *>(stream));
 }
 
 void apply_cuda_sph_with_hessians_f32(cudaStream_t stream, void **in,

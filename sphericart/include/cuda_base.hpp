@@ -70,9 +70,9 @@ void spherical_harmonics_backward_cuda_base(
 
 /**
  * Host function to ensure the current kernel launch parameters have sufficient
- * shared memory given by the default space provided by the card. If not, this
- * function will attempt to adjust the size of the shared memory space to allow
- * all temporary and output buffers to fit.
+ * shared memory given by the default space provided by the card. Returns the
+ * amount of bytes thats in use for shared memory, after attempting to adjust
+ * it's size if necessary. Returns -1 if too much shared memory is requested.
  *
  * @param element_size
  *        the number of bytes of the scalar type used in the input/output arrays
@@ -87,10 +87,12 @@ void spherical_harmonics_backward_cuda_base(
  *        Boolean representing if we need first-order derivatives.
  * @param requires_hessian
  *        Boolean representing if we need second-order derivatives.
+ * @param current_shared_mem_alloc
+ *        the current size of the shared memory allocation.
  */
-bool adjust_cuda_shared_memory(size_t element_size, int64_t l_max,
-                               int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
-                               bool requires_grad, bool requires_hessian);
+int adjust_shared_memory(size_t element_size, int64_t l_max, int64_t GRID_DIM_X,
+                         int64_t GRID_DIM_Y, bool requires_grad,
+                         bool requires_hessian, int current_shared_mem_alloc);
 
 } // namespace cuda
 } // namespace sphericart
