@@ -1,5 +1,5 @@
-/** @file example.cpp
- *  @brief Usage example for the C++ API
+/** @file example.cu
+ *  @brief Usage example for the CUDA C++ API
  */
 
 #include "sphericart_cuda.hpp"
