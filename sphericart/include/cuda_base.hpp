@@ -92,7 +92,8 @@ void spherical_harmonics_backward_cuda_base(
  */
 int adjust_shared_memory(size_t element_size, int64_t l_max, int64_t GRID_DIM_X,
                          int64_t GRID_DIM_Y, bool requires_grad,
-                         bool requires_hessian, int current_shared_mem_alloc);
+                         bool requires_hessian,
+                         int64_t current_shared_mem_alloc);
 
 } // namespace cuda
 } // namespace sphericart

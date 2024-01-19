@@ -502,9 +502,12 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
    the kernel launch parameters exceeds the default 49152 bytes.
 */
 
-int sphericart::cuda::adjust_shared_memory(
-    size_t element_size, int64_t l_max, int64_t GRID_DIM_X, int64_t GRID_DIM_Y,
-    bool requires_grad, bool requires_hessian, int current_shared_mem_alloc) {
+int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
+                                           int64_t GRID_DIM_X,
+                                           int64_t GRID_DIM_Y,
+                                           bool requires_grad,
+                                           bool requires_hessian,
+                                           int64_t current_shared_mem_alloc) {
     int device;
     cudaGetDevice(&device);
 

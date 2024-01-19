@@ -90,7 +90,7 @@ template <typename T> class SphericalHarmonics {
     int64_t CUDA_GRID_DIM_X_ = 8;
     int64_t CUDA_GRID_DIM_Y_ = 8;
 
-    int _current_shared_mem_allocation = 0;
+    int64_t _current_shared_mem_allocation = 0;
 };
 
 } // namespace cuda
