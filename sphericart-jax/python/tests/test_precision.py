@@ -1,7 +1,6 @@
 import pytest
 import jax
 
-# jax.config.update("jax_platform_name", "cpu")
 import jax.numpy as jnp
 import sphericart.jax
 
@@ -31,4 +30,4 @@ def test_precision(xyz):
 
     assert jnp.allclose(dnorm(xyz_64), jnp.array(dnorm(xyz_32), dtype=jnp.float64))
 
-    jax.config.update("jax_enable_x64", False)
+    jax.config.update("jax_enable_x64", False)  # avoid affecting other tests

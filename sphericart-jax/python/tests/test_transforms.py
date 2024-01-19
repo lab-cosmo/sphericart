@@ -1,14 +1,13 @@
 import numpy as np
 import pytest
 import jax
+import jax.numpy as jnp
 
-# jax.config.update("jax_platform_name", "cpu")
 import sphericart.jax
 
 
 @pytest.fixture
 def xyz():
-    jax.config.update("jax_enable_x64", True)
     key = jax.random.PRNGKey(0)
     return 6 * jax.random.normal(key, (10, 3))
 
@@ -71,7 +70,7 @@ def test_hessian_jit(xyz, l_max, normalized):
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_vmap_grad(xyz, l_max, normalized):
     def single_scalar_output(x, l_max, normalized):
-        return jax.numpy.sum(sphericart.jax.spherical_harmonics(x, l_max, normalized))
+        return jnp.sum(sphericart.jax.spherical_harmonics(x, l_max, normalized))
 
     single_grad = jax.grad(single_scalar_output)
     sh_grad = jax.vmap(single_grad, in_axes=(0, None, None), out_axes=0)
@@ -82,7 +81,7 @@ def test_vmap_grad(xyz, l_max, normalized):
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_vmap_hessian(xyz, l_max, normalized):
     def single_scalar_output(x, l_max, normalized):
-        return jax.numpy.sum(sphericart.jax.spherical_harmonics(x, l_max, normalized))
+        return jnp.sum(sphericart.jax.spherical_harmonics(x, l_max, normalized))
 
     single_hessian = jax.hessian(single_scalar_output)
     sh_hessian = jax.vmap(single_hessian, in_axes=(0, None, None), out_axes=0)

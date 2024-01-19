@@ -1,5 +1,5 @@
-// This file defines the Python interface to the XLA custom calls on CUDA devices.
-// It is exposed as a standard pybind11 module defining "capsule"
+// This file defines the Python interface to the XLA custom calls on CUDA
+// devices. It is exposed as a standard pybind11 module defining "capsule"
 // objects containing our methods. For simplicity, we export a separate capsule
 // for each supported dtype.
 
@@ -8,8 +8,8 @@
 #include <mutex>
 #include <tuple>
 
-#include "sphericart/sphericart_jax_cuda.hpp"
 #include "sphericart/pybind11_kernel_helpers.hpp"
+#include "sphericart/sphericart_jax_cuda.hpp"
 
 using namespace sphericart_jax;
 using namespace sphericart_jax::cuda;

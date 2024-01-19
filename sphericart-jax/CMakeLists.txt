@@ -73,12 +73,7 @@ if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
         $<INSTALL_INTERFACE:include>
     )
 
-    
-
     install(TARGETS sphericart_jax_cuda
         LIBRARY DESTINATION "lib"
     )
 endif()
-
-
-

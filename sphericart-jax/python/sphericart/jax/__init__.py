@@ -13,5 +13,5 @@ try:
     for _name, _value in sphericart_jax_cuda.registrations().items():
         jax.lib.xla_client.register_custom_call_target(_name, _value, platform="gpu")
            
-except ModuleNotFoundError:
+except ImportError:
     pass

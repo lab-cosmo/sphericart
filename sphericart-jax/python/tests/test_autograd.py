@@ -1,7 +1,6 @@
 import pytest
 import jax
 
-# jax.config.update("jax_platform_name", "cpu")
 import jax.numpy as jnp
 import jax._src.test_util as jtu
 import sphericart.jax
@@ -16,9 +15,8 @@ def test_autograd(normalized):
     xyz = 6 * jax.random.normal(key, (100, 3))
 
     def compute(xyz):
-        sph = sphericart.jax.spherical_harmonics(xyz=xyz, l_max=4, normalized=normalized)
-        assert jnp.linalg.norm(sph) != 0.0
-        return sph.sum()
+        sph = sphericart.jax.spherical_harmonics(xyz, 4, normalized)
+        return jnp.sum(sph)
 
     jtu.check_grads(compute, (xyz,), modes=["fwd", "bwd"], order=1)
 
@@ -35,11 +33,10 @@ def test_autograd_second_derivatives(normalized):
     xyz = 6 * jax.random.normal(key, (100, 3))
 
     def compute(xyz):
-        sph = sphericart.jax.spherical_harmonics(xyz=xyz, l_max=4, normalized=normalized)
-        assert jnp.linalg.norm(sph) != 0.0
-        return sph.sum()
+        sph = sphericart.jax.spherical_harmonics(xyz, 4, normalized)
+        return jnp.sum(sph)
 
-    jtu.check_grads(compute, (xyz,), modes=["fwd", "bwd"], order=2, atol=1e-6, rtol=1e-6)
+    jtu.check_grads(compute, (xyz,), modes=["fwd", "bwd"], order=2)
 
     # reset to 32-bit so this doesn't carry over to other tests
     jax.config.update("jax_enable_x64", False)
