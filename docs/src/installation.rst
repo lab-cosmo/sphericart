@@ -2,8 +2,8 @@ Installation
 ============
 
 
-Python package
---------------
+Python package (including PyTorch and JAX)
+------------------------------------------
 
 The Python package can be installed with pip by simply running
 
@@ -35,6 +35,9 @@ you should build the code from source:
     # torch bindings (CPU-only)
     pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 
+If you need the JAX version, you should already have the JAX library installed according to the
+official JAX installation instructions. 
+
 
 Julia package
 -------------
@@ -43,7 +46,7 @@ The native Julia package can be installed by opening a REPL,
 switching to the package manager by typing ``]`` and then ``add SpheriCart``.
 
 
-C/C++ library
+C/C++/CUDA library
 -------------
 
 First, you should clone the repository with
@@ -70,6 +73,7 @@ The following cmake configuration options are available:
 - ``-DSPHERICART_BUILD_TESTS=ON/OFF``: build C++ unit tests (OFF by default)
 - ``-DSPHERICART_BUILD_EXAMPLES=ON/OFF``: build C++ examples and benchmarks (OFF by default)
 - ``-DSPHERICART_OPENMP=ON/OFF``: enable OpenMP parallelism (ON by default)
+- ``-DSPHERICART_ENABLE_CUDA=ON/OFF``: also installs the CUDA library (OFF by default)
 - ``-DCMAKE_INSTALL_PREFIX=where/you/want/to/install``: set the root path for installation (``/usr/local`` by default)
 
 Without specifying any options, the commands above will attempt to install 
