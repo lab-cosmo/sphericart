@@ -47,7 +47,7 @@ switching to the package manager by typing ``]`` and then ``add SpheriCart``.
 
 
 C/C++/CUDA library
--------------
+------------------
 
 First, you should clone the repository with
 
