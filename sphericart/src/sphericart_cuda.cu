@@ -104,7 +104,7 @@ template <typename T>
 void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
                                     bool compute_with_gradients,
                                     bool compute_with_hessian, T *sph, T *dsph,
-                                    T *ddsph) {
+                                    T *ddsph, void *cuda_stream) {
 
     if (sph == nullptr) {
         throw std::runtime_error(
@@ -154,7 +154,8 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz, nsamples, this->prefactors_cuda, this->nprefactors, this->l_max,
         this->normalized, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
-        compute_with_gradients, compute_with_hessian, sph, dsph, ddsph);
+        compute_with_gradients, compute_with_hessian, sph, dsph, ddsph,
+        cuda_stream);
 }
 
 // instantiates the SphericalHarmonics class for basic floating point types

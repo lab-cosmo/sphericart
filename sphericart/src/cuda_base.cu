@@ -548,6 +548,10 @@ bool sphericart::cuda::adjust_cuda_shared_memory(
    and writes.
 
     Total number of threads used is GRID_DIM_X * GRID_DIM_Y.
+
+    cuda_stream should be of type (void *), therefore if you want to pass in
+    a cudaStream_t, first do void * stream_ptr = reinterpret_cast<void *>
+   (stream);
 */
 
 template <typename scalar_t>
@@ -557,7 +561,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
     const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
     scalar_t *__restrict__ sph, scalar_t *__restrict__ dsph,
-    scalar_t *__restrict__ ddsph) {
+    scalar_t *__restrict__ ddsph, void *cuda_stream) {
 
     int n_total = (l_max + 1) * (l_max + 1);
 
@@ -567,17 +571,19 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         return (x + bdim - 1) / bdim;
     };
 
+    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
+
     dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
 
     size_t total_buff_size = total_buffer_size(
         l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
 
     spherical_harmonics_kernel<scalar_t>
-        <<<block_dim, grid_dim, total_buff_size>>>(
+        <<<block_dim, grid_dim, total_buff_size, cstream>>>(
             xyz, nedges, prefactors, nprefactors, l_max, n_total, gradients,
             hessian, normalize, sph, dsph, ddsph);
 
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(cstream);
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
@@ -586,7 +592,7 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
     const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
     const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
     float *__restrict__ sph, float *__restrict__ dsph,
-    float *__restrict__ ddsph);
+    float *__restrict__ ddsph, void *cuda_stream);
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
     const double *__restrict__ xyz, const int nedges,
@@ -594,7 +600,7 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
     const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
     const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
     double *__restrict__ sph, double *__restrict__ dsph,
-    double *__restrict__ ddsph);
+    double *__restrict__ ddsph, void *cuda_stream);
 
 /*
     CUDA kernel to computes the backwards pass for autograd.
@@ -637,7 +643,8 @@ __global__ void backward_kernel(const scalar_t *__restrict__ dsph,
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     const scalar_t *__restrict__ dsph, const scalar_t *__restrict__ sph_grad,
-    const int nedges, const int ntotal, scalar_t *__restrict__ xyz_grad) {
+    const int nedges, const int ntotal, scalar_t *__restrict__ xyz_grad,
+    void *cuda_stream) {
 
     dim3 grid_dim(4, 32);
 
@@ -647,16 +654,20 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     dim3 block_dim(find_num_blocks(nedges, 32), 3);
 
-    backward_kernel<scalar_t>
-        <<<block_dim, grid_dim>>>(dsph, sph_grad, nedges, ntotal, xyz_grad);
+    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    cudaDeviceSynchronize();
+    backward_kernel<scalar_t><<<block_dim, grid_dim, 0, cstream>>>(
+        dsph, sph_grad, nedges, ntotal, xyz_grad);
+
+    cudaStreamSynchronize(cstream);
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
     const float *__restrict__ dsph, const float *__restrict__ sph_grad,
-    const int nedges, const int ntotal, float *__restrict__ xyz_grad);
+    const int nedges, const int ntotal, float *__restrict__ xyz_grad,
+    void *cuda_stream);
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
     const double *__restrict__ dsph, const double *__restrict__ sph_grad,
-    const int nedges, const int ntotal, double *__restrict__ xyz_grad);
+    const int nedges, const int ntotal, double *__restrict__ xyz_grad,
+    void *cuda_stream);
