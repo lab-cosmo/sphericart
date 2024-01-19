@@ -49,7 +49,7 @@ template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
     void *cuda_stream);
 
 int sphericart::cuda::adjust_shared_memory(size_t, int64_t, int64_t, int64_t,
-                                           bool, bool, int64_t) {
+                                           bool, bool, int) {
     throw std::runtime_error("sphericart was not compiled with CUDA support");
     return -1;
 }
