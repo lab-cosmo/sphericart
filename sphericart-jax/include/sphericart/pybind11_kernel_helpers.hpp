@@ -1,7 +1,7 @@
 // taken from https://github.com/dfm/extending-jax
 
-#ifndef _PYBIND11_KERNEL_HELPERS_H_
-#define _PYBIND11_KERNEL_HELPERS_H_
+#ifndef _PYBIND11_KERNEL_HELPERS_HPP_
+#define _PYBIND11_KERNEL_HELPERS_HPP_
 
 #include <cstdint>
 #include <stdexcept>

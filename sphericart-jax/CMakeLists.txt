@@ -37,19 +37,19 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 add_subdirectory(sphericart EXCLUDE_FROM_ALL)
 
 # CPU op library
-set(CPU_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/jax.cpp)
-pybind11_add_module(sphericart_jax ${CPU_SOURCES})
-install(TARGETS sphericart_jax DESTINATION sphericart_jax)
+set(CPU_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cpu.cpp)
+pybind11_add_module(sphericart_jax_cpu ${CPU_SOURCES})
+install(TARGETS sphericart_jax_cpu DESTINATION sphericart_jax_cpu)
 
-target_link_libraries(sphericart_jax PUBLIC sphericart)
-target_compile_features(sphericart_jax PUBLIC cxx_std_17)
+target_link_libraries(sphericart_jax_cpu PUBLIC sphericart)
+target_compile_features(sphericart_jax_cpu PUBLIC cxx_std_17)
 
-target_include_directories(sphericart_jax PUBLIC
+target_include_directories(sphericart_jax_cpu PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
-install(TARGETS sphericart_jax
+install(TARGETS sphericart_jax_cpu
     LIBRARY DESTINATION "lib"
 )
 
@@ -60,22 +60,22 @@ if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     
     enable_language(CUDA)
     include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    set(CUDA_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/jax_cuda.cu ${CMAKE_CURRENT_LIST_DIR}/src/jax_cuda.cpp)
-    pybind11_add_module(sphericart_jax_gpu ${CUDA_SOURCES})
-    set_target_properties(sphericart_jax_gpu PROPERTIES CUDA_ARCHITECTURES native)
-    install(TARGETS sphericart_jax_gpu DESTINATION sphericart_jax_gpu)
+    set(CUDA_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cu ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
+    pybind11_add_module(sphericart_jax_cuda ${CUDA_SOURCES})
+    set_target_properties(sphericart_jax_cuda PROPERTIES CUDA_ARCHITECTURES native)
+    install(TARGETS sphericart_jax_cuda DESTINATION sphericart_jax_cuda)
 
-    target_link_libraries(sphericart_jax_gpu PUBLIC sphericart)
-    target_compile_features(sphericart_jax_gpu PUBLIC cxx_std_17)
+    target_link_libraries(sphericart_jax_cuda PUBLIC sphericart)
+    target_compile_features(sphericart_jax_cuda PUBLIC cxx_std_17)
 
-    target_include_directories(sphericart_jax_gpu PUBLIC
+    target_include_directories(sphericart_jax_cuda PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
     )
 
     
 
-    install(TARGETS sphericart_jax_gpu
+    install(TARGETS sphericart_jax_cuda
         LIBRARY DESTINATION "lib"
     )
 endif()

@@ -2,7 +2,7 @@ def default_layouts(*shapes):
     return [range(len(shape) - 1, -1, -1) for shape in shapes]
 
 try:
-    from .lib.sphericart_jax_gpu import build_sph_descriptor
+    from .lib.sphericart_jax_cuda import build_sph_descriptor
 except ModuleNotFoundError:
     def build_sph_descriptor(a, b, c):
         raise ValueError(

@@ -1,4 +1,4 @@
-// This file defines the Python interface to the XLA custom calls.
+// This file defines the Python interface to the XLA custom calls on CUDA devices.
 // It is exposed as a standard pybind11 module defining "capsule"
 // objects containing our methods. For simplicity, we export a separate capsule
 // for each supported dtype.
@@ -8,12 +8,11 @@
 #include <mutex>
 #include <tuple>
 
-#include "sphericart/jax_cuda.hpp"
-#include "sphericart/pybind11_kernel_helpers.h"
+#include "sphericart/sphericart_jax_cuda.hpp"
+#include "sphericart/pybind11_kernel_helpers.hpp"
 
 using namespace sphericart_jax;
 using namespace sphericart_jax::cuda;
-using namespace std;
 
 namespace {
 
@@ -34,7 +33,7 @@ pybind11::dict Registrations() {
     return dict;
 }
 
-PYBIND11_MODULE(sphericart_jax_gpu, m) {
+PYBIND11_MODULE(sphericart_jax_cuda, m) {
     m.def("registrations", &Registrations);
     m.def("build_sph_descriptor",
           [](std::int64_t n_samples, std::int64_t lmax, bool normalize) {

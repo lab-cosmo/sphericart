@@ -9,9 +9,8 @@ import numpy as np
 
 @pytest.fixture
 def xyz():
-    jax.config.update("jax_enable_x64", True)
     key = jax.random.PRNGKey(0)
-    return 6 * jax.random.normal(key, (100, 3), dtype=jnp.float64)
+    return 6 * jax.random.normal(key, (100, 3))
 
 @pytest.mark.parametrize("normalized", [False, True])
 @pytest.mark.parametrize("l_max", [4, 7, 10])

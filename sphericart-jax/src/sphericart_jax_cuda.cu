@@ -1,21 +1,15 @@
-// This file defines the Python interface to the XLA custom calls.
-// It is exposed as a standard pybind11 module defining "capsule"
-// objects containing our methods. For simplicity, we export a separate capsule
-// for each supported dtype.
+// This file implements the CUDA interface between JAX and the CUDA C++
+// implementation of sphericart.
 
 #include <cstdlib>
 #include <map>
 #include <mutex>
 #include <tuple>
 
-#include "sphericart/jax_cuda.hpp"
-#include "sphericart/pybind11_kernel_helpers.h"
+#include "sphericart/sphericart_jax_cuda.hpp"
+#include "sphericart/pybind11_kernel_helpers.hpp"
 
 #include "sphericart_cuda.hpp"
-
-#include <iostream>
-
-using namespace std;
 
 namespace sphericart_jax {
 

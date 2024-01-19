@@ -1,6 +1,6 @@
 
-#ifndef _JAX_CUDA_H_
-#define _JAX_CUDA_H_
+#ifndef _SPHERICART_JAX_CUDA_H_
+#define _SPHERICART_JAX_CUDA_H_
 
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
