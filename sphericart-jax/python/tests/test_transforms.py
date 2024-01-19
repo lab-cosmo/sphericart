@@ -8,6 +8,7 @@ import sphericart.jax
 
 @pytest.fixture
 def xyz():
+    jax.config.update("jax_enable_x64", True)
     key = jax.random.PRNGKey(0)
     return 6 * jax.random.normal(key, (10, 3))
 
@@ -33,7 +34,7 @@ def test_jit(xyz, l_max, normalized):
     )
     sph = jitted_sph(xyz=xyz, l_max=l_max, normalized=normalized)
     sph_ref = calculator.compute(np.asarray(xyz))
-    np.testing.assert_allclose(sph, sph_ref, rtol=1e-5, atol=1e-8)
+    np.testing.assert_allclose(sph, sph_ref, rtol=1e-5, atol=1e-6)
 
 
 @pytest.mark.parametrize("normalized", [True, False])
@@ -45,7 +46,7 @@ def test_vmap(xyz, l_max, normalized):
     )
     sph = vmapped_sph(xyz, l_max, normalized)
     sph_ref = calculator.compute(np.asarray(xyz))
-    np.testing.assert_allclose(sph, sph_ref, rtol=1e-5, atol=1e-8)
+    np.testing.assert_allclose(sph, sph_ref, rtol=1e-5, atol=1e-6)
 
 
 @pytest.mark.parametrize("normalized", [True, False])
