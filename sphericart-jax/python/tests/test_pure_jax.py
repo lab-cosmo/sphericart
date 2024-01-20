@@ -3,7 +3,6 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-# jax.config.update("jax_platform_name", "cpu")
 import sphericart.jax
 from pure_jax_sph import pure_jax_spherical_harmonics
 

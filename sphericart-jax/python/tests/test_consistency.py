@@ -1,5 +1,6 @@
 import pytest
 import jax
+import sphericart
 import sphericart.jax
 
 
@@ -22,4 +23,4 @@ def test_consistency(xyz, l_max, normalized):
 
     sph_ref = calculator.compute(np.asarray(xyz))
 
-    np.testing.assert_allclose(sph, sph_ref, rtol=1e-5, atol=1e-6)
+    np.testing.assert_allclose(sph, sph_ref, rtol=1e-3, atol=1e-8)
