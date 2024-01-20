@@ -109,12 +109,7 @@ def sph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
             mlir.ir.RankedTensorType.get(out_shape, dtype),
         ],
         # inputs to the binded functions
-        operands=[
-            xyz
-        #   mlir.ir_constant(l_max_c),
-        #    normalized,
-        #    mlir.ir_constant(n_samples),
-        ],
+        operands=[xyz],
         # Layout specification:
         operand_layouts=default_layouts(xyz_shape),
         result_layouts=default_layouts(out_shape),
