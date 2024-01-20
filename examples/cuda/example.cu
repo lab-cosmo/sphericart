@@ -10,8 +10,6 @@
 #include <iostream>
 #include <vector>
 
-using namespace sphericart::cuda;
-
 /*host macro that checks for errors in CUDA calls, and prints the file + line
  * and error string if one occurs
  */
