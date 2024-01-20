@@ -6,8 +6,8 @@
 #include <mutex>
 #include <tuple>
 
-#include "sphericart/sphericart_jax_cuda.hpp"
 #include "sphericart/pybind11_kernel_helpers.hpp"
+#include "sphericart/sphericart_jax_cuda.hpp"
 
 #include "sphericart_cuda.hpp"
 
