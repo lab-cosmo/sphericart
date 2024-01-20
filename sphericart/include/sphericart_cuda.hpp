@@ -6,9 +6,6 @@
 
 #include <mutex>
 
-#define _SPHERICART_INTERNAL_IMPLEMENTATION
-#include "sphericart.hpp"
-
 namespace sphericart {
 
 namespace cuda {
