@@ -86,8 +86,8 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
         xyz_ag.grad
         - 2
         * torch.einsum("iaj,ij->ia", dsh_sphericart[:, :, ::2], sh_sphericart[:, ::2])
-    )
-    print(f"Check derivative difference: {delta}")
+    ) / torch.norm(xyz_ag.grad)
+    print(f"Check derivative difference (FW vs BW): {delta}")
 
     # double derivatives. In order to access them via backpropagation, an additional
     # flag must be specified at class instantiation:
