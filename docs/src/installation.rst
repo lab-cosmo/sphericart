@@ -2,8 +2,8 @@ Installation
 ============
 
 
-Python package
---------------
+Python package (including PyTorch and JAX)
+------------------------------------------
 
 The Python package can be installed with pip by simply running
 
@@ -35,6 +35,9 @@ you should build the code from source:
     # torch bindings (CPU-only)
     pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 
+Before installing the JAX version of ``sphericart``, you should already have the JAX
+library installed according to the official JAX installation instructions. 
+
 
 Julia package
 -------------
@@ -43,8 +46,8 @@ The native Julia package can be installed by opening a REPL,
 switching to the package manager by typing ``]`` and then ``add SpheriCart``.
 
 
-C/C++ library
--------------
+C/C++/CUDA library
+------------------
 
 First, you should clone the repository with
 
