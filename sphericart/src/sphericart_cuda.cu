@@ -41,17 +41,23 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
     // compute prefactors on host first
     compute_sph_prefactors<T>((int)l_max, this->prefactors_cpu);
     // allocate them on device and copy to device
-    CUDA_CHECK(
-        cudaMalloc(&this->prefactors_cuda, this->nprefactors * sizeof(T)));
+    CUDA_CHECK(cudaMalloc((void **)&this->prefactors_cuda,
+                          this->nprefactors * sizeof(T)));
 
     CUDA_CHECK(cudaMemcpy(this->prefactors_cuda, this->prefactors_cpu,
                           this->nprefactors * sizeof(T),
                           cudaMemcpyHostToDevice));
+
+    // initialise the currently available amount of shared memory.
+    this->_current_shared_mem_allocation = adjust_shared_memory(
+        sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
+        false, false, this->_current_shared_mem_allocation);
 }
 
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     // Destructor, frees the prefactors
     delete[] (this->prefactors_cpu);
+    CUDA_CHECK(cudaDeviceSynchronize());
     CUDA_CHECK(cudaFree(this->prefactors_cuda));
 }
 
@@ -82,28 +88,35 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
             "initialise ddsph with cudaMalloc.");
     }
 
-    this->_current_shared_mem_allocation = adjust_shared_memory(
-        sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
-        compute_with_gradients, compute_with_hessian,
-        this->_current_shared_mem_allocation);
+    if (this->cached_compute_with_gradients != compute_with_gradients ||
+        this->cached_compute_with_hessian != compute_with_hessian) {
 
-    if (this->_current_shared_mem_allocation == -1) {
-
-        std::cerr << "Warning: Failed to update shared memory size, "
-                     "re-attempting with  GRID_DIM_Y = 4\n"
-                  << std::endl;
-
-        this->CUDA_GRID_DIM_Y_ = 4;
         this->_current_shared_mem_allocation = adjust_shared_memory(
             sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_,
             this->CUDA_GRID_DIM_Y_, compute_with_gradients,
             compute_with_hessian, this->_current_shared_mem_allocation);
 
         if (this->_current_shared_mem_allocation == -1) {
-            throw std::runtime_error(
-                "Insufficient shared memory available to compute "
-                "spherical_harmonics with requested parameters.");
+
+            std::cerr << "Warning: Failed to update shared memory size, "
+                         "re-attempting with  GRID_DIM_Y = 4\n"
+                      << std::endl;
+
+            this->CUDA_GRID_DIM_Y_ = 4;
+            this->_current_shared_mem_allocation = adjust_shared_memory(
+                sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_,
+                this->CUDA_GRID_DIM_Y_, compute_with_gradients,
+                compute_with_hessian, this->_current_shared_mem_allocation);
+
+            if (this->_current_shared_mem_allocation == -1) {
+                throw std::runtime_error(
+                    "Insufficient shared memory available to compute "
+                    "spherical_harmonics with requested parameters.");
+            }
         }
+
+        this->cached_compute_with_gradients = compute_with_gradients;
+        this->cached_compute_with_hessian = compute_with_hessian;
     }
 
     sphericart::cuda::spherical_harmonics_cuda_base<T>(

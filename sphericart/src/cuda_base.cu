@@ -14,6 +14,29 @@
 /* MASK used for warp reductions */
 #define FULL_MASK 0xffffffff
 
+#define CUDA_CHECK(call)                                                       \
+    do {                                                                       \
+        cudaError_t cudaStatus = (call);                                       \
+        if (cudaStatus != cudaSuccess) {                                       \
+            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__       \
+                      << " - " << cudaGetErrorString(cudaStatus) << std::endl; \
+            cudaDeviceReset();                                                 \
+            exit(EXIT_FAILURE);                                                \
+        }                                                                      \
+    } while (0)
+
+#define CUDA_CHECK_KERNEL()                                                    \
+    do {                                                                       \
+        cudaDeviceSynchronize();                                               \
+        cudaError_t err = cudaGetLastError();                                  \
+        if (err != cudaSuccess) {                                              \
+            fprintf(stderr,                                                    \
+                    "CUDA error after kernel launch in %s at line %d: %s\n",   \
+                    __FILE__, __LINE__, cudaGetErrorString(err));              \
+            exit(EXIT_FAILURE);                                                \
+        }                                                                      \
+    } while (0)
+
 /*
     Computes the index for buffer values which are shared across GRID_DIM_Y
 */
@@ -597,7 +620,9 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
             xyz, nedges, prefactors, nprefactors, l_max, n_total, gradients,
             hessian, normalize, sph, dsph, ddsph);
 
-    cudaStreamSynchronize(cstream);
+    CUDA_CHECK_KERNEL();
+
+    CUDA_CHECK(cudaStreamSynchronize(cstream));
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
@@ -626,6 +651,7 @@ __global__ void backward_kernel(const scalar_t *__restrict__ dsph,
                                 scalar_t *__restrict__ xyz_grad) {
 
     size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
+
     int spatial = blockIdx.y;
 
     scalar_t sum = 0.0;
@@ -633,6 +659,7 @@ __global__ void backward_kernel(const scalar_t *__restrict__ dsph,
     if (edge_idx < nedges) {
         // for (int j = threadIdx.x; j < sph_grad.size(1); j += blockDim.x) {
         for (int j = threadIdx.x; j < n_total; j += blockDim.x) {
+
             // sum += dsph[edge_idx][spatial][j] * sph_grad[edge_idx][j];
             sum += dsph[edge_idx * 3 * n_total + spatial * n_total + j] *
                    sph_grad[edge_idx * n_total + j];
@@ -672,6 +699,8 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     backward_kernel<scalar_t><<<block_dim, grid_dim, 0, cstream>>>(
         dsph, sph_grad, nedges, ntotal, xyz_grad);
+
+    CUDA_CHECK_KERNEL();
 
     cudaStreamSynchronize(cstream);
 }

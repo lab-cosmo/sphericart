@@ -280,13 +280,14 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     // gradients with respect to it
     auto xyz = saved_variables[0];
     torch::Tensor xyz_grad = SphericalHarmonicsAutogradBackward::apply(
-        grad_outputs[0], xyz, saved_variables);
+        grad_outputs[0].contiguous(), xyz, saved_variables);
     return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor()};
 }
 
 torch::Tensor SphericalHarmonicsAutogradBackward::forward(
     torch::autograd::AutogradContext *ctx, torch::Tensor grad_outputs,
     torch::Tensor xyz, std::vector<torch::Tensor> saved_variables) {
+
     auto dsph = saved_variables[1];
     auto ddsph = saved_variables[2];
 
