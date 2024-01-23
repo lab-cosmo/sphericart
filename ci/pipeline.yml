@@ -19,6 +19,7 @@ test_job:
   image: $BASE_IMAGE
   timeout: 1h
   script:
+    - export CUDA_HOME="/usr/local/cuda"
     - python3 -m pip install --upgrade pip
     - python3 -m pip install tox
     - tox
