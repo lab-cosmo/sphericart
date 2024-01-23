@@ -3,7 +3,7 @@ name: Build Python wheels
 on:
   push:
     branches: [main]
-    tags: "*"
+    tags: ["*"]
   pull_request:
     # Check all PR
 
@@ -67,15 +67,29 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
 
+      - name: Build sphericart-jax wheels
+        run: |
+          # ensure we build the wheel from the sdist, not the checkout
+          python -m build --sdist sphericart-jax --outdir sphericart-jax/dist
+          python -m cibuildwheel sphericart-jax/dist/*.tar.gz --output-dir sphericart-jax/dist
+        env:
+          CIBW_BUILD_VERBOSITY: 3
+          CIBW_BUILD: cp310-*
+          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF
+
       - uses: actions/upload-artifact@v3
         with:
           name: wheels
+          # only upload sphericart wheels, not sphericart-torch or sphericart-jax
           path: dist/*.whl
 
       - name: upload wheel to GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
+          # only upload sphericart wheels, not sphericart-torch or sphericart-jax
           files: dist/*.whl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -93,11 +107,11 @@ jobs:
           python-version: "3.10"
       - name: build sdist
         run: |
-          python -m pip install wheel
-          python setup.py sdist
-          cd sphericart-torch
-          python setup.py sdist
-          mv dist/*.tar.gz ../dist/
+          python -m pip install build
+
+          python -m build --sdist . --outdir ./dist
+          python -m build --sdist sphericart-torch --outdir ./dist
+          python -m build --sdist sphericart-jax --outdir ./dist
 
       - uses: actions/upload-artifact@v3
         with:
