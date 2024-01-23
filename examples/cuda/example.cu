@@ -1,5 +1,5 @@
-/** @file example.cu
- *  @brief Usage example for the CUDA C++ API
+/** @file example.cpp
+ *  @brief Usage example for the C++ API
  */
 
 #include "sphericart_cuda.hpp"
@@ -9,6 +9,9 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include <vector>
+
+using namespace std;
+using namespace sphericart::cuda;
 
 /*host macro that checks for errors in CUDA calls, and prints the file + line
  * and error string if one occurs
