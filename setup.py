@@ -86,7 +86,7 @@ class bdist_egg_disabled(bdist_egg):
 if __name__ == "__main__":
     SPHERICART_TORCH = os.path.realpath(os.path.join(ROOT, "sphericart-torch"))
     SPHERICART_JAX = os.path.realpath(os.path.join(ROOT, "sphericart-jax"))
-    extras_require = {"torch": [], "jax": []}
+    extras_require = {}
     if os.path.exists(SPHERICART_TORCH):
         # we are building from a checkout
 
