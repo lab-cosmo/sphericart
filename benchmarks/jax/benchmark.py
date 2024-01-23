@@ -39,7 +39,7 @@ def sphericart_benchmark(
 
     sh_calculator = sphericart.jax.spherical_harmonics
 
-    sh_calculator_jit = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=1)
+    sh_calculator_jit = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1, 2))
 
     print(
         f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, "
@@ -85,7 +85,7 @@ def sphericart_benchmark(
     def scalar_output(xyz, l_max, normalized):
         return jax.numpy.sum(sphericart.jax.spherical_harmonics(xyz, l_max, normalized))
 
-    sh_grad = jax.jit(jax.grad(scalar_output), static_argnums=1)
+    sh_grad = jax.jit(jax.grad(scalar_output), static_argnums=(1, 2))
 
     time_deri = np.zeros(n_tries + warmup)
     for i in range(n_tries + warmup):
@@ -111,7 +111,7 @@ def sphericart_benchmark(
 
     # Use vmap to vectorize the Hessian computation over the first axis
     sh_hess = jax.jit(
-        jax.vmap(single_hessian, in_axes=(0, None, None)), static_argnums=1
+        jax.vmap(single_hessian, in_axes=(0, None, None)), static_argnums=(1, 2)
     )
 
     time_deri = np.zeros(n_tries + warmup)
@@ -138,7 +138,7 @@ def sphericart_benchmark(
             sphericart.jax.spherical_harmonics(xyz, l_max, normalized), axis=0
         )
 
-    jacfwd = jax.jit(jax.jacfwd(array_output), static_argnums=1)
+    jacfwd = jax.jit(jax.jacfwd(array_output), static_argnums=(1, 2))
 
     time_deri = np.zeros(n_tries + warmup)
     for i in range(n_tries + warmup):
@@ -156,7 +156,7 @@ def sphericart_benchmark(
     if verbose:
         print("Warm-up timings / sec.:\n", time_deri[:warmup])
 
-    jacrev = jax.jit(jax.jacrev(array_output), static_argnums=1)
+    jacrev = jax.jit(jax.jacrev(array_output), static_argnums=(1, 2))
 
     time_deri = np.zeros(n_tries + warmup)
     for i in range(n_tries + warmup):

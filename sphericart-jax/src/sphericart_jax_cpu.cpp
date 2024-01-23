@@ -1,5 +1,5 @@
-// This file defines the Python interface to the XLA custom calls implemented on
-// the CPU. It is exposed as a standard pybind11 module defining "capsule"
+// This file defines the Python interface to the XLA custom calls on CPU.
+// It is exposed as a standard pybind11 module defining "capsule"
 // objects containing our methods. For simplicity, we export a separate capsule
 // for each supported dtype.
 
@@ -9,20 +9,23 @@
 #include <tuple>
 
 #include "sphericart.hpp"
-#include "sphericart/pybind11_kernel_helpers.h"
+#include "sphericart/pybind11_kernel_helpers.hpp"
 
 using namespace sphericart_jax;
 
 namespace {
 
+// CPU section
+
 template <typename T>
-using CacheMap = std::map<std::tuple<size_t, bool>,
-                          std::unique_ptr<sphericart::SphericalHarmonics<T>>>;
+using CacheMapCPU =
+    std::map<std::tuple<size_t, bool>,
+             std::unique_ptr<sphericart::SphericalHarmonics<T>>>;
 
 template <typename T>
 std::unique_ptr<sphericart::SphericalHarmonics<T>> &
-_get_or_create_sph(CacheMap<T> &sph_cache, std::mutex &cache_mutex,
-                   size_t l_max, bool normalized) {
+_get_or_create_sph_cpu(CacheMapCPU<T> &sph_cache, std::mutex &cache_mutex,
+                       size_t l_max, bool normalized) {
     // Check if instance exists in cache, if not create and store it
     std::lock_guard<std::mutex> lock(cache_mutex);
     auto key = std::make_tuple(l_max, normalized);
@@ -49,11 +52,11 @@ template <typename T> void cpu_sph(void *out, const void **in) {
     T *sph = reinterpret_cast<T *>(out);
 
     // Static map to cache instances based on parameters
-    static CacheMap<T> sph_cache;
+    static CacheMapCPU<T> sph_cache;
     static std::mutex cache_mutex;
 
     auto &calculator =
-        _get_or_create_sph(sph_cache, cache_mutex, l_max, normalized);
+        _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max, normalized);
     calculator->compute_array(xyz, xyz_length, sph, sph_len);
 }
 
@@ -73,11 +76,11 @@ void cpu_sph_with_gradients(void *out_tuple, const void **in) {
     T *dsph = reinterpret_cast<T *>(out[1]);
 
     // Static map to cache instances based on parameters
-    static CacheMap<T> sph_cache;
+    static CacheMapCPU<T> sph_cache;
     static std::mutex cache_mutex;
 
     auto &calculator =
-        _get_or_create_sph(sph_cache, cache_mutex, l_max, normalized);
+        _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max, normalized);
     calculator->compute_array_with_gradients(xyz, xyz_length, sph, sph_len,
                                              dsph, dsph_len);
 }
@@ -100,14 +103,16 @@ void cpu_sph_with_hessians(void *out_tuple, const void **in) {
     T *ddsph = reinterpret_cast<T *>(out[2]);
 
     // Static map to cache instances based on parameters
-    static CacheMap<T> sph_cache;
+    static CacheMapCPU<T> sph_cache;
     static std::mutex cache_mutex;
 
     auto &calculator =
-        _get_or_create_sph(sph_cache, cache_mutex, l_max, normalized);
+        _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max, normalized);
     calculator->compute_array_with_hessians(xyz, xyz_length, sph, sph_len, dsph,
                                             dsph_len, ddsph, ddsph_len);
 }
+
+// Registration of the custom calls with pybind11
 
 pybind11::dict Registrations() {
     pybind11::dict dict;

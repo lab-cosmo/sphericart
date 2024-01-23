@@ -83,9 +83,11 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # checks the derivative is correct using the forward call
     delta = torch.norm(
-        xyz_ag.grad - 2 * torch.einsum("iaj,ij->ia", dsh_sphericart, sh_sphericart)
-    )
-    print(f"Check derivative difference: {delta}")
+        xyz_ag.grad
+        - 2
+        * torch.einsum("iaj,ij->ia", dsh_sphericart[:, :, ::2], sh_sphericart[:, ::2])
+    ) / torch.norm(xyz_ag.grad)
+    print(f"Check derivative difference (FW vs BW): {delta}")
 
     # double derivatives. In order to access them via backpropagation, an additional
     # flag must be specified at class instantiation:

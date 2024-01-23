@@ -8,7 +8,7 @@ string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" SPHERICART_VERSION_MAJOR "${SPHERICA
 string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_MINOR "${SPHERICART_VERSION}")
 string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_PATCH "${SPHERICART_VERSION}")
 
-option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
+OPTION(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 
 OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" OFF)
 OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)

@@ -8,7 +8,7 @@ from jax.interpreters import mlir, xla
 from jax.interpreters.mlir import ir, custom_call
 from jax.interpreters import ad
 
-from .utils import default_layouts
+from .utils import default_layouts, build_sph_descriptor
 from .ddsph import ddsph
 
 
@@ -22,11 +22,11 @@ _dsph_p.def_impl(partial(xla.apply_primitive, _dsph_p))
 
 
 def dsph(xyz, l_max, normalized):
-    sph, dsph = _dsph_p.bind(xyz, l_max, normalized, l_max_c=l_max)
+    sph, dsph = _dsph_p.bind(xyz, l_max, normalized, l_max_c=l_max, normalized_c=normalized)
     return sph, dsph
 
 
-def dsph_abstract_eval(xyz, l_max, normalized, *, l_max_c):
+def dsph_abstract_eval(xyz, l_max, normalized, *, l_max_c, normalized_c):
     sph_size = (l_max_c + 1) * (l_max_c + 1)
     dtype = xyz.dtype
     sph_shape = xyz.shape[:-1] + (sph_size,)
@@ -37,7 +37,7 @@ def dsph_abstract_eval(xyz, l_max, normalized, *, l_max_c):
 _dsph_p.def_abstract_eval(dsph_abstract_eval)
 
 
-def dsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
+def dsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
     xyz_type = ir.RankedTensorType(xyz.type)
     xyz_shape = xyz_type.shape
     dtype = xyz_type.element_type
@@ -62,7 +62,7 @@ def dsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
         operands=[
             xyz,
             mlir.ir_constant(l_max_c),
-            normalized,
+            mlir.ir_constant(normalized_c),
             mlir.ir_constant(n_samples),
         ],
         operand_layouts=default_layouts(xyz_shape, (), (), ()),
@@ -73,7 +73,41 @@ def dsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c):
 mlir.register_lowering(_dsph_p, dsph_lowering_cpu, platform="cpu")
 
 
-def dsph_p_batch(arg_values, batch_axes, *, l_max_c):
+def dsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
+    xyz_type = ir.RankedTensorType(xyz.type)
+    xyz_shape = xyz_type.shape
+    dtype = xyz_type.element_type
+    sph_size = (l_max_c + 1) * (l_max_c + 1)
+    sph_shape = xyz_shape[:-1] + [sph_size]
+    dsph_shape = xyz_shape[:-1] + [3, sph_size]
+    n_samples = math.prod(xyz_shape[:-1])
+
+    if dtype == ir.F32Type.get():
+        op_name = "cuda_dsph_f32"
+    elif dtype == ir.F64Type.get():
+        op_name = "cuda_dsph_f64"
+    else:
+        raise NotImplementedError(f"Unsupported dtype {dtype}")
+
+    descriptor = build_sph_descriptor(n_samples, l_max_c, normalized_c)
+
+    return custom_call(
+        op_name,
+        result_types=[
+            mlir.ir.RankedTensorType.get(sph_shape, dtype),
+            mlir.ir.RankedTensorType.get(dsph_shape, dtype),
+        ],
+        operands=[xyz],
+        operand_layouts=default_layouts(xyz_shape),
+        result_layouts=default_layouts(sph_shape, dsph_shape),
+        backend_config=descriptor
+    ).results
+
+
+mlir.register_lowering(_dsph_p, dsph_lowering_cuda, platform="gpu")
+
+
+def dsph_p_batch(arg_values, batch_axes, *, l_max_c, normalized_c):
     res = dsph(*arg_values)
     return res, (batch_axes[0], batch_axes[0])
 
@@ -81,7 +115,7 @@ def dsph_p_batch(arg_values, batch_axes, *, l_max_c):
 jax.interpreters.batching.primitive_batchers[_dsph_p] = dsph_p_batch
 
 
-def dsph_jvp(primals, tangents, *, l_max_c):
+def dsph_jvp(primals, tangents, *, l_max_c, normalized_c):
     sph, d_sph, dd_sph = ddsph(*primals)
     return (sph, d_sph), (
         jnp.einsum("...ay, ...a -> ...y", d_sph, tangents[0]),
