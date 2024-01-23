@@ -43,6 +43,9 @@ class cmake_ext(build_ext):
         ]
 
         CUDA_HOME = os.environ.get("CUDA_HOME")
+        
+        print ("CUDA_HOME: ", CUDA_HOME)
+        
         if CUDA_HOME is not None:
             cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")
             cmake_options.append("-DSPHERICART_ENABLE_CUDA=ON")
