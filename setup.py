@@ -84,10 +84,14 @@ class bdist_egg_disabled(bdist_egg):
 
 
 if __name__ == "__main__":
+    extras_require = {}
     SPHERICART_TORCH = os.path.realpath(os.path.join(ROOT, "sphericart-torch"))
     SPHERICART_JAX = os.path.realpath(os.path.join(ROOT, "sphericart-jax"))
-    extras_require = {}
-    if os.path.exists(SPHERICART_TORCH):
+
+    # when creating a sdist for release, we should never use local dependencies
+    SPHERICART_NO_LOCAL_DEPS = os.environ.get("SPHERICART_NO_LOCAL_DEPS", "0") == "1"
+
+    if not SPHERICART_NO_LOCAL_DEPS and os.path.exists(SPHERICART_TORCH):
         # we are building from a checkout
 
         # add a random uuid to the file url to prevent pip from using a cached
@@ -100,7 +104,7 @@ if __name__ == "__main__":
         # installing wheel/sdist
         extras_require["torch"] = "sphericart-torch"
 
-    if os.path.exists(SPHERICART_JAX):
+    if not SPHERICART_NO_LOCAL_DEPS and os.path.exists(SPHERICART_JAX):
         # we are building from a checkout
 
         # add a random uuid to the file url to prevent pip from using a cached
