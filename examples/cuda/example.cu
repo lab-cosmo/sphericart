@@ -86,7 +86,7 @@ int main() {
     CUDA_CHECK(cudaMalloc(&xyz_cuda_f, n_samples * 3 * sizeof(float)));
     CUDA_CHECK(cudaMemcpy(xyz_cuda_f, xyz_f.data(), n_samples * 3 * sizeof(float),
                           cudaMemcpyHostToDevice));
-    double *sph_cuda_f;
+    float *sph_cuda_f;
     CUDA_CHECK(cudaMalloc(&sph_cuda_f, n_samples * (l_max + 1) * (l_max + 1) *
                                          sizeof(float)));
 
