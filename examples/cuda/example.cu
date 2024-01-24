@@ -57,7 +57,6 @@ int main() {
     auto ddsph_f =
         std::vector<float>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
 
-
     /* ===== API calls ===== */
 
     // internal buffers and numerical factors are initalized at construction
@@ -84,19 +83,19 @@ int main() {
 
     float *xyz_cuda_f;
     CUDA_CHECK(cudaMalloc(&xyz_cuda_f, n_samples * 3 * sizeof(float)));
-    CUDA_CHECK(cudaMemcpy(xyz_cuda_f, xyz_f.data(), n_samples * 3 * sizeof(float),
+    CUDA_CHECK(cudaMemcpy(xyz_cuda_f, xyz_f.data(),
+                          n_samples * 3 * sizeof(float),
                           cudaMemcpyHostToDevice));
     float *sph_cuda_f;
     CUDA_CHECK(cudaMalloc(&sph_cuda_f, n_samples * (l_max + 1) * (l_max + 1) *
-                                         sizeof(float)));
+                                           sizeof(float)));
 
     calculator_cuda_f.compute(xyz_cuda_f, n_samples, false, false,
-                            sph_cuda_f); // no gradients */
+                              sph_cuda_f); // no gradients */
 
-    CUDA_CHECK(
-        cudaMemcpy(sph_f.data(), sph_cuda_f,
-                   n_samples * (l_max + 1) * (l_max + 1) * sizeof(float),
-                   cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(sph_f.data(), sph_cuda_f,
+                          n_samples * (l_max + 1) * (l_max + 1) * sizeof(float),
+                          cudaMemcpyDeviceToHost));
 
     /* ===== check results ===== */
 
