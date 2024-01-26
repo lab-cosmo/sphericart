@@ -97,7 +97,7 @@ template <typename T> class SphericalHarmonics {
     int64_t _current_shared_mem_allocation = 0;
 
     void update_cache_and_smem(bool compute_with_gradients,
-                              bool compute_with_hessian);
+                               bool compute_with_hessian);
 };
 
 } // namespace cuda

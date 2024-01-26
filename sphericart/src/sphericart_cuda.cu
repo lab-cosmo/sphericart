@@ -56,7 +56,7 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
 
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     // Destructor, frees the prefactors
-    delete[] (this->prefactors_cpu);
+    delete[](this->prefactors_cpu);
     CUDA_CHECK(cudaDeviceSynchronize());
     CUDA_CHECK(cudaFree(this->prefactors_cuda));
 }
