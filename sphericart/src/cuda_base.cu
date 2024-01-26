@@ -46,7 +46,7 @@ __device__ int get_index(int i) { return i * blockDim.y + threadIdx.y; }
     Clears the shared memory buffers for the spherical harmonics and gradients
    if required.
 */
-template <typename scalar_t>
+template <typename scalar_t, bool requires_grad, bool requires_hessian>
 __device__ inline void
 clear_buffers(int nelements, scalar_t *sph, scalar_t *dsph_x, scalar_t *dsph_y,
               scalar_t *dsph_z,
@@ -55,18 +55,17 @@ clear_buffers(int nelements, scalar_t *sph, scalar_t *dsph_x, scalar_t *dsph_y,
 
               scalar_t *dsph_dydx, scalar_t *dsph_dydy, scalar_t *dsph_dydz,
 
-              scalar_t *dsph_dzdx, scalar_t *dsph_dzdy, scalar_t *dsph_dzdz,
-              bool requires_grad, bool requires_hessian) {
+              scalar_t *dsph_dzdx, scalar_t *dsph_dzdy, scalar_t *dsph_dzdz) {
     for (int i = threadIdx.x; i < nelements; i += blockDim.x) {
         sph[get_index(i)] = 0.0;
 
-        if (requires_grad) {
+        if constexpr (requires_grad) {
             dsph_x[get_index(i)] = 0.0;
             dsph_y[get_index(i)] = 0.0;
             dsph_z[get_index(i)] = 0.0;
         }
 
-        if (requires_hessian) {
+        if constexpr (requires_hessian) {
             dsph_dxdx[get_index(i)] = 0.0;
             dsph_dxdy[get_index(i)] = 0.0;
             dsph_dxdz[get_index(i)] = 0.0;
@@ -87,7 +86,7 @@ clear_buffers(int nelements, scalar_t *sph, scalar_t *dsph_x, scalar_t *dsph_y,
     Writes out the shared memory buffers to global memory, as well as applying
    normalisation if necessary.
 */
-template <typename scalar_t>
+template <typename scalar_t, bool requires_grad, bool requires_hessian>
 __device__ inline void write_buffers(
     size_t edge_idx, size_t nedges, scalar_t x, scalar_t y, scalar_t z,
     scalar_t ir, int n_elements, int offset, scalar_t *buffer_sph,
@@ -102,13 +101,13 @@ __device__ inline void write_buffers(
 
     scalar_t *buffer_dsph_dzdx, scalar_t *buffer_dsph_dzdy,
     scalar_t *buffer_dsph_dzdz, scalar_t *sph, scalar_t *dsph, scalar_t *ddsph,
-    size_t n_total, bool requires_grad, bool requires_hessian, bool normalize) {
+    size_t n_total, bool normalize) {
     if (edge_idx < nedges) {
         for (int i = threadIdx.x; i < n_elements; i += blockDim.x) {
 
             sph[edge_idx * n_total + offset + i] = buffer_sph[get_index(i)];
 
-            if (requires_hessian) {
+            if constexpr (requires_hessian) {
                 auto tmp_dx = buffer_dsph_x[get_index(i)];
                 auto tmp_dy = buffer_dsph_y[get_index(i)];
                 auto tmp_dz = buffer_dsph_z[get_index(i)];
@@ -181,7 +180,7 @@ __device__ inline void write_buffers(
                       offset + i] = tmp_dzdz;
             }
 
-            if (requires_grad) {
+            if constexpr (requires_grad) {
                 auto tmp_dx = buffer_dsph_x[get_index(i)];
                 auto tmp_dy = buffer_dsph_y[get_index(i)];
                 auto tmp_dz = buffer_dsph_z[get_index(i)];
@@ -210,13 +209,16 @@ __device__ inline void write_buffers(
     CUDA kernel for computing Cartesian spherical harmonics and their
    derivatives.
 */
-template <typename scalar_t>
-__global__ void spherical_harmonics_kernel(
-    const scalar_t *__restrict__ xyz, int nedges,
-    const scalar_t *__restrict__ prefactors, int nprefactors, int lmax,
-    int ntotal, bool requires_grad, bool requires_hessian, bool normalize,
-    scalar_t *__restrict__ sph, scalar_t *__restrict__ dsph,
-    scalar_t *__restrict__ ddsph) {
+
+template <typename scalar_t, int GRID_DIM_X, int GRID_DIM_Y, bool requires_grad,
+          bool requires_hessian>
+__global__ void __launch_bounds__(GRID_DIM_X *GRID_DIM_Y)
+    spherical_harmonics_kernel(const scalar_t *__restrict__ xyz, int nedges,
+                               const scalar_t *__restrict__ prefactors,
+                               int nprefactors, int lmax, int ntotal,
+                               bool normalize, scalar_t *__restrict__ sph,
+                               scalar_t *__restrict__ dsph,
+                               scalar_t *__restrict__ ddsph) {
 
     extern __shared__ char buffer[];
 
@@ -241,7 +243,7 @@ __global__ void spherical_harmonics_kernel(
     scalar_t *buffer_dsph_y;
     scalar_t *buffer_dsph_z;
 
-    if (requires_grad) {
+    if constexpr (requires_grad) {
         buffer_dsph_x = reinterpret_cast<scalar_t *>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
         buffer_dsph_y = reinterpret_cast<scalar_t *>(buffer + offset);
@@ -260,7 +262,7 @@ __global__ void spherical_harmonics_kernel(
     scalar_t *buffer_dsph_dzdy;
     scalar_t *buffer_dsph_dzdz;
 
-    if (requires_hessian) {
+    if constexpr (requires_hessian) {
         buffer_dsph_dxdx = reinterpret_cast<scalar_t *>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
         buffer_dsph_dxdy = reinterpret_cast<scalar_t *>(buffer + offset);
@@ -351,22 +353,23 @@ __global__ void spherical_harmonics_kernel(
     // work through hardcoded parts first...
     int ml = min(static_cast<int>(HARDCODED_LMAX), lmax);
 
-    clear_buffers((ml + 1) * (ml + 1), buffer_sph, buffer_dsph_x, buffer_dsph_y,
-                  buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy,
-                  buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-                  buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-                  buffer_dsph_dzdz, requires_grad, requires_hessian);
+    clear_buffers<scalar_t, requires_grad, requires_hessian>(
+        (ml + 1) * (ml + 1), buffer_sph, buffer_dsph_x, buffer_dsph_y,
+        buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
+        buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz, buffer_dsph_dzdx,
+        buffer_dsph_dzdy, buffer_dsph_dzdz);
 
     if (threadIdx.x == 0) {
         if (lmax >= 1) {
             HARDCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
-            if (requires_grad) {
+
+            if constexpr (requires_grad) {
                 HARDCODED_SPH_DERIVATIVE_MACRO(
                     1, x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x,
                     buffer_dsph_y, buffer_dsph_z, get_index);
             }
 
-            if (requires_hessian) {
+            if constexpr (requires_hessian) {
                 HARDCODED_SPH_SECOND_DERIVATIVE_MACRO(
                     1, buffer_sph, buffer_dsph_dxdx, buffer_dsph_dxdy,
                     buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
@@ -375,12 +378,12 @@ __global__ void spherical_harmonics_kernel(
             }
         } else {
             COMPUTE_SPH_L0(buffer_sph, get_index);
-            if (requires_grad) {
+            if constexpr (requires_grad) {
                 COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x,
                                           buffer_dsph_y, buffer_dsph_z,
                                           get_index);
 
-                if (requires_hessian) {
+                if constexpr (requires_hessian) {
                     COMPUTE_SPH_SECOND_DERIVATIVE_L0(
                         buffer_sph, buffer_dsph_dxdx, buffer_dsph_dxdy,
                         buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
@@ -394,12 +397,12 @@ __global__ void spherical_harmonics_kernel(
 
     // write out the values of the hardcoded derivatives from shared memory into
     // global memory.
-    write_buffers(
+    write_buffers<scalar_t, requires_grad, requires_hessian>(
         edge_idx, nedges, x, y, z, ir, (ml + 1) * (ml + 1), 0, buffer_sph,
         buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, buffer_dsph_dxdx,
         buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
         buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz,
-        sph, dsph, ddsph, ntotal, requires_grad, requires_hessian, normalize);
+        sph, dsph, ddsph, ntotal, normalize);
 
     // now lets do the generic terms for l > HARDCODED_LMAX
     int size_q = (lmax + 1) * (lmax + 2) / 2;
@@ -419,61 +422,35 @@ __global__ void spherical_harmonics_kernel(
         */
 
         // clear out temporary storage buffers
-        clear_buffers(2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y,
-                      buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy,
-                      buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-                      buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-                      buffer_dsph_dzdz, requires_grad, requires_hessian);
+        clear_buffers<scalar_t, requires_grad, requires_hessian>(
+            2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
+            buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
+            buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
+            buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz);
 
         // Currently only one warp computes the spherical harmonics.
         if (threadIdx.x == 0) {
-            if (requires_grad && requires_hessian) {
-                generic_sph_l_channel<scalar_t, true, true, HARDCODED_LMAX,
-                                      get_index>(
-                    l, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s, buffer_twomz,
-                    buffer_sph + sph_offset, buffer_dsph_x + sph_offset,
-                    buffer_dsph_y + sph_offset, buffer_dsph_z + sph_offset,
-                    buffer_dsph_dxdx + sph_offset,
-                    buffer_dsph_dxdy + sph_offset,
-                    buffer_dsph_dxdz + sph_offset,
-                    buffer_dsph_dydx + sph_offset,
-                    buffer_dsph_dydy + sph_offset,
-                    buffer_dsph_dydz + sph_offset,
-                    buffer_dsph_dzdx + sph_offset,
-                    buffer_dsph_dzdy + sph_offset,
-                    buffer_dsph_dzdz + sph_offset);
-            } else if (requires_grad) {
-                generic_sph_l_channel<scalar_t, true, false, HARDCODED_LMAX,
-                                      get_index>(
-                    l, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s, buffer_twomz,
-                    buffer_sph + sph_offset, buffer_dsph_x + sph_offset,
-                    buffer_dsph_y + sph_offset, buffer_dsph_z + sph_offset,
-                    buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
-                    buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
-                    buffer_dsph_dzdx, buffer_dsph_dzdy,
-                    buffer_dsph_dzdz // these are nullpointers
-                );
-            } else {
-                generic_sph_l_channel<scalar_t, false, false, HARDCODED_LMAX,
-                                      get_index>(
-                    l, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s, buffer_twomz,
-                    buffer_sph + sph_offset, buffer_dsph_x, buffer_dsph_y,
-                    buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy,
-                    buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-                    buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-                    buffer_dsph_dzdz // these are nullpointers
-                );
-            }
+
+            generic_sph_l_channel<scalar_t, requires_grad, requires_hessian,
+                                  HARDCODED_LMAX, get_index>(
+                l, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s, buffer_twomz,
+                buffer_sph + sph_offset, buffer_dsph_x + sph_offset,
+                buffer_dsph_y + sph_offset, buffer_dsph_z + sph_offset,
+                buffer_dsph_dxdx + sph_offset, buffer_dsph_dxdy + sph_offset,
+                buffer_dsph_dxdz + sph_offset, buffer_dsph_dydx + sph_offset,
+                buffer_dsph_dydy + sph_offset, buffer_dsph_dydz + sph_offset,
+                buffer_dsph_dzdx + sph_offset, buffer_dsph_dzdy + sph_offset,
+                buffer_dsph_dzdz + sph_offset);
         }
 
         // write out temporary storage buffers
-        write_buffers(edge_idx, nedges, x, y, z, ir, 2 * l + 1, base_index,
-                      buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
-                      buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
-                      buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
-                      buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz, sph,
-                      dsph, ddsph, ntotal, requires_grad, requires_hessian,
-                      normalize);
+        write_buffers<scalar_t, requires_grad, requires_hessian>(
+            edge_idx, nedges, x, y, z, ir, 2 * l + 1, base_index, buffer_sph,
+            buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, buffer_dsph_dxdx,
+            buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx,
+            buffer_dsph_dydy, buffer_dsph_dydz, buffer_dsph_dzdx,
+            buffer_dsph_dzdy, buffer_dsph_dzdz, sph, dsph, ddsph, ntotal,
+            normalize);
 
         base_index += 2 * l + 1;
         qlmk += l + 1;
@@ -524,7 +501,6 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
    attempts to adjust the shared memory to fit the requested configuration if
    the kernel launch parameters exceeds the default 49152 bytes.
 */
-
 int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
                                            int64_t GRID_DIM_X,
                                            int64_t GRID_DIM_Y,
@@ -549,21 +525,105 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
             return -1; // failure - need to adjust parameters
         }
 
-        switch (element_size) {
+        void *func;
+        switch (GRID_DIM_Y) {
+
+        case 16:
+            switch (element_size) {
+            case 4:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 4, 16, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 4, 16, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 4, 16, false, false>);
+                }
+                break;
+
+            case 8:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 4, 16, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 4, 16, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 4, 16, false,
+                                                   false>);
+                }
+                break;
+            }
+            break;
         case 8:
-            cudaFuncSetAttribute(spherical_harmonics_kernel<double>,
-                                 cudaFuncAttributeMaxDynamicSharedMemorySize,
-                                 required_buff_size);
+            switch (element_size) {
+            case 4:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 4, 8, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 4, 8, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 4, 8, false, false>);
+                }
+                break;
+
+            case 8:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 4, 8, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 4, 8, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 4, 8, false, false>);
+                }
+                break;
+            }
             break;
         case 4:
-            cudaFuncSetAttribute(spherical_harmonics_kernel<float>,
-                                 cudaFuncAttributeMaxDynamicSharedMemorySize,
-                                 required_buff_size);
+            switch (element_size) {
+            case 4:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 4, 4, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 4, 4, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 4, 4, false, false>);
+                }
+                break;
+
+            case 8:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 4, 4, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 4, 4, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 4, 4, false, false>);
+                }
+                break;
+            }
             break;
         }
 
-        return required_buff_size;
+        std::cout << func << " buff: " << required_buff_size << std::endl;
+        CUDA_CHECK(cudaFuncSetAttribute(
+            func, cudaFuncAttributeMaxDynamicSharedMemorySize,
+            required_buff_size));
 
+        return required_buff_size;
     } else {
         return (current_shared_mem_alloc >
                 (deviceProp.sharedMemPerBlock -
@@ -575,9 +635,9 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
 }
 
 /*
-    Wrapper to launch the CUDA kernel. Returns a vector containing the spherical
-   harmonics and their gradients if required, otherwise returns the spherical
-   harmonics and an empty tensor.
+    Wrappers to launch the CUDA kernel. Returns a vector containing the
+   spherical harmonics and their gradients if required, otherwise returns the
+   spherical harmonics and an empty tensor.
 
     GRID_DIM_X is the number of threads to launch in the x dimension. Used to
    parallelize over the sample dimension. GRID_DIM_Y is the number of threads to
@@ -590,15 +650,12 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
     a cudaStream_t, first do void * stream_ptr = reinterpret_cast<void *>
    (stream);
 */
-
-template <typename scalar_t>
-void sphericart::cuda::spherical_harmonics_cuda_base(
+template <class scalar_t, int GRID_DIM_X, int GRID_DIM_Y>
+void sphericart::cuda::spherical_harmonics(
     const scalar_t *__restrict__ xyz, const int nedges,
     const scalar_t *__restrict__ prefactors, const int nprefactors,
-    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
-    scalar_t *__restrict__ sph, scalar_t *__restrict__ dsph,
-    scalar_t *__restrict__ ddsph, void *cuda_stream) {
+    const int64_t l_max, const bool normalize, scalar_t *__restrict__ sph,
+    void *cuda_stream) {
 
     int n_total = (l_max + 1) * (l_max + 1);
 
@@ -612,34 +669,172 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 
     dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
 
-    size_t total_buff_size = total_buffer_size(
-        l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
+    size_t total_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y,
+                                               sizeof(scalar_t), false, false);
 
-    spherical_harmonics_kernel<scalar_t>
+    spherical_harmonics_kernel<scalar_t, GRID_DIM_X, GRID_DIM_Y, false, false>
         <<<block_dim, grid_dim, total_buff_size, cstream>>>(
-            xyz, nedges, prefactors, nprefactors, l_max, n_total, gradients,
-            hessian, normalize, sph, dsph, ddsph);
+            xyz, nedges, prefactors, nprefactors, l_max, n_total, normalize,
+            sph, nullptr, nullptr);
 
     CUDA_CHECK_KERNEL();
 
     CUDA_CHECK(cudaStreamSynchronize(cstream));
 }
 
-template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
-    const float *__restrict__ xyz, const int nedges,
-    const float *__restrict__ prefactors, const int nprefactors,
-    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
-    float *__restrict__ sph, float *__restrict__ dsph,
-    float *__restrict__ ddsph, void *cuda_stream);
+/** forward declarations of supported configurations **/
+template void sphericart::cuda::spherical_harmonics<float, 8, 16>(
+    const float *__restrict__, const int, const float *__restrict__, const int,
+    const int64_t, const bool, float *__restrict__, void *);
+template void sphericart::cuda::spherical_harmonics<double, 8, 16>(
+    const double *__restrict__, const int, const double *__restrict__,
+    const int, const int64_t, const bool, double *__restrict__, void *);
 
-template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
-    const double *__restrict__ xyz, const int nedges,
-    const double *__restrict__ prefactors, const int nprefactors,
-    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
-    double *__restrict__ sph, double *__restrict__ dsph,
-    double *__restrict__ ddsph, void *cuda_stream);
+template void sphericart::cuda::spherical_harmonics<float, 8, 8>(
+    const float *__restrict__, const int, const float *__restrict__, const int,
+    const int64_t, const bool, float *__restrict__, void *);
+template void sphericart::cuda::spherical_harmonics<double, 8, 8>(
+    const double *__restrict__, const int, const double *__restrict__,
+    const int, const int64_t, const bool, double *__restrict__, void *);
+
+template void sphericart::cuda::spherical_harmonics<float, 8, 4>(
+    const float *__restrict__, const int, const float *__restrict__, const int,
+    const int64_t, const bool, float *__restrict__, void *);
+template void sphericart::cuda::spherical_harmonics<double, 8, 4>(
+    const double *__restrict__, const int, const double *__restrict__,
+    const int, const int64_t, const bool, double *__restrict__, void *);
+
+template <class scalar_t, int GRID_DIM_X, int GRID_DIM_Y>
+void sphericart::cuda::spherical_harmonics_with_gradients(
+    const scalar_t *__restrict__ xyz, const int nedges,
+    const scalar_t *__restrict__ prefactors, const int nprefactors,
+    const int64_t l_max, const bool normalize, scalar_t *__restrict__ sph,
+    scalar_t *__restrict__ dsph, void *cuda_stream) {
+
+    int n_total = (l_max + 1) * (l_max + 1);
+
+    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
+
+    auto find_num_blocks = [](int x, int bdim) {
+        return (x + bdim - 1) / bdim;
+    };
+
+    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
+
+    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
+
+    size_t total_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y,
+                                               sizeof(scalar_t), true, false);
+
+    spherical_harmonics_kernel<scalar_t, GRID_DIM_X, GRID_DIM_Y, true, false>
+        <<<block_dim, grid_dim, total_buff_size, cstream>>>(
+            xyz, nedges, prefactors, nprefactors, l_max, n_total, normalize,
+            sph, dsph, nullptr);
+
+    CUDA_CHECK_KERNEL();
+
+    CUDA_CHECK(cudaStreamSynchronize(cstream));
+}
+
+/** forward declarations of supported configurations **/
+template void
+sphericart::cuda::spherical_harmonics_with_gradients<float, 8, 16>(
+    const float *__restrict__, const int, const float *__restrict__, const int,
+    const int64_t, const bool, float *__restrict__, float *__restrict__,
+    void *);
+
+template void
+sphericart::cuda::spherical_harmonics_with_gradients<double, 8, 16>(
+    const double *__restrict__, const int, const double *__restrict__,
+    const int, const int64_t, const bool, double *__restrict__,
+    double *__restrict__, void *);
+
+template void sphericart::cuda::spherical_harmonics_with_gradients<float, 8, 8>(
+    const float *__restrict__, const int, const float *__restrict__, const int,
+    const int64_t, const bool, float *__restrict__, float *__restrict__,
+    void *);
+
+template void
+sphericart::cuda::spherical_harmonics_with_gradients<double, 8, 8>(
+    const double *__restrict__, const int, const double *__restrict__,
+    const int, const int64_t, const bool, double *__restrict__,
+    double *__restrict__, void *);
+
+template void sphericart::cuda::spherical_harmonics_with_gradients<float, 8, 4>(
+    const float *__restrict__, const int, const float *__restrict__, const int,
+    const int64_t, const bool, float *__restrict__, float *__restrict__,
+    void *);
+
+template void
+sphericart::cuda::spherical_harmonics_with_gradients<double, 8, 4>(
+    const double *__restrict__, const int, const double *__restrict__,
+    const int, const int64_t, const bool, double *__restrict__,
+    double *__restrict__, void *);
+
+template <typename scalar_t, int GRID_DIM_X, int GRID_DIM_Y>
+void sphericart::cuda::spherical_harmonics_with_hessians(
+    const scalar_t *__restrict__ xyz, const int nedges,
+    const scalar_t *__restrict__ prefactors, const int nprefactors,
+    const int64_t l_max, const bool normalize, scalar_t *__restrict__ sph,
+    scalar_t *__restrict__ dsph, scalar_t *__restrict__ ddsph,
+    void *cuda_stream) {
+
+    int n_total = (l_max + 1) * (l_max + 1);
+
+    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
+
+    auto find_num_blocks = [](int x, int bdim) {
+        return (x + bdim - 1) / bdim;
+    };
+
+    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
+
+    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
+
+    size_t total_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y,
+                                               sizeof(scalar_t), true, true);
+
+    spherical_harmonics_kernel<scalar_t, GRID_DIM_X, GRID_DIM_Y, true, true>
+        <<<block_dim, grid_dim, total_buff_size, cstream>>>(
+            xyz, nedges, prefactors, nprefactors, l_max, n_total, normalize,
+            sph, dsph, ddsph);
+
+    CUDA_CHECK_KERNEL();
+
+    CUDA_CHECK(cudaStreamSynchronize(cstream));
+}
+
+/** forward declarations of supported configurations **/
+template void sphericart::cuda::spherical_harmonics_with_hessians<float, 8, 16>(
+    const float *__restrict__, const int, const float *__restrict__, const int,
+    const int64_t, const bool, float *__restrict__, float *__restrict__,
+    float *__restrict__, void *);
+
+template void
+sphericart::cuda::spherical_harmonics_with_hessians<double, 8, 16>(
+    const double *__restrict__, const int, const double *__restrict__,
+    const int, const int64_t, const bool, double *__restrict__,
+    double *__restrict__, double *__restrict__, void *);
+
+template void sphericart::cuda::spherical_harmonics_with_hessians<float, 8, 8>(
+    const float *__restrict__, const int, const float *__restrict__, const int,
+    const int64_t, const bool, float *__restrict__, float *__restrict__,
+    float *__restrict__, void *);
+
+template void sphericart::cuda::spherical_harmonics_with_hessians<double, 8, 8>(
+    const double *__restrict__, const int, const double *__restrict__,
+    const int, const int64_t, const bool, double *__restrict__,
+    double *__restrict__, double *__restrict__, void *);
+
+template void sphericart::cuda::spherical_harmonics_with_hessians<float, 8, 4>(
+    const float *__restrict__, const int, const float *__restrict__, const int,
+    const int64_t, const bool, float *__restrict__, float *__restrict__,
+    float *__restrict__, void *);
+
+template void sphericart::cuda::spherical_harmonics_with_hessians<double, 8, 4>(
+    const double *__restrict__, const int, const double *__restrict__,
+    const int, const int64_t, const bool, double *__restrict__,
+    double *__restrict__, double *__restrict__, void *);
 
 /*
     CUDA kernel to computes the backwards pass for autograd.

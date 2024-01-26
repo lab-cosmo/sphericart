@@ -69,6 +69,7 @@ add_library(sphericart ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA AND SPHERICART_ARCH_NATIVE)
     set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES native)
+    set(CMAKE_CUDA_STANDARD 17)
 endif()
 
 
@@ -77,6 +78,7 @@ set_target_properties(sphericart PROPERTIES
     SOVERSION ${SPHERICART_VERSION_MAJOR}.${SPHERICART_VERSION_MINOR}
     POSITION_INDEPENDENT_CODE ON
 )
+
 
 # we need to compile sphericart with C++17 for if constexpr
 target_compile_features(sphericart PRIVATE cxx_std_17)

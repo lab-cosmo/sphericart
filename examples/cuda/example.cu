@@ -62,7 +62,7 @@ int main() {
     CUDA_CHECK(cudaMalloc(&sph_cuda, n_samples * (l_max + 1) * (l_max + 1) *
                                          sizeof(double)));
 
-    calculator_cuda.compute(xyz_cuda, n_samples, false, false,
+    calculator_cuda.compute(xyz_cuda, n_samples,
                             sph_cuda); // no gradients */
 
     CUDA_CHECK(

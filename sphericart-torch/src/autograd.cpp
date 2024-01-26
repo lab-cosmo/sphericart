@@ -222,8 +222,44 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
                 {1, 1, 1, 1},
                 torch::TensorOptions().dtype(xyz.dtype()).device(xyz.device()));
         }
-
         if (xyz.dtype() == c10::kDouble) {
+
+            if (requires_grad && requires_hessian) {
+                calculator.calculator_cuda_double_.compute_with_hessians(
+                    xyz.data_ptr<double>(), xyz.size(0), sph.data_ptr<double>(),
+                    dsph.data_ptr<double>(), ddsph.data_ptr<double>(), stream);
+            } else if (requires_grad) {
+                calculator.calculator_cuda_double_.compute_with_gradients(
+                    xyz.data_ptr<double>(), xyz.size(0), sph.data_ptr<double>(),
+                    dsph.data_ptr<double>(), stream);
+            } else {
+                calculator.calculator_cuda_double_.compute(
+                    xyz.data_ptr<double>(), xyz.size(0), sph.data_ptr<double>(),
+                    stream);
+            }
+
+        } else if (xyz.dtype() == c10::kFloat) {
+
+            if (requires_grad && requires_hessian) {
+                calculator.calculator_cuda_float_.compute_with_hessians(
+                    xyz.data_ptr<float>(), xyz.size(0), sph.data_ptr<float>(),
+                    dsph.data_ptr<float>(), ddsph.data_ptr<float>(), stream);
+            } else if (requires_grad) {
+                calculator.calculator_cuda_float_.compute_with_gradients(
+                    xyz.data_ptr<float>(), xyz.size(0), sph.data_ptr<float>(),
+                    dsph.data_ptr<float>(), stream);
+            } else {
+                calculator.calculator_cuda_float_.compute(
+                    xyz.data_ptr<float>(), xyz.size(0), sph.data_ptr<float>(),
+                    stream);
+            }
+
+        } else {
+            throw std::runtime_error(
+                "this code only runs on c10::kDouble and c10::kFloat tensors");
+        }
+
+        /*if (xyz.dtype() == c10::kDouble) {
             calculator.calculator_cuda_double_.compute(
                 xyz.data_ptr<double>(), xyz.size(0), requires_grad,
                 requires_hessian, sph.data_ptr<double>(),
@@ -237,7 +273,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         } else {
             throw std::runtime_error(
                 "this code only runs on c10::kDouble and c10::kFloat tensors");
-        }
+        } */
 
         if (!requires_grad) {
             dsph = torch::Tensor();

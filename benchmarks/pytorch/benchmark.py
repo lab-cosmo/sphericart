@@ -293,22 +293,24 @@ if __name__ == "__main__":
             args.t,
             args.normalized,
             device="cpu",
-            dtype=torch.float64,
+            dtype=torch.float32,
             compare=args.compare,
             verbose=args.verbose,
             warmup=args.warmup,
         )
+        
         sphericart_benchmark(
             args.l,
             args.s,
             args.t,
             args.normalized,
             device="cpu",
-            dtype=torch.float32,
+            dtype=torch.float64,
             compare=args.compare,
             verbose=args.verbose,
             warmup=args.warmup,
         )
+        
 
     if torch.cuda.is_available() and args.gpu:
         sphericart_benchmark(
@@ -317,19 +319,21 @@ if __name__ == "__main__":
             args.t,
             args.normalized,
             device="cuda",
-            dtype=torch.float64,
+            dtype=torch.float32,
             compare=args.compare,
             verbose=args.verbose,
             warmup=args.warmup,
         )
+        
         sphericart_benchmark(
             args.l,
             args.s,
             args.t,
             args.normalized,
             device="cuda",
-            dtype=torch.float32,
+            dtype=torch.float64,
             compare=args.compare,
             verbose=args.verbose,
             warmup=args.warmup,
         )
+        
