@@ -97,9 +97,9 @@ if __name__ == "__main__":
         # add a random uuid to the file url to prevent pip from using a cached
         # wheel for sphericart-torch, and force it to re-build from scratch
         uuid_ = uuid.uuid4()
-        extras_require[
-            "torch"
-        ] = f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid_}"
+        extras_require["torch"] = (
+            f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid_}"
+        )
     else:
         # installing wheel/sdist
         extras_require["torch"] = "sphericart-torch"
