@@ -533,26 +533,26 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
             case 4:
                 if (requires_grad && requires_hessian) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 4, 16, true, true>);
+                        spherical_harmonics_kernel<float, 8, 16, true, true>);
                 } else if (requires_grad) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 4, 16, true, false>);
+                        spherical_harmonics_kernel<float, 8, 16, true, false>);
                 } else {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 4, 16, false, false>);
+                        spherical_harmonics_kernel<float, 8, 16, false, false>);
                 }
                 break;
 
             case 8:
                 if (requires_grad && requires_hessian) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 4, 16, true, true>);
+                        spherical_harmonics_kernel<double, 8, 16, true, true>);
                 } else if (requires_grad) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 4, 16, true, false>);
+                        spherical_harmonics_kernel<double, 8, 16, true, false>);
                 } else {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 4, 16, false,
+                        spherical_harmonics_kernel<double, 8, 16, false,
                                                    false>);
                 }
                 break;
@@ -563,26 +563,26 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
             case 4:
                 if (requires_grad && requires_hessian) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 4, 8, true, true>);
+                        spherical_harmonics_kernel<float, 8, 8, true, true>);
                 } else if (requires_grad) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 4, 8, true, false>);
+                        spherical_harmonics_kernel<float, 8, 8, true, false>);
                 } else {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 4, 8, false, false>);
+                        spherical_harmonics_kernel<float, 8, 8, false, false>);
                 }
                 break;
 
             case 8:
                 if (requires_grad && requires_hessian) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 4, 8, true, true>);
+                        spherical_harmonics_kernel<double, 8, 8, true, true>);
                 } else if (requires_grad) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 4, 8, true, false>);
+                        spherical_harmonics_kernel<double, 8, 8, true, false>);
                 } else {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 4, 8, false, false>);
+                        spherical_harmonics_kernel<double, 8, 8, false, false>);
                 }
                 break;
             }
@@ -592,26 +592,26 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
             case 4:
                 if (requires_grad && requires_hessian) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 4, 4, true, true>);
+                        spherical_harmonics_kernel<float, 8, 4, true, true>);
                 } else if (requires_grad) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 4, 4, true, false>);
+                        spherical_harmonics_kernel<float, 8, 4, true, false>);
                 } else {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 4, 4, false, false>);
+                        spherical_harmonics_kernel<float, 8, 4, false, false>);
                 }
                 break;
 
             case 8:
                 if (requires_grad && requires_hessian) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 4, 4, true, true>);
+                        spherical_harmonics_kernel<double, 8, 4, true, true>);
                 } else if (requires_grad) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 4, 4, true, false>);
+                        spherical_harmonics_kernel<double, 8, 4, true, false>);
                 } else {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 4, 4, false, false>);
+                        spherical_harmonics_kernel<double, 8, 4, false, false>);
                 }
                 break;
             }
