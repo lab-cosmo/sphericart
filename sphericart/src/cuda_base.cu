@@ -618,7 +618,6 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
             break;
         }
 
-        std::cout << func << " buff: " << required_buff_size << std::endl;
         CUDA_CHECK(cudaFuncSetAttribute(
             func, cudaFuncAttributeMaxDynamicSharedMemorySize,
             required_buff_size));
