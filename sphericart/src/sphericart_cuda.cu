@@ -62,31 +62,8 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
 }
 
 template <typename T>
-void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
-                                    bool compute_with_gradients,
-                                    bool compute_with_hessian, T *sph, T *dsph,
-                                    T *ddsph, void *cuda_stream) {
-
-    if (sph == nullptr) {
-        throw std::runtime_error(
-            "sphericart::cuda::SphericalHarmonics::compute expected "
-            "sph ptr initialised, instead nullptr found. Initialise "
-            "sph with cudaMalloc.");
-    }
-
-    if (compute_with_gradients && dsph == nullptr) {
-        throw std::runtime_error(
-            "sphericart::cuda::SphericalHarmonics::compute expected "
-            "dsph != nullptr since compute_with_gradients = true. "
-            "initialise dsph with cudaMalloc.");
-    }
-
-    if (compute_with_hessian && ddsph == nullptr) {
-        throw std::runtime_error(
-            "sphericart::cuda::SphericalHarmonics::compute expected "
-            "ddsph != nullptr since compute_with_hessian = true. "
-            "initialise ddsph with cudaMalloc.");
-    }
+void SphericalHarmonics<T>::update_cache_and_smem(bool compute_with_gradients,
+                                                  bool compute_with_hessian) {
 
     if (this->cached_compute_with_gradients != compute_with_gradients ||
         this->cached_compute_with_hessian != compute_with_hessian) {
@@ -118,12 +95,123 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
         this->cached_compute_with_gradients = compute_with_gradients;
         this->cached_compute_with_hessian = compute_with_hessian;
     }
+}
 
-    sphericart::cuda::spherical_harmonics_cuda_base<T>(
-        xyz, nsamples, this->prefactors_cuda, this->nprefactors, this->l_max,
-        this->normalized, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
-        compute_with_gradients, compute_with_hessian, sph, dsph, ddsph,
-        cuda_stream);
+template <typename T>
+void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples, T *sph,
+                                    void *cuda_stream) {
+
+    if (sph == nullptr) {
+        throw std::runtime_error(
+            "sphericart::cuda::SphericalHarmonics::compute expected "
+            "sph ptr initialised, instead nullptr found. Initialise "
+            "sph with cudaMalloc.");
+    }
+
+    this->update_cache_and_smem(false, false);
+
+    switch (this->CUDA_GRID_DIM_Y_) {
+    case 16:
+        sphericart::cuda::spherical_harmonics<T, 8, 16>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, cuda_stream);
+        break;
+    case 8:
+        sphericart::cuda::spherical_harmonics<T, 8, 8>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, cuda_stream);
+        break;
+    case 4:
+        sphericart::cuda::spherical_harmonics<T, 8, 4>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, cuda_stream);
+        break;
+    }
+}
+
+template <typename T>
+void SphericalHarmonics<T>::compute_with_gradients(const T *xyz,
+                                                   size_t nsamples, T *sph,
+                                                   T *dsph, void *cuda_stream) {
+    if (sph == nullptr) {
+        throw std::runtime_error(
+            "sphericart::cuda::SphericalHarmonics::compute expected "
+            "sph ptr initialised, instead nullptr found. Initialise "
+            "sph with cudaMalloc.");
+    }
+
+    if (dsph == nullptr) {
+        throw std::runtime_error(
+            "sphericart::cuda::SphericalHarmonics::compute expected "
+            "dsph != nullptr since compute_with_gradients = true. "
+            "initialise dsph with cudaMalloc.");
+    }
+
+    this->update_cache_and_smem(true, false);
+
+    switch (this->CUDA_GRID_DIM_Y_) {
+    case 16:
+        sphericart::cuda::spherical_harmonics_with_gradients<T, 8, 16>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, cuda_stream);
+        break;
+    case 8:
+        sphericart::cuda::spherical_harmonics_with_gradients<T, 8, 8>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, cuda_stream);
+        break;
+    case 4:
+        sphericart::cuda::spherical_harmonics_with_gradients<T, 8, 4>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, cuda_stream);
+        break;
+    }
+}
+
+template <typename T>
+void SphericalHarmonics<T>::compute_with_hessians(const T *xyz, size_t nsamples,
+                                                  T *sph, T *dsph, T *ddsph,
+                                                  void *cuda_stream) {
+    if (sph == nullptr) {
+        throw std::runtime_error(
+            "sphericart::cuda::SphericalHarmonics::compute expected "
+            "sph ptr initialised, instead nullptr found. Initialise "
+            "sph with cudaMalloc.");
+    }
+
+    if (dsph == nullptr) {
+        throw std::runtime_error(
+            "sphericart::cuda::SphericalHarmonics::compute expected "
+            "dsph != nullptr since compute_with_gradients = true. "
+            "initialise dsph with cudaMalloc.");
+    }
+
+    if (ddsph == nullptr) {
+        throw std::runtime_error(
+            "sphericart::cuda::SphericalHarmonics::compute expected "
+            "ddsph != nullptr since compute_with_hessian = true. "
+            "initialise ddsph with cudaMalloc.");
+    }
+
+    this->update_cache_and_smem(true, true);
+
+    switch (this->CUDA_GRID_DIM_Y_) {
+    case 16:
+        sphericart::cuda::spherical_harmonics_with_hessians<T, 8, 16>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, ddsph, cuda_stream);
+        break;
+    case 8:
+        sphericart::cuda::spherical_harmonics_with_hessians<T, 8, 8>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, ddsph, cuda_stream);
+        break;
+    case 4:
+        sphericart::cuda::spherical_harmonics_with_hessians<T, 8, 4>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, ddsph, cuda_stream);
+        break;
+    }
 }
 
 // instantiates the SphericalHarmonics class for basic floating point types

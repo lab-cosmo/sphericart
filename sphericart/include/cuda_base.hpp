@@ -64,14 +64,28 @@ namespace cuda {
  *        Pointer to a cudaStream_t or nullptr. If this is nullptr, the kernel
  * launch will be performed on the default stream.
  */
-template <typename scalar_t>
-void spherical_harmonics_cuda_base(
+
+template <typename scalar_t, int GRID_DIM_Y, int GRID_DIM_X>
+void spherical_harmonics(const scalar_t *__restrict__ xyz, const int nedges,
+                         const scalar_t *__restrict__ prefactors,
+                         const int nprefactors, const int64_t l_max,
+                         const bool normalize, scalar_t *__restrict__ sph,
+                         void *cuda_stream);
+
+template <typename scalar_t, int GRID_DIM_Y, int GRID_DIM_X>
+void spherical_harmonics_with_gradients(
     const scalar_t *__restrict__ xyz, const int nedges,
     const scalar_t *__restrict__ prefactors, const int nprefactors,
-    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
-    scalar_t *__restrict__ sph, scalar_t *__restrict__ dsph,
-    scalar_t *__restrict__ ddsph, void *cuda_stream = nullptr);
+    const int64_t l_max, const bool normalize, scalar_t *__restrict__ sph,
+    scalar_t *__restrict__ dsph, void *cuda_stream);
+
+template <typename scalar_t, int GRID_DIM_Y, int GRID_DIM_X>
+void spherical_harmonics_with_hessians(
+    const scalar_t *__restrict__ xyz, const int nedges,
+    const scalar_t *__restrict__ prefactors, const int nprefactors,
+    const int64_t l_max, const bool normalize, scalar_t *__restrict__ sph,
+    scalar_t *__restrict__ dsph, scalar_t *__restrict__ ddsph,
+    void *cuda_stream);
 
 template <typename scalar_t>
 void spherical_harmonics_backward_cuda_base(
