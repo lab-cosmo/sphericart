@@ -27,52 +27,62 @@ using namespace sphericart::cuda;
         }                                                                      \
     } while (0)
 
-int main() {
+template <class scalar_t> void timing() {
     /* ===== set up the calculation ===== */
 
     // hard-coded parameters for the example
-    size_t n_samples = 10000;
-    size_t l_max = 10;
+    size_t n_samples = 100000;
+    size_t l_max = 32;
 
     // initializes samples
-    auto xyz = std::vector<double>(n_samples * 3, 0.0);
+    auto xyz = std::vector<scalar_t>(n_samples * 3, 0.0);
     for (size_t i = 0; i < n_samples * 3; ++i) {
-        xyz[i] = (double)rand() / (double)RAND_MAX * 2.0 - 1.0;
+        xyz[i] = (scalar_t)rand() / (scalar_t)RAND_MAX * 2.0 - 1.0;
     }
 
     // to avoid unnecessary allocations, calculators can use pre-allocated
     // memory, one also can provide uninitialized vectors that will be
     // automatically reshaped
-    auto sph = std::vector<double>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
+    auto sph =
+        std::vector<scalar_t>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
     auto dsph =
-        std::vector<double>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
-    auto ddsph =
-        std::vector<double>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
+        std::vector<scalar_t>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto ddsph = std::vector<scalar_t>(
+        n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
 
     /* ===== API calls ===== */
 
     // internal buffers and numerical factors are initalized at construction
-    sphericart::cuda::SphericalHarmonics<double> calculator_cuda(l_max);
+    sphericart::cuda::SphericalHarmonics<scalar_t> calculator_cuda(l_max);
 
-    double *xyz_cuda;
-    CUDA_CHECK(cudaMalloc(&xyz_cuda, n_samples * 3 * sizeof(double)));
-    CUDA_CHECK(cudaMemcpy(xyz_cuda, xyz.data(), n_samples * 3 * sizeof(double),
+    scalar_t *xyz_cuda;
+    CUDA_CHECK(cudaMalloc(&xyz_cuda, n_samples * 3 * sizeof(scalar_t)));
+    CUDA_CHECK(cudaMemcpy(xyz_cuda, xyz.data(),
+                          n_samples * 3 * sizeof(scalar_t),
                           cudaMemcpyHostToDevice));
-    double *sph_cuda;
+    scalar_t *sph_cuda;
     CUDA_CHECK(cudaMalloc(&sph_cuda, n_samples * (l_max + 1) * (l_max + 1) *
-                                         sizeof(double)));
+                                         sizeof(scalar_t)));
 
-    calculator_cuda.compute(xyz_cuda, n_samples,
-                            sph_cuda); // no gradients */
+    scalar_t *dsph_cuda;
+    CUDA_CHECK(cudaMalloc(&dsph_cuda, 3 * n_samples * (l_max + 1) *
+                                          (l_max + 1) * sizeof(scalar_t)));
 
+    calculator_cuda.compute_with_gradients(xyz_cuda, n_samples, sph_cuda, dsph_cuda); // no gradients */
+    //calculator_cuda.compute(xyz_cuda, n_samples, sph_cuda); // no gradients
+    // */
     CUDA_CHECK(
         cudaMemcpy(sph.data(), sph_cuda,
-                   n_samples * (l_max + 1) * (l_max + 1) * sizeof(double),
+                   n_samples * (l_max + 1) * (l_max + 1) * sizeof(scalar_t),
                    cudaMemcpyDeviceToHost));
 
     for (int i = 0; i < 4; i++) {
         std::cout << sph[i] << std::endl;
     }
+}
+
+int main() {
+    timing<float>();
 
     return 0;
 }
