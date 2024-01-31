@@ -6,8 +6,15 @@
 
 #include <mutex>
 
+// wrap this with cond because breathe can't handle the same namespace in two
+// files
+/* @cond */
 namespace sphericart {
+/* @endcond */
 
+/**
+ * The ``sphericart::cuda`` namespace contains the CUDA API for `sphericart`.
+ */
 namespace cuda {
 
 /**
@@ -77,6 +84,7 @@ template <typename T> class SphericalHarmonics {
                  bool compute_with_hessian, T *sph, T *dsph = nullptr,
                  T *ddsph = nullptr, void *cuda_stream = nullptr);
 
+    /* @cond */
   private:
     size_t l_max; // maximum l value computed by this class
     size_t nprefactors;
@@ -90,8 +98,13 @@ template <typename T> class SphericalHarmonics {
     bool cached_compute_with_gradients = false;
     bool cached_compute_with_hessian = false;
     int64_t _current_shared_mem_allocation = 0;
+    /* @endcond */
 };
 
 } // namespace cuda
+
+/* @cond */
 } // namespace sphericart
+/* @endcond */
+
 #endif

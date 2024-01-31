@@ -43,6 +43,8 @@ class cmake_ext(build_ext):
         ]
 
         CUDA_HOME = os.environ.get("CUDA_HOME")
+        print("sphericart: CUDA_HOME: ", CUDA_HOME)
+
         if CUDA_HOME is not None:
             cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")
             cmake_options.append("-DSPHERICART_ENABLE_CUDA=ON")
@@ -97,9 +99,9 @@ if __name__ == "__main__":
         # add a random uuid to the file url to prevent pip from using a cached
         # wheel for sphericart-torch, and force it to re-build from scratch
         uuid_ = uuid.uuid4()
-        extras_require[
-            "torch"
-        ] = f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid_}"
+        extras_require["torch"] = (
+            f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid_}"
+        )
     else:
         # installing wheel/sdist
         extras_require["torch"] = "sphericart-torch"
