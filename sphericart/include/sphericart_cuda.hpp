@@ -8,9 +8,7 @@
 
 // wrap this with \cond because breathe can't handle the same namespace in two
 // files
-/** \con */
 namespace sphericart {
-/** \endcon */
 
 namespace cuda {
 
@@ -97,9 +95,6 @@ template <typename T> class SphericalHarmonics {
 };
 
 } // namespace cuda
-
-/** \con */
 } // namespace sphericart
-/** \endcon */
 
 #endif
