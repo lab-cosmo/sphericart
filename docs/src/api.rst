@@ -20,6 +20,7 @@ different languages it supports.
 
     cpp-api
     c-api
+    cuda-api
     python-api
     pytorch-api
     jax-api
