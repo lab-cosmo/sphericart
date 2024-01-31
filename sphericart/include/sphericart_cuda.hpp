@@ -6,8 +6,6 @@
 
 #include <mutex>
 
-// wrap this with \cond because breathe can't handle the same namespace in two
-// files
 namespace sphericart {
 
 namespace cuda {
