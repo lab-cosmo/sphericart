@@ -89,8 +89,7 @@ template <typename T> class SphericalHarmonics {
     T *prefactors_cpu;  // host prefactors buffer
     T *prefactors_cuda; // storage space for prefactors
 
-    int64_t CUDA_GRID_DIM_X_ = 8;
-    int64_t CUDA_GRID_DIM_Y_ = 8;
+    int64_t CUDA_GRID_DIM_X_ = 32;
 
     bool cached_compute_with_gradients = false;
     bool cached_compute_with_hessian = false;

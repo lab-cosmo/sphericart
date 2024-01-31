@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <iostream>
@@ -50,8 +51,8 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
 
     // initialise the currently available amount of shared memory.
     this->_current_shared_mem_allocation = adjust_shared_memory(
-        sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
-        false, false, this->_current_shared_mem_allocation);
+        sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_, false, false,
+        this->_current_shared_mem_allocation);
 }
 
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
@@ -68,22 +69,22 @@ void SphericalHarmonics<T>::update_cache_and_smem(bool compute_with_gradients,
     if (this->cached_compute_with_gradients != compute_with_gradients ||
         this->cached_compute_with_hessian != compute_with_hessian) {
 
-        this->_current_shared_mem_allocation = adjust_shared_memory(
-            sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_,
-            this->CUDA_GRID_DIM_Y_, compute_with_gradients,
-            compute_with_hessian, this->_current_shared_mem_allocation);
+        this->_current_shared_mem_allocation =
+            adjust_shared_memory(sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_,
+                                 compute_with_gradients, compute_with_hessian,
+                                 this->_current_shared_mem_allocation);
 
         if (this->_current_shared_mem_allocation == -1) {
 
             std::cerr << "Warning: Failed to update shared memory size, "
-                         "re-attempting with  GRID_DIM_Y = 4\n"
+                         "re-attempting with  GRID_DIM_X = 16\n"
                       << std::endl;
 
-            this->CUDA_GRID_DIM_Y_ = 4;
+            this->CUDA_GRID_DIM_X_ = 16;
             this->_current_shared_mem_allocation = adjust_shared_memory(
                 sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_,
-                this->CUDA_GRID_DIM_Y_, compute_with_gradients,
-                compute_with_hessian, this->_current_shared_mem_allocation);
+                compute_with_gradients, compute_with_hessian,
+                this->_current_shared_mem_allocation);
 
             if (this->_current_shared_mem_allocation == -1) {
                 throw std::runtime_error(
@@ -110,23 +111,34 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples, T *sph,
 
     this->update_cache_and_smem(false, false);
 
-    switch (this->CUDA_GRID_DIM_Y_) {
+    auto start = std::chrono::high_resolution_clock::now();
+    switch (this->CUDA_GRID_DIM_X_) {
+    case 64:
+        sphericart::cuda::spherical_harmonics<T, 64>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, cuda_stream);
+        break;
+    case 32:
+        sphericart::cuda::spherical_harmonics<T, 32>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, cuda_stream);
+        break;
     case 16:
-        sphericart::cuda::spherical_harmonics<T, 8, 16>(
-            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
-            this->l_max, this->normalized, sph, cuda_stream);
-        break;
-    case 8:
-        sphericart::cuda::spherical_harmonics<T, 8, 8>(
-            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
-            this->l_max, this->normalized, sph, cuda_stream);
-        break;
-    case 4:
-        sphericart::cuda::spherical_harmonics<T, 8, 4>(
+        sphericart::cuda::spherical_harmonics<T, 16>(
             xyz, nsamples, this->prefactors_cuda, this->nprefactors,
             this->l_max, this->normalized, sph, cuda_stream);
         break;
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Calculate the duration
+    auto duration =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+
+    // Print the duration in microseconds
+    std::cout << "Time taken by sphericart_cuda::compute: " << duration.count()
+              << " nanoseconds" << std::endl;
 }
 
 template <typename T>
@@ -149,19 +161,19 @@ void SphericalHarmonics<T>::compute_with_gradients(const T *xyz,
 
     this->update_cache_and_smem(true, false);
 
-    switch (this->CUDA_GRID_DIM_Y_) {
+    switch (this->CUDA_GRID_DIM_X_) {
+    case 64:
+        sphericart::cuda::spherical_harmonics_with_gradients<T, 64>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, cuda_stream);
+        break;
+    case 32:
+        sphericart::cuda::spherical_harmonics_with_gradients<T, 32>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, cuda_stream);
+        break;
     case 16:
-        sphericart::cuda::spherical_harmonics_with_gradients<T, 8, 16>(
-            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
-            this->l_max, this->normalized, sph, dsph, cuda_stream);
-        break;
-    case 8:
-        sphericart::cuda::spherical_harmonics_with_gradients<T, 8, 8>(
-            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
-            this->l_max, this->normalized, sph, dsph, cuda_stream);
-        break;
-    case 4:
-        sphericart::cuda::spherical_harmonics_with_gradients<T, 8, 4>(
+        sphericart::cuda::spherical_harmonics_with_gradients<T, 16>(
             xyz, nsamples, this->prefactors_cuda, this->nprefactors,
             this->l_max, this->normalized, sph, dsph, cuda_stream);
         break;
@@ -195,19 +207,19 @@ void SphericalHarmonics<T>::compute_with_hessians(const T *xyz, size_t nsamples,
 
     this->update_cache_and_smem(true, true);
 
-    switch (this->CUDA_GRID_DIM_Y_) {
+    switch (this->CUDA_GRID_DIM_X_) {
+    case 64:
+        sphericart::cuda::spherical_harmonics_with_hessians<T, 64>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, ddsph, cuda_stream);
+        break;
+    case 32:
+        sphericart::cuda::spherical_harmonics_with_hessians<T, 32>(
+            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
+            this->l_max, this->normalized, sph, dsph, ddsph, cuda_stream);
+        break;
     case 16:
-        sphericart::cuda::spherical_harmonics_with_hessians<T, 8, 16>(
-            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
-            this->l_max, this->normalized, sph, dsph, ddsph, cuda_stream);
-        break;
-    case 8:
-        sphericart::cuda::spherical_harmonics_with_hessians<T, 8, 8>(
-            xyz, nsamples, this->prefactors_cuda, this->nprefactors,
-            this->l_max, this->normalized, sph, dsph, ddsph, cuda_stream);
-        break;
-    case 4:
-        sphericart::cuda::spherical_harmonics_with_hessians<T, 8, 4>(
+        sphericart::cuda::spherical_harmonics_with_hessians<T, 16>(
             xyz, nsamples, this->prefactors_cuda, this->nprefactors,
             this->l_max, this->normalized, sph, dsph, ddsph, cuda_stream);
         break;

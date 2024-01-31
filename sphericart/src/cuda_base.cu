@@ -1,5 +1,6 @@
 #include <cmath>
 #include <iostream>
+#include <chrono>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -10,6 +11,7 @@
 #include "cuda_base.hpp"
 
 #define HARDCODED_LMAX 1
+#define WARP_SIZE 32
 
 /* MASK used for warp reductions */
 #define FULL_MASK 0xffffffff
@@ -38,14 +40,110 @@
     } while (0)
 
 /*
-    Computes the index for buffer values which are shared across GRID_DIM_Y
+    Computes the index for buffer values which are shared across GRID_DIM_X
 */
-__device__ int get_index(int i) { return i * blockDim.y + threadIdx.y; }
+__device__ int get_shared_index(int i) { return i * blockDim.x + threadIdx.x; }
 
+// 2k edges / 32 = 63 blocks
+
+//[nl, nedges] //
+
+__device__ inline int get_global_index(int i, int nedges) {
+    return i * nedges + blockIdx.x * WARP_SIZE + threadIdx.x;
+}
+
+template <class scalar_t>
+__device__ inline void compute_sph_l0(scalar_t *__restrict__ sph_i,
+                                      int nedges) {
+    sph_i[get_global_index(0, nedges)] = 0.282094791773878;
+}
+template <class scalar_t>
+__device__ inline void
+compute_sph_derivative_l0(scalar_t *sph_i, scalar_t *dx_sph_i,
+                          scalar_t *dy_sph_i, scalar_t *dz_sph_i, int nedges) {
+    dx_sph_i[get_global_index(0, nedges)] = 0.0;
+    dy_sph_i[get_global_index(0, nedges)] = 0.0;
+    dz_sph_i[get_global_index(0, nedges)] = 0.0;
+}
+
+template <class scalar_t>
+__device__ inline void compute_sph_second_derivative_l0(
+    scalar_t *sph_i, scalar_t *dxdx_sph_i, scalar_t *dxdy_sph_i,
+    scalar_t *dxdz_sph_i, scalar_t *dydx_sph_i, scalar_t *dydy_sph_i,
+    scalar_t *dydz_sph_i, scalar_t *dzdx_sph_i, scalar_t *dzdy_sph_i,
+    scalar_t *dzdz_sph_i, int nedges) {
+    dxdx_sph_i[get_global_index(0, nedges)] = 0.0;
+    dxdy_sph_i[get_global_index(0, nedges)] = 0.0;
+    dxdz_sph_i[get_global_index(0, nedges)] = 0.0;
+    dydx_sph_i[get_global_index(0, nedges)] = 0.0;
+    dydy_sph_i[get_global_index(0, nedges)] = 0.0;
+    dydz_sph_i[get_global_index(0, nedges)] = 0.0;
+    dzdx_sph_i[get_global_index(0, nedges)] = 0.0;
+    dzdy_sph_i[get_global_index(0, nedges)] = 0.0;
+    dzdz_sph_i[get_global_index(0, nedges)] = 0.0;
+}
+
+template <class scalar_t>
+__device__ inline void compute_sph_l1(scalar_t x, scalar_t y, scalar_t z,
+                                      scalar_t *sph_i, int nedges) {
+    sph_i[get_global_index(1, nedges)] = 0.48860251190292 * y;
+    sph_i[get_global_index(2, nedges)] = 0.48860251190292 * z;
+    sph_i[get_global_index(3, nedges)] = 0.48860251190292 * x;
+}
+
+template <class scalar_t>
+__device__ inline void
+compute_sph_derivative_l1(scalar_t *sph_i, scalar_t *dx_sph_i,
+                          scalar_t *dy_sph_i, scalar_t *dz_sph_i, int nedges) {
+    dx_sph_i[get_global_index(1, nedges)] = 0.0;
+    dx_sph_i[get_global_index(2, nedges)] = 0.0;
+    dx_sph_i[get_global_index(3, nedges)] = 0.48860251190292;
+    dy_sph_i[get_global_index(1, nedges)] = 0.48860251190292;
+    dy_sph_i[get_global_index(2, nedges)] = 0.0;
+    dy_sph_i[get_global_index(3, nedges)] = 0.0;
+    dz_sph_i[get_global_index(1, nedges)] = 0.0;
+    dz_sph_i[get_global_index(2, nedges)] = 0.48860251190292;
+    dz_sph_i[get_global_index(3, nedges)] = 0.0;
+}
+
+template <class scalar_t>
+__device__ inline void compute_sph_second_derivative_l1(
+    scalar_t *sph_i, scalar_t *dxdx_sph_i, scalar_t *dxdy_sph_i,
+    scalar_t *dxdz_sph_i, scalar_t *dydx_sph_i, scalar_t *dydy_sph_i,
+    scalar_t *dydz_sph_i, scalar_t *dzdx_sph_i, scalar_t *dzdy_sph_i,
+    scalar_t *dzdz_sph_i, int nedges) {
+    dxdx_sph_i[get_global_index(1, nedges)] = 0.0;
+    dxdx_sph_i[get_global_index(2, nedges)] = 0.0;
+    dxdx_sph_i[get_global_index(3, nedges)] = 0.0;
+    dxdy_sph_i[get_global_index(1, nedges)] = 0.0;
+    dxdy_sph_i[get_global_index(2, nedges)] = 0.0;
+    dxdy_sph_i[get_global_index(3, nedges)] = 0.0;
+    dxdz_sph_i[get_global_index(1, nedges)] = 0.0;
+    dxdz_sph_i[get_global_index(2, nedges)] = 0.0;
+    dxdz_sph_i[get_global_index(3, nedges)] = 0.0;
+    dydx_sph_i[get_global_index(1, nedges)] = 0.0;
+    dydx_sph_i[get_global_index(2, nedges)] = 0.0;
+    dydx_sph_i[get_global_index(3, nedges)] = 0.0;
+    dydy_sph_i[get_global_index(1, nedges)] = 0.0;
+    dydy_sph_i[get_global_index(2, nedges)] = 0.0;
+    dydy_sph_i[get_global_index(3, nedges)] = 0.0;
+    dydz_sph_i[get_global_index(1, nedges)] = 0.0;
+    dydz_sph_i[get_global_index(2, nedges)] = 0.0;
+    dydz_sph_i[get_global_index(3, nedges)] = 0.0;
+    dzdx_sph_i[get_global_index(1, nedges)] = 0.0;
+    dzdx_sph_i[get_global_index(2, nedges)] = 0.0;
+    dzdx_sph_i[get_global_index(3, nedges)] = 0.0;
+    dzdy_sph_i[get_global_index(1, nedges)] = 0.0;
+    dzdy_sph_i[get_global_index(2, nedges)] = 0.0;
+    dzdy_sph_i[get_global_index(3, nedges)] = 0.0;
+    dzdz_sph_i[get_global_index(1, nedges)] = 0.0;
+    dzdz_sph_i[get_global_index(2, nedges)] = 0.0;
+    dzdz_sph_i[get_global_index(3, nedges)] = 0.0;
+}
 /*
     Clears the shared memory buffers for the spherical harmonics and gradients
    if required.
-*/
+
 template <typename scalar_t, bool requires_grad, bool requires_hessian>
 __device__ inline void
 clear_buffers(int nelements, scalar_t *sph, scalar_t *dsph_x, scalar_t *dsph_y,
@@ -80,12 +178,12 @@ clear_buffers(int nelements, scalar_t *sph, scalar_t *dsph_x, scalar_t *dsph_y,
         }
     }
     __syncthreads();
-}
+} */
 
 /*
     Writes out the shared memory buffers to global memory, as well as applying
    normalisation if necessary.
-*/
+
 template <typename scalar_t, bool requires_grad, bool requires_hessian>
 __device__ inline void write_buffers(
     size_t edge_idx, size_t nedges, scalar_t x, scalar_t y, scalar_t z,
@@ -203,6 +301,492 @@ __device__ inline void write_buffers(
             }
         }
     }
+} */
+
+template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES>
+__device__ inline void generic_sph_l_channel_mine(
+    int l, int nedges,
+    [[maybe_unused]] T x, // these might be unused for low LMAX. not worth a
+                          // full separate implementation
+    [[maybe_unused]] T y, [[maybe_unused]] T z, [[maybe_unused]] T rxy,
+    const T *pk, const T *qlmk, T *c, T *s, T *twomz, T *sph_i,
+    [[maybe_unused]] T *dx_sph_i, [[maybe_unused]] T *dy_sph_i,
+    [[maybe_unused]] T *dz_sph_i, [[maybe_unused]] T *dxdx_sph_i,
+    [[maybe_unused]] T *dxdy_sph_i, [[maybe_unused]] T *dxdz_sph_i,
+    [[maybe_unused]] T *dydx_sph_i, [[maybe_unused]] T *dydy_sph_i,
+    [[maybe_unused]] T *dydz_sph_i, [[maybe_unused]] T *dzdx_sph_i,
+    [[maybe_unused]] T *dzdy_sph_i, [[maybe_unused]] T *dzdz_sph_i) {
+    /*
+    This is the main low-level code to compute sph and dsph for an arbitrary l.
+    The code is a bit hard to follow because of (too?) many micro-optimizations.
+    Sine and cosine terms are precomputed. Here the Qlm modifield Legendre
+    polynomials are evaluated, and combined with the other terms and the
+    prefactors. The core iteration is an iteration down to lower values of m,
+
+    Qlm = A z Ql(m+1) + B rxy^2 Ql(m+2)
+
+    1. the special cases with l=+-m and +-1 are done separately, also because
+    they initialize the recursive expression
+    2. we assume that some lower l are done with hard-coding, and HARDCODED_LMAX
+    is passed as a template parameter. this is used to split the loops over m in
+    a part with fixed size, known at compile time, and one with variable length.
+    3. we do the recursion using stack variables and never store the full Qlm
+    array
+    4. we compute separately Qlm and Q(l-1) - the latter needed for derivatives
+    rather than reuse the calculation from another l channel. It appears that
+    the simplification in memory access makes this beneficial, with the added
+    advantage that each l channel can be computed independently
+
+    Template parameters:
+    typename T: float type (e.g. single/double precision)
+    bool DO_DERIVATIVES: should we evaluate the derivatives?
+    bool DO_SECOND_DERIVATIVES: should we evaluate the second derivatives?
+    bool NORMALIZED: should we normalize the input positions?
+
+    Actual parameters:
+    l: which l we are computing
+    x,y,z: the Cartesian coordinates of the point
+    rxy: sqrt(x^2+y^2), precomputed because it's used for all l
+    pk, qlmk: prefactors used in the calculation of Ylm and Qlm, respectively
+    c,s: the c_k and s_k cos-like and sin-like terms combined with the Qlm to
+    compute Ylm twomz: 2*m*z, these are also computed once and reused for all l
+    sph_i, d[x,y,z]sph_i: storage locations of the output arrays for Ylm and
+    dYlm/d[x,y,z] d[x,y,z]d[x,y,z]sph_i: storage locations of the output arrays
+    for the second derivatives
+
+    */
+    static_assert(
+        !(DO_SECOND_DERIVATIVES && !DO_DERIVATIVES),
+        "Cannot calculate second derivatives without first derivatives");
+
+    // working space for the recursive evaluation of Qlm and Q(l-1)m.
+    // qlm_[0,1,2] correspond to the current Qlm, Ql(m+1) and Ql(m+2), and the
+    // ql1m_[0,1,2] hold the same but for l-1
+    // ql2m_[0,1,2] hold the same but for l-2
+    [[maybe_unused]] T qlm_2, qlm_1, qlm_0;
+    [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
+    [[maybe_unused]] T ql2m_2, ql2m_1, ql2m_0;
+
+    [[maybe_unused]] T x2, y2,
+        xy; // for second derivatives. we could get them from parent but not
+            // worth the additional complexity
+    if constexpr (DO_SECOND_DERIVATIVES) {
+        x2 = x * x;
+        y2 = y * y;
+        xy = x * y;
+    }
+
+    // m=+-l
+    qlm_2 = qlmk[l]; // fetches the pre-computed Qll
+    auto pq = qlm_2 * pk[l];
+    sph_i[get_global_index(-l, nedges)] = pq * s[get_shared_index(l)];
+    sph_i[get_global_index(+l, nedges)] = pq * c[get_shared_index(l)];
+
+    if constexpr (DO_DERIVATIVES) {
+        pq *= l;
+        dx_sph_i[get_global_index(-l, nedges)] =
+            pq * s[get_shared_index(l - 1)];
+        dy_sph_i[get_global_index(-l, nedges)] =
+            pq * c[get_shared_index(l - 1)];
+        dx_sph_i[get_global_index(l, nedges)] = pq * c[get_shared_index(l - 1)];
+        dy_sph_i[get_global_index(l, nedges)] =
+            -pq * s[get_shared_index(l - 1)];
+        dz_sph_i[get_global_index(-l, nedges)] = 0;
+        dz_sph_i[get_global_index(l, nedges)] = 0;
+        ql1m_2 = 0;
+
+        if constexpr (DO_SECOND_DERIVATIVES) {
+            pq *= (l - 1);
+            dxdx_sph_i[get_global_index(l, nedges)] =
+                pq * c[get_shared_index(l - 2)];
+            dxdx_sph_i[get_global_index(-l, nedges)] =
+                pq * s[get_shared_index(l - 2)];
+            dxdy_sph_i[get_global_index(l, nedges)] =
+                -pq * s[get_shared_index(l - 2)];
+            dydx_sph_i[get_global_index(l, nedges)] =
+                -pq * s[get_shared_index(l - 2)];
+            dydy_sph_i[get_global_index(-l, nedges)] =
+                -pq * s[get_shared_index(l - 2)];
+
+            dxdy_sph_i[get_global_index(-l, nedges)] =
+                pq * c[get_shared_index(l - 2)];
+            dydx_sph_i[get_global_index(-l, nedges)] =
+                pq * c[get_shared_index(l - 2)];
+
+            dxdz_sph_i[get_global_index(l, nedges)] = 0.0;
+            dzdx_sph_i[get_global_index(l, nedges)] = 0.0;
+            dxdz_sph_i[get_global_index(-l, nedges)] = 0.0;
+            dzdx_sph_i[get_global_index(-l, nedges)] = 0.0;
+            dydy_sph_i[get_global_index(l, nedges)] =
+                -pq * c[get_shared_index(l - 2)];
+            dydz_sph_i[get_global_index(l, nedges)] = 0.0;
+            dzdy_sph_i[get_global_index(l, nedges)] = 0.0;
+            dydz_sph_i[get_global_index(-l, nedges)] = 0.0;
+            dzdy_sph_i[get_global_index(-l, nedges)] = 0.0;
+            dzdz_sph_i[get_global_index(l, nedges)] = 0.0;
+            dzdz_sph_i[get_global_index(-l, nedges)] = 0.0;
+            ql2m_2 = 0.0;
+        }
+    }
+
+    // m = +-(l-1)
+    qlm_1 = -z * qlm_2;
+    pq = qlm_1 * pk[l - 1];
+    sph_i[get_global_index(-l + 1, nedges)] = pq * s[get_shared_index(l - 1)];
+    sph_i[get_global_index(+l - 1, nedges)] = pq * c[get_shared_index(l - 1)];
+
+    if constexpr (DO_DERIVATIVES) {
+        pq *= (l - 1);
+        dx_sph_i[get_global_index(-l + 1, nedges)] =
+            pq * s[get_shared_index(l - 2)];
+        dy_sph_i[get_global_index(-l + 1, nedges)] =
+            pq * c[get_shared_index(l - 2)];
+        dx_sph_i[get_global_index(l - 1, nedges)] =
+            pq * c[get_shared_index(l - 2)];
+        dy_sph_i[get_global_index(l - 1, nedges)] =
+            -pq * s[get_shared_index(l - 2)];
+
+        // uses Q(l-1)(l-1) to initialize the Qlm  recursion
+        ql1m_1 = qlmk[-1];
+        auto pdq = pk[l - 1] * (l + l - 1) * ql1m_1;
+        dz_sph_i[get_global_index(-l + 1, nedges)] =
+            pdq * s[get_shared_index(l - 1)];
+        dz_sph_i[get_global_index(l - 1, nedges)] =
+            pdq * c[get_shared_index(l - 1)];
+    }
+
+    if constexpr (DO_SECOND_DERIVATIVES) {
+        pq *= (l - 2);
+        auto val_c = 0.0;
+        auto val_s = 0.0;
+        if (l == 2) { // this is a special case for second derivatives
+            if (l != 2) {
+                val_c = pq * c[get_shared_index(l - 3)];
+                val_s = pq * s[get_shared_index(l - 3)];
+
+                dxdx_sph_i[get_global_index(l - 1, nedges)] = val_c;
+                dxdx_sph_i[get_global_index(-l + 1, nedges)] = val_s;
+            }
+            dxdy_sph_i[get_global_index(l - 1, nedges)] = -val_s;
+            dydx_sph_i[get_global_index(l - 1, nedges)] = -val_s;
+            dydy_sph_i[get_global_index(-l + 1, nedges)] = -val_s;
+
+            dxdy_sph_i[get_global_index(-l + 1, nedges)] = val_c;
+            dydx_sph_i[get_global_index(-l + 1, nedges)] = val_c;
+
+            auto temp = -pk[l - 1] * (l - 1) *
+                        qlm_2; // this is p[l-1]*q[l-1][l-1]*(2*l-1)*(l-1) =
+                               // p[l-1]*(l-1)*Q_ll
+            dxdz_sph_i[get_global_index(l - 1, nedges)] =
+                temp * c[get_shared_index(l - 2)];
+            dzdx_sph_i[get_global_index(l - 1, nedges)] =
+                temp * c[get_shared_index(l - 2)];
+
+            dxdz_sph_i[get_global_index(-l + 1, nedges)] =
+                temp * s[get_shared_index(l - 2)];
+            dzdx_sph_i[get_global_index(-l + 1, nedges)] =
+                temp * s[get_shared_index(l - 2)];
+
+            dydy_sph_i[get_global_index(l - 1, nedges)] = -val_c;
+            dydz_sph_i[get_global_index(l - 1, nedges)] =
+                temp * s[get_shared_index(l - 2)];
+            dzdy_sph_i[get_global_index(l - 1, nedges)] =
+                temp * s[get_shared_index(l - 2)];
+
+            dydz_sph_i[get_global_index(-l + 1, nedges)] =
+                temp * c[get_shared_index(l - 2)];
+            dzdy_sph_i[get_global_index(-l + 1, nedges)] =
+                temp * c[get_shared_index(l - 2)];
+            dzdz_sph_i[get_global_index(l - 1, nedges)] = 0.0;
+            dzdz_sph_i[get_global_index(-l + 1, nedges)] = 0.0;
+            ql2m_1 = 0.0;
+        }
+    }
+
+    // and now do the other m's, decrementally
+    for (auto m = l - 2; m > HARDCODED_LMAX - 1; --m) {
+        qlm_0 = qlmk[m] * (twomz[get_shared_index(m)] * qlm_1 + rxy * qlm_2);
+        qlm_2 = qlm_1;
+        qlm_1 = qlm_0; // shift
+        pq = qlm_0 * pk[m];
+        sph_i[get_global_index(-m, nedges)] = pq * s[get_shared_index(m)];
+        sph_i[get_global_index(+m, nedges)] = pq * c[get_shared_index(m)];
+
+        if constexpr (DO_DERIVATIVES) {
+            ql1m_0 = qlmk[m - l] *
+                     (twomz[get_shared_index(m)] * ql1m_1 + rxy * ql1m_2);
+            ql1m_2 = ql1m_1;
+            ql1m_1 = ql1m_0; // shift
+
+            pq *= m;
+            auto pqs = pq * s[get_shared_index(m - 1)],
+                 pqc = pq * c[get_shared_index(m - 1)];
+            auto pdq = pk[m] * ql1m_2;
+            auto pdqx = pdq * x;
+            dx_sph_i[get_global_index(-m, nedges)] =
+                (pdqx * s[get_shared_index(m)] + pqs);
+            dx_sph_i[get_global_index(+m, nedges)] =
+                (pdqx * c[get_shared_index(m)] + pqc);
+            auto pdqy = pdq * y;
+            dy_sph_i[get_global_index(-m, nedges)] =
+                (pdqy * s[get_shared_index(m)] + pqc);
+            dy_sph_i[get_global_index(m, nedges)] =
+                (pdqy * c[get_shared_index(m)] - pqs);
+            pdq = pk[m] * (l + m) * ql1m_1;
+            dz_sph_i[get_global_index(-m, nedges)] =
+                pdq * s[get_shared_index(m)];
+            dz_sph_i[get_global_index(m, nedges)] =
+                pdq * c[get_shared_index(m)];
+
+            if constexpr (DO_SECOND_DERIVATIVES) {
+                if (m == l - 2) {
+                    // In this case, the recursion still needs to be
+                    // initialized using Q(l-2)(l-2)
+                    ql2m_0 = qlmk[-l - 1];
+                } else {
+                    // Recursion
+                    ql2m_0 =
+                        qlmk[m - 2 * l + 1] *
+                        (twomz[get_shared_index(m)] * ql2m_1 + rxy * ql2m_2);
+                }
+
+                pq /= m;
+                auto pql1m_1 =
+                    pk[m] * ql1m_2; // Note the index discrepancy: ql1m_1
+                                    // was already shifted above to ql1m_2
+                auto pql2m_2 = pk[m] * ql2m_2;
+                auto pql2m_0 = pk[m] * ql2m_0;
+                auto pql1m_0 =
+                    pk[m] * ql1m_1; // Note the index discrepancy: ql1m_0
+                                    // was already shifted above to ql1m_1
+                auto pql2m_1 = pk[m] * ql2m_1;
+
+                // Diagonal hessian terms
+                T mmpqc2 = 0.0;
+                T mmpqs2 = 0.0;
+                if (m != 1) {
+                    mmpqc2 = m * (m - 1) * pq * c[get_shared_index(m - 2)];
+                    mmpqs2 = m * (m - 1) * pq * s[get_shared_index(m - 2)];
+                }
+
+                dxdx_sph_i[get_global_index(m, nedges)] =
+                    pql1m_1 * c[get_shared_index(m)] +
+                    x2 * pql2m_2 * c[get_shared_index(m)] +
+                    2 * m * x * pql1m_1 * c[get_shared_index(m - 1)] + mmpqc2;
+                dxdx_sph_i[get_global_index(-m, nedges)] =
+                    pql1m_1 * s[get_shared_index(m)] +
+                    x2 * pql2m_2 * s[get_shared_index(m)] +
+                    2 * m * x * pql1m_1 * s[get_shared_index(m - 1)] + mmpqs2;
+                dydy_sph_i[get_global_index(m, nedges)] =
+                    pql1m_1 * c[get_shared_index(m)] +
+                    y2 * pql2m_2 * c[get_shared_index(m)] -
+                    2 * m * y * pql1m_1 * s[get_shared_index(m - 1)] - mmpqc2;
+                dydy_sph_i[get_global_index(-m, nedges)] =
+                    pql1m_1 * s[get_shared_index(m)] +
+                    y2 * pql2m_2 * s[get_shared_index(m)] +
+                    2 * m * y * pql1m_1 * c[get_shared_index(m - 1)] - mmpqs2;
+                dzdz_sph_i[get_global_index(m, nedges)] =
+                    (l + m) * (l + m - 1) * pql2m_0 * c[get_shared_index(m)];
+                dzdz_sph_i[get_global_index(-m, nedges)] =
+                    (l + m) * (l + m - 1) * pql2m_0 * s[get_shared_index(m)];
+
+                // Off-diagonal terms. Note that these are symmetric
+                dxdy_sph_i[get_global_index(m, nedges)] =
+                    dydx_sph_i[get_global_index(m, nedges)] =
+                        xy * pql2m_2 * c[get_shared_index(m)] +
+                        y * pql1m_1 * m * c[get_shared_index(m - 1)] -
+                        x * pql1m_1 * m * s[get_shared_index(m - 1)] - mmpqs2;
+                dxdy_sph_i[get_global_index(-m, nedges)] =
+                    dydx_sph_i[get_global_index(-m, nedges)] =
+                        xy * pql2m_2 * s[get_shared_index(m)] +
+                        y * pql1m_1 * m * s[get_shared_index(m - 1)] +
+                        x * pql1m_1 * m * c[get_shared_index(m - 1)] + mmpqc2;
+                dxdz_sph_i[get_global_index(m, nedges)] =
+                    dzdx_sph_i[get_global_index(m, nedges)] =
+                        x * (l + m) * pql2m_1 * c[get_shared_index(m)] +
+                        (l + m) * pql1m_0 * m * c[get_shared_index(m - 1)];
+                dxdz_sph_i[get_global_index(-m, nedges)] =
+                    dzdx_sph_i[get_global_index(-m, nedges)] =
+                        x * (l + m) * pql2m_1 * s[get_shared_index(m)] +
+                        (l + m) * pql1m_0 * m * s[get_shared_index(m - 1)];
+                dydz_sph_i[get_global_index(m, nedges)] =
+                    dzdy_sph_i[get_global_index(m, nedges)] =
+                        y * (l + m) * pql2m_1 * c[get_shared_index(m)] -
+                        (l + m) * pql1m_0 * m * s[get_shared_index(m - 1)];
+                dydz_sph_i[get_global_index(-m, nedges)] =
+                    dzdy_sph_i[get_global_index(-m, nedges)] =
+                        y * (l + m) * pql2m_1 * s[get_shared_index(m)] +
+                        (l + m) * pql1m_0 * m * c[get_shared_index(m - 1)];
+
+                ql2m_2 = ql2m_1;
+                ql2m_1 = ql2m_0; // shift at the end because we need all
+                                 // three at the same time
+            }
+        }
+    }
+    for (auto m = HARDCODED_LMAX - 1; m > 0; --m) {
+        qlm_0 = qlmk[m] * (twomz[get_shared_index(m)] * qlm_1 + rxy * qlm_2);
+        qlm_2 = qlm_1;
+        qlm_1 = qlm_0; // shift
+
+        pq = qlm_0 * pk[m];
+        sph_i[get_global_index(-m, nedges)] = pq * s[get_shared_index(m)];
+        sph_i[get_global_index(+m, nedges)] = pq * c[get_shared_index(m)];
+
+        if constexpr (DO_DERIVATIVES) {
+            ql1m_0 = qlmk[m - l] *
+                     (twomz[get_shared_index(m)] * ql1m_1 + rxy * ql1m_2);
+            ql1m_2 = ql1m_1;
+            ql1m_1 = ql1m_0; // shift
+
+            pq *= m;
+            auto pqs = pq * s[get_shared_index(m - 1)],
+                 pqc = pq * c[get_shared_index(m - 1)];
+            auto pdq = pk[m] * ql1m_2;
+            auto pdqx = pdq * x;
+            dx_sph_i[get_global_index(-m, nedges)] =
+                (pdqx * s[get_shared_index(m)] + pqs);
+            dx_sph_i[get_global_index(+m, nedges)] =
+                (pdqx * c[get_shared_index(m)] + pqc);
+            auto pdqy = pdq * y;
+            dy_sph_i[get_global_index(-m, nedges)] =
+                (pdqy * s[get_shared_index(m)] + pqc);
+            dy_sph_i[get_global_index(m, nedges)] =
+                (pdqy * c[get_shared_index(m)] - pqs);
+            pdq = pk[m] * (l + m) * ql1m_1;
+            dz_sph_i[get_global_index(-m, nedges)] =
+                pdq * s[get_shared_index(m)];
+            dz_sph_i[get_global_index(m, nedges)] =
+                pdq * c[get_shared_index(m)];
+
+            if constexpr (DO_SECOND_DERIVATIVES) {
+                if (m == l - 2) {
+                    // In this case, the recursion still needs to be
+                    // initialized using Q(l-2)(l-2)
+                    ql2m_0 = qlmk[-l - 1];
+                } else {
+                    // Recursion
+                    ql2m_0 =
+                        qlmk[m - 2 * l + 1] *
+                        (twomz[get_shared_index(m)] * ql2m_1 + rxy * ql2m_2);
+                }
+
+                pq /= m;
+                auto pql1m_1 =
+                    pk[m] * ql1m_2; // Note the index discrepancy: ql1m_1
+                                    // was already shifted above to ql1m_2
+                auto pql2m_2 = pk[m] * ql2m_2;
+                auto pql2m_0 = pk[m] * ql2m_0;
+                auto pql1m_0 =
+                    pk[m] * ql1m_1; // Note the index discrepancy: ql1m_0
+                                    // was already shifted above to ql1m_1
+                auto pql2m_1 = pk[m] * ql2m_1;
+
+                // Diagonal hessian terms
+                T mmpqc2 = 0.0;
+                T mmpqs2 = 0.0;
+
+                if (m != 1) {
+                    mmpqc2 = m * (m - 1) * pq * c[get_shared_index(m - 2)];
+                    mmpqs2 = m * (m - 1) * pq * s[get_shared_index(m - 2)];
+                }
+
+                dxdx_sph_i[get_global_index(m, nedges)] =
+                    pql1m_1 * c[get_shared_index(m)] +
+                    x2 * pql2m_2 * c[get_shared_index(m)] +
+                    2 * m * x * pql1m_1 * c[get_shared_index(m - 1)] + mmpqc2;
+                dxdx_sph_i[get_global_index(-m, nedges)] =
+                    pql1m_1 * s[get_shared_index(m)] +
+                    x2 * pql2m_2 * s[get_shared_index(m)] +
+                    2 * m * x * pql1m_1 * s[get_shared_index(m - 1)] + mmpqs2;
+                dydy_sph_i[get_global_index(m, nedges)] =
+                    pql1m_1 * c[get_shared_index(m)] +
+                    y2 * pql2m_2 * c[get_shared_index(m)] -
+                    2 * m * y * pql1m_1 * s[get_shared_index(m - 1)] - mmpqc2;
+                dydy_sph_i[get_global_index(-m, nedges)] =
+                    pql1m_1 * s[get_shared_index(m)] +
+                    y2 * pql2m_2 * s[get_shared_index(m)] +
+                    2 * m * y * pql1m_1 * c[get_shared_index(m - 1)] - mmpqs2;
+                dzdz_sph_i[get_global_index(m, nedges)] =
+                    (l + m) * (l + m - 1) * pql2m_0 * c[get_shared_index(m)];
+                dzdz_sph_i[get_global_index(-m, nedges)] =
+                    (l + m) * (l + m - 1) * pql2m_0 * s[get_shared_index(m)];
+
+                // Off-diagonal terms. Note that these are symmetric
+                dxdy_sph_i[get_global_index(m, nedges)] =
+                    dydx_sph_i[get_global_index(m, nedges)] =
+                        xy * pql2m_2 * c[get_shared_index(m)] +
+                        y * pql1m_1 * m * c[get_shared_index(m - 1)] -
+                        x * pql1m_1 * m * s[get_shared_index(m - 1)] - mmpqs2;
+                dxdy_sph_i[get_global_index(-m, nedges)] =
+                    dydx_sph_i[get_global_index(-m, nedges)] =
+                        xy * pql2m_2 * s[get_shared_index(m)] +
+                        y * pql1m_1 * m * s[get_shared_index(m - 1)] +
+                        x * pql1m_1 * m * c[get_shared_index(m - 1)] + mmpqc2;
+                dxdz_sph_i[get_global_index(m, nedges)] =
+                    dzdx_sph_i[get_global_index(m, nedges)] =
+                        x * (l + m) * pql2m_1 * c[get_shared_index(m)] +
+                        (l + m) * pql1m_0 * m * c[get_shared_index(m - 1)];
+                dxdz_sph_i[get_global_index(-m, nedges)] =
+                    dzdx_sph_i[get_global_index(-m, nedges)] =
+                        x * (l + m) * pql2m_1 * s[get_shared_index(m)] +
+                        (l + m) * pql1m_0 * m * s[get_shared_index(m - 1)];
+                dydz_sph_i[get_global_index(m, nedges)] =
+                    dzdy_sph_i[get_global_index(m, nedges)] =
+                        y * (l + m) * pql2m_1 * c[get_shared_index(m)] -
+                        (l + m) * pql1m_0 * m * s[get_shared_index(m - 1)];
+                dydz_sph_i[get_global_index(-m, nedges)] =
+                    dzdy_sph_i[get_global_index(-m, nedges)] =
+                        y * (l + m) * pql2m_1 * s[get_shared_index(m)] +
+                        (l + m) * pql1m_0 * m * c[get_shared_index(m - 1)];
+
+                ql2m_2 = ql2m_1;
+                ql2m_1 = ql2m_0; // shift at the end because we need all
+                                 // three at the same time
+            }
+        }
+    }
+
+    // m=0 is also a special case
+    qlm_0 = qlmk[0] * (twomz[get_shared_index(0)] * qlm_1 + rxy * qlm_2);
+    sph_i[get_global_index(0, nedges)] = qlm_0 * pk[0];
+
+    if constexpr (DO_DERIVATIVES) {
+        ql1m_0 =
+            qlmk[-l] * (twomz[get_shared_index(0)] * ql1m_1 + rxy * ql1m_2);
+        // derivatives
+        dx_sph_i[get_global_index(0, nedges)] = pk[0] * x * ql1m_1;
+        dy_sph_i[get_global_index(0, nedges)] = pk[0] * y * ql1m_1;
+        dz_sph_i[get_global_index(0, nedges)] = pk[0] * l * ql1m_0;
+
+        if constexpr (DO_SECOND_DERIVATIVES) {
+            if (l == 2) {
+                // special case: recursion is not initialized yet
+                ql2m_0 = qlmk[-2 * l + 1];
+            } else {
+                ql2m_0 = qlmk[-2 * l + 1] *
+                         (twomz[get_shared_index(0)] * ql2m_1 + rxy * ql2m_2);
+            }
+
+            auto pql1m_1 = pk[0] * ql1m_1;
+            auto pql2m_2 = pk[0] * ql2m_2;
+            auto pql2m_0 = pk[0] * ql2m_0;
+            auto pql2m_1 = pk[0] * ql2m_1;
+
+            // diagonal
+            dxdx_sph_i[get_global_index(0, nedges)] = pql1m_1 + x2 * pql2m_2;
+            dydy_sph_i[get_global_index(0, nedges)] = pql1m_1 + y2 * pql2m_2;
+            dzdz_sph_i[get_global_index(0, nedges)] = (l) * (l - 1) * pql2m_0;
+
+            // off-diagonal (symmetric)
+            dxdy_sph_i[get_global_index(0, nedges)] =
+                dydx_sph_i[get_global_index(0, nedges)] = xy * pql2m_2;
+            dxdz_sph_i[get_global_index(0, nedges)] =
+                dzdx_sph_i[get_global_index(0, nedges)] = x * l * pql2m_1;
+            dydz_sph_i[get_global_index(0, nedges)] =
+                dzdy_sph_i[get_global_index(0, nedges)] = y * l * pql2m_1;
+        }
+    }
 }
 
 /*
@@ -210,46 +794,55 @@ __device__ inline void write_buffers(
    derivatives.
 */
 
-template <typename scalar_t, int GRID_DIM_X, int GRID_DIM_Y, bool requires_grad,
+template <typename scalar_t, int GRID_DIM_X, bool requires_grad,
           bool requires_hessian>
-__global__ void __launch_bounds__(GRID_DIM_X *GRID_DIM_Y)
-    spherical_harmonics_kernel(const scalar_t *__restrict__ xyz, int nedges,
-                               const scalar_t *__restrict__ prefactors,
-                               int nprefactors, int lmax, int ntotal,
-                               bool normalize, scalar_t *__restrict__ sph,
-                               scalar_t *__restrict__ dsph,
-                               scalar_t *__restrict__ ddsph) {
+__global__ void spherical_harmonics_kernel(
+    const scalar_t *__restrict__ xyz, int nedges,
+    const scalar_t *__restrict__ prefactors, int nprefactors, int lmax,
+    int ntotal, bool normalize, scalar_t *__restrict__ sph,
+    scalar_t *__restrict__ dsph, scalar_t *__restrict__ ddsph) {
 
     extern __shared__ char buffer[];
 
+    /*
     size_t offset = 0;
 
     scalar_t *buffer_c = reinterpret_cast<scalar_t *>(buffer + offset);
-    offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
+    offset += blockDim.x * (lmax + 1) * sizeof(scalar_t);
     scalar_t *buffer_s = reinterpret_cast<scalar_t *>(buffer + offset);
-    offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
+    offset += blockDim.x * (lmax + 1) * sizeof(scalar_t);
     scalar_t *buffer_twomz = reinterpret_cast<scalar_t *>(buffer + offset);
-    offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
+    offset += blockDim.x * (lmax + 1) * sizeof(scalar_t);
     scalar_t *buffer_prefactors = reinterpret_cast<scalar_t *>(buffer + offset);
     offset += nprefactors * sizeof(scalar_t);
 
     int nl = max(static_cast<int>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
                  2 * lmax + 1);
+    int nltotal = (lmax + 1) * (lmax + 1);
 
-    scalar_t *buffer_sph = reinterpret_cast<scalar_t *>(buffer + offset);
-    offset += blockDim.y * nl * sizeof(scalar_t);
+    scalar_t *buffer_sph = sph;
+    // scalar_t *buffer_sph = reinterpret_cast<scalar_t *>(buffer + offset);
+    // offset += blockDim.y * nl * sizeof(scalar_t);
 
     scalar_t *buffer_dsph_x;
     scalar_t *buffer_dsph_y;
     scalar_t *buffer_dsph_z;
 
     if constexpr (requires_grad) {
+        buffer_dsph_x = dsph;
+        buffer_dsph_y = dsph + nltotal * nedges;
+        buffer_dsph_z = dsph + 2 * nltotal * nedges;
+        /*
         buffer_dsph_x = reinterpret_cast<scalar_t *>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
         buffer_dsph_y = reinterpret_cast<scalar_t *>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
         buffer_dsph_z = reinterpret_cast<scalar_t *>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
+        // dsph: [nl, 3, nedges]
+        // buffer_dsph_x = dsph + edge_idx * 3 * n_total + 0 * n_total +
+        offset
+
     }
 
     scalar_t *buffer_dsph_dxdx;
@@ -263,6 +856,19 @@ __global__ void __launch_bounds__(GRID_DIM_X *GRID_DIM_Y)
     scalar_t *buffer_dsph_dzdz;
 
     if constexpr (requires_hessian) {
+        buffer_dsph_dxdx = ddsph;
+        buffer_dsph_dxdy = ddsph + 1 * nltotal * nedges;
+        buffer_dsph_dxdz = ddsph + 2 * nltotal * nedges;
+
+        buffer_dsph_dydx = ddsph + 3 * nltotal * nedges;
+        buffer_dsph_dydy = ddsph + 4 * nltotal * nedges;
+        buffer_dsph_dydz = ddsph + 5 * nltotal * nedges;
+
+        buffer_dsph_dzdx = ddsph + 6 * nltotal * nedges;
+        buffer_dsph_dzdy = ddsph + 7 * nltotal * nedges;
+        buffer_dsph_dzdz = ddsph + 8 * nltotal * nedges;
+
+        /*
         buffer_dsph_dxdx = reinterpret_cast<scalar_t *>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
         buffer_dsph_dxdy = reinterpret_cast<scalar_t *>(buffer + offset);
@@ -285,7 +891,7 @@ __global__ void __launch_bounds__(GRID_DIM_X *GRID_DIM_Y)
         offset += blockDim.y * nl * sizeof(scalar_t);
     }
 
-    size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    size_t edge_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     scalar_t x = 0.0;
     scalar_t y = 0.0;
@@ -295,11 +901,10 @@ __global__ void __launch_bounds__(GRID_DIM_X *GRID_DIM_Y)
     scalar_t y2 = 0.0;
     scalar_t z2 = 0.0;
 
-    if (threadIdx.y == 0) {
-        for (int i = threadIdx.x; i < nprefactors; i += blockDim.x) {
-            buffer_prefactors[i] = prefactors[i];
-        }
+    for (int i = threadIdx.x; i < nprefactors; i += blockDim.x) {
+        buffer_prefactors[i] = prefactors[i];
     }
+
     __syncthreads();
 
     if (edge_idx < nedges) {
@@ -329,23 +934,22 @@ __global__ void __launch_bounds__(GRID_DIM_X *GRID_DIM_Y)
 
     auto rxy = x2 + y2;
     auto twoz = 2 * z;
-    if (threadIdx.x == 0) {
-        buffer_c[get_index(0)] = 1.0;
-        buffer_s[get_index(0)] = 0.0;
-        buffer_twomz[get_index(0)] = twoz;
 
-        for (int m = 1; m < lmax + 1; m++) {
-            int m_in_idx = get_index(m - 1);
-            int m_out_idx = get_index(m);
+    buffer_c[get_shared_index(0)] = 1.0;
+    buffer_s[get_shared_index(0)] = 0.0;
+    buffer_twomz[get_shared_index(0)] = twoz;
 
-            scalar_t c = buffer_c[m_in_idx];
-            scalar_t s = buffer_s[m_in_idx];
-            scalar_t twomz = buffer_twomz[m_in_idx];
+    for (int m = 1; m < lmax + 1; m++) {
+        int m_in_idx = get_shared_index(m - 1);
+        int m_out_idx = get_shared_index(m);
 
-            buffer_c[m_out_idx] = c * x - s * y;
-            buffer_s[m_out_idx] = c * y + s * x;
-            buffer_twomz[m_out_idx] = twomz + twoz;
-        }
+        scalar_t c = buffer_c[m_in_idx];
+        scalar_t s = buffer_s[m_in_idx];
+        scalar_t twomz = buffer_twomz[m_in_idx];
+
+        buffer_c[m_out_idx] = c * x - s * y;
+        buffer_s[m_out_idx] = c * y + s * x;
+        buffer_twomz[m_out_idx] = twomz + twoz;
     }
 
     __syncthreads();
@@ -353,109 +957,120 @@ __global__ void __launch_bounds__(GRID_DIM_X *GRID_DIM_Y)
     // work through hardcoded parts first...
     int ml = min(static_cast<int>(HARDCODED_LMAX), lmax);
 
-    clear_buffers<scalar_t, requires_grad, requires_hessian>(
+    /*clear_buffers<scalar_t, requires_grad, requires_hessian>(
         (ml + 1) * (ml + 1), buffer_sph, buffer_dsph_x, buffer_dsph_y,
         buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
-        buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz, buffer_dsph_dzdx,
-        buffer_dsph_dzdy, buffer_dsph_dzdz);
+        buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
+       buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz);*/
+    /*if (edge_idx < nedges) {
+        compute_sph_l0<scalar_t>(buffer_sph, nedges);
 
-    if (threadIdx.x == 0) {
+        if constexpr (requires_grad) {
+            compute_sph_derivative_l0<scalar_t>(buffer_sph, buffer_dsph_x,
+                                                buffer_dsph_y, buffer_dsph_z,
+                                                nedges);
+
+            if constexpr (requires_hessian) {
+                compute_sph_second_derivative_l0<scalar_t>(
+                    buffer_sph, buffer_dsph_dxdx, buffer_dsph_dxdy,
+                    buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
+                    buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
+                    buffer_dsph_dzdz, nedges);
+            }
+        }
+
         if (lmax >= 1) {
-            HARDCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
+            compute_sph_l1<scalar_t>(x, y, z, buffer_sph, nedges);
 
             if constexpr (requires_grad) {
-                HARDCODED_SPH_DERIVATIVE_MACRO(
-                    1, x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x,
-                    buffer_dsph_y, buffer_dsph_z, get_index);
+                compute_sph_derivative_l1<scalar_t>(buffer_sph, buffer_dsph_x,
+                                                    buffer_dsph_y,
+                                                    buffer_dsph_z, nedges);
             }
 
             if constexpr (requires_hessian) {
-                HARDCODED_SPH_SECOND_DERIVATIVE_MACRO(
-                    1, buffer_sph, buffer_dsph_dxdx, buffer_dsph_dxdy,
+                compute_sph_second_derivative_l1<scalar_t>(
+                    buffer_sph, buffer_dsph_dxdx, buffer_dsph_dxdy,
                     buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
                     buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-                    buffer_dsph_dzdz, get_index);
-            }
-        } else {
-            COMPUTE_SPH_L0(buffer_sph, get_index);
-            if constexpr (requires_grad) {
-                COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x,
-                                          buffer_dsph_y, buffer_dsph_z,
-                                          get_index);
-
-                if constexpr (requires_hessian) {
-                    COMPUTE_SPH_SECOND_DERIVATIVE_L0(
-                        buffer_sph, buffer_dsph_dxdx, buffer_dsph_dxdy,
-                        buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-                        buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-                        buffer_dsph_dzdz, get_index);
-                }
+                    buffer_dsph_dzdz, nedges);
             }
         }
-    }
-    __syncthreads();
+    } */
 
-    // write out the values of the hardcoded derivatives from shared memory into
-    // global memory.
-    write_buffers<scalar_t, requires_grad, requires_hessian>(
+    //__syncthreads();
+
+    // write out the values of the hardcoded derivatives from shared memory
+    // into global memory.
+    /*write_buffers<scalar_t, requires_grad, requires_hessian>(
         edge_idx, nedges, x, y, z, ir, (ml + 1) * (ml + 1), 0, buffer_sph,
         buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, buffer_dsph_dxdx,
-        buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-        buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz,
-        sph, dsph, ddsph, ntotal, normalize);
+        buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx,
+       buffer_dsph_dydy, buffer_dsph_dydz, buffer_dsph_dzdx,
+       buffer_dsph_dzdy, buffer_dsph_dzdz, sph, dsph, ddsph, ntotal,
+       normalize);*/
+    /*
+        // now lets do the generic terms for l > HARDCODED_LMAX
+        int size_q = (lmax + 1) * (lmax + 2) / 2;
+        int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
+        scalar_t *qlmk = buffer_prefactors + size_q + k;
+        scalar_t *pk = buffer_prefactors + k;
+        int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
-    // now lets do the generic terms for l > HARDCODED_LMAX
-    int size_q = (lmax + 1) * (lmax + 2) / 2;
-    int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
-    scalar_t *qlmk = buffer_prefactors + size_q + k;
-    scalar_t *pk = buffer_prefactors + k;
-    int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
+        for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1) {
+            int sph_offset = l * blockDim.x;
+            // (l + 1) * (l + 1)
+            // l = 3; nltot = 16
+            //
 
-    for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1) {
-        int sph_offset = l * blockDim.y;
-        /*
-            sph_offset needs to point to Y[l, 0], so the mapping from array
-           indices to memory locations may look like: sph 0: 0, sph_offset: 0
-           sph 1: 0 1 2, sph_offset: 1 sph 2: 0 1 2 3 4, sph_offset: 2 sph 3: 0
-           1 2 3 4 5 6, sph_offset: 3 we also need to make sure we select the
-           right atom in the buffer, hence multiplication by blockDim.y.
-        */
+            if (sph_offset > nltotal * nedges && threadIdx.x == 0) {
+                printf("UH OH: %d", sph_offset);
+            }
+            /*
+                sph_offset needs to point to Y[l, 0], so the mapping from array
+               indices to memory locations may look like: sph 0: 0, sph_offset:
+               0 sph 1: 0 1 2, sph_offset: 1 sph 2: 0 1 2 3 4, sph_offset: 2 sph
+               3: 0 1 2 3 4 5 6, sph_offset: 3 we also need to make sure we
+               select the right atom in the buffer, hence multiplication by
+               blockDim.y.
+            */
 
-        // clear out temporary storage buffers
-        clear_buffers<scalar_t, requires_grad, requires_hessian>(
-            2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
-            buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
-            buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
-            buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz);
+    // clear out temporary storage buffers
+    /*clear_buffers<scalar_t, requires_grad, requires_hessian>(
+        2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y,
+       buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy,
+       buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
+       buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
+       buffer_dsph_dzdz);
 
-        // Currently only one warp computes the spherical harmonics.
-        if (threadIdx.x == 0) {
+    // Currently only one warp computes the spherical harmonics.
 
-            generic_sph_l_channel<scalar_t, requires_grad, requires_hessian,
-                                  HARDCODED_LMAX, get_index>(
-                l, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s, buffer_twomz,
-                buffer_sph + sph_offset, buffer_dsph_x + sph_offset,
-                buffer_dsph_y + sph_offset, buffer_dsph_z + sph_offset,
-                buffer_dsph_dxdx + sph_offset, buffer_dsph_dxdy + sph_offset,
-                buffer_dsph_dxdz + sph_offset, buffer_dsph_dydx + sph_offset,
-                buffer_dsph_dydy + sph_offset, buffer_dsph_dydz + sph_offset,
-                buffer_dsph_dzdx + sph_offset, buffer_dsph_dzdy + sph_offset,
-                buffer_dsph_dzdz + sph_offset);
-        }
-
-        // write out temporary storage buffers
-        write_buffers<scalar_t, requires_grad, requires_hessian>(
-            edge_idx, nedges, x, y, z, ir, 2 * l + 1, base_index, buffer_sph,
-            buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, buffer_dsph_dxdx,
-            buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx,
-            buffer_dsph_dydy, buffer_dsph_dydz, buffer_dsph_dzdx,
-            buffer_dsph_dzdy, buffer_dsph_dzdz, sph, dsph, ddsph, ntotal,
-            normalize);
-
-        base_index += 2 * l + 1;
-        qlmk += l + 1;
-        pk += l + 1;
+    if (edge_idx < nedges) {
+        generic_sph_l_channel_mine<scalar_t, requires_grad,
+                                   requires_hessian>(
+            l, nedges, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s,
+            buffer_twomz, buffer_sph + sph_offset,
+            buffer_dsph_x + sph_offset, buffer_dsph_y + sph_offset,
+            buffer_dsph_z + sph_offset, buffer_dsph_dxdx + sph_offset,
+            buffer_dsph_dxdy + sph_offset, buffer_dsph_dxdz + sph_offset,
+            buffer_dsph_dydx + sph_offset, buffer_dsph_dydy + sph_offset,
+            buffer_dsph_dydz + sph_offset, buffer_dsph_dzdx + sph_offset,
+            buffer_dsph_dzdy + sph_offset, buffer_dsph_dzdz + sph_offset);
     }
+
+    // write out temporary storage buffers
+    /*write_buffers<scalar_t, requires_grad, requires_hessian>(
+        edge_idx, nedges, x, y, z, ir, 2 * l + 1, base_index,
+       buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
+       buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
+       buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
+       buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz, sph, dsph,
+       ddsph, ntotal, normalize);
+
+    base_index += 2 * l + 1;
+    qlmk += l + 1;
+    pk += l + 1;
+} */
 }
 
 /*
@@ -463,34 +1078,26 @@ __global__ void __launch_bounds__(GRID_DIM_X *GRID_DIM_Y)
    spherical_harmonics_kernel.
 
     For lmax <= HARCODED_LMAX, we need to store all (HARDCODED_LMAX + 1)**2
-   scalars in shared memory. For lmax > HARDCODED_LMAX, we only need to store
-   each spherical harmonics vector per sample in shared memory.
+   scalars in shared memory. For lmax > HARDCODED_LMAX, we only need to
+   store each spherical harmonics vector per sample in shared memory.
 */
 static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
-                                size_t GRID_DIM_Y, size_t dtype_size,
-                                bool requires_grad, bool requires_hessian) {
+                                size_t dtype_size, bool requires_grad,
+                                bool requires_hessian) {
     int nl =
         max(static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
             2 * l_max + 1);
 
     size_t total_buff_size = 0;
 
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size; // buffer_c
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size; // buffer_s
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size; // buffer_twomz
     total_buff_size +=
-        (l_max + 1) * (l_max + 2) * dtype_size;      // buffer_prefactors
-    total_buff_size += GRID_DIM_Y * nl * dtype_size; // buffer_sph_out
-
-    if (requires_grad) {
-        total_buff_size +=
-            3 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_derivs
-    }
-
-    if (requires_hessian) {
-        total_buff_size +=
-            9 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_hessian
-    }
+        GRID_DIM_X * (l_max + 1) * dtype_size; // buffer_c : 32 * 33 * 8 ~ 8192
+    total_buff_size +=
+        GRID_DIM_X * (l_max + 1) * dtype_size; // buffer_s : 32 * 33 * 8 ~ 8192
+    total_buff_size += GRID_DIM_X * (l_max + 1) *
+                       dtype_size; // buffer_twomz : 32 * 33 * 8 ~ 8192
+    total_buff_size += (l_max + 1) * (l_max + 2) *
+                       dtype_size; // buffer_prefactors : 33 * 34 * 8 ~ 8192
 
     return total_buff_size;
 }
@@ -498,12 +1105,11 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
 /*
     The default shared memory space on most recent NVIDIA cards is defaulted
    49152 bytes, regarldess if there is more available per SM. This method
-   attempts to adjust the shared memory to fit the requested configuration if
-   the kernel launch parameters exceeds the default 49152 bytes.
+   attempts to adjust the shared memory to fit the requested configuration
+   if the kernel launch parameters exceeds the default 49152 bytes.
 */
 int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
                                            int64_t GRID_DIM_X,
-                                           int64_t GRID_DIM_Y,
                                            bool requires_grad,
                                            bool requires_hessian,
                                            int64_t current_shared_mem_alloc) {
@@ -513,9 +1119,8 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, device);
 
-    auto required_buff_size =
-        total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, element_size,
-                          requires_grad, requires_hessian);
+    auto required_buff_size = total_buffer_size(
+        l_max, GRID_DIM_X, element_size, requires_grad, requires_hessian);
 
     if (required_buff_size > current_shared_mem_alloc &&
         required_buff_size > (deviceProp.sharedMemPerBlock -
@@ -526,92 +1131,93 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
         }
 
         void *func;
-        switch (GRID_DIM_Y) {
+        switch (GRID_DIM_X) {
+
+        case 64:
+            switch (element_size) {
+            case 4:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 64, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 64, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 64, false, false>);
+                }
+                break;
+
+            case 8:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 64, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 64, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 64, false, false>);
+                }
+                break;
+            }
+            break;
+
+        case 32:
+            switch (element_size) {
+            case 4:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 32, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 32, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<float, 32, false, false>);
+                }
+                break;
+
+            case 8:
+                if (requires_grad && requires_hessian) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 32, true, true>);
+                } else if (requires_grad) {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 32, true, false>);
+                } else {
+                    func = reinterpret_cast<void *>(
+                        spherical_harmonics_kernel<double, 32, false, false>);
+                }
+                break;
+            }
+            break;
 
         case 16:
             switch (element_size) {
             case 4:
                 if (requires_grad && requires_hessian) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 8, 16, true, true>);
+                        spherical_harmonics_kernel<float, 16, true, true>);
                 } else if (requires_grad) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 8, 16, true, false>);
+                        spherical_harmonics_kernel<float, 16, true, false>);
                 } else {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 8, 16, false, false>);
+                        spherical_harmonics_kernel<float, 16, false, false>);
                 }
                 break;
 
             case 8:
                 if (requires_grad && requires_hessian) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 8, 16, true, true>);
+                        spherical_harmonics_kernel<double, 16, true, true>);
                 } else if (requires_grad) {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 8, 16, true, false>);
+                        spherical_harmonics_kernel<double, 16, true, false>);
                 } else {
                     func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 8, 16, false,
-                                                   false>);
-                }
-                break;
-            }
-            break;
-        case 8:
-            switch (element_size) {
-            case 4:
-                if (requires_grad && requires_hessian) {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 8, 8, true, true>);
-                } else if (requires_grad) {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 8, 8, true, false>);
-                } else {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 8, 8, false, false>);
-                }
-                break;
-
-            case 8:
-                if (requires_grad && requires_hessian) {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 8, 8, true, true>);
-                } else if (requires_grad) {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 8, 8, true, false>);
-                } else {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 8, 8, false, false>);
-                }
-                break;
-            }
-            break;
-        case 4:
-            switch (element_size) {
-            case 4:
-                if (requires_grad && requires_hessian) {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 8, 4, true, true>);
-                } else if (requires_grad) {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 8, 4, true, false>);
-                } else {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<float, 8, 4, false, false>);
-                }
-                break;
-
-            case 8:
-                if (requires_grad && requires_hessian) {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 8, 4, true, true>);
-                } else if (requires_grad) {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 8, 4, true, false>);
-                } else {
-                    func = reinterpret_cast<void *>(
-                        spherical_harmonics_kernel<double, 8, 4, false, false>);
+                        spherical_harmonics_kernel<double, 16, false, false>);
                 }
                 break;
             }
@@ -635,21 +1241,17 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
 
 /*
     Wrappers to launch the CUDA kernel. Returns a vector containing the
-   spherical harmonics and their gradients if required, otherwise returns the
-   spherical harmonics and an empty tensor.
+   spherical harmonics and their gradients if required, otherwise returns
+   the spherical harmonics and an empty tensor.
 
-    GRID_DIM_X is the number of threads to launch in the x dimension. Used to
-   parallelize over the sample dimension. GRID_DIM_Y is the number of threads to
-   launch in the y dimension. Used only to improve memory throughput on reads
-   and writes.
-
-    Total number of threads used is GRID_DIM_X * GRID_DIM_Y.
+    GRID_DIM_X is the number of threads to launch in the x dimension. Used
+   to parallelize over the sample dimension.
 
     cuda_stream should be of type (void *), therefore if you want to pass in
     a cudaStream_t, first do void * stream_ptr = reinterpret_cast<void *>
    (stream);
 */
-template <class scalar_t, int GRID_DIM_X, int GRID_DIM_Y>
+template <class scalar_t, int GRID_DIM_X>
 void sphericart::cuda::spherical_harmonics(
     const scalar_t *__restrict__ xyz, const int nedges,
     const scalar_t *__restrict__ prefactors, const int nprefactors,
@@ -658,7 +1260,7 @@ void sphericart::cuda::spherical_harmonics(
 
     int n_total = (l_max + 1) * (l_max + 1);
 
-    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
+    dim3 grid_dim(GRID_DIM_X);
 
     auto find_num_blocks = [](int x, int bdim) {
         return (x + bdim - 1) / bdim;
@@ -666,44 +1268,63 @@ void sphericart::cuda::spherical_harmonics(
 
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
+    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_X));
 
-    size_t total_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y,
-                                               sizeof(scalar_t), false, false);
+    size_t total_buff_size =
+        total_buffer_size(l_max, GRID_DIM_X, sizeof(scalar_t), false, false);
 
-    spherical_harmonics_kernel<scalar_t, GRID_DIM_X, GRID_DIM_Y, false, false>
+    // std::cout << "cuda_base: HELLO" << std::endl;
+    // std::cout << "block_dim.x: " << block_dim.x << std::endl;
+    // std::cout << "grid_dim.x: " << grid_dim.x << std::endl;
+    // std::cout << "total_buff_size: " << total_buff_size << std::endl;
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    spherical_harmonics_kernel<scalar_t, GRID_DIM_X, false, false>
         <<<block_dim, grid_dim, total_buff_size, cstream>>>(
             xyz, nedges, prefactors, nprefactors, l_max, n_total, normalize,
             sph, nullptr, nullptr);
 
-    CUDA_CHECK_KERNEL();
+    auto end = std::chrono::high_resolution_clock::now();
 
-    CUDA_CHECK(cudaStreamSynchronize(cstream));
+    cudaDeviceSynchronize();
+
+    // Calculate the duration
+    auto duration =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+
+    // Print the duration in microseconds
+    std::cout << "Time taken by cuda_base::spherical_harmonics_kernel: " << duration.count()
+              << " nanoseconds" << std::endl;
+
+    //CUDA_CHECK_KERNEL();
+
+    //CUDA_CHECK(cudaStreamSynchronize(cstream));
 }
 
 /** forward declarations of supported configurations **/
-template void sphericart::cuda::spherical_harmonics<float, 8, 16>(
+template void sphericart::cuda::spherical_harmonics<float, 64>(
     const float *__restrict__, const int, const float *__restrict__, const int,
     const int64_t, const bool, float *__restrict__, void *);
-template void sphericart::cuda::spherical_harmonics<double, 8, 16>(
+template void sphericart::cuda::spherical_harmonics<double, 64>(
     const double *__restrict__, const int, const double *__restrict__,
     const int, const int64_t, const bool, double *__restrict__, void *);
 
-template void sphericart::cuda::spherical_harmonics<float, 8, 8>(
+template void sphericart::cuda::spherical_harmonics<float, 32>(
     const float *__restrict__, const int, const float *__restrict__, const int,
     const int64_t, const bool, float *__restrict__, void *);
-template void sphericart::cuda::spherical_harmonics<double, 8, 8>(
+template void sphericart::cuda::spherical_harmonics<double, 32>(
     const double *__restrict__, const int, const double *__restrict__,
     const int, const int64_t, const bool, double *__restrict__, void *);
 
-template void sphericart::cuda::spherical_harmonics<float, 8, 4>(
+template void sphericart::cuda::spherical_harmonics<float, 16>(
     const float *__restrict__, const int, const float *__restrict__, const int,
     const int64_t, const bool, float *__restrict__, void *);
-template void sphericart::cuda::spherical_harmonics<double, 8, 4>(
+template void sphericart::cuda::spherical_harmonics<double, 16>(
     const double *__restrict__, const int, const double *__restrict__,
     const int, const int64_t, const bool, double *__restrict__, void *);
 
-template <class scalar_t, int GRID_DIM_X, int GRID_DIM_Y>
+template <class scalar_t, int GRID_DIM_X>
 void sphericart::cuda::spherical_harmonics_with_gradients(
     const scalar_t *__restrict__ xyz, const int nedges,
     const scalar_t *__restrict__ prefactors, const int nprefactors,
@@ -712,7 +1333,7 @@ void sphericart::cuda::spherical_harmonics_with_gradients(
 
     int n_total = (l_max + 1) * (l_max + 1);
 
-    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
+    dim3 grid_dim(GRID_DIM_X);
 
     auto find_num_blocks = [](int x, int bdim) {
         return (x + bdim - 1) / bdim;
@@ -720,12 +1341,12 @@ void sphericart::cuda::spherical_harmonics_with_gradients(
 
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
+    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_X));
 
-    size_t total_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y,
-                                               sizeof(scalar_t), true, false);
+    size_t total_buff_size =
+        total_buffer_size(l_max, GRID_DIM_X, sizeof(scalar_t), true, false);
 
-    spherical_harmonics_kernel<scalar_t, GRID_DIM_X, GRID_DIM_Y, true, false>
+    spherical_harmonics_kernel<scalar_t, GRID_DIM_X, true, false>
         <<<block_dim, grid_dim, total_buff_size, cstream>>>(
             xyz, nedges, prefactors, nprefactors, l_max, n_total, normalize,
             sph, dsph, nullptr);
@@ -736,41 +1357,37 @@ void sphericart::cuda::spherical_harmonics_with_gradients(
 }
 
 /** forward declarations of supported configurations **/
-template void
-sphericart::cuda::spherical_harmonics_with_gradients<float, 8, 16>(
+template void sphericart::cuda::spherical_harmonics_with_gradients<float, 64>(
     const float *__restrict__, const int, const float *__restrict__, const int,
     const int64_t, const bool, float *__restrict__, float *__restrict__,
     void *);
 
-template void
-sphericart::cuda::spherical_harmonics_with_gradients<double, 8, 16>(
+template void sphericart::cuda::spherical_harmonics_with_gradients<double, 64>(
     const double *__restrict__, const int, const double *__restrict__,
     const int, const int64_t, const bool, double *__restrict__,
     double *__restrict__, void *);
 
-template void sphericart::cuda::spherical_harmonics_with_gradients<float, 8, 8>(
+template void sphericart::cuda::spherical_harmonics_with_gradients<float, 32>(
     const float *__restrict__, const int, const float *__restrict__, const int,
     const int64_t, const bool, float *__restrict__, float *__restrict__,
     void *);
 
-template void
-sphericart::cuda::spherical_harmonics_with_gradients<double, 8, 8>(
+template void sphericart::cuda::spherical_harmonics_with_gradients<double, 32>(
     const double *__restrict__, const int, const double *__restrict__,
     const int, const int64_t, const bool, double *__restrict__,
     double *__restrict__, void *);
 
-template void sphericart::cuda::spherical_harmonics_with_gradients<float, 8, 4>(
+template void sphericart::cuda::spherical_harmonics_with_gradients<float, 16>(
     const float *__restrict__, const int, const float *__restrict__, const int,
     const int64_t, const bool, float *__restrict__, float *__restrict__,
     void *);
 
-template void
-sphericart::cuda::spherical_harmonics_with_gradients<double, 8, 4>(
+template void sphericart::cuda::spherical_harmonics_with_gradients<double, 16>(
     const double *__restrict__, const int, const double *__restrict__,
     const int, const int64_t, const bool, double *__restrict__,
     double *__restrict__, void *);
 
-template <typename scalar_t, int GRID_DIM_X, int GRID_DIM_Y>
+template <typename scalar_t, int GRID_DIM_X>
 void sphericart::cuda::spherical_harmonics_with_hessians(
     const scalar_t *__restrict__ xyz, const int nedges,
     const scalar_t *__restrict__ prefactors, const int nprefactors,
@@ -780,7 +1397,7 @@ void sphericart::cuda::spherical_harmonics_with_hessians(
 
     int n_total = (l_max + 1) * (l_max + 1);
 
-    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
+    dim3 grid_dim(GRID_DIM_X);
 
     auto find_num_blocks = [](int x, int bdim) {
         return (x + bdim - 1) / bdim;
@@ -788,12 +1405,12 @@ void sphericart::cuda::spherical_harmonics_with_hessians(
 
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
+    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_X));
 
-    size_t total_buff_size = total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y,
-                                               sizeof(scalar_t), true, true);
+    size_t total_buff_size =
+        total_buffer_size(l_max, GRID_DIM_X, sizeof(scalar_t), true, true);
 
-    spherical_harmonics_kernel<scalar_t, GRID_DIM_X, GRID_DIM_Y, true, true>
+    spherical_harmonics_kernel<scalar_t, GRID_DIM_X, true, true>
         <<<block_dim, grid_dim, total_buff_size, cstream>>>(
             xyz, nedges, prefactors, nprefactors, l_max, n_total, normalize,
             sph, dsph, ddsph);
@@ -804,33 +1421,32 @@ void sphericart::cuda::spherical_harmonics_with_hessians(
 }
 
 /** forward declarations of supported configurations **/
-template void sphericart::cuda::spherical_harmonics_with_hessians<float, 8, 16>(
+template void sphericart::cuda::spherical_harmonics_with_hessians<float, 64>(
     const float *__restrict__, const int, const float *__restrict__, const int,
     const int64_t, const bool, float *__restrict__, float *__restrict__,
     float *__restrict__, void *);
 
-template void
-sphericart::cuda::spherical_harmonics_with_hessians<double, 8, 16>(
+template void sphericart::cuda::spherical_harmonics_with_hessians<double, 64>(
     const double *__restrict__, const int, const double *__restrict__,
     const int, const int64_t, const bool, double *__restrict__,
     double *__restrict__, double *__restrict__, void *);
 
-template void sphericart::cuda::spherical_harmonics_with_hessians<float, 8, 8>(
+template void sphericart::cuda::spherical_harmonics_with_hessians<float, 32>(
     const float *__restrict__, const int, const float *__restrict__, const int,
     const int64_t, const bool, float *__restrict__, float *__restrict__,
     float *__restrict__, void *);
 
-template void sphericart::cuda::spherical_harmonics_with_hessians<double, 8, 8>(
+template void sphericart::cuda::spherical_harmonics_with_hessians<double, 32>(
     const double *__restrict__, const int, const double *__restrict__,
     const int, const int64_t, const bool, double *__restrict__,
     double *__restrict__, double *__restrict__, void *);
 
-template void sphericart::cuda::spherical_harmonics_with_hessians<float, 8, 4>(
+template void sphericart::cuda::spherical_harmonics_with_hessians<float, 16>(
     const float *__restrict__, const int, const float *__restrict__, const int,
     const int64_t, const bool, float *__restrict__, float *__restrict__,
     float *__restrict__, void *);
 
-template void sphericart::cuda::spherical_harmonics_with_hessians<double, 8, 4>(
+template void sphericart::cuda::spherical_harmonics_with_hessians<double, 16>(
     const double *__restrict__, const int, const double *__restrict__,
     const int, const int64_t, const bool, double *__restrict__,
     double *__restrict__, double *__restrict__, void *);
@@ -851,7 +1467,8 @@ __global__ void backward_kernel(const scalar_t *__restrict__ dsph,
     scalar_t sum = 0.0;
 
     if (edge_idx < nedges) {
-        // for (int j = threadIdx.x; j < sph_grad.size(1); j += blockDim.x) {
+        // for (int j = threadIdx.x; j < sph_grad.size(1); j += blockDim.x)
+        // {
         for (int j = threadIdx.x; j < n_total; j += blockDim.x) {
 
             // sum += dsph[edge_idx][spatial][j] * sph_grad[edge_idx][j];

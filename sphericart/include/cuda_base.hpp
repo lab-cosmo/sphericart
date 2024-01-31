@@ -41,9 +41,6 @@ namespace cuda {
  * @param GRID_DIM_X
  *        The size of the threadblock in the x dimension. Used to parallelize
  *        over the sample dimension
- * @param GRID_DIM_Y
- *        The size of the threadblock in the y dimension. Used only to improve
- *          memory throughput on reads and writes.
  * @param xyz_requires_grad
  *        Boolean representing whether or not the input XYZ requires grad -
  *        required for torch.
@@ -65,21 +62,21 @@ namespace cuda {
  * launch will be performed on the default stream.
  */
 
-template <typename scalar_t, int GRID_DIM_Y, int GRID_DIM_X>
+template <typename scalar_t, int GRID_DIM_X>
 void spherical_harmonics(const scalar_t *__restrict__ xyz, const int nedges,
                          const scalar_t *__restrict__ prefactors,
                          const int nprefactors, const int64_t l_max,
                          const bool normalize, scalar_t *__restrict__ sph,
                          void *cuda_stream);
 
-template <typename scalar_t, int GRID_DIM_Y, int GRID_DIM_X>
+template <typename scalar_t,int GRID_DIM_X> 
 void spherical_harmonics_with_gradients(
     const scalar_t *__restrict__ xyz, const int nedges,
     const scalar_t *__restrict__ prefactors, const int nprefactors,
     const int64_t l_max, const bool normalize, scalar_t *__restrict__ sph,
     scalar_t *__restrict__ dsph, void *cuda_stream);
 
-template <typename scalar_t, int GRID_DIM_Y, int GRID_DIM_X>
+template <typename scalar_t, int GRID_DIM_X>
 void spherical_harmonics_with_hessians(
     const scalar_t *__restrict__ xyz, const int nedges,
     const scalar_t *__restrict__ prefactors, const int nprefactors,
@@ -106,8 +103,6 @@ void spherical_harmonics_backward_cuda_base(
  *        The maximum degree of the spherical harmonics to be calculated.
  * @param GRID_DIM_X
  *        The size of the threadblock in the x dimension.
- * @param GRID_DIM_Y
- *        The size of the threadblock in the y dimension.
  * @param requires_grad
  *        Boolean representing if we need first-order derivatives.
  * @param requires_hessian
@@ -116,7 +111,7 @@ void spherical_harmonics_backward_cuda_base(
  *        the current size of the shared memory allocation.
  */
 int adjust_shared_memory(size_t element_size, int64_t l_max, int64_t GRID_DIM_X,
-                         int64_t GRID_DIM_Y, bool requires_grad,
+                         bool requires_grad,
                          bool requires_hessian,
                          int64_t current_shared_mem_alloc);
 

@@ -9,6 +9,8 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include <vector>
+#include <chrono>
+
 
 using namespace std;
 using namespace sphericart::cuda;
@@ -31,8 +33,8 @@ template <class scalar_t> void timing() {
     /* ===== set up the calculation ===== */
 
     // hard-coded parameters for the example
-    size_t n_samples = 100000;
-    size_t l_max = 32;
+    size_t n_samples = 10000;
+    size_t l_max = 0;
 
     // initializes samples
     auto xyz = std::vector<scalar_t>(n_samples * 3, 0.0);
@@ -67,9 +69,22 @@ template <class scalar_t> void timing() {
     scalar_t *dsph_cuda;
     CUDA_CHECK(cudaMalloc(&dsph_cuda, 3 * n_samples * (l_max + 1) *
                                           (l_max + 1) * sizeof(scalar_t)));
+    
+    auto start = std::chrono::high_resolution_clock::now();
 
-    calculator_cuda.compute_with_gradients(xyz_cuda, n_samples, sph_cuda, dsph_cuda); // no gradients */
-    //calculator_cuda.compute(xyz_cuda, n_samples, sph_cuda); // no gradients
+
+    //calculator_cuda.compute_with_gradients(xyz_cuda, n_samples, sph_cuda, dsph_cuda); // no gradients */
+    calculator_cuda.compute(xyz_cuda, n_samples, sph_cuda); // no gradients
+
+    // Record the end time
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Calculate the duration
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+
+    // Print the duration in microseconds
+    std::cout << "Time taken by function: " << duration.count() << " nanoseconds" << std::endl;
+    std::cout << "" <<((double) duration.count()) / ((double) n_samples) << " ns/sample" << std::endl;
     // */
     CUDA_CHECK(
         cudaMemcpy(sph.data(), sph_cuda,
