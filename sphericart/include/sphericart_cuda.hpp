@@ -82,12 +82,17 @@ template <typename T> class SphericalHarmonics {
     T *prefactors_cpu;  // host prefactors buffer
     T *prefactors_cuda; // storage space for prefactors
 
-    int64_t CUDA_GRID_DIM_X_ = 8;
-    int64_t CUDA_GRID_DIM_Y_ = 8;
+    int64_t CUDA_GRID_DIM_X_ =
+        8; // number of threads used to help read-in and write-out the buffers
+    int64_t CUDA_GRID_DIM_Y_ =
+        8; // number of threads used to parallelize over edges
 
-    bool cached_compute_with_gradients = false;
-    bool cached_compute_with_hessian = false;
-    int64_t _current_shared_mem_allocation = 0;
+    bool cached_compute_with_gradients =
+        false; // cache boolean for updating shared memory.
+    bool cached_compute_with_hessian =
+        false; // cache boolean for updating shared memory.
+    int64_t _current_shared_mem_allocation =
+        0; // current amount of shared-memory allocated.
 };
 
 } // namespace sphericart::cuda
