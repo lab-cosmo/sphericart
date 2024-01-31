@@ -6,9 +6,7 @@
 
 #include <mutex>
 
-namespace sphericart {
-
-namespace cuda {
+namespace sphericart::cuda {
 
 /**
  * A spherical harmonics calculator.
@@ -92,6 +90,5 @@ template <typename T> class SphericalHarmonics {
     int64_t _current_shared_mem_allocation = 0;
 };
 
-} // namespace cuda
-} // namespace sphericart
+} // namespace sphericart::cuda
 #endif

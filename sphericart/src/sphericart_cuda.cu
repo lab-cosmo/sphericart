@@ -11,7 +11,6 @@
  * and error string if one occurs
  */
 
-using namespace std;
 using namespace sphericart::cuda;
 
 #define CUDA_CHECK(call)                                                       \
