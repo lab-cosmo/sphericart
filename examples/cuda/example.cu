@@ -1,18 +1,18 @@
 /** @file example.cpp
  *  @brief Usage example for the C++ API
  */
-
+#include "sphericart.hpp"
 #include "sphericart_cuda.hpp"
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <iostream>
 #include <vector>
-#include <chrono>
-
 
 using namespace std;
+using namespace sphericart;
 using namespace sphericart::cuda;
 
 /*host macro that checks for errors in CUDA calls, and prints the file + line
@@ -33,8 +33,8 @@ template <class scalar_t> void timing() {
     /* ===== set up the calculation ===== */
 
     // hard-coded parameters for the example
-    size_t n_samples = 10000;
-    size_t l_max = 0;
+    size_t n_samples = 100000;
+    size_t l_max = 32;
 
     // initializes samples
     auto xyz = std::vector<scalar_t>(n_samples * 3, 0.0);
@@ -46,6 +46,9 @@ template <class scalar_t> void timing() {
     // memory, one also can provide uninitialized vectors that will be
     // automatically reshaped
     auto sph =
+        std::vector<scalar_t>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
+
+    auto sph_cpu =
         std::vector<scalar_t>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
     auto dsph =
         std::vector<scalar_t>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
@@ -69,35 +72,56 @@ template <class scalar_t> void timing() {
     scalar_t *dsph_cuda;
     CUDA_CHECK(cudaMalloc(&dsph_cuda, 3 * n_samples * (l_max + 1) *
                                           (l_max + 1) * sizeof(scalar_t)));
-    
+    for (int i = 0; i < 5; i++) {
+        calculator_cuda.compute_with_gradients(xyz_cuda, n_samples, sph_cuda,
+                                               dsph_cuda);
+        // calculator_cuda.compute(xyz_cuda, n_samples, sph_cuda); // no
+        //  gradients
+    }
+
+    std::cout << "-----------------" << std::endl;
+
     auto start = std::chrono::high_resolution_clock::now();
 
+    calculator_cuda.compute_with_gradients(xyz_cuda, n_samples, sph_cuda,
+                                           dsph_cuda);
 
-    //calculator_cuda.compute_with_gradients(xyz_cuda, n_samples, sph_cuda, dsph_cuda); // no gradients */
-    calculator_cuda.compute(xyz_cuda, n_samples, sph_cuda); // no gradients
+    // calculator_cuda.compute(xyz_cuda, n_samples, sph_cuda); // no gradients
 
     // Record the end time
     auto end = std::chrono::high_resolution_clock::now();
 
     // Calculate the duration
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    auto duration =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
     // Print the duration in microseconds
-    std::cout << "Time taken by function: " << duration.count() << " nanoseconds" << std::endl;
-    std::cout << "" <<((double) duration.count()) / ((double) n_samples) << " ns/sample" << std::endl;
+    std::cout << "Time taken by function: " << duration.count()
+              << " nanoseconds" << std::endl;
+    std::cout << "" << ((double)duration.count()) / ((double)n_samples)
+              << " ns/sample" << std::endl;
     // */
     CUDA_CHECK(
         cudaMemcpy(sph.data(), sph_cuda,
                    n_samples * (l_max + 1) * (l_max + 1) * sizeof(scalar_t),
                    cudaMemcpyDeviceToHost));
 
-    for (int i = 0; i < 4; i++) {
-        std::cout << sph[i] << std::endl;
+    auto calculator = sphericart::SphericalHarmonics<scalar_t>(l_max);
+
+    calculator.compute(xyz, sph_cpu);
+
+    /*for (int i = 0; i < n_samples; i++) {
+        std::cout << "sample: " << xyz[i * 3 + 0] << " " << xyz[i * 3 + 1]
+                  << " " << xyz[i * 3 + 2] << std::endl;
     }
+
+    for (int i = 0; i < n_samples * (l_max + 1) * (l_max + 1); i++) {
+        std::cout << sph[i] << " " << sph_cpu[i] << std::endl;
+    }*/
 }
 
 int main() {
-    timing<float>();
+    timing<double>();
 
     return 0;
 }

@@ -1,6 +1,6 @@
+#include <chrono>
 #include <cmath>
 #include <iostream>
-#include <chrono>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -48,8 +48,16 @@ __device__ int get_shared_index(int i) { return i * blockDim.x + threadIdx.x; }
 
 //[nl, nedges] //
 
+// 0 : `0`
+// 1: 0 `1` 2
+// 2: 0 1 `2` 3 4
+
+//[nl, nedges]
+//[nedges]
+//[nedges] -> l * nedges
+//[nedges]
 __device__ inline int get_global_index(int i, int nedges) {
-    return i * nedges + blockIdx.x * WARP_SIZE + threadIdx.x;
+    return i * nedges + blockIdx.x * blockDim.x + threadIdx.x;
 }
 
 template <class scalar_t>
@@ -304,18 +312,11 @@ __device__ inline void write_buffers(
 } */
 
 template <typename T, bool DO_DERIVATIVES, bool DO_SECOND_DERIVATIVES>
-__device__ inline void generic_sph_l_channel_mine(
-    int l, int nedges,
-    [[maybe_unused]] T x, // these might be unused for low LMAX. not worth a
-                          // full separate implementation
-    [[maybe_unused]] T y, [[maybe_unused]] T z, [[maybe_unused]] T rxy,
-    const T *pk, const T *qlmk, T *c, T *s, T *twomz, T *sph_i,
-    [[maybe_unused]] T *dx_sph_i, [[maybe_unused]] T *dy_sph_i,
-    [[maybe_unused]] T *dz_sph_i, [[maybe_unused]] T *dxdx_sph_i,
-    [[maybe_unused]] T *dxdy_sph_i, [[maybe_unused]] T *dxdz_sph_i,
-    [[maybe_unused]] T *dydx_sph_i, [[maybe_unused]] T *dydy_sph_i,
-    [[maybe_unused]] T *dydz_sph_i, [[maybe_unused]] T *dzdx_sph_i,
-    [[maybe_unused]] T *dzdy_sph_i, [[maybe_unused]] T *dzdz_sph_i) {
+__device__ void generic_sph_l_channel_mine(
+    int l, int nedges, T x, T y, T z, T rxy, const T *pk, const T *qlmk, T *c,
+    T *s, T *twomz, T *sph_i, T *dx_sph_i, T *dy_sph_i, T *dz_sph_i,
+    T *dxdx_sph_i, T *dxdy_sph_i, T *dxdz_sph_i, T *dydx_sph_i, T *dydy_sph_i,
+    T *dydz_sph_i, T *dzdx_sph_i, T *dzdy_sph_i, T *dzdz_sph_i) {
     /*
     This is the main low-level code to compute sph and dsph for an arbitrary l.
     The code is a bit hard to follow because of (too?) many micro-optimizations.
@@ -363,11 +364,11 @@ __device__ inline void generic_sph_l_channel_mine(
     // qlm_[0,1,2] correspond to the current Qlm, Ql(m+1) and Ql(m+2), and the
     // ql1m_[0,1,2] hold the same but for l-1
     // ql2m_[0,1,2] hold the same but for l-2
-    [[maybe_unused]] T qlm_2, qlm_1, qlm_0;
-    [[maybe_unused]] T ql1m_2, ql1m_1, ql1m_0;
-    [[maybe_unused]] T ql2m_2, ql2m_1, ql2m_0;
+    T qlm_2, qlm_1, qlm_0;
+    T ql1m_2, ql1m_1, ql1m_0;
+    T ql2m_2, ql2m_1, ql2m_0;
 
-    [[maybe_unused]] T x2, y2,
+    T x2, y2,
         xy; // for second derivatives. we could get them from parent but not
             // worth the additional complexity
     if constexpr (DO_SECOND_DERIVATIVES) {
@@ -379,11 +380,14 @@ __device__ inline void generic_sph_l_channel_mine(
     // m=+-l
     qlm_2 = qlmk[l]; // fetches the pre-computed Qll
     auto pq = qlm_2 * pk[l];
+
     sph_i[get_global_index(-l, nedges)] = pq * s[get_shared_index(l)];
     sph_i[get_global_index(+l, nedges)] = pq * c[get_shared_index(l)];
 
     if constexpr (DO_DERIVATIVES) {
+
         pq *= l;
+
         dx_sph_i[get_global_index(-l, nedges)] =
             pq * s[get_shared_index(l - 1)];
         dy_sph_i[get_global_index(-l, nedges)] =
@@ -391,8 +395,10 @@ __device__ inline void generic_sph_l_channel_mine(
         dx_sph_i[get_global_index(l, nedges)] = pq * c[get_shared_index(l - 1)];
         dy_sph_i[get_global_index(l, nedges)] =
             -pq * s[get_shared_index(l - 1)];
+
         dz_sph_i[get_global_index(-l, nedges)] = 0;
         dz_sph_i[get_global_index(l, nedges)] = 0;
+
         ql1m_2 = 0;
 
         if constexpr (DO_SECOND_DERIVATIVES) {
@@ -401,6 +407,7 @@ __device__ inline void generic_sph_l_channel_mine(
                 pq * c[get_shared_index(l - 2)];
             dxdx_sph_i[get_global_index(-l, nedges)] =
                 pq * s[get_shared_index(l - 2)];
+
             dxdy_sph_i[get_global_index(l, nedges)] =
                 -pq * s[get_shared_index(l - 2)];
             dydx_sph_i[get_global_index(l, nedges)] =
@@ -804,7 +811,6 @@ __global__ void spherical_harmonics_kernel(
 
     extern __shared__ char buffer[];
 
-    /*
     size_t offset = 0;
 
     scalar_t *buffer_c = reinterpret_cast<scalar_t *>(buffer + offset);
@@ -821,8 +827,6 @@ __global__ void spherical_harmonics_kernel(
     int nltotal = (lmax + 1) * (lmax + 1);
 
     scalar_t *buffer_sph = sph;
-    // scalar_t *buffer_sph = reinterpret_cast<scalar_t *>(buffer + offset);
-    // offset += blockDim.y * nl * sizeof(scalar_t);
 
     scalar_t *buffer_dsph_x;
     scalar_t *buffer_dsph_y;
@@ -832,17 +836,6 @@ __global__ void spherical_harmonics_kernel(
         buffer_dsph_x = dsph;
         buffer_dsph_y = dsph + nltotal * nedges;
         buffer_dsph_z = dsph + 2 * nltotal * nedges;
-        /*
-        buffer_dsph_x = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_y = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_z = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        // dsph: [nl, 3, nedges]
-        // buffer_dsph_x = dsph + edge_idx * 3 * n_total + 0 * n_total +
-        offset
-
     }
 
     scalar_t *buffer_dsph_dxdx;
@@ -867,28 +860,6 @@ __global__ void spherical_harmonics_kernel(
         buffer_dsph_dzdx = ddsph + 6 * nltotal * nedges;
         buffer_dsph_dzdy = ddsph + 7 * nltotal * nedges;
         buffer_dsph_dzdz = ddsph + 8 * nltotal * nedges;
-
-        /*
-        buffer_dsph_dxdx = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dxdy = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dxdz = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-
-        buffer_dsph_dydx = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dydy = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dydz = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-
-        buffer_dsph_dzdx = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dzdy = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dzdz = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
     }
 
     size_t edge_idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -952,17 +923,12 @@ __global__ void spherical_harmonics_kernel(
         buffer_twomz[m_out_idx] = twomz + twoz;
     }
 
+    // if (edge_idx < nedges)
+    //    printf("x: %f y: %f z: %f\n", x, y, z);
+
     __syncthreads();
 
-    // work through hardcoded parts first...
-    int ml = min(static_cast<int>(HARDCODED_LMAX), lmax);
-
-    /*clear_buffers<scalar_t, requires_grad, requires_hessian>(
-        (ml + 1) * (ml + 1), buffer_sph, buffer_dsph_x, buffer_dsph_y,
-        buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
-        buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
-       buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz);*/
-    /*if (edge_idx < nedges) {
+    if (edge_idx < nedges) {
         compute_sph_l0<scalar_t>(buffer_sph, nedges);
 
         if constexpr (requires_grad) {
@@ -996,81 +962,45 @@ __global__ void spherical_harmonics_kernel(
                     buffer_dsph_dzdz, nedges);
             }
         }
-    } */
-
-    //__syncthreads();
-
-    // write out the values of the hardcoded derivatives from shared memory
-    // into global memory.
-    /*write_buffers<scalar_t, requires_grad, requires_hessian>(
-        edge_idx, nedges, x, y, z, ir, (ml + 1) * (ml + 1), 0, buffer_sph,
-        buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, buffer_dsph_dxdx,
-        buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx,
-       buffer_dsph_dydy, buffer_dsph_dydz, buffer_dsph_dzdx,
-       buffer_dsph_dzdy, buffer_dsph_dzdz, sph, dsph, ddsph, ntotal,
-       normalize);*/
-    /*
-        // now lets do the generic terms for l > HARDCODED_LMAX
-        int size_q = (lmax + 1) * (lmax + 2) / 2;
-        int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
-        scalar_t *qlmk = buffer_prefactors + size_q + k;
-        scalar_t *pk = buffer_prefactors + k;
-        int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
-
-        for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1) {
-            int sph_offset = l * blockDim.x;
-            // (l + 1) * (l + 1)
-            // l = 3; nltot = 16
-            //
-
-            if (sph_offset > nltotal * nedges && threadIdx.x == 0) {
-                printf("UH OH: %d", sph_offset);
-            }
-            /*
-                sph_offset needs to point to Y[l, 0], so the mapping from array
-               indices to memory locations may look like: sph 0: 0, sph_offset:
-               0 sph 1: 0 1 2, sph_offset: 1 sph 2: 0 1 2 3 4, sph_offset: 2 sph
-               3: 0 1 2 3 4 5 6, sph_offset: 3 we also need to make sure we
-               select the right atom in the buffer, hence multiplication by
-               blockDim.y.
-            */
-
-    // clear out temporary storage buffers
-    /*clear_buffers<scalar_t, requires_grad, requires_hessian>(
-        2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y,
-       buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy,
-       buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-       buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-       buffer_dsph_dzdz);
-
-    // Currently only one warp computes the spherical harmonics.
-
-    if (edge_idx < nedges) {
-        generic_sph_l_channel_mine<scalar_t, requires_grad,
-                                   requires_hessian>(
-            l, nedges, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s,
-            buffer_twomz, buffer_sph + sph_offset,
-            buffer_dsph_x + sph_offset, buffer_dsph_y + sph_offset,
-            buffer_dsph_z + sph_offset, buffer_dsph_dxdx + sph_offset,
-            buffer_dsph_dxdy + sph_offset, buffer_dsph_dxdz + sph_offset,
-            buffer_dsph_dydx + sph_offset, buffer_dsph_dydy + sph_offset,
-            buffer_dsph_dydz + sph_offset, buffer_dsph_dzdx + sph_offset,
-            buffer_dsph_dzdy + sph_offset, buffer_dsph_dzdz + sph_offset);
     }
 
-    // write out temporary storage buffers
-    /*write_buffers<scalar_t, requires_grad, requires_hessian>(
-        edge_idx, nedges, x, y, z, ir, 2 * l + 1, base_index,
-       buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
-       buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
-       buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
-       buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz, sph, dsph,
-       ddsph, ntotal, normalize);
+    // now lets do the generic terms for l > HARDCODED_LMAX
+    int size_q = (lmax + 1) * (lmax + 2) / 2;
+    int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
+    scalar_t *qlmk = buffer_prefactors + size_q + k;
+    scalar_t *pk = buffer_prefactors + k;
+    // int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
-    base_index += 2 * l + 1;
-    qlmk += l + 1;
-    pk += l + 1;
-} */
+    for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1) {
+        int sph_offset = (l * l + l) * nedges;
+        // (l + 1) * (l + 1)
+        // l = 3; nltot = 16
+        // l = 2 -> 5 [0, 1 2 3, 4 5 6 7 8]
+        // l = 3 -> 9  [0, 1 2 3, 4 5 6 7 8, 9 10 11 12 13 14 15]
+
+        /*
+            sph_offset needs to point to Y[l, 0], so the mapping from array
+           indices to memory locations may look like: sph 0: 0, sph_offset:
+           0 sph 1: 0 1 2, sph_offset: 1 sph 2: 0 1 2 3 4, sph_offset: 2 sph
+           3: 0 1 2 3 4 5 6, sph_offset: 3 we also need to make sure we
+           select the right atom in the buffer, hence multiplication by nedges.
+        */
+
+        if (edge_idx < nedges) {
+            generic_sph_l_channel_mine<scalar_t, requires_grad,
+                                       requires_hessian>(
+                l, nedges, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s,
+                buffer_twomz, buffer_sph + sph_offset,
+                buffer_dsph_x + sph_offset, buffer_dsph_y + sph_offset,
+                buffer_dsph_z + sph_offset, buffer_dsph_dxdx, buffer_dsph_dxdy,
+                buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
+                buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
+                buffer_dsph_dzdz);
+        }
+
+        qlmk += l + 1;
+        pk += l + 1;
+    }
 }
 
 /*
@@ -1260,7 +1190,7 @@ void sphericart::cuda::spherical_harmonics(
 
     int n_total = (l_max + 1) * (l_max + 1);
 
-    dim3 grid_dim(GRID_DIM_X);
+    dim3 thread_dim(GRID_DIM_X);
 
     auto find_num_blocks = [](int x, int bdim) {
         return (x + bdim - 1) / bdim;
@@ -1281,25 +1211,25 @@ void sphericart::cuda::spherical_harmonics(
     auto start = std::chrono::high_resolution_clock::now();
 
     spherical_harmonics_kernel<scalar_t, GRID_DIM_X, false, false>
-        <<<block_dim, grid_dim, total_buff_size, cstream>>>(
+        <<<block_dim, thread_dim, total_buff_size, cstream>>>(
             xyz, nedges, prefactors, nprefactors, l_max, n_total, normalize,
             sph, nullptr, nullptr);
 
-    auto end = std::chrono::high_resolution_clock::now();
-
     cudaDeviceSynchronize();
+
+    auto end = std::chrono::high_resolution_clock::now();
 
     // Calculate the duration
     auto duration =
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
     // Print the duration in microseconds
-    std::cout << "Time taken by cuda_base::spherical_harmonics_kernel: " << duration.count()
-              << " nanoseconds" << std::endl;
+    std::cout << "Time taken by cuda_base::spherical_harmonics_kernel: "
+              << duration.count() << " nanoseconds" << std::endl;
 
-    //CUDA_CHECK_KERNEL();
+    // CUDA_CHECK_KERNEL();
 
-    //CUDA_CHECK(cudaStreamSynchronize(cstream));
+    // CUDA_CHECK(cudaStreamSynchronize(cstream));
 }
 
 /** forward declarations of supported configurations **/
