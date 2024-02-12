@@ -42,10 +42,13 @@ requires = [
     "setuptools >=44",
     "wheel >=0.36",
     "cmake",
-    "torch >= 1.13",
 ]
-build-backend = "setuptools.build_meta"
+# use a custom build backend to add a dependency on torch/cmake only when
+# building wheels
+build-backend = "backend"
+backend-path = ["build-backend"]
 
+#build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 zip-safe = false

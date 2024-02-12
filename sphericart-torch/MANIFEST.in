@@ -7,5 +7,7 @@ recursive-include sphericart *
 recursive-include src *
 recursive-include include *
 
+recursive-include build-backend *.py
+
 include pyproject.toml
 include README.md
