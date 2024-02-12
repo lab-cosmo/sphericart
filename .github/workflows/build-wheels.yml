@@ -101,10 +101,9 @@ jobs:
     runs-on: ubuntu-20.04
     name: build-cuda-wheels
     steps:
-      - uses: Jimver/cuda-toolkit@v0.2.14
-        id: cuda-toolkit
+      - uses: Jimver/cuda-toolkit@v0.2.9
         with:
-          cuda: '12.3.2'
+          cuda: '12.1.0'
 
       - uses: actions/checkout@v3
         with:
