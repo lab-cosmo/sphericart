@@ -14,7 +14,7 @@ env:
 
 jobs:
   build_wheels:
-    name: OS ${{ matrix.os }}, Python ${{ matrix.pyver }}, CUDA ${{ matrix.cuda }}
+    name: ${{ matrix.os }}, Python ${{ matrix.pyver }}, CUDA ${{ matrix.cuda }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -50,8 +50,8 @@ jobs:
         run: |
           conda install cuda-toolkit -c "nvidia/label/cuda-${env:CUDA_VERSION}.0"
           # Refer to https://pytorch.org/get-started/locally/
-          python -m pip install torch --index-url https://download.pytorch.org/whl/cu118 -vvv
-          python -m pip install --upgrade build setuptools wheel ninja numpy -vvv
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cu118 -v
+          python -m pip install --upgrade build setuptools wheel ninja numpy -v
       - name: Check torch installation
         run: |
           python -c "import torch; print('torch version:', torch.__version__)"
