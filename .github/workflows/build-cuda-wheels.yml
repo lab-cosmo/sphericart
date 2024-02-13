@@ -71,7 +71,7 @@ jobs:
           CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF TORCH_CUDA_ARCH_LIST="8.0 8.6" CUDACXX=/usr/local/cuda/bin/nvcc CUDAARCHS="80;86"  # PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu121
           # do not complain for missing libtorch.so in sphericart-torch wheel
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
-            auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
+            auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so --exclude libc10_cuda.so -w {dest_dir} {wheel}
           CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-torch-cuda-setup.sh ${{ matrix.torch }} ${{ matrix.cuda }}
 
       # - name: Build sphericart-jax wheels
