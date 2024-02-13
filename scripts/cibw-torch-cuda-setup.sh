@@ -27,6 +27,6 @@ export CUDA_ROOT=/usr/local/cuda
 export CUDA_PATH=/usr/local/cuda
 export CUDADIR=/usr/local/cuda
 
-# Install specific Python packages
-python3.10 -m pip install torch==2.0.0 --index-url https://download.pytorch.org/whl/cu121
-python3.11 -m pip install torch==2.0.0 --index-url https://download.pytorch.org/whl/cu121
+# Install torch on all Python versions
+python3.10 -m pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121
+python3.11 -m pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121
