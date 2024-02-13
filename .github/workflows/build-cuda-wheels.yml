@@ -55,7 +55,7 @@ jobs:
           # on macOS, build both Intel & Apple Silicon versions
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           # do not build wheels with -march=native
-          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF
+          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF  # CUDAARCHS="75"
 
       - name: Build sphericart-torch wheels
         run: |
