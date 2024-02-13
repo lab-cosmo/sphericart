@@ -7,9 +7,7 @@ ARCH="x86_64"
 # Install CUDA compiler and libraries
 yum install -y yum-utils
 yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel7/${ARCH}/cuda-rhel7.repo
-yum -y install cuda-compiler-${CU_VER}.${ARCH} \
-              cuda-libraries-${CU_VER}.${ARCH} \
-              cuda-libraries-devel-${CU_VER}.${ARCH} \
+yum -y install cuda-toolkit-${CU_VER}.${ARCH} \
               nvidia-driver-latest-dkms
 
 # Clean up YUM caches
