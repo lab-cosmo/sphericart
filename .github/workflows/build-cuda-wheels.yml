@@ -72,7 +72,7 @@ jobs:
           # do not complain for missing libtorch.so in sphericart-torch wheel
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
-          CIBW_BEFORE_ALL: /host/home/runner/work/sphericart/sphericart/scripts/cibw-torch-cuda-setup.sh ${{ matrix.torch }} ${{ matrix.cuda }}
+          CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-torch-cuda-setup.sh ${{ matrix.torch }} ${{ matrix.cuda }}
 
       # - name: Build sphericart-jax wheels
       #   run: |
