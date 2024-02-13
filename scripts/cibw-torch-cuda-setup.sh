@@ -26,10 +26,6 @@ export CUDA_HOME=/usr/local/cuda
 export CUDA_ROOT=/usr/local/cuda
 export CUDA_PATH=/usr/local/cuda
 export CUDADIR=/usr/local/cuda
-export CUDACXX=/usr/local/cuda-12.1/bin/nvcc
-
-ls /usr/local/cuda/bin
-nvcc --version
 
 # Install torch on all Python versions
 # python3.10 -m pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121
