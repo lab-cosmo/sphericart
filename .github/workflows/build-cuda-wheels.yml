@@ -55,7 +55,7 @@ jobs:
           # on macOS, build both Intel & Apple Silicon versions
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           # do not build wheels with -march=native
-          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF  # CUDAARCHS="75"
+          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF
 
       - name: Build sphericart-torch wheels
         run: |
@@ -68,7 +68,7 @@ jobs:
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           # disable native architecture optimizations
-          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF
+          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF  # CUDAARCHS="75"
           # do not complain for missing libtorch.so in sphericart-torch wheel
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
