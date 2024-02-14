@@ -19,12 +19,12 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04]
-        torch: ["1.13.0", "2.0.0", "2.1.0", "2.2.0"]
+        torch: ["1.13.1", "2.0.0", "2.1.0", "2.2.0"]
         cuda: ["11.8", "12.1"]
         exclude:
           # torch 1.13.0 does not support cuda 12.1
           - os: ubuntu-20.04
-            torch: "1.13.0"
+            torch: "1.13.1"
             cuda: "12.1"
 
     steps:
