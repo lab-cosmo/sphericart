@@ -28,7 +28,7 @@ jobs:
             cuda: "12.1"
 
     steps:
-      - name: Prepare cuda_no_point
+      - name: Prepare cuda_no_point variable
         id: prepare_cuda_no_point
         run: |
           export cuda_no_point=$(echo ${{ matrix.cuda }} | sed 's/\.//')
