@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set CUDA version and architecture
-CU_VER="12-1"
+CU_VER=${2//./-}
 ARCH="x86_64"
 
 # Install CUDA compiler and libraries
