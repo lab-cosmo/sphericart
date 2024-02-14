@@ -28,10 +28,10 @@ jobs:
         CUDA_VERSION: ${{ matrix.cuda }}
 
     steps:
-      - name: convert CUDA version
-        run: |
-          echo "cuda_version_without_decimal_point=$(echo ${{ matrix.cuda }} | tr -d '.')"
-          echo "cuda_version_without_decimal_point=$(echo ${{ matrix.cuda }} | tr -d '.')" >> $GITHUB_ENV
+      # - name: convert CUDA version
+      #   run: |
+      #     echo "cuda_version_without_decimal_point=$(echo ${{ matrix.cuda }} | tr -d '.')"
+      #     echo "cuda_version_without_decimal_point=$(echo ${{ matrix.cuda }} | tr -d '.')" >> $GITHUB_ENV
 
       # - name: Check CUDA Version Without Point
       #   run: echo "cuda_version_without_decimal_point is ${{ env.cuda_version_without_decimal_point }}"
