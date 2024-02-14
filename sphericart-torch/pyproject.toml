@@ -41,7 +41,6 @@ repository = "https://github.com/lab-cosmo/sphericart"
 requires = [
     "setuptools >=44",
     "wheel >=0.36",
-    "packaging >=23",
     "cmake",
 ]
 
