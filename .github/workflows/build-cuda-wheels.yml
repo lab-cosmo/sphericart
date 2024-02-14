@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04]
-        torch: ["2.1.0"]
+        torch: ["2.2.0"]
         cuda: ["12.1"]
     defaults:
       run:
@@ -64,7 +64,7 @@ jobs:
           python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
         env:
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_BUILD: cp311-*
+          CIBW_BUILD: cp39-* cp310-* cp311-*, cp312-*
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           # disable native architecture optimizations
