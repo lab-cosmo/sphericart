@@ -20,7 +20,6 @@ jobs:
       matrix:
         os: [ubuntu-20.04]
         torch: ["2.2.0"]
-        cuda: []
         include:
           - cuda: "11.8"
             torch_cuda: "118"
