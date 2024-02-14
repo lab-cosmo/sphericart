@@ -12,7 +12,7 @@ if TORCH_VERSION is not None:
     # force a specific version of torch+cuda
     TORCH_DEP = f"torch =={TORCH_VERSION}"
     if CUDA_VERSION is not None:
-        extra_index_url = f" --index-url https://download.pytorch.org/whl/cu{CUDA_VERSION.replace(".", "")}"
+        extra_index_url = f" --index-url https://download.pytorch.org/whl/cu{CUDA_VERSION.replace('.', '')}"
         TORCH_DEP += extra_index_url
 else:
     TORCH_DEP = "torch >=1.13"
