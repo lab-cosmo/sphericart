@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Prepare cuda_no_point
         run: |
-          export cuda_no_point=$(echo ${{ matrix.cuda }} | sed 's/[^0-9,a-z,A-Z]/\-/g')
+          export cuda_no_point=$(echo ${{ matrix.cuda }} | sed 's/\.//')
           echo ::set-output name=cuda_no_point::$cuda_no_point
 
       - name: Check that cuda_no_point is set
