@@ -28,13 +28,13 @@ jobs:
         CUDA_VERSION: ${{ matrix.cuda }}
 
     steps:
-      # - name: convert CUDA version
-      #   run: |
-      #     echo "cuda_version_without_decimal_point=$(echo ${{ matrix.cuda }} | tr -d '.')"
-      #     echo "cuda_version_without_decimal_point=$(echo ${{ matrix.cuda }} | tr -d '.')" >> $GITHUB_ENV
+      - name: convert CUDA version
+        run: |
+          echo "cuda_version_without_decimal_point=$(echo ${{ matrix.cuda }} | tr -d '.')"
+          echo "cuda_version_without_decimal_point=$(echo ${{ matrix.cuda }} | tr -d '.')" >> $GITHUB_ENV
 
-      # - name: Check CUDA Version Without Point
-      #   run: echo "cuda_version_without_decimal_point is ${{ env.cuda_version_without_decimal_point }}"
+      - name: Check CUDA Version Without Point
+        run: echo "cuda_version_without_decimal_point is ${{ env.cuda_version_without_decimal_point }}"
 
       - name: free disk space
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android || true
@@ -77,7 +77,7 @@ jobs:
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           # set environment variables for sphericart-torch build
-          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF CUDACXX=/usr/local/cuda/bin/nvcc TORCH_CUDA_ARCH_LIST=All CUDAARCHS=all SPHERICART_TORCH_TORCH_VERSION=${{ matrix.torch }} PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu${{ cuda_version_without_decimal_point }}
+          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF CUDACXX=/usr/local/cuda/bin/nvcc TORCH_CUDA_ARCH_LIST=All CUDAARCHS=all SPHERICART_TORCH_TORCH_VERSION=${{ matrix.torch }} PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu${{ env.cuda_version_without_decimal_point }}
           # do not complain for missing libtorch.so in sphericart-torch wheel
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10.so --exclude libc10_cuda.so -w {dest_dir} {wheel}
