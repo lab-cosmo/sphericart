@@ -19,18 +19,19 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04]
-        torch: ["1.13.0", "2.0.0", "2.1.0", "2.2.0"]
+        torch: ["2.2.0"] # ["1.13.0", "2.0.0", "2.1.0", "2.2.0"]
         cuda: ["11.8", "12.1"]
 
     steps:
-      - name: Prepare cuda_no_point
+      - name: prepare_cuda_no_point
+        id: prepare_cuda_no_point
         run: |
           export cuda_no_point=$(echo ${{ matrix.cuda }} | sed 's/\.//')
           echo ::set-output name=cuda_no_point::$cuda_no_point
 
       - name: Check that cuda_no_point is set
         run: |
-          echo "cuda_no_point: ${{ steps.Prepare_cuda_no_point.outputs.cuda_no_point }}"
+          echo "cuda_no_point: ${{ steps.prepare_cuda_no_point.outputs.cuda_no_point }}"
 
       - name: free disk space
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android || true
