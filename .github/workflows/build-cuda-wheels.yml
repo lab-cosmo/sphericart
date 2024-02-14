@@ -63,13 +63,13 @@ jobs:
           python -m build --sdist sphericart-torch --outdir sphericart-torch/dist
           python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
         env:
-          CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-torch-cuda-setup.sh ${{ matrix.torch }} ${{ matrix.cuda }}
+          CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-cuda-setup.sh ${{ matrix.cuda }}
           CIBW_BUILD_VERBOSITY: 3
           CIBW_BUILD: cp39-* cp310-* cp311-* cp312-*
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-          # disable native architecture optimizations
-          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF CUDACXX=/usr/local/cuda/bin/nvcc TORCH_CUDA_ARCH_LIST=All CUDAARCHS=all  # PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu121
+          # set environment variables for sphericart-torch build
+          CIBW_ENVIRONMENT: SPHERICART_ARCH_NATIVE=OFF CUDACXX=/usr/local/cuda/bin/nvcc TORCH_CUDA_ARCH_LIST=All CUDAARCHS=all SPHERICART_TORCH_TORCH_VERSION=${{ matrix.torch }} SPHERICART_TORCH_CUDA_VERSION=${{ matrix.cuda }}
           # do not complain for missing libtorch.so in sphericart-torch wheel
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10.so --exclude libc10_cuda.so -w {dest_dir} {wheel}

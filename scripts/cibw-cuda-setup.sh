@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set CUDA version and architecture
-CU_VER=${2//./-}
+CU_VER=${1//./-}
 ARCH="x86_64"
 
 # Install CUDA compiler and libraries
@@ -24,7 +24,3 @@ export CUDA_HOME=/usr/local/cuda
 export CUDA_ROOT=/usr/local/cuda
 export CUDA_PATH=/usr/local/cuda
 export CUDADIR=/usr/local/cuda
-
-# Install torch on all Python versions
-# python3.10 -m pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121
-# python3.11 -m pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121
