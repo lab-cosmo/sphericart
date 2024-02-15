@@ -55,3 +55,7 @@ zip-safe = false
 where = ["python"]
 include = ["sphericart*"]
 namespaces = true
+
+[tool.distutils.bdist_wheel]
+# Build wheels that are compatible with any Python version after 3.9
+py-limited-api = "cp39"

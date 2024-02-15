@@ -8,6 +8,10 @@
 #include <string>
 #include <type_traits>
 
+// Use Python limited API corresponding to Python 3.9
+// See https://docs.python.org/3/c-api/stable.html
+#define Py_LIMITED_API 0x0309000000
+
 #include <pybind11/pybind11.h>
 
 namespace sphericart_jax {
