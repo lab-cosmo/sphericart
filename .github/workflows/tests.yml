@@ -38,7 +38,7 @@ jobs:
           mkdir build
           cd build
           cmake -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON ..
-          cmake --build .
+          cmake --build . --parallel
           ctest
 
       - name: run Python tests
