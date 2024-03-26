@@ -24,10 +24,8 @@ int main() {
     // memory, however one can provide uninitialized vectors that will be
     // automatically reshaped
     auto sph = std::vector<double>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
-    auto dsph =
-        std::vector<double>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
-    auto ddsph =
-        std::vector<double>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto dsph = std::vector<double>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto ddsph = std::vector<double>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
 
     // the class is templated, so one can also use 32-bit float operations
     auto xyz_f = std::vector<float>(n_samples * 3, 0.0);
@@ -35,10 +33,8 @@ int main() {
         xyz_f[i] = (float)xyz[i];
     }
     auto sph_f = std::vector<float>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
-    auto dsph_f =
-        std::vector<float>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
-    auto ddsph_f =
-        std::vector<float>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto dsph_f = std::vector<float>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto ddsph_f = std::vector<float>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
 
     // the class can be used to compute the for a full arrays of points (as
     // above) or on individual samples - this is deduced from the size of the
@@ -46,8 +42,7 @@ int main() {
     auto xyz_sample = std::vector<double>(3, 0.0);
     auto sph_sample = std::vector<double>((l_max + 1) * (l_max + 1), 0.0);
     auto dsph_sample = std::vector<double>(3 * (l_max + 1) * (l_max + 1), 0.0);
-    auto ddsph_sample =
-        std::vector<double>(3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto ddsph_sample = std::vector<double>(3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
 
     /* ===== API calls ===== */
 
@@ -65,8 +60,12 @@ int main() {
     calculator.compute(xyz_sample, sph_sample); // no gradients
     calculator.compute_with_gradients(xyz_sample, sph_sample,
                                       dsph_sample); // gradients
-    calculator.compute_with_hessians(xyz_sample, sph_sample, dsph_sample,
-                                     ddsph_sample); // gradients and hessians
+    calculator.compute_with_hessians(
+        xyz_sample,
+        sph_sample,
+        dsph_sample,
+        ddsph_sample
+    ); // gradients and hessians
 
     // float version
     auto calculator_f = sphericart::SphericalHarmonics<float>(l_max);
@@ -82,8 +81,7 @@ int main() {
         sph_error += (sph_f[i] - sph[i]) * (sph_f[i] - sph[i]);
         sph_norm += sph[i] * sph[i];
     }
-    printf("Float vs double relative error: %12.8e\n",
-           sqrt(sph_error / sph_norm));
+    printf("Float vs double relative error: %12.8e\n", sqrt(sph_error / sph_norm));
 
     return 0;
 }

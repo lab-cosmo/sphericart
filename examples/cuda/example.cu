@@ -13,15 +13,15 @@
 /*host macro that checks for errors in CUDA calls, and prints the file + line
  * and error string if one occurs
  */
-#define CUDA_CHECK(call)                                                       \
-    do {                                                                       \
-        cudaError_t cudaStatus = (call);                                       \
-        if (cudaStatus != cudaSuccess) {                                       \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__       \
-                      << " - " << cudaGetErrorString(cudaStatus) << std::endl; \
-            cudaDeviceReset();                                                 \
-            exit(EXIT_FAILURE);                                                \
-        }                                                                      \
+#define CUDA_CHECK(call)                                                                           \
+    do {                                                                                           \
+        cudaError_t cudaStatus = (call);                                                           \
+        if (cudaStatus != cudaSuccess) {                                                           \
+            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
+                      << cudaGetErrorString(cudaStatus) << std::endl;                              \
+            cudaDeviceReset();                                                                     \
+            exit(EXIT_FAILURE);                                                                    \
+        }                                                                                          \
     } while (0)
 
 int main() {
@@ -41,10 +41,8 @@ int main() {
     // memory, one also can provide uninitialized vectors that will be
     // automatically reshaped
     auto sph = std::vector<double>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
-    auto dsph =
-        std::vector<double>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
-    auto ddsph =
-        std::vector<double>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto dsph = std::vector<double>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto ddsph = std::vector<double>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
 
     // the class is templated, so one can also use 32-bit float operations
     auto xyz_f = std::vector<float>(n_samples * 3, 0.0);
@@ -52,50 +50,49 @@ int main() {
         xyz_f[i] = (float)xyz[i];
     }
     auto sph_f = std::vector<float>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
-    auto dsph_f =
-        std::vector<float>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
-    auto ddsph_f =
-        std::vector<float>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto dsph_f = std::vector<float>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
+    auto ddsph_f = std::vector<float>(n_samples * 3 * 3 * (l_max + 1) * (l_max + 1), 0.0);
 
     /* ===== API calls ===== */
 
     // internal buffers and numerical factors are initalized at construction
     sphericart::cuda::SphericalHarmonics<double> calculator_cuda(l_max);
 
-    double *xyz_cuda;
+    double* xyz_cuda;
     CUDA_CHECK(cudaMalloc(&xyz_cuda, n_samples * 3 * sizeof(double)));
-    CUDA_CHECK(cudaMemcpy(xyz_cuda, xyz.data(), n_samples * 3 * sizeof(double),
-                          cudaMemcpyHostToDevice));
-    double *sph_cuda;
-    CUDA_CHECK(cudaMalloc(&sph_cuda, n_samples * (l_max + 1) * (l_max + 1) *
-                                         sizeof(double)));
+    CUDA_CHECK(
+        cudaMemcpy(xyz_cuda, xyz.data(), n_samples * 3 * sizeof(double), cudaMemcpyHostToDevice)
+    );
+    double* sph_cuda;
+    CUDA_CHECK(cudaMalloc(&sph_cuda, n_samples * (l_max + 1) * (l_max + 1) * sizeof(double)));
 
     calculator_cuda.compute(xyz_cuda, n_samples, false, false,
                             sph_cuda); // no gradients */
 
-    CUDA_CHECK(
-        cudaMemcpy(sph.data(), sph_cuda,
-                   n_samples * (l_max + 1) * (l_max + 1) * sizeof(double),
-                   cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(
+        sph.data(), sph_cuda, n_samples * (l_max + 1) * (l_max + 1) * sizeof(double), cudaMemcpyDeviceToHost
+    ));
 
     // float version
     sphericart::cuda::SphericalHarmonics<float> calculator_cuda_f(l_max);
 
-    float *xyz_cuda_f;
+    float* xyz_cuda_f;
     CUDA_CHECK(cudaMalloc(&xyz_cuda_f, n_samples * 3 * sizeof(float)));
-    CUDA_CHECK(cudaMemcpy(xyz_cuda_f, xyz_f.data(),
-                          n_samples * 3 * sizeof(float),
-                          cudaMemcpyHostToDevice));
-    float *sph_cuda_f;
-    CUDA_CHECK(cudaMalloc(&sph_cuda_f, n_samples * (l_max + 1) * (l_max + 1) *
-                                           sizeof(float)));
+    CUDA_CHECK(
+        cudaMemcpy(xyz_cuda_f, xyz_f.data(), n_samples * 3 * sizeof(float), cudaMemcpyHostToDevice)
+    );
+    float* sph_cuda_f;
+    CUDA_CHECK(cudaMalloc(&sph_cuda_f, n_samples * (l_max + 1) * (l_max + 1) * sizeof(float)));
 
     calculator_cuda_f.compute(xyz_cuda_f, n_samples, false, false,
                               sph_cuda_f); // no gradients */
 
-    CUDA_CHECK(cudaMemcpy(sph_f.data(), sph_cuda_f,
-                          n_samples * (l_max + 1) * (l_max + 1) * sizeof(float),
-                          cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(
+        sph_f.data(),
+        sph_cuda_f,
+        n_samples * (l_max + 1) * (l_max + 1) * sizeof(float),
+        cudaMemcpyDeviceToHost
+    ));
 
     /* ===== check results ===== */
 
@@ -104,8 +101,7 @@ int main() {
         sph_error += (sph_f[i] - sph[i]) * (sph_f[i] - sph[i]);
         sph_norm += sph[i] * sph[i];
     }
-    printf("Float vs double relative error: %12.8e\n",
-           sqrt(sph_error / sph_norm));
+    printf("Float vs double relative error: %12.8e\n", sqrt(sph_error / sph_norm));
 
     return 0;
 }
