@@ -40,7 +40,7 @@ repository = "https://github.com/lab-cosmo/sphericart"
 requires = [
     "setuptools >=44",
     "wheel >=0.36",
-    "cmake",
+    "cmake ==3.28.4",
 ]
 build-backend = "setuptools.build_meta"
 
