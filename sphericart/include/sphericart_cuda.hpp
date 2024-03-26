@@ -80,17 +80,24 @@ template <typename T> class SphericalHarmonics {
      * nullptr, the kernel launch will be performed on the default stream.
      */
 
-    void compute(const T *xyz, size_t nsamples, bool compute_with_gradients,
-                 bool compute_with_hessian, T *sph, T *dsph = nullptr,
-                 T *ddsph = nullptr, void *cuda_stream = nullptr);
+    void compute(
+        const T* xyz,
+        size_t nsamples,
+        bool compute_with_gradients,
+        bool compute_with_hessian,
+        T* sph,
+        T* dsph = nullptr,
+        T* ddsph = nullptr,
+        void* cuda_stream = nullptr
+    );
 
     /* @cond */
   private:
     size_t l_max; // maximum l value computed by this class
     size_t nprefactors;
     bool normalized;    // should we normalize the input vectors?
-    T *prefactors_cpu;  // host prefactors buffer
-    T *prefactors_cuda; // storage space for prefactors
+    T* prefactors_cpu;  // host prefactors buffer
+    T* prefactors_cuda; // storage space for prefactors
 
     int64_t CUDA_GRID_DIM_X_ = 8;
     int64_t CUDA_GRID_DIM_Y_ = 8;

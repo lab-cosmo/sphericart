@@ -61,26 +61,23 @@ typedef struct sphericart_calculator_f_t sphericart_calculator_f_t;
  *  @return A pointer to a `sphericart_calculator_t` object
  *
  */
-SPHERICART_EXPORT sphericart_calculator_t *sphericart_new(size_t l_max,
-                                                          bool normalized);
+SPHERICART_EXPORT sphericart_calculator_t* sphericart_new(size_t l_max, bool normalized);
 
 /**
  * Similar to `sphericart_new`, but it returns a `sphericart_calculator_f_t`,
  * which performs calculations on the `float` type.
  */
-SPHERICART_EXPORT sphericart_calculator_f_t *sphericart_new_f(size_t l_max,
-                                                              bool normalized);
+SPHERICART_EXPORT sphericart_calculator_f_t* sphericart_new_f(size_t l_max, bool normalized);
 
 /**
  * Deletes a previously allocated `sphericart_calculator_t` calculator.
  */
-SPHERICART_EXPORT void sphericart_delete(sphericart_calculator_t *calculator);
+SPHERICART_EXPORT void sphericart_delete(sphericart_calculator_t* calculator);
 
 /**
  * Deletes a previously allocated `sphericart_calculator_f_t` calculator.
  */
-SPHERICART_EXPORT void
-sphericart_delete_f(sphericart_calculator_f_t *calculator);
+SPHERICART_EXPORT void sphericart_delete_f(sphericart_calculator_f_t* calculator);
 
 /**
  * This function calculates the spherical harmonics and, optionally, their
@@ -108,9 +105,13 @@ sphericart_delete_f(sphericart_calculator_f_t *calculator);
  * @param sph_length size of the sph allocation, should be `n_samples *
  * (l_max + 1) * (l_max + 1)`
  */
-SPHERICART_EXPORT void
-sphericart_compute_array(sphericart_calculator_t *calculator, const double *xyz,
-                         size_t xyz_length, double *sph, size_t sph_length);
+SPHERICART_EXPORT void sphericart_compute_array(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length
+);
 
 /**
  * This function calculates the spherical harmonics and their
@@ -151,8 +152,14 @@ sphericart_compute_array(sphericart_calculator_t *calculator, const double *xyz,
  * * 3 * (l_max + 1) * (l_max + 1)`
  */
 SPHERICART_EXPORT void sphericart_compute_array_with_gradients(
-    sphericart_calculator_t *calculator, const double *xyz, size_t xyz_length,
-    double *sph, size_t sph_length, double *dsph, size_t dsph_length);
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length
+);
 
 /**
  * This function calculates the spherical harmonics, their
@@ -205,97 +212,150 @@ SPHERICART_EXPORT void sphericart_compute_array_with_gradients(
  * `n_samples * 3 * 3* (l_max + 1) * (l_max + 1)`
  */
 SPHERICART_EXPORT void sphericart_compute_array_with_hessians(
-    sphericart_calculator_t *calculator, const double *xyz, size_t xyz_length,
-    double *sph, size_t sph_length, double *dsph, size_t dsph_length,
-    double *ddsph, size_t ddsph_length);
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length,
+    double* ddsph,
+    size_t ddsph_length
+);
 
 /**
  * Similar to :func:`sphericart_compute_array`, but it computes the spherical
  * harmonics for a single 3D point in space.
  */
-SPHERICART_EXPORT void
-sphericart_compute_sample(sphericart_calculator_t *calculator,
-                          const double *xyz, size_t xyz_length, double *sph,
-                          size_t sph_length);
+SPHERICART_EXPORT void sphericart_compute_sample(
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length
+);
 
 /**
  * Similar to :func:`sphericart_compute_array_with_gradients`, but it
  * computes the spherical harmonics for a single 3D point in space.
  */
 SPHERICART_EXPORT void sphericart_compute_sample_with_gradients(
-    sphericart_calculator_t *calculator, const double *xyz, size_t xyz_length,
-    double *sph, size_t sph_length, double *dsph, size_t dsph_length);
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length
+);
 
 /**
  * Similar to :func:`sphericart_compute_array_with_hessians`, but it computes
  * the spherical harmonics for a single 3D point in space.
  */
 SPHERICART_EXPORT void sphericart_compute_sample_with_hessians(
-    sphericart_calculator_t *calculator, const double *xyz, size_t xyz_length,
-    double *sph, size_t sph_length, double *dsph, size_t dsph_length,
-    double *ddsph, size_t ddsph_length);
+    sphericart_calculator_t* calculator,
+    const double* xyz,
+    size_t xyz_length,
+    double* sph,
+    size_t sph_length,
+    double* dsph,
+    size_t dsph_length,
+    double* ddsph,
+    size_t ddsph_length
+);
 
 /**
  * Similar to :func:`sphericart_compute_array`, but using the `float` data
  * type.
  */
-SPHERICART_EXPORT void
-sphericart_compute_array_f(sphericart_calculator_f_t *calculator,
-                           const float *xyz, size_t xyz_length, float *sph,
-                           size_t sph_length);
+SPHERICART_EXPORT void sphericart_compute_array_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length
+);
 
 /**
  * Similar to :func:`sphericart_compute_array_with_gradients`, but using the
  * `float` data type.
  */
 SPHERICART_EXPORT void sphericart_compute_array_with_gradients_f(
-    sphericart_calculator_f_t *calculator, const float *xyz, size_t xyz_length,
-    float *sph, size_t sph_length, float *dsph, size_t dsph_length);
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length
+);
 
 /**
  * Similar to :func:`sphericart_compute_array_with_hessians`, but using the
  * `float` data type.
  */
 SPHERICART_EXPORT void sphericart_compute_array_with_hessians_f(
-    sphericart_calculator_f_t *calculator, const float *xyz, size_t xyz_length,
-    float *sph, size_t sph_length, float *dsph, size_t dsph_length,
-    float *ddsph, size_t ddsph_length);
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length,
+    float* ddsph,
+    size_t ddsph_length
+);
 
 /**
  * Similar to :func:`sphericart_compute_sample`, but using the `float` data
  * type.
  */
-SPHERICART_EXPORT void
-sphericart_compute_sample_f(sphericart_calculator_f_t *calculator,
-                            const float *xyz, size_t xyz_length, float *sph,
-                            size_t sph_length);
+SPHERICART_EXPORT void sphericart_compute_sample_f(
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length
+);
 
 /**
  * Similar to :func:`sphericart_compute_sample_with_gradients`, but using the
  * `float` data type.
  */
 SPHERICART_EXPORT void sphericart_compute_sample_with_gradients_f(
-    sphericart_calculator_f_t *calculator, const float *xyz, size_t xyz_length,
-    float *sph, size_t sph_length, float *dsph, size_t dsph_length);
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length
+);
 
 /**
  * Similar to :func:`sphericart_compute_sample_with_hessians`, but using the
  * `float` data type.
  */
 SPHERICART_EXPORT void sphericart_compute_sample_with_hessians_f(
-    sphericart_calculator_f_t *calculator, const float *xyz, size_t xyz_length,
-    float *sph, size_t sph_length, float *dsph, size_t dsph_length,
-    float *ddsph, size_t ddsph_length);
+    sphericart_calculator_f_t* calculator,
+    const float* xyz,
+    size_t xyz_length,
+    float* sph,
+    size_t sph_length,
+    float* dsph,
+    size_t dsph_length,
+    float* ddsph,
+    size_t ddsph_length
+);
 
 /**
  * Get the number of OpenMP threads used by a calculator.
  * If `sphericart` is computed without OpenMP support returns 1.
  */
-SPHERICART_EXPORT int
-sphericart_omp_num_threads(sphericart_calculator_t *calculator);
+SPHERICART_EXPORT int sphericart_omp_num_threads(sphericart_calculator_t* calculator);
 
-SPHERICART_EXPORT int
-sphericart_omp_num_threads_f(sphericart_calculator_f_t *calculator);
+SPHERICART_EXPORT int sphericart_omp_num_threads_f(sphericart_calculator_f_t* calculator);
 
 #ifdef __cplusplus
 }

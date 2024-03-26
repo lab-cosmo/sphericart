@@ -9,13 +9,13 @@
 #include "sphericart.hpp"
 
 #define DELTA 1e-4
-#define TOLERANCE                                                              \
+#define TOLERANCE                                                                                  \
     1e-4 // High tolerance: finite differences are inaccurate for second
          // derivatives
 
-bool check_gradient_call(int l_max,
-                         sphericart::SphericalHarmonics<double> &calculator,
-                         const std::vector<double> &xyz) {
+bool check_gradient_call(
+    int l_max, sphericart::SphericalHarmonics<double>& calculator, const std::vector<double>& xyz
+) {
     bool is_passed = true;
     int n_samples = xyz.size() / 3;
     int n_sph = (l_max + 1) * (l_max + 1);
@@ -42,16 +42,17 @@ bool check_gradient_call(int l_max,
 
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
             for (int i_sph = 0; i_sph < n_sph; i_sph++) {
-                double analytical =
-                    dsph[3 * n_sph * i_sample + n_sph * alpha + i_sph];
-                double finite_diff = (sph_plus[n_sph * i_sample + i_sph] -
-                                      sph_minus[n_sph * i_sample + i_sph]) /
-                                     (2.0 * DELTA);
-                if (std::abs(analytical / finite_diff - 1.0) > TOLERANCE)
-                    std::cout << "Wrong first derivative: " << analytical
-                              << " vs " << finite_diff << std::endl;
-                if (std::abs(analytical / finite_diff - 1.0) > TOLERANCE)
+                double analytical = dsph[3 * n_sph * i_sample + n_sph * alpha + i_sph];
+                double finite_diff =
+                    (sph_plus[n_sph * i_sample + i_sph] - sph_minus[n_sph * i_sample + i_sph]) /
+                    (2.0 * DELTA);
+                if (std::abs(analytical / finite_diff - 1.0) > TOLERANCE) {
+                    std::cout << "Wrong first derivative: " << analytical << " vs " << finite_diff
+                              << std::endl;
+                }
+                if (std::abs(analytical / finite_diff - 1.0) > TOLERANCE) {
                     is_passed = false;
+                }
             }
         }
     }
@@ -59,9 +60,9 @@ bool check_gradient_call(int l_max,
     return is_passed;
 }
 
-bool check_hessian_call(int l_max,
-                        sphericart::SphericalHarmonics<double> &calculator,
-                        const std::vector<double> &xyz) {
+bool check_hessian_call(
+    int l_max, sphericart::SphericalHarmonics<double>& calculator, const std::vector<double>& xyz
+) {
     bool is_passed = true;
     int n_samples = xyz.size() / 3;
     int n_sph = (l_max + 1) * (l_max + 1);
@@ -94,16 +95,17 @@ bool check_hessian_call(int l_max,
 
         for (int i_sample = 0; i_sample < n_samples; i_sample++) {
             for (int i_sph = 0; i_sph < n_sph; i_sph++) {
-                double analytical =
-                    dsph[3 * n_sph * i_sample + n_sph * alpha + i_sph];
-                double finite_diff = (sph_plus[n_sph * i_sample + i_sph] -
-                                      sph_minus[n_sph * i_sample + i_sph]) /
-                                     (2.0 * DELTA);
-                if (std::abs(analytical / finite_diff - 1.0) > TOLERANCE)
-                    std::cout << "Wrong first derivative: " << analytical
-                              << " vs " << finite_diff << std::endl;
-                if (std::abs(analytical / finite_diff - 1.0) > TOLERANCE)
+                double analytical = dsph[3 * n_sph * i_sample + n_sph * alpha + i_sph];
+                double finite_diff =
+                    (sph_plus[n_sph * i_sample + i_sph] - sph_minus[n_sph * i_sample + i_sph]) /
+                    (2.0 * DELTA);
+                if (std::abs(analytical / finite_diff - 1.0) > TOLERANCE) {
+                    std::cout << "Wrong first derivative: " << analytical << " vs " << finite_diff
+                              << std::endl;
+                }
+                if (std::abs(analytical / finite_diff - 1.0) > TOLERANCE) {
                     is_passed = false;
+                }
             }
         }
     }
@@ -142,23 +144,19 @@ bool check_hessian_call(int l_max,
             for (int i_sample = 0; i_sample < n_samples; i_sample++) {
                 for (int i_sph = 0; i_sph < n_sph; i_sph++) {
                     double analytical =
-                        ddsph[9 * n_sph * i_sample + n_sph * 3 * alpha +
-                              n_sph * beta + i_sph];
-                    double finite_diff =
-                        (sph_plus_plus[n_sph * i_sample + i_sph] -
-                         sph_plus_minus[n_sph * i_sample + i_sph] -
-                         sph_minus_plus[n_sph * i_sample + i_sph] +
-                         sph_minus_minus[n_sph * i_sample + i_sph]) /
-                        (4.0 * DELTA * DELTA);
-                    if (!(std::abs(analytical / finite_diff - 1.0) <
-                              TOLERANCE ||
-                          (std::abs(analytical) < 1e-15 &&
-                           std::abs(finite_diff) <
-                               1e-7))) { // Add a criterion for second
-                                         // derivatives which
+                        ddsph[9 * n_sph * i_sample + n_sph * 3 * alpha + n_sph * beta + i_sph];
+                    double finite_diff = (sph_plus_plus[n_sph * i_sample + i_sph] -
+                                          sph_plus_minus[n_sph * i_sample + i_sph] -
+                                          sph_minus_plus[n_sph * i_sample + i_sph] +
+                                          sph_minus_minus[n_sph * i_sample + i_sph]) /
+                                         (4.0 * DELTA * DELTA);
+                    if (!(std::abs(analytical / finite_diff - 1.0) < TOLERANCE ||
+                          (std::abs(analytical) < 1e-15 && std::abs(finite_diff) < 1e-7)
+                        )) { // Add a criterion for second
+                             // derivatives which
                         // are zero, as they can fail the relative test
-                        std::cout << "Wrong second derivative: " << analytical
-                                  << " vs " << finite_diff << std::endl;
+                        std::cout << "Wrong second derivative: " << analytical << " vs "
+                                  << finite_diff << std::endl;
                         is_passed = false;
                     }
                 }
@@ -176,15 +174,12 @@ int main() {
     for (int i_sample = 0; i_sample < 4; i_sample++) {
         for (int alpha = 0; alpha < 3; alpha++) {
             xyz[3 * i_sample + alpha] =
-                0.01 * i_sample -
-                0.3 * alpha * alpha; // Fill xyz with some numbers
+                0.01 * i_sample - 0.3 * alpha * alpha; // Fill xyz with some numbers
         }
     }
 
-    for (bool normalize :
-         {false, true}) { // Test with and without normalization
-        for (int l_max = 0; l_max < l_max_max;
-             l_max++) { // Test for a range of l_max values
+    for (bool normalize : {false, true}) {                // Test with and without normalization
+        for (int l_max = 0; l_max < l_max_max; l_max++) { // Test for a range of l_max values
             sphericart::SphericalHarmonics<double> normalized_calculator =
                 sphericart::SphericalHarmonics<double>(l_max, normalize);
             is_passed = check_gradient_call(l_max, normalized_calculator, xyz);
