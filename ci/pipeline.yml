@@ -17,7 +17,6 @@ test_job:
   stage: test
   extends: .container-runner-daint-gpu
   image: $BASE_IMAGE
-  timeout: 2h
   script:
     - export CUDA_HOME="/usr/local/cuda"
     - python3 -m pip install --upgrade pip
