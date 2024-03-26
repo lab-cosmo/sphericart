@@ -49,6 +49,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # similar to the Python version
     sh_sphericart = sh_calculator.compute(xyz)
     sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
+    print(dir(sphericart.torch.SphericalHarmonics))
     (
         sh_sphericart,
         dsh_sphericart,
