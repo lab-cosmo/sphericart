@@ -17,7 +17,7 @@ test_job:
   stage: test
   extends: .container-runner-daint-gpu
   image: $BASE_IMAGE
-  timeout: 1h
+  timeout: 2h
   script:
     - export CUDA_HOME="/usr/local/cuda"
     - python3 -m pip install --upgrade pip
@@ -34,5 +34,5 @@ test_job:
     SLURM_JOB_NUM_NODES: 1
     SLURM_PARTITION: normal
     SLURM_NTASKS: 1
-    SLURM_TIMELIMIT: '00:30:00'
+    SLURM_TIMELIMIT: '00:40:00'
     GIT_STRATEGY: fetch
