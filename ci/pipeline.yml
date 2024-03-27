@@ -8,6 +8,7 @@ stages:
 build_base_image_job:
   stage: build
   extends: .container-builder-dynamic-name
+  timeout: 2h
   variables:
     DOCKERFILE: ci/docker/Dockerfile.base
     WATCH_FILECHANGES: $DOCKERFILE
@@ -17,6 +18,7 @@ test_job:
   stage: test
   extends: .container-runner-daint-gpu
   image: $BASE_IMAGE
+  timeout: 2h
   script:
     - export CUDA_HOME="/usr/local/cuda"
     - python3 -m pip install --upgrade pip
