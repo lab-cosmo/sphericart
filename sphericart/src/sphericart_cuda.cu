@@ -13,19 +13,18 @@
 
 using namespace sphericart::cuda;
 
-#define CUDA_CHECK(call)                                                       \
-    do {                                                                       \
-        cudaError_t cudaStatus = (call);                                       \
-        if (cudaStatus != cudaSuccess) {                                       \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__       \
-                      << " - " << cudaGetErrorString(cudaStatus) << std::endl; \
-            cudaDeviceReset();                                                 \
-            exit(EXIT_FAILURE);                                                \
-        }                                                                      \
+#define CUDA_CHECK(call)                                                                           \
+    do {                                                                                           \
+        cudaError_t cudaStatus = (call);                                                           \
+        if (cudaStatus != cudaSuccess) {                                                           \
+            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
+                      << cudaGetErrorString(cudaStatus) << std::endl;                              \
+            cudaDeviceReset();                                                                     \
+            exit(EXIT_FAILURE);                                                                    \
+        }                                                                                          \
     } while (0)
 
-template <typename T>
-SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
+template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
     /*
         This is the constructor of the SphericalHarmonics class. It initizlizes
        buffer space, compute prefactors, and sets the function pointers that are
@@ -40,17 +39,22 @@ SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
     // compute prefactors on host first
     compute_sph_prefactors<T>((int)l_max, this->prefactors_cpu);
     // allocate them on device and copy to device
-    CUDA_CHECK(cudaMalloc((void **)&this->prefactors_cuda,
-                          this->nprefactors * sizeof(T)));
+    CUDA_CHECK(cudaMalloc((void**)&this->prefactors_cuda, this->nprefactors * sizeof(T)));
 
-    CUDA_CHECK(cudaMemcpy(this->prefactors_cuda, this->prefactors_cpu,
-                          this->nprefactors * sizeof(T),
-                          cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(
+        this->prefactors_cuda, this->prefactors_cpu, this->nprefactors * sizeof(T), cudaMemcpyHostToDevice
+    ));
 
     // initialise the currently available amount of shared memory.
     this->_current_shared_mem_allocation = adjust_shared_memory(
-        sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
-        false, false, this->_current_shared_mem_allocation);
+        sizeof(T),
+        this->l_max,
+        this->CUDA_GRID_DIM_X_,
+        this->CUDA_GRID_DIM_Y_,
+        false,
+        false,
+        this->_current_shared_mem_allocation
+    );
 }
 
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
@@ -61,39 +65,47 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
 }
 
 template <typename T>
-void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
-                                    bool compute_with_gradients,
-                                    bool compute_with_hessian, T *sph, T *dsph,
-                                    T *ddsph, void *cuda_stream) {
+void SphericalHarmonics<T>::compute(
+    const T* xyz,
+    const size_t nsamples,
+    bool compute_with_gradients,
+    bool compute_with_hessian,
+    T* sph,
+    T* dsph,
+    T* ddsph,
+    void* cuda_stream
+) {
 
     if (sph == nullptr) {
-        throw std::runtime_error(
-            "sphericart::cuda::SphericalHarmonics::compute expected "
-            "sph ptr initialised, instead nullptr found. Initialise "
-            "sph with cudaMalloc.");
+        throw std::runtime_error("sphericart::cuda::SphericalHarmonics::compute expected "
+                                 "sph ptr initialised, instead nullptr found. Initialise "
+                                 "sph with cudaMalloc.");
     }
 
     if (compute_with_gradients && dsph == nullptr) {
-        throw std::runtime_error(
-            "sphericart::cuda::SphericalHarmonics::compute expected "
-            "dsph != nullptr since compute_with_gradients = true. "
-            "initialise dsph with cudaMalloc.");
+        throw std::runtime_error("sphericart::cuda::SphericalHarmonics::compute expected "
+                                 "dsph != nullptr since compute_with_gradients = true. "
+                                 "initialise dsph with cudaMalloc.");
     }
 
     if (compute_with_hessian && ddsph == nullptr) {
-        throw std::runtime_error(
-            "sphericart::cuda::SphericalHarmonics::compute expected "
-            "ddsph != nullptr since compute_with_hessian = true. "
-            "initialise ddsph with cudaMalloc.");
+        throw std::runtime_error("sphericart::cuda::SphericalHarmonics::compute expected "
+                                 "ddsph != nullptr since compute_with_hessian = true. "
+                                 "initialise ddsph with cudaMalloc.");
     }
 
     if (this->cached_compute_with_gradients != compute_with_gradients ||
         this->cached_compute_with_hessian != compute_with_hessian) {
 
         this->_current_shared_mem_allocation = adjust_shared_memory(
-            sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_,
-            this->CUDA_GRID_DIM_Y_, compute_with_gradients,
-            compute_with_hessian, this->_current_shared_mem_allocation);
+            sizeof(T),
+            this->l_max,
+            this->CUDA_GRID_DIM_X_,
+            this->CUDA_GRID_DIM_Y_,
+            compute_with_gradients,
+            compute_with_hessian,
+            this->_current_shared_mem_allocation
+        );
 
         if (this->_current_shared_mem_allocation == -1) {
 
@@ -103,14 +115,18 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
 
             this->CUDA_GRID_DIM_Y_ = 4;
             this->_current_shared_mem_allocation = adjust_shared_memory(
-                sizeof(T), this->l_max, this->CUDA_GRID_DIM_X_,
-                this->CUDA_GRID_DIM_Y_, compute_with_gradients,
-                compute_with_hessian, this->_current_shared_mem_allocation);
+                sizeof(T),
+                this->l_max,
+                this->CUDA_GRID_DIM_X_,
+                this->CUDA_GRID_DIM_Y_,
+                compute_with_gradients,
+                compute_with_hessian,
+                this->_current_shared_mem_allocation
+            );
 
             if (this->_current_shared_mem_allocation == -1) {
-                throw std::runtime_error(
-                    "Insufficient shared memory available to compute "
-                    "spherical_harmonics with requested parameters.");
+                throw std::runtime_error("Insufficient shared memory available to compute "
+                                         "spherical_harmonics with requested parameters.");
             }
         }
 
@@ -119,10 +135,21 @@ void SphericalHarmonics<T>::compute(const T *xyz, const size_t nsamples,
     }
 
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
-        xyz, nsamples, this->prefactors_cuda, this->nprefactors, this->l_max,
-        this->normalized, this->CUDA_GRID_DIM_X_, this->CUDA_GRID_DIM_Y_,
-        compute_with_gradients, compute_with_hessian, sph, dsph, ddsph,
-        cuda_stream);
+        xyz,
+        nsamples,
+        this->prefactors_cuda,
+        this->nprefactors,
+        this->l_max,
+        this->normalized,
+        this->CUDA_GRID_DIM_X_,
+        this->CUDA_GRID_DIM_Y_,
+        compute_with_gradients,
+        compute_with_hessian,
+        sph,
+        dsph,
+        ddsph,
+        cuda_stream
+    );
 }
 
 // instantiates the SphericalHarmonics class for basic floating point types

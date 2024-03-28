@@ -15,8 +15,9 @@ class SphericalHarmonicsAutogradBackward;
 
 class SphericalHarmonics : public torch::CustomClassHolder {
   public:
-    SphericalHarmonics(int64_t l_max, bool normalized = false,
-                       bool backward_second_derivatives = false);
+    SphericalHarmonics(
+        int64_t l_max, bool normalized = false, bool backward_second_derivatives = false
+    );
 
     // Actual calculation, with autograd support
     torch::Tensor compute(torch::Tensor xyz);
@@ -24,9 +25,7 @@ class SphericalHarmonics : public torch::CustomClassHolder {
     std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz);
 
     int64_t get_l_max() const { return this->l_max_; }
-    bool get_backward_second_derivative_flag() const {
-        return this->backward_second_derivatives_;
-    }
+    bool get_backward_second_derivative_flag() const { return this->backward_second_derivatives_; }
     bool get_normalized_flag() const { return this->normalized_; }
     int64_t get_omp_num_threads() const { return this->omp_num_threads_; }
 
@@ -34,8 +33,7 @@ class SphericalHarmonics : public torch::CustomClassHolder {
     friend class SphericalHarmonicsAutograd;
 
     // Raw calculation, without autograd support, running on CPU
-    std::vector<torch::Tensor>
-    compute_raw_cpu(torch::Tensor xyz, bool do_gradients, bool do_hessians);
+    std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients, bool do_hessians);
 
     int64_t omp_num_threads_;
     int64_t l_max_;

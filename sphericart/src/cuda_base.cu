@@ -14,27 +14,31 @@
 /* MASK used for warp reductions */
 #define FULL_MASK 0xffffffff
 
-#define CUDA_CHECK(call)                                                       \
-    do {                                                                       \
-        cudaError_t cudaStatus = (call);                                       \
-        if (cudaStatus != cudaSuccess) {                                       \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__       \
-                      << " - " << cudaGetErrorString(cudaStatus) << std::endl; \
-            cudaDeviceReset();                                                 \
-            exit(EXIT_FAILURE);                                                \
-        }                                                                      \
+#define CUDA_CHECK(call)                                                                           \
+    do {                                                                                           \
+        cudaError_t cudaStatus = (call);                                                           \
+        if (cudaStatus != cudaSuccess) {                                                           \
+            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
+                      << cudaGetErrorString(cudaStatus) << std::endl;                              \
+            cudaDeviceReset();                                                                     \
+            exit(EXIT_FAILURE);                                                                    \
+        }                                                                                          \
     } while (0)
 
-#define CUDA_CHECK_KERNEL()                                                    \
-    do {                                                                       \
-        cudaDeviceSynchronize();                                               \
-        cudaError_t err = cudaGetLastError();                                  \
-        if (err != cudaSuccess) {                                              \
-            fprintf(stderr,                                                    \
-                    "CUDA error after kernel launch in %s at line %d: %s\n",   \
-                    __FILE__, __LINE__, cudaGetErrorString(err));              \
-            exit(EXIT_FAILURE);                                                \
-        }                                                                      \
+#define CUDA_CHECK_KERNEL()                                                                        \
+    do {                                                                                           \
+        cudaDeviceSynchronize();                                                                   \
+        cudaError_t err = cudaGetLastError();                                                      \
+        if (err != cudaSuccess) {                                                                  \
+            fprintf(                                                                               \
+                stderr,                                                                            \
+                "CUDA error after kernel launch in %s at line %d: %s\n",                           \
+                __FILE__,                                                                          \
+                __LINE__,                                                                          \
+                cudaGetErrorString(err)                                                            \
+            );                                                                                     \
+            exit(EXIT_FAILURE);                                                                    \
+        }                                                                                          \
     } while (0)
 
 /*
@@ -47,16 +51,27 @@ __device__ int get_index(int i) { return i * blockDim.y + threadIdx.y; }
    if required.
 */
 template <typename scalar_t>
-__device__ inline void
-clear_buffers(int nelements, scalar_t *sph, scalar_t *dsph_x, scalar_t *dsph_y,
-              scalar_t *dsph_z,
+__device__ inline void clear_buffers(
+    int nelements,
+    scalar_t* sph,
+    scalar_t* dsph_x,
+    scalar_t* dsph_y,
+    scalar_t* dsph_z,
 
-              scalar_t *dsph_dxdx, scalar_t *dsph_dxdy, scalar_t *dsph_dxdz,
+    scalar_t* dsph_dxdx,
+    scalar_t* dsph_dxdy,
+    scalar_t* dsph_dxdz,
 
-              scalar_t *dsph_dydx, scalar_t *dsph_dydy, scalar_t *dsph_dydz,
+    scalar_t* dsph_dydx,
+    scalar_t* dsph_dydy,
+    scalar_t* dsph_dydz,
 
-              scalar_t *dsph_dzdx, scalar_t *dsph_dzdy, scalar_t *dsph_dzdz,
-              bool requires_grad, bool requires_hessian) {
+    scalar_t* dsph_dzdx,
+    scalar_t* dsph_dzdy,
+    scalar_t* dsph_dzdz,
+    bool requires_grad,
+    bool requires_hessian
+) {
     for (int i = threadIdx.x; i < nelements; i += blockDim.x) {
         sph[get_index(i)] = 0.0;
 
@@ -89,20 +104,39 @@ clear_buffers(int nelements, scalar_t *sph, scalar_t *dsph_x, scalar_t *dsph_y,
 */
 template <typename scalar_t>
 __device__ inline void write_buffers(
-    size_t edge_idx, size_t nedges, scalar_t x, scalar_t y, scalar_t z,
-    scalar_t ir, int n_elements, int offset, scalar_t *buffer_sph,
+    size_t edge_idx,
+    size_t nedges,
+    scalar_t x,
+    scalar_t y,
+    scalar_t z,
+    scalar_t ir,
+    int n_elements,
+    int offset,
+    scalar_t* buffer_sph,
 
-    scalar_t *buffer_dsph_x, scalar_t *buffer_dsph_y, scalar_t *buffer_dsph_z,
+    scalar_t* buffer_dsph_x,
+    scalar_t* buffer_dsph_y,
+    scalar_t* buffer_dsph_z,
 
-    scalar_t *buffer_dsph_dxdx, scalar_t *buffer_dsph_dxdy,
-    scalar_t *buffer_dsph_dxdz,
+    scalar_t* buffer_dsph_dxdx,
+    scalar_t* buffer_dsph_dxdy,
+    scalar_t* buffer_dsph_dxdz,
 
-    scalar_t *buffer_dsph_dydx, scalar_t *buffer_dsph_dydy,
-    scalar_t *buffer_dsph_dydz,
+    scalar_t* buffer_dsph_dydx,
+    scalar_t* buffer_dsph_dydy,
+    scalar_t* buffer_dsph_dydz,
 
-    scalar_t *buffer_dsph_dzdx, scalar_t *buffer_dsph_dzdy,
-    scalar_t *buffer_dsph_dzdz, scalar_t *sph, scalar_t *dsph, scalar_t *ddsph,
-    size_t n_total, bool requires_grad, bool requires_hessian, bool normalize) {
+    scalar_t* buffer_dsph_dzdx,
+    scalar_t* buffer_dsph_dzdy,
+    scalar_t* buffer_dsph_dzdz,
+    scalar_t* sph,
+    scalar_t* dsph,
+    scalar_t* ddsph,
+    size_t n_total,
+    bool requires_grad,
+    bool requires_hessian,
+    bool normalize
+) {
     if (edge_idx < nedges) {
         for (int i = threadIdx.x; i < n_elements; i += blockDim.x) {
 
@@ -131,54 +165,50 @@ __device__ inline void write_buffers(
                     auto tmpx = x * tmp_dxdx + y * tmp_dydx + z * tmp_dzdx;
                     auto tmpy = x * tmp_dxdy + y * tmp_dydy + z * tmp_dydz;
                     auto tmpz = x * tmp_dxdz + y * tmp_dydz + z * tmp_dzdz;
-                    auto tmp2 = x * x * tmp_dxdx + y * y * tmp_dydy +
-                                z * z * tmp_dzdz + 2 * x * y * tmp_dxdy +
-                                2 * x * z * tmp_dxdz + 2 * y * z * tmp_dydz;
+                    auto tmp2 = x * x * tmp_dxdx + y * y * tmp_dydy + z * z * tmp_dzdz +
+                                2 * x * y * tmp_dxdy + 2 * x * z * tmp_dxdz + 2 * y * z * tmp_dydz;
 
-                    tmp_dxdx = (-2 * x * tmpx + tmp_dxdx + 3 * x * x * tmp -
-                                tmp - 2 * x * tmp_dx + x * x * tmp2) *
+                    tmp_dxdx = (-2 * x * tmpx + tmp_dxdx + 3 * x * x * tmp - tmp - 2 * x * tmp_dx +
+                                x * x * tmp2) *
                                (ir * ir);
-                    tmp_dydy = (-2 * y * tmpy + tmp_dydy + 3 * y * y * tmp -
-                                tmp - 2 * y * tmp_dy + y * y * tmp2) *
+                    tmp_dydy = (-2 * y * tmpy + tmp_dydy + 3 * y * y * tmp - tmp - 2 * y * tmp_dy +
+                                y * y * tmp2) *
                                (ir * ir);
-                    tmp_dzdz = (-2 * z * tmpz + tmp_dzdz + 3 * z * z * tmp -
-                                tmp - 2 * z * tmp_dz + z * z * tmp2) *
+                    tmp_dzdz = (-2 * z * tmpz + tmp_dzdz + 3 * z * z * tmp - tmp - 2 * z * tmp_dz +
+                                z * z * tmp2) *
                                (ir * ir);
 
-                    tmp_dxdy = tmp_dydx =
-                        (-x * tmpy - y * tmpx + tmp_dxdy + 3 * x * y * tmp -
-                         x * tmp_dy - y * tmp_dx + x * y * tmp2) *
-                        (ir * ir);
-                    tmp_dxdz = tmp_dzdx =
-                        (-x * tmpz - z * tmpx + tmp_dxdz + 3 * x * z * tmp -
-                         x * tmp_dz - z * tmp_dx + x * z * tmp2) *
-                        (ir * ir);
-                    tmp_dzdy = tmp_dydz =
-                        (-z * tmpy - y * tmpz + tmp_dzdy + 3 * y * z * tmp -
-                         z * tmp_dy - y * tmp_dz + y * z * tmp2) *
-                        (ir * ir);
+                    tmp_dxdy = tmp_dydx = (-x * tmpy - y * tmpx + tmp_dxdy + 3 * x * y * tmp -
+                                           x * tmp_dy - y * tmp_dx + x * y * tmp2) *
+                                          (ir * ir);
+                    tmp_dxdz = tmp_dzdx = (-x * tmpz - z * tmpx + tmp_dxdz + 3 * x * z * tmp -
+                                           x * tmp_dz - z * tmp_dx + x * z * tmp2) *
+                                          (ir * ir);
+                    tmp_dzdy = tmp_dydz = (-z * tmpy - y * tmpz + tmp_dzdy + 3 * y * z * tmp -
+                                           z * tmp_dy - y * tmp_dz + y * z * tmp2) *
+                                          (ir * ir);
                 }
 
-                ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 0 * n_total +
-                      offset + i] = tmp_dxdx;
-                ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 1 * n_total +
-                      offset + i] = tmp_dxdy;
-                ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 2 * n_total +
-                      offset + i] = tmp_dxdz;
+                ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 0 * n_total + offset + i] =
+                    tmp_dxdx;
+                ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 1 * n_total + offset + i] =
+                    tmp_dxdy;
+                ddsph[edge_idx * 9 * n_total + 0 * 3 * n_total + 2 * n_total + offset + i] =
+                    tmp_dxdz;
 
-                ddsph[edge_idx * 9 * n_total + 1 * 3 * n_total + 0 * n_total +
-                      offset + i] = tmp_dydx;
-                ddsph[edge_idx * 9 * n_total + 1 * 3 * n_total + 1 * n_total +
-                      offset + i] = tmp_dydy;
-                ddsph[edge_idx * 9 * n_total + 1 * 3 * n_total + 2 * n_total +
-                      offset + i] = tmp_dydz;
+                ddsph[edge_idx * 9 * n_total + 1 * 3 * n_total + 0 * n_total + offset + i] =
+                    tmp_dydx;
+                ddsph[edge_idx * 9 * n_total + 1 * 3 * n_total + 1 * n_total + offset + i] =
+                    tmp_dydy;
+                ddsph[edge_idx * 9 * n_total + 1 * 3 * n_total + 2 * n_total + offset + i] =
+                    tmp_dydz;
 
-                ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 0 * n_total +
-                      offset + i] = tmp_dzdx;
-                ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 1 * n_total +
-                      offset + i] = tmp_dzdy;
-                ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 2 * n_total +
-                      offset + i] = tmp_dzdz;
+                ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 0 * n_total + offset + i] =
+                    tmp_dzdx;
+                ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 1 * n_total + offset + i] =
+                    tmp_dzdy;
+                ddsph[edge_idx * 9 * n_total + 2 * 3 * n_total + 2 * n_total + offset + i] =
+                    tmp_dzdz;
             }
 
             if (requires_grad) {
@@ -195,12 +225,9 @@ __device__ inline void write_buffers(
                     tmp_dz = (tmp_dz - z * tmp) * ir;
                 }
 
-                dsph[edge_idx * 3 * n_total + 0 * n_total + offset + i] =
-                    tmp_dx;
-                dsph[edge_idx * 3 * n_total + 1 * n_total + offset + i] =
-                    tmp_dy;
-                dsph[edge_idx * 3 * n_total + 2 * n_total + offset + i] =
-                    tmp_dz;
+                dsph[edge_idx * 3 * n_total + 0 * n_total + offset + i] = tmp_dx;
+                dsph[edge_idx * 3 * n_total + 1 * n_total + offset + i] = tmp_dy;
+                dsph[edge_idx * 3 * n_total + 2 * n_total + offset + i] = tmp_dz;
             }
         }
     }
@@ -212,74 +239,81 @@ __device__ inline void write_buffers(
 */
 template <typename scalar_t>
 __global__ void spherical_harmonics_kernel(
-    const scalar_t *__restrict__ xyz, int nedges,
-    const scalar_t *__restrict__ prefactors, int nprefactors, int lmax,
-    int ntotal, bool requires_grad, bool requires_hessian, bool normalize,
-    scalar_t *__restrict__ sph, scalar_t *__restrict__ dsph,
-    scalar_t *__restrict__ ddsph) {
+    const scalar_t* __restrict__ xyz,
+    int nedges,
+    const scalar_t* __restrict__ prefactors,
+    int nprefactors,
+    int lmax,
+    int ntotal,
+    bool requires_grad,
+    bool requires_hessian,
+    bool normalize,
+    scalar_t* __restrict__ sph,
+    scalar_t* __restrict__ dsph,
+    scalar_t* __restrict__ ddsph
+) {
 
     extern __shared__ char buffer[];
 
     size_t offset = 0;
 
-    scalar_t *buffer_c = reinterpret_cast<scalar_t *>(buffer + offset);
+    scalar_t* buffer_c = reinterpret_cast<scalar_t*>(buffer + offset);
     offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
-    scalar_t *buffer_s = reinterpret_cast<scalar_t *>(buffer + offset);
+    scalar_t* buffer_s = reinterpret_cast<scalar_t*>(buffer + offset);
     offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
-    scalar_t *buffer_twomz = reinterpret_cast<scalar_t *>(buffer + offset);
+    scalar_t* buffer_twomz = reinterpret_cast<scalar_t*>(buffer + offset);
     offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
-    scalar_t *buffer_prefactors = reinterpret_cast<scalar_t *>(buffer + offset);
+    scalar_t* buffer_prefactors = reinterpret_cast<scalar_t*>(buffer + offset);
     offset += nprefactors * sizeof(scalar_t);
 
-    int nl = max(static_cast<int>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
-                 2 * lmax + 1);
+    int nl = max(static_cast<int>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)), 2 * lmax + 1);
 
-    scalar_t *buffer_sph = reinterpret_cast<scalar_t *>(buffer + offset);
+    scalar_t* buffer_sph = reinterpret_cast<scalar_t*>(buffer + offset);
     offset += blockDim.y * nl * sizeof(scalar_t);
 
-    scalar_t *buffer_dsph_x;
-    scalar_t *buffer_dsph_y;
-    scalar_t *buffer_dsph_z;
+    scalar_t* buffer_dsph_x;
+    scalar_t* buffer_dsph_y;
+    scalar_t* buffer_dsph_z;
 
     if (requires_grad) {
-        buffer_dsph_x = reinterpret_cast<scalar_t *>(buffer + offset);
+        buffer_dsph_x = reinterpret_cast<scalar_t*>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_y = reinterpret_cast<scalar_t *>(buffer + offset);
+        buffer_dsph_y = reinterpret_cast<scalar_t*>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_z = reinterpret_cast<scalar_t *>(buffer + offset);
+        buffer_dsph_z = reinterpret_cast<scalar_t*>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
     }
 
-    scalar_t *buffer_dsph_dxdx;
-    scalar_t *buffer_dsph_dxdy;
-    scalar_t *buffer_dsph_dxdz;
-    scalar_t *buffer_dsph_dydx;
-    scalar_t *buffer_dsph_dydy;
-    scalar_t *buffer_dsph_dydz;
-    scalar_t *buffer_dsph_dzdx;
-    scalar_t *buffer_dsph_dzdy;
-    scalar_t *buffer_dsph_dzdz;
+    scalar_t* buffer_dsph_dxdx;
+    scalar_t* buffer_dsph_dxdy;
+    scalar_t* buffer_dsph_dxdz;
+    scalar_t* buffer_dsph_dydx;
+    scalar_t* buffer_dsph_dydy;
+    scalar_t* buffer_dsph_dydz;
+    scalar_t* buffer_dsph_dzdx;
+    scalar_t* buffer_dsph_dzdy;
+    scalar_t* buffer_dsph_dzdz;
 
     if (requires_hessian) {
-        buffer_dsph_dxdx = reinterpret_cast<scalar_t *>(buffer + offset);
+        buffer_dsph_dxdx = reinterpret_cast<scalar_t*>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dxdy = reinterpret_cast<scalar_t *>(buffer + offset);
+        buffer_dsph_dxdy = reinterpret_cast<scalar_t*>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dxdz = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-
-        buffer_dsph_dydx = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dydy = reinterpret_cast<scalar_t *>(buffer + offset);
-        offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dydz = reinterpret_cast<scalar_t *>(buffer + offset);
+        buffer_dsph_dxdz = reinterpret_cast<scalar_t*>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
 
-        buffer_dsph_dzdx = reinterpret_cast<scalar_t *>(buffer + offset);
+        buffer_dsph_dydx = reinterpret_cast<scalar_t*>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dzdy = reinterpret_cast<scalar_t *>(buffer + offset);
+        buffer_dsph_dydy = reinterpret_cast<scalar_t*>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
-        buffer_dsph_dzdz = reinterpret_cast<scalar_t *>(buffer + offset);
+        buffer_dsph_dydz = reinterpret_cast<scalar_t*>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+
+        buffer_dsph_dzdx = reinterpret_cast<scalar_t*>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+        buffer_dsph_dzdy = reinterpret_cast<scalar_t*>(buffer + offset);
+        offset += blockDim.y * nl * sizeof(scalar_t);
+        buffer_dsph_dzdz = reinterpret_cast<scalar_t*>(buffer + offset);
         offset += blockDim.y * nl * sizeof(scalar_t);
     }
 
@@ -351,41 +385,71 @@ __global__ void spherical_harmonics_kernel(
     // work through hardcoded parts first...
     int ml = min(static_cast<int>(HARDCODED_LMAX), lmax);
 
-    clear_buffers((ml + 1) * (ml + 1), buffer_sph, buffer_dsph_x, buffer_dsph_y,
-                  buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy,
-                  buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-                  buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-                  buffer_dsph_dzdz, requires_grad, requires_hessian);
+    clear_buffers(
+        (ml + 1) * (ml + 1),
+        buffer_sph,
+        buffer_dsph_x,
+        buffer_dsph_y,
+        buffer_dsph_z,
+        buffer_dsph_dxdx,
+        buffer_dsph_dxdy,
+        buffer_dsph_dxdz,
+        buffer_dsph_dydx,
+        buffer_dsph_dydy,
+        buffer_dsph_dydz,
+        buffer_dsph_dzdx,
+        buffer_dsph_dzdy,
+        buffer_dsph_dzdz,
+        requires_grad,
+        requires_hessian
+    );
 
     if (threadIdx.x == 0) {
         if (lmax >= 1) {
             HARDCODED_SPH_MACRO(1, x, y, z, x2, y2, z2, buffer_sph, get_index);
             if (requires_grad) {
                 HARDCODED_SPH_DERIVATIVE_MACRO(
-                    1, x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x,
-                    buffer_dsph_y, buffer_dsph_z, get_index);
+                    1, x, y, z, x2, y2, z2, buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index
+                );
             }
 
             if (requires_hessian) {
                 HARDCODED_SPH_SECOND_DERIVATIVE_MACRO(
-                    1, buffer_sph, buffer_dsph_dxdx, buffer_dsph_dxdy,
-                    buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-                    buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-                    buffer_dsph_dzdz, get_index);
+                    1,
+                    buffer_sph,
+                    buffer_dsph_dxdx,
+                    buffer_dsph_dxdy,
+                    buffer_dsph_dxdz,
+                    buffer_dsph_dydx,
+                    buffer_dsph_dydy,
+                    buffer_dsph_dydz,
+                    buffer_dsph_dzdx,
+                    buffer_dsph_dzdy,
+                    buffer_dsph_dzdz,
+                    get_index
+                );
             }
         } else {
             COMPUTE_SPH_L0(buffer_sph, get_index);
             if (requires_grad) {
-                COMPUTE_SPH_DERIVATIVE_L0(buffer_sph, buffer_dsph_x,
-                                          buffer_dsph_y, buffer_dsph_z,
-                                          get_index);
+                COMPUTE_SPH_DERIVATIVE_L0(
+                    buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, get_index
+                );
 
                 if (requires_hessian) {
                     COMPUTE_SPH_SECOND_DERIVATIVE_L0(
-                        buffer_sph, buffer_dsph_dxdx, buffer_dsph_dxdy,
-                        buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-                        buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-                        buffer_dsph_dzdz, get_index);
+                        buffer_sph,
+                        buffer_dsph_dxdx,
+                        buffer_dsph_dxdy,
+                        buffer_dsph_dxdz,
+                        buffer_dsph_dydx,
+                        buffer_dsph_dydy,
+                        buffer_dsph_dydz,
+                        buffer_dsph_dzdx,
+                        buffer_dsph_dzdy,
+                        buffer_dsph_dzdz,
+                        get_index
+                    );
                 }
             }
         }
@@ -395,17 +459,41 @@ __global__ void spherical_harmonics_kernel(
     // write out the values of the hardcoded derivatives from shared memory into
     // global memory.
     write_buffers(
-        edge_idx, nedges, x, y, z, ir, (ml + 1) * (ml + 1), 0, buffer_sph,
-        buffer_dsph_x, buffer_dsph_y, buffer_dsph_z, buffer_dsph_dxdx,
-        buffer_dsph_dxdy, buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-        buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz,
-        sph, dsph, ddsph, ntotal, requires_grad, requires_hessian, normalize);
+        edge_idx,
+        nedges,
+        x,
+        y,
+        z,
+        ir,
+        (ml + 1) * (ml + 1),
+        0,
+        buffer_sph,
+        buffer_dsph_x,
+        buffer_dsph_y,
+        buffer_dsph_z,
+        buffer_dsph_dxdx,
+        buffer_dsph_dxdy,
+        buffer_dsph_dxdz,
+        buffer_dsph_dydx,
+        buffer_dsph_dydy,
+        buffer_dsph_dydz,
+        buffer_dsph_dzdx,
+        buffer_dsph_dzdy,
+        buffer_dsph_dzdz,
+        sph,
+        dsph,
+        ddsph,
+        ntotal,
+        requires_grad,
+        requires_hessian,
+        normalize
+    );
 
     // now lets do the generic terms for l > HARDCODED_LMAX
     int size_q = (lmax + 1) * (lmax + 2) / 2;
     int k = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 2) / 2;
-    scalar_t *qlmk = buffer_prefactors + size_q + k;
-    scalar_t *pk = buffer_prefactors + k;
+    scalar_t* qlmk = buffer_prefactors + size_q + k;
+    scalar_t* pk = buffer_prefactors + k;
     int base_index = (HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1);
 
     for (int l = HARDCODED_LMAX + 1; l < lmax + 1; l += 1) {
@@ -419,20 +507,43 @@ __global__ void spherical_harmonics_kernel(
         */
 
         // clear out temporary storage buffers
-        clear_buffers(2 * l + 1, buffer_sph, buffer_dsph_x, buffer_dsph_y,
-                      buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy,
-                      buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-                      buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
-                      buffer_dsph_dzdz, requires_grad, requires_hessian);
+        clear_buffers(
+            2 * l + 1,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            buffer_dsph_dxdx,
+            buffer_dsph_dxdy,
+            buffer_dsph_dxdz,
+            buffer_dsph_dydx,
+            buffer_dsph_dydy,
+            buffer_dsph_dydz,
+            buffer_dsph_dzdx,
+            buffer_dsph_dzdy,
+            buffer_dsph_dzdz,
+            requires_grad,
+            requires_hessian
+        );
 
         // Currently only one warp computes the spherical harmonics.
         if (threadIdx.x == 0) {
             if (requires_grad && requires_hessian) {
-                generic_sph_l_channel<scalar_t, true, true, HARDCODED_LMAX,
-                                      get_index>(
-                    l, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s, buffer_twomz,
-                    buffer_sph + sph_offset, buffer_dsph_x + sph_offset,
-                    buffer_dsph_y + sph_offset, buffer_dsph_z + sph_offset,
+                generic_sph_l_channel<scalar_t, true, true, HARDCODED_LMAX, get_index>(
+                    l,
+                    x,
+                    y,
+                    z,
+                    rxy,
+                    pk,
+                    qlmk,
+                    buffer_c,
+                    buffer_s,
+                    buffer_twomz,
+                    buffer_sph + sph_offset,
+                    buffer_dsph_x + sph_offset,
+                    buffer_dsph_y + sph_offset,
+                    buffer_dsph_z + sph_offset,
                     buffer_dsph_dxdx + sph_offset,
                     buffer_dsph_dxdy + sph_offset,
                     buffer_dsph_dxdz + sph_offset,
@@ -441,39 +552,94 @@ __global__ void spherical_harmonics_kernel(
                     buffer_dsph_dydz + sph_offset,
                     buffer_dsph_dzdx + sph_offset,
                     buffer_dsph_dzdy + sph_offset,
-                    buffer_dsph_dzdz + sph_offset);
+                    buffer_dsph_dzdz + sph_offset
+                );
             } else if (requires_grad) {
-                generic_sph_l_channel<scalar_t, true, false, HARDCODED_LMAX,
-                                      get_index>(
-                    l, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s, buffer_twomz,
-                    buffer_sph + sph_offset, buffer_dsph_x + sph_offset,
-                    buffer_dsph_y + sph_offset, buffer_dsph_z + sph_offset,
-                    buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
-                    buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
-                    buffer_dsph_dzdx, buffer_dsph_dzdy,
+                generic_sph_l_channel<scalar_t, true, false, HARDCODED_LMAX, get_index>(
+                    l,
+                    x,
+                    y,
+                    z,
+                    rxy,
+                    pk,
+                    qlmk,
+                    buffer_c,
+                    buffer_s,
+                    buffer_twomz,
+                    buffer_sph + sph_offset,
+                    buffer_dsph_x + sph_offset,
+                    buffer_dsph_y + sph_offset,
+                    buffer_dsph_z + sph_offset,
+                    buffer_dsph_dxdx,
+                    buffer_dsph_dxdy,
+                    buffer_dsph_dxdz,
+                    buffer_dsph_dydx,
+                    buffer_dsph_dydy,
+                    buffer_dsph_dydz,
+                    buffer_dsph_dzdx,
+                    buffer_dsph_dzdy,
                     buffer_dsph_dzdz // these are nullpointers
                 );
             } else {
-                generic_sph_l_channel<scalar_t, false, false, HARDCODED_LMAX,
-                                      get_index>(
-                    l, x, y, z, rxy, pk, qlmk, buffer_c, buffer_s, buffer_twomz,
-                    buffer_sph + sph_offset, buffer_dsph_x, buffer_dsph_y,
-                    buffer_dsph_z, buffer_dsph_dxdx, buffer_dsph_dxdy,
-                    buffer_dsph_dxdz, buffer_dsph_dydx, buffer_dsph_dydy,
-                    buffer_dsph_dydz, buffer_dsph_dzdx, buffer_dsph_dzdy,
+                generic_sph_l_channel<scalar_t, false, false, HARDCODED_LMAX, get_index>(
+                    l,
+                    x,
+                    y,
+                    z,
+                    rxy,
+                    pk,
+                    qlmk,
+                    buffer_c,
+                    buffer_s,
+                    buffer_twomz,
+                    buffer_sph + sph_offset,
+                    buffer_dsph_x,
+                    buffer_dsph_y,
+                    buffer_dsph_z,
+                    buffer_dsph_dxdx,
+                    buffer_dsph_dxdy,
+                    buffer_dsph_dxdz,
+                    buffer_dsph_dydx,
+                    buffer_dsph_dydy,
+                    buffer_dsph_dydz,
+                    buffer_dsph_dzdx,
+                    buffer_dsph_dzdy,
                     buffer_dsph_dzdz // these are nullpointers
                 );
             }
         }
 
         // write out temporary storage buffers
-        write_buffers(edge_idx, nedges, x, y, z, ir, 2 * l + 1, base_index,
-                      buffer_sph, buffer_dsph_x, buffer_dsph_y, buffer_dsph_z,
-                      buffer_dsph_dxdx, buffer_dsph_dxdy, buffer_dsph_dxdz,
-                      buffer_dsph_dydx, buffer_dsph_dydy, buffer_dsph_dydz,
-                      buffer_dsph_dzdx, buffer_dsph_dzdy, buffer_dsph_dzdz, sph,
-                      dsph, ddsph, ntotal, requires_grad, requires_hessian,
-                      normalize);
+        write_buffers(
+            edge_idx,
+            nedges,
+            x,
+            y,
+            z,
+            ir,
+            2 * l + 1,
+            base_index,
+            buffer_sph,
+            buffer_dsph_x,
+            buffer_dsph_y,
+            buffer_dsph_z,
+            buffer_dsph_dxdx,
+            buffer_dsph_dxdy,
+            buffer_dsph_dxdz,
+            buffer_dsph_dydx,
+            buffer_dsph_dydy,
+            buffer_dsph_dydz,
+            buffer_dsph_dzdx,
+            buffer_dsph_dzdy,
+            buffer_dsph_dzdz,
+            sph,
+            dsph,
+            ddsph,
+            ntotal,
+            requires_grad,
+            requires_hessian,
+            normalize
+        );
 
         base_index += 2 * l + 1;
         qlmk += l + 1;
@@ -489,30 +655,30 @@ __global__ void spherical_harmonics_kernel(
    scalars in shared memory. For lmax > HARDCODED_LMAX, we only need to store
    each spherical harmonics vector per sample in shared memory.
 */
-static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
-                                size_t GRID_DIM_Y, size_t dtype_size,
-                                bool requires_grad, bool requires_hessian) {
-    int nl =
-        max(static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)),
-            2 * l_max + 1);
+static size_t total_buffer_size(
+    size_t l_max,
+    size_t GRID_DIM_X,
+    size_t GRID_DIM_Y,
+    size_t dtype_size,
+    bool requires_grad,
+    bool requires_hessian
+) {
+    int nl = max(static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)), 2 * l_max + 1);
 
     size_t total_buff_size = 0;
 
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size; // buffer_c
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size; // buffer_s
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size; // buffer_twomz
-    total_buff_size +=
-        (l_max + 1) * (l_max + 2) * dtype_size;      // buffer_prefactors
-    total_buff_size += GRID_DIM_Y * nl * dtype_size; // buffer_sph_out
+    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_c
+    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_s
+    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_twomz
+    total_buff_size += (l_max + 1) * (l_max + 2) * dtype_size; // buffer_prefactors
+    total_buff_size += GRID_DIM_Y * nl * dtype_size;           // buffer_sph_out
 
     if (requires_grad) {
-        total_buff_size +=
-            3 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_derivs
+        total_buff_size += 3 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_derivs
     }
 
     if (requires_hessian) {
-        total_buff_size +=
-            9 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_hessian
+        total_buff_size += 9 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_hessian
     }
 
     return total_buff_size;
@@ -525,25 +691,27 @@ static size_t total_buffer_size(size_t l_max, size_t GRID_DIM_X,
    the kernel launch parameters exceeds the default 49152 bytes.
 */
 
-int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
-                                           int64_t GRID_DIM_X,
-                                           int64_t GRID_DIM_Y,
-                                           bool requires_grad,
-                                           bool requires_hessian,
-                                           int64_t current_shared_mem_alloc) {
+int sphericart::cuda::adjust_shared_memory(
+    size_t element_size,
+    int64_t l_max,
+    int64_t GRID_DIM_X,
+    int64_t GRID_DIM_Y,
+    bool requires_grad,
+    bool requires_hessian,
+    int64_t current_shared_mem_alloc
+) {
     int device;
     cudaGetDevice(&device);
 
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, device);
 
-    auto required_buff_size =
-        total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, element_size,
-                          requires_grad, requires_hessian);
+    auto required_buff_size = total_buffer_size(
+        l_max, GRID_DIM_X, GRID_DIM_Y, element_size, requires_grad, requires_hessian
+    );
 
     if (required_buff_size > current_shared_mem_alloc &&
-        required_buff_size > (deviceProp.sharedMemPerBlock -
-                              deviceProp.reservedSharedMemPerBlock)) {
+        required_buff_size > (deviceProp.sharedMemPerBlock - deviceProp.reservedSharedMemPerBlock)) {
 
         if (required_buff_size > deviceProp.sharedMemPerBlockOptin) {
             return -1; // failure - need to adjust parameters
@@ -551,14 +719,18 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
 
         switch (element_size) {
         case 8:
-            cudaFuncSetAttribute(spherical_harmonics_kernel<double>,
-                                 cudaFuncAttributeMaxDynamicSharedMemorySize,
-                                 required_buff_size);
+            cudaFuncSetAttribute(
+                spherical_harmonics_kernel<double>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize,
+                required_buff_size
+            );
             break;
         case 4:
-            cudaFuncSetAttribute(spherical_harmonics_kernel<float>,
-                                 cudaFuncAttributeMaxDynamicSharedMemorySize,
-                                 required_buff_size);
+            cudaFuncSetAttribute(
+                spherical_harmonics_kernel<float>,
+                cudaFuncAttributeMaxDynamicSharedMemorySize,
+                required_buff_size
+            );
             break;
         }
 
@@ -566,11 +738,9 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
 
     } else {
         return (current_shared_mem_alloc >
-                (deviceProp.sharedMemPerBlock -
-                 deviceProp.reservedSharedMemPerBlock))
+                (deviceProp.sharedMemPerBlock - deviceProp.reservedSharedMemPerBlock))
                    ? current_shared_mem_alloc
-                   : (deviceProp.sharedMemPerBlock -
-                      deviceProp.reservedSharedMemPerBlock);
+                   : (deviceProp.sharedMemPerBlock - deviceProp.reservedSharedMemPerBlock);
     }
 }
 
@@ -593,32 +763,38 @@ int sphericart::cuda::adjust_shared_memory(size_t element_size, int64_t l_max,
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
-    const scalar_t *__restrict__ xyz, const int nedges,
-    const scalar_t *__restrict__ prefactors, const int nprefactors,
-    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
-    scalar_t *__restrict__ sph, scalar_t *__restrict__ dsph,
-    scalar_t *__restrict__ ddsph, void *cuda_stream) {
+    const scalar_t* __restrict__ xyz,
+    const int nedges,
+    const scalar_t* __restrict__ prefactors,
+    const int nprefactors,
+    const int64_t l_max,
+    const bool normalize,
+    const int64_t GRID_DIM_X,
+    const int64_t GRID_DIM_Y,
+    const bool gradients,
+    const bool hessian,
+    scalar_t* __restrict__ sph,
+    scalar_t* __restrict__ dsph,
+    scalar_t* __restrict__ ddsph,
+    void* cuda_stream
+) {
 
     int n_total = (l_max + 1) * (l_max + 1);
 
     dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
 
-    auto find_num_blocks = [](int x, int bdim) {
-        return (x + bdim - 1) / bdim;
-    };
+    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
 
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
     dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
 
-    size_t total_buff_size = total_buffer_size(
-        l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
+    size_t total_buff_size =
+        total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
 
-    spherical_harmonics_kernel<scalar_t>
-        <<<block_dim, grid_dim, total_buff_size, cstream>>>(
-            xyz, nedges, prefactors, nprefactors, l_max, n_total, gradients,
-            hessian, normalize, sph, dsph, ddsph);
+    spherical_harmonics_kernel<scalar_t><<<block_dim, grid_dim, total_buff_size, cstream>>>(
+        xyz, nedges, prefactors, nprefactors, l_max, n_total, gradients, hessian, normalize, sph, dsph, ddsph
+    );
 
     CUDA_CHECK_KERNEL();
 
@@ -626,29 +802,50 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
-    const float *__restrict__ xyz, const int nedges,
-    const float *__restrict__ prefactors, const int nprefactors,
-    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
-    float *__restrict__ sph, float *__restrict__ dsph,
-    float *__restrict__ ddsph, void *cuda_stream);
+    const float* __restrict__ xyz,
+    const int nedges,
+    const float* __restrict__ prefactors,
+    const int nprefactors,
+    const int64_t l_max,
+    const bool normalize,
+    const int64_t GRID_DIM_X,
+    const int64_t GRID_DIM_Y,
+    const bool gradients,
+    const bool hessian,
+    float* __restrict__ sph,
+    float* __restrict__ dsph,
+    float* __restrict__ ddsph,
+    void* cuda_stream
+);
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
-    const double *__restrict__ xyz, const int nedges,
-    const double *__restrict__ prefactors, const int nprefactors,
-    const int64_t l_max, const bool normalize, const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y, const bool gradients, const bool hessian,
-    double *__restrict__ sph, double *__restrict__ dsph,
-    double *__restrict__ ddsph, void *cuda_stream);
+    const double* __restrict__ xyz,
+    const int nedges,
+    const double* __restrict__ prefactors,
+    const int nprefactors,
+    const int64_t l_max,
+    const bool normalize,
+    const int64_t GRID_DIM_X,
+    const int64_t GRID_DIM_Y,
+    const bool gradients,
+    const bool hessian,
+    double* __restrict__ sph,
+    double* __restrict__ dsph,
+    double* __restrict__ ddsph,
+    void* cuda_stream
+);
 
 /*
     CUDA kernel to computes the backwards pass for autograd.
 */
 template <typename scalar_t>
-__global__ void backward_kernel(const scalar_t *__restrict__ dsph,
-                                const scalar_t *__restrict__ sph_grad,
-                                size_t nedges, size_t n_total,
-                                scalar_t *__restrict__ xyz_grad) {
+__global__ void backward_kernel(
+    const scalar_t* __restrict__ dsph,
+    const scalar_t* __restrict__ sph_grad,
+    size_t nedges,
+    size_t n_total,
+    scalar_t* __restrict__ xyz_grad
+) {
 
     size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
 
@@ -683,22 +880,24 @@ __global__ void backward_kernel(const scalar_t *__restrict__ dsph,
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_backward_cuda_base(
-    const scalar_t *__restrict__ dsph, const scalar_t *__restrict__ sph_grad,
-    const int nedges, const int ntotal, scalar_t *__restrict__ xyz_grad,
-    void *cuda_stream) {
+    const scalar_t* __restrict__ dsph,
+    const scalar_t* __restrict__ sph_grad,
+    const int nedges,
+    const int ntotal,
+    scalar_t* __restrict__ xyz_grad,
+    void* cuda_stream
+) {
 
     dim3 grid_dim(4, 32);
 
-    auto find_num_blocks = [](int x, int bdim) {
-        return (x + bdim - 1) / bdim;
-    };
+    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
 
     dim3 block_dim(find_num_blocks(nedges, 32), 3);
 
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    backward_kernel<scalar_t><<<block_dim, grid_dim, 0, cstream>>>(
-        dsph, sph_grad, nedges, ntotal, xyz_grad);
+    backward_kernel<scalar_t>
+        <<<block_dim, grid_dim, 0, cstream>>>(dsph, sph_grad, nedges, ntotal, xyz_grad);
 
     CUDA_CHECK_KERNEL();
 
@@ -706,11 +905,19 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
-    const float *__restrict__ dsph, const float *__restrict__ sph_grad,
-    const int nedges, const int ntotal, float *__restrict__ xyz_grad,
-    void *cuda_stream);
+    const float* __restrict__ dsph,
+    const float* __restrict__ sph_grad,
+    const int nedges,
+    const int ntotal,
+    float* __restrict__ xyz_grad,
+    void* cuda_stream
+);
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
-    const double *__restrict__ dsph, const double *__restrict__ sph_grad,
-    const int nedges, const int ntotal, double *__restrict__ xyz_grad,
-    void *cuda_stream);
+    const double* __restrict__ dsph,
+    const double* __restrict__ sph_grad,
+    const int nedges,
+    const int ntotal,
+    double* __restrict__ xyz_grad,
+    void* cuda_stream
+);
