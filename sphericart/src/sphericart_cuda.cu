@@ -38,14 +38,29 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
 
     // compute prefactors on host first
     compute_sph_prefactors<T>((int)l_max, this->prefactors_cpu);
-    // allocate them on device and copy to device
-    CUDA_CHECK(cudaMalloc((void**)&this->prefactors_cuda, this->nprefactors * sizeof(T)));
 
-    CUDA_CHECK(cudaMemcpy(
-        this->prefactors_cuda, this->prefactors_cpu, this->nprefactors * sizeof(T), cudaMemcpyHostToDevice
-    ));
+    CUDA_CHECK(cudaGetDeviceCount(&this->device_count));
 
-    // initialise the currently available amount of shared memory.
+    int current_device;
+
+    CUDA_CHECK(cudaGetDevice(&current_device));
+
+    // allocate prefactorts on every visible device and copy from host
+    this->prefactors_cuda = new T*[this->device_count];
+
+    for (int device = 0; device < this->device_count; device++) {
+        CUDA_CHECK(cudaSetDevice(device));
+        CUDA_CHECK(cudaMalloc((void**)&this->prefactors_cuda[device], this->nprefactors * sizeof(T))
+        );
+        CUDA_CHECK(cudaMemcpy(
+            this->prefactors_cuda[device],
+            this->prefactors_cpu,
+            this->nprefactors * sizeof(T),
+            cudaMemcpyHostToDevice
+        ));
+    }
+
+    // initialise the currently available amount of shared memory on all visible devices
     this->_current_shared_mem_allocation = adjust_shared_memory(
         sizeof(T),
         this->l_max,
@@ -55,13 +70,26 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
         false,
         this->_current_shared_mem_allocation
     );
+
+    // set the context back to the current device
+    CUDA_CHECK(cudaSetDevice(current_device));
 }
 
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     // Destructor, frees the prefactors
     delete[] (this->prefactors_cpu);
-    CUDA_CHECK(cudaDeviceSynchronize());
-    CUDA_CHECK(cudaFree(this->prefactors_cuda));
+
+    int current_device;
+
+    CUDA_CHECK(cudaGetDevice(&current_device));
+
+    for (int device = 0; device < this->device_count; device++) {
+        CUDA_CHECK(cudaSetDevice(device));
+        CUDA_CHECK(cudaDeviceSynchronize());
+        CUDA_CHECK(cudaFree(this->prefactors_cuda[device]));
+    }
+
+    CUDA_CHECK(cudaSetDevice(current_device));
 }
 
 template <typename T>
@@ -134,10 +162,22 @@ void SphericalHarmonics<T>::compute(
         this->cached_compute_with_hessian = compute_with_hessian;
     }
 
+    cudaPointerAttributes attributes;
+
+    CUDA_CHECK(cudaPointerGetAttributes(&attributes, xyz));
+
+    int current_device;
+
+    CUDA_CHECK(cudaGetDevice(&current_device));
+
+    if (current_device != attributes.device) {
+        CUDA_CHECK(cudaSetDevice(attributes.device));
+    }
+
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz,
         nsamples,
-        this->prefactors_cuda,
+        this->prefactors_cuda[attributes.device],
         this->nprefactors,
         this->l_max,
         this->normalized,
@@ -150,6 +190,8 @@ void SphericalHarmonics<T>::compute(
         ddsph,
         cuda_stream
     );
+
+    CUDA_CHECK(cudaSetDevice(current_device));
 }
 
 // instantiates the SphericalHarmonics class for basic floating point types

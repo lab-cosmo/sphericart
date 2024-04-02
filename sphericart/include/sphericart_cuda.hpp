@@ -95,9 +95,10 @@ template <typename T> class SphericalHarmonics {
   private:
     size_t l_max; // maximum l value computed by this class
     size_t nprefactors;
-    bool normalized;    // should we normalize the input vectors?
-    T* prefactors_cpu;  // host prefactors buffer
-    T* prefactors_cuda; // storage space for prefactors
+    bool normalized;     // should we normalize the input vectors?
+    T* prefactors_cpu;   // host prefactors buffer
+    T** prefactors_cuda; // storage space for prefactors
+    int device_count;    // number of visible GPU devices
 
     int64_t CUDA_GRID_DIM_X_ = 8;
     int64_t CUDA_GRID_DIM_Y_ = 8;
