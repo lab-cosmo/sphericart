@@ -166,6 +166,14 @@ void SphericalHarmonics<T>::compute(
 
     CUDA_CHECK(cudaPointerGetAttributes(&attributes, xyz));
 
+    int current_device;
+
+    CUDA_CHECK(cudaGetDevice(&current_device));
+
+    if (current_device != attributes.device) {
+        CUDA_CHECK(cudaSetDevice(attributes.device));
+    }
+
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz,
         nsamples,
