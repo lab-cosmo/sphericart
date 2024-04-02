@@ -190,6 +190,8 @@ void SphericalHarmonics<T>::compute(
         ddsph,
         cuda_stream
     );
+
+    CUDA_CHECK(cudaSetDevice(current_device));
 }
 
 // instantiates the SphericalHarmonics class for basic floating point types
