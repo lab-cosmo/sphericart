@@ -1,7 +1,7 @@
 [project]
 name = "sphericart-torch"
 dynamic = ["version"]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = ["torch >= 1.13"]
 
 readme = "README.md"
@@ -41,7 +41,7 @@ repository = "https://github.com/lab-cosmo/sphericart"
 requires = [
     "setuptools >=44",
     "wheel >=0.36",
-    "cmake",
+    "cmake ==3.28.4",
     "torch >= 1.13",
 ]
 build-backend = "setuptools.build_meta"
@@ -54,3 +54,7 @@ zip-safe = false
 where = ["python"]
 include = ["sphericart*"]
 namespaces = true
+
+[tool.distutils.bdist_wheel]
+# Build wheels that are compatible with any Python version after 3.8
+py-limited-api = "cp38"
