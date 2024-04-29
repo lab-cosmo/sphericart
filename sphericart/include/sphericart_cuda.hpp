@@ -42,7 +42,7 @@ template <typename T> class SphericalHarmonics {
     SphericalHarmonics(size_t l_max, bool normalized = false);
 
     /** Default constructor
-     * Required so sphericart_torch can conditionally instantiate  this class 
+     * Required so sphericart_torch can conditionally instantiate  this class
      * depending on if cuda is available.
      */
     SphericalHarmonics() = default;
