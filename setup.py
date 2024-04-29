@@ -1,8 +1,8 @@
+import multiprocessing
 import os
 import subprocess
 import sys
 import uuid
-import multiprocessing
 
 from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
@@ -66,7 +66,15 @@ class cmake_ext(build_ext):
             check=True,
         )
         subprocess.run(
-            ["cmake", "--build", build_dir, "--parallel", str(min(8, multiprocessing.cpu_count())), "--target", "install"],
+            [
+                "cmake",
+                "--build",
+                build_dir,
+                "--parallel",
+                str(min(8, multiprocessing.cpu_count())),
+                "--target",
+                "install",
+            ],
             check=True,
         )
 
