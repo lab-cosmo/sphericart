@@ -18,6 +18,7 @@ class SphericalHarmonics : public torch::CustomClassHolder {
     SphericalHarmonics(
         int64_t l_max, bool normalized = false, bool backward_second_derivatives = false
     );
+    ~SphericalHarmonics();
 
     // Actual calculation, with autograd support
     torch::Tensor compute(torch::Tensor xyz);
@@ -45,8 +46,8 @@ class SphericalHarmonics : public torch::CustomClassHolder {
     sphericart::SphericalHarmonics<float> calculator_float_;
 
     // CUDA implementation
-    sphericart::cuda::SphericalHarmonics<double> calculator_cuda_double_;
-    sphericart::cuda::SphericalHarmonics<float> calculator_cuda_float_;
+    sphericart::cuda::SphericalHarmonics<double>* calculator_cuda_double_ptr = nullptr;
+    sphericart::cuda::SphericalHarmonics<float>* calculator_cuda_float_ptr = nullptr;
 };
 
 } // namespace sphericart_torch
