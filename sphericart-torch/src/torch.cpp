@@ -18,19 +18,10 @@ SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalized, bool back
 
     if (torch::cuda::is_available()) {
         this->calculator_cuda_double_ptr =
-            new sphericart::cuda::SphericalHarmonics<double>(l_max_, normalized_);
+            std::make_unique<sphericart::cuda::SphericalHarmonics<double>>(l_max_, normalized_);
+
         this->calculator_cuda_float_ptr =
-            new sphericart::cuda::SphericalHarmonics<float>(l_max_, normalized_);
-    }
-}
-
-SphericalHarmonics::~SphericalHarmonics() {
-    if (this->calculator_cuda_double_ptr != nullptr) {
-        delete this->calculator_cuda_double_ptr;
-    }
-
-    if (this->calculator_cuda_float_ptr != nullptr) {
-        delete this->calculator_cuda_float_ptr;
+            std::make_unique<sphericart::cuda::SphericalHarmonics<float>>(l_max_, normalized_);
     }
 }
 
