@@ -2,3 +2,8 @@
 sphinx
 sphinx_rtd_theme   # sphinx theme
 breathe >=4.33     # C and C++ => sphinx through doxygen
+furo               # sphinx theme
+
+# jax[cpu], because python -m pip install jax, which would be triggered
+# by the main package's dependencies, does not install jaxlib
+jax[cpu] >= 0.4.18

@@ -9,8 +9,6 @@
 #include <tuple>
 #include <vector>
 
-#include "sphericart/exports.h"
-
 #ifdef _SPHERICART_INTERNAL_IMPLEMENTATION
 #include "macros.hpp"
 #include "templates.hpp"
@@ -67,7 +65,7 @@ template <typename T> class SphericalHarmonics {
      * will contain `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1),
      * (2, 0), (2, 1), (2, 2)`, in this order.
      */
-    void compute(const std::vector<T> &xyz, std::vector<T> &sph);
+    void compute(const std::vector<T>& xyz, std::vector<T>& sph);
 
     /** Computes the spherical harmonics and their derivatives with respect to
      *  the Cartesian coordinates of one or more 3D points, using
@@ -102,8 +100,7 @@ template <typename T> class SphericalHarmonics {
      *        corresponds to different spatial derivatives of the spherical
      *        harmonics: x, y, and z, respectively.
      */
-    void compute_with_gradients(const std::vector<T> &xyz, std::vector<T> &sph,
-                                std::vector<T> &dsph);
+    void compute_with_gradients(const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph);
 
     /** Computes the spherical harmonics, their derivatives and second
      * derivatives with respect to the Cartesian coordinates of one or more 3D
@@ -149,8 +146,9 @@ template <typename T> class SphericalHarmonics {
      *        correspond to the different spatial second derivatives of the
      * spherical harmonics, i.e., to the dimensions of the Hessian matrix.
      */
-    void compute_with_hessians(const std::vector<T> &xyz, std::vector<T> &sph,
-                               std::vector<T> &dsph, std::vector<T> &ddsph);
+    void compute_with_hessians(
+        const std::vector<T>& xyz, std::vector<T>& sph, std::vector<T>& dsph, std::vector<T>& ddsph
+    );
 
     /** Computes the spherical harmonics for a set of 3D points using bare
      * arrays.
@@ -163,8 +161,7 @@ template <typename T> class SphericalHarmonics {
      *        the x, y, and z coordinates respectively.
      * @param xyz_length Total length of the `xyz` array: `n_samples * 3`.
      */
-    void compute_array(const T *xyz, size_t xyz_length, T *sph,
-                       size_t sph_length);
+    void compute_array(const T* xyz, size_t xyz_length, T* sph, size_t sph_length);
 
     /** Computes the spherical harmonics and their derivatives for a set of 3D
      * points using bare arrays.
@@ -200,9 +197,9 @@ template <typename T> class SphericalHarmonics {
      * @param dsph_length Total length of the `dsph` array: `n_samples * 3 *
      * (l_max + 1) * (l_max + 1)`.
      */
-    void compute_array_with_gradients(const T *xyz, size_t xyz_length, T *sph,
-                                      size_t sph_length, T *dsph,
-                                      size_t dsph_length);
+    void compute_array_with_gradients(
+        const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length
+    );
 
     /** Computes the spherical harmonics, their derivatives and second
      * derivatives for a set of 3D points using bare arrays.
@@ -250,10 +247,16 @@ template <typename T> class SphericalHarmonics {
      * @param ddsph_length Total length of the `ddsph` array: `n_samples * 9 *
      * (l_max + 1) * (l_max + 1)`.
      */
-    void compute_array_with_hessians(const T *xyz, size_t xyz_length, T *sph,
-                                     size_t sph_length, T *dsph,
-                                     size_t dsph_length, T *ddsph,
-                                     size_t ddsph_length);
+    void compute_array_with_hessians(
+        const T* xyz,
+        size_t xyz_length,
+        T* sph,
+        size_t sph_length,
+        T* dsph,
+        size_t dsph_length,
+        T* ddsph,
+        size_t ddsph_length
+    );
 
     /** Computes the spherical harmonics for a single 3D point using bare
      * arrays.
@@ -272,8 +275,7 @@ template <typename T> class SphericalHarmonics {
      * @param sph_length Total length of the `sph` array: `(l_max + 1) * (l_max
      * + 1)`.
      */
-    void compute_sample(const T *xyz, size_t xyz_length, T *sph,
-                        size_t sph_length);
+    void compute_sample(const T* xyz, size_t xyz_length, T* sph, size_t sph_length);
 
     /** Computes the spherical harmonics and their derivatives for a single 3D
      *  point using bare arrays.
@@ -303,9 +305,9 @@ template <typename T> class SphericalHarmonics {
      * @param dsph_length Total length of the `dsph` array: `3 * (l_max + 1) *
      * (l_max + 1)`.
      */
-    void compute_sample_with_gradients(const T *xyz, size_t xyz_length, T *sph,
-                                       size_t sph_length, T *dsph,
-                                       size_t dsph_length);
+    void compute_sample_with_gradients(
+        const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length
+    );
 
     /** Computes the spherical harmonics, their derivatives and second
      * derivatives for a single 3D point using bare arrays.
@@ -346,10 +348,16 @@ template <typename T> class SphericalHarmonics {
      * @param ddsph_length Total length of the `ddsph` array: `9 * (l_max + 1) *
      * (l_max + 1)`.
      */
-    void compute_sample_with_hessians(const T *xyz, size_t xyz_length, T *sph,
-                                      size_t sph_length, T *dsph,
-                                      size_t dsph_length, T *ddsph,
-                                      size_t ddsph_length);
+    void compute_sample_with_hessians(
+        const T* xyz,
+        size_t xyz_length,
+        T* sph,
+        size_t sph_length,
+        T* dsph,
+        size_t dsph_length,
+        T* ddsph,
+        size_t ddsph_length
+    );
 
     /**
     Returns the number of threads used in the calculation
@@ -358,31 +366,25 @@ template <typename T> class SphericalHarmonics {
 
     /* @cond */
   private:
-    size_t l_max;    // maximum l value computed by this class
-    size_t size_y;   // size of the Ylm rows (l_max+1)**2
-    size_t size_q;   // size of the prefactor-like arrays (l_max+1)*(l_max+2)/2
-    bool normalized; // should we normalize the input vectors?
+    size_t l_max;        // maximum l value computed by this class
+    size_t size_y;       // size of the Ylm rows (l_max+1)**2
+    size_t size_q;       // size of the prefactor-like arrays (l_max+1)*(l_max+2)/2
+    bool normalized;     // should we normalize the input vectors?
     int omp_num_threads; // number of openmp thread
-    T *prefactors;       // storage space for prefactor and buffers
-    T *buffers;
+    T* prefactors;       // storage space for prefactor and buffers
+    T* buffers;
 
     // function pointers are used to set up the right functions to be called
     // these are set in the constructor, so that the public compute functions
     // can be redirected to the right implementation
-    void (*_array_no_derivatives)(const T *, T *, T *, T *, size_t, int,
-                                  const T *, T *);
-    void (*_array_with_derivatives)(const T *, T *, T *, T *, size_t, int,
-                                    const T *, T *);
-    void (*_array_with_hessians)(const T *, T *, T *, T *, size_t, int,
-                                 const T *, T *);
+    void (*_array_no_derivatives)(const T*, T*, T*, T*, size_t, int, const T*, T*);
+    void (*_array_with_derivatives)(const T*, T*, T*, T*, size_t, int, const T*, T*);
+    void (*_array_with_hessians)(const T*, T*, T*, T*, size_t, int, const T*, T*);
 
     // these compute a single sample
-    void (*_sample_no_derivatives)(const T *, T *, T *, T *, int, int,
-                                   const T *, const T *, T *, T *, T *);
-    void (*_sample_with_derivatives)(const T *, T *, T *, T *, int, int,
-                                     const T *, const T *, T *, T *, T *);
-    void (*_sample_with_hessians)(const T *, T *, T *, T *, int, int, const T *,
-                                  const T *, T *, T *, T *);
+    void (*_sample_no_derivatives)(const T*, T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
+    void (*_sample_with_derivatives)(const T*, T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
+    void (*_sample_with_hessians)(const T*, T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
     /* @endcond */
 };
 

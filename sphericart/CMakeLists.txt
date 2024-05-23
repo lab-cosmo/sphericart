@@ -8,11 +8,12 @@ string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" SPHERICART_VERSION_MAJOR "${SPHERICA
 string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_MINOR "${SPHERICART_VERSION}")
 string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" SPHERICART_VERSION_PATCH "${SPHERICART_VERSION}")
 
-option(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
+OPTION(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 
 OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" OFF)
 OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 OPTION(SPHERICART_ARCH_NATIVE "Try to use -march=native when compiling Sphericart" ON)
+OPTION(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" ON)
 
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install DLL/binaries")
@@ -30,12 +31,46 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     endif()
 endif()
 
-add_library(sphericart
+set(COMMON_SOURCES
     "src/sphericart.cpp"
     "src/sphericart-capi.cpp"
     "include/sphericart.hpp"
     "include/sphericart.h"
 )
+
+# Find CUDA
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
+else()
+    message(STATUS "Could not find a CUDA compiler")
+endif()
+
+if (CMAKE_CUDA_COMPILER AND NOT SPHERICART_ENABLE_CUDA)
+    message(STATUS "Found a CUDA compiler but SPHERICART_ENABLE_CUDA=OFF, set SPHERICART_ENABLE_CUDA=ON in order to compile with CUDA support.")
+endif()
+
+
+# Append the relevant CUDA files to sources
+list(APPEND COMMON_SOURCES "include/cuda_base.hpp")
+list(APPEND COMMON_SOURCES "include/sphericart_cuda.hpp")
+
+if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+    list(APPEND COMMON_SOURCES "src/cuda_base.cu")
+    list(APPEND COMMON_SOURCES "src/sphericart_cuda.cu")
+else()
+    list(APPEND COMMON_SOURCES "src/cuda_stub.cpp")
+    list(APPEND COMMON_SOURCES "src/sphericart_cuda_stub.cpp")
+endif()
+
+add_library(sphericart ${COMMON_SOURCES})
+
+if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA AND SPHERICART_ARCH_NATIVE)
+    set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES native)
+endif()
+
 
 set_target_properties(sphericart PROPERTIES
     VERSION ${SPHERICART_VERSION}
@@ -52,10 +87,12 @@ target_include_directories(sphericart PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# Create a header defining SPHERICAR_EXPORT for exported classes/functions
+# Create a header defining SPHERICART_EXPORT for exported classes/functions
 set_target_properties(sphericart PROPERTIES
     # hide non-exported symbols by default
-    CXX_VISIBILITY_PRESET hidden
+    C_VISIBILIY_PRESET hidden
+    CXX_VISIBILIY_PRESET hidden
+    CUDA_VISIBILIY_PRESET hidden
 )
 
 include(GenerateExportHeader)
@@ -124,6 +161,7 @@ enable_testing()
 if (SPHERICART_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
 
 #------------------------------------------------------------------------------#
 # Installation configuration

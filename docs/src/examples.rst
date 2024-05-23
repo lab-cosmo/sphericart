@@ -17,6 +17,7 @@ floating-point arithmetics, and they evaluate the mean relative error between th
 
     cpp-examples
     c-examples
+    cuda-examples
     python-examples
     pytorch-examples
     jax-examples
