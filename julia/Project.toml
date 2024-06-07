@@ -1,7 +1,7 @@
 name = "SpheriCart"
 uuid = "5caf2b29-02d9-47a3-9434-5931c85ba645"
 authors = ["Christoph Ortner <christohortner@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
