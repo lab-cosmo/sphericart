@@ -9,6 +9,7 @@ on:
 
 env:
   SPHERICART_NO_LOCAL_DEPS: "1"
+  MACOSX_DEPLOYMENT_TARGET: "11.0"
 
 jobs:
   build-wheels:
