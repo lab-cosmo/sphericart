@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         # TODO: add windows builder
-        os: [ubuntu-20.04, macos-11]
+        os: [ubuntu-20.04, macos-13]
 
     steps:
       - uses: actions/checkout@v3
