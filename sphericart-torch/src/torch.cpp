@@ -1,10 +1,8 @@
 
-#include "sphericart/torch.hpp"
-
 #include <torch/script.h>
 
+#include "sphericart/torch.hpp"
 #include "sphericart/autograd.hpp"
-#include "sphericart/torch_cuda_wrapper.hpp"
 
 using namespace sphericart_torch;
 SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalized, bool backward_second_derivatives)
