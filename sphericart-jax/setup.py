@@ -77,9 +77,7 @@ class bdist_egg_disabled(bdist_egg):
     def run(self):
         sys.exit(
             "Aborting implicit building of eggs. "
-            + "Use `pip install .` or `python setup.py bdist_wheel && pip "
-            + "uninstall -y sphericart-jax && pip install "
-            + "dist/sphericart-jax-*.whl` to install from source."
+            "Use `pip install .` to install from source."
         )
 
 
