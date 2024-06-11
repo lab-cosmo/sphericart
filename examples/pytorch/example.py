@@ -45,8 +45,8 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized)
 
-    # the interface allows to return directly the forward derivatives (up to second order),
-    # similar to the Python version
+    # the interface allows to return directly the forward derivatives (up to second
+    # order), similar to the Python version
     sh_sphericart = sh_calculator.compute(xyz)
     sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
     (
@@ -69,7 +69,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # ===== autograd integration =====
 
-    # the implementation also supports backpropagation.
+    # the implementation also supports back-propagation.
     # the input tensor must be tagged to have `requires_grad`
     xyz_ag = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
     sh_sphericart = sh_calculator.compute(xyz_ag)
@@ -89,7 +89,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     ) / torch.norm(xyz_ag.grad)
     print(f"Check derivative difference (FW vs BW): {delta}")
 
-    # double derivatives. In order to access them via backpropagation, an additional
+    # double derivatives. In order to access them via back-propagation, an additional
     # flag must be specified at class instantiation:
     sh_calculator_2 = sphericart.torch.SphericalHarmonics(
         l_max, normalized=normalized, backward_second_derivatives=True

@@ -1,10 +1,8 @@
 
-#include "sphericart/torch.hpp"
-
 #include <torch/script.h>
 
+#include "sphericart/torch.hpp"
 #include "sphericart/autograd.hpp"
-#include "sphericart/torch_cuda_wrapper.hpp"
 
 using namespace torch;
 using namespace sphericart_torch;
