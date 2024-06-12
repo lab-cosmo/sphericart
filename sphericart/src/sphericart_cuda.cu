@@ -30,66 +30,78 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
        buffer space, compute prefactors, and sets the function pointers that are
        used for the actual calls
     */
-
     this->l_max = (int)l_max;
     this->nprefactors = (int)(l_max + 1) * (l_max + 2);
     this->normalized = normalized;
     this->prefactors_cpu = new T[this->nprefactors];
 
+    CUDA_CHECK(cudaGetDeviceCount(&this->device_count));
+
     // compute prefactors on host first
     compute_sph_prefactors<T>((int)l_max, this->prefactors_cpu);
 
-    CUDA_CHECK(cudaGetDeviceCount(&this->device_count));
+    if (this->device_count) {
+        int current_device;
 
-    int current_device;
+        CUDA_CHECK(cudaGetDevice(&current_device));
 
-    CUDA_CHECK(cudaGetDevice(&current_device));
+        // allocate prefactorts on every visible device and copy from host
+        this->prefactors_cuda = new T*[this->device_count];
 
-    // allocate prefactorts on every visible device and copy from host
-    this->prefactors_cuda = new T*[this->device_count];
+        for (int device = 0; device < this->device_count; device++) {
+            CUDA_CHECK(cudaSetDevice(device));
+            CUDA_CHECK(
+                cudaMalloc((void**)&this->prefactors_cuda[device], this->nprefactors * sizeof(T))
+            );
+            CUDA_CHECK(cudaMemcpy(
+                this->prefactors_cuda[device],
+                this->prefactors_cpu,
+                this->nprefactors * sizeof(T),
+                cudaMemcpyHostToDevice
+            ));
+        }
 
-    for (int device = 0; device < this->device_count; device++) {
-        CUDA_CHECK(cudaSetDevice(device));
-        CUDA_CHECK(cudaMalloc((void**)&this->prefactors_cuda[device], this->nprefactors * sizeof(T))
+        // initialise the currently available amount of shared memory on all visible devices
+        this->_current_shared_mem_allocation = adjust_shared_memory(
+            sizeof(T),
+            this->l_max,
+            this->CUDA_GRID_DIM_X_,
+            this->CUDA_GRID_DIM_Y_,
+            false,
+            false,
+            this->_current_shared_mem_allocation
         );
-        CUDA_CHECK(cudaMemcpy(
-            this->prefactors_cuda[device],
-            this->prefactors_cpu,
-            this->nprefactors * sizeof(T),
-            cudaMemcpyHostToDevice
-        ));
+
+        // set the context back to the current device
+        CUDA_CHECK(cudaSetDevice(current_device));
     }
-
-    // initialise the currently available amount of shared memory on all visible devices
-    this->_current_shared_mem_allocation = adjust_shared_memory(
-        sizeof(T),
-        this->l_max,
-        this->CUDA_GRID_DIM_X_,
-        this->CUDA_GRID_DIM_Y_,
-        false,
-        false,
-        this->_current_shared_mem_allocation
-    );
-
-    // set the context back to the current device
-    CUDA_CHECK(cudaSetDevice(current_device));
 }
 
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     // Destructor, frees the prefactors
-    delete[] (this->prefactors_cpu);
-
-    int current_device;
-
-    CUDA_CHECK(cudaGetDevice(&current_device));
-
-    for (int device = 0; device < this->device_count; device++) {
-        CUDA_CHECK(cudaSetDevice(device));
-        CUDA_CHECK(cudaDeviceSynchronize());
-        CUDA_CHECK(cudaFree(this->prefactors_cuda[device]));
+    if (this->prefactors_cpu != nullptr) {
+        delete[] (this->prefactors_cpu);
+        this->prefactors_cpu = nullptr;
     }
 
-    CUDA_CHECK(cudaSetDevice(current_device));
+    if (this->device_count > 0) {
+
+        int current_device;
+
+        CUDA_CHECK(cudaGetDevice(&current_device));
+
+        for (int device = 0; device < this->device_count; device++) {
+            CUDA_CHECK(cudaSetDevice(device));
+            CUDA_CHECK(cudaDeviceSynchronize());
+            if (this->prefactors_cuda != nullptr && this->prefactors_cuda[device] != nullptr) {
+                CUDA_CHECK(cudaFree(this->prefactors_cuda[device]));
+                this->prefactors_cuda[device] = nullptr;
+            }
+        }
+        this->prefactors_cuda = nullptr;
+
+        CUDA_CHECK(cudaSetDevice(current_device));
+    }
 }
 
 template <typename T>

@@ -45,8 +45,8 @@ class SphericalHarmonics : public torch::CustomClassHolder {
     sphericart::SphericalHarmonics<float> calculator_float_;
 
     // CUDA implementation
-    sphericart::cuda::SphericalHarmonics<double> calculator_cuda_double_;
-    sphericart::cuda::SphericalHarmonics<float> calculator_cuda_float_;
+    std::unique_ptr<sphericart::cuda::SphericalHarmonics<double>> calculator_cuda_double_ptr;
+    std::unique_ptr<sphericart::cuda::SphericalHarmonics<float>> calculator_cuda_float_ptr;
 };
 
 } // namespace sphericart_torch
