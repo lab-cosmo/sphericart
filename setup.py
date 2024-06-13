@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import subprocess
 import sys
@@ -65,7 +66,15 @@ class cmake_ext(build_ext):
             check=True,
         )
         subprocess.run(
-            ["cmake", "--build", build_dir, "--parallel", "--target", "install"],
+            [
+                "cmake",
+                "--build",
+                build_dir,
+                "--parallel",
+                str(min(8, multiprocessing.cpu_count())),
+                "--target",
+                "install",
+            ],
             check=True,
         )
 
