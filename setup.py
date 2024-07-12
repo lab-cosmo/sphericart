@@ -12,8 +12,8 @@ from wheel.bdist_wheel import bdist_wheel
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
 SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
-SPHERICART_DISABLE_PARALLEL = (
-    os.environ.get("SPHERICART_DISABLE_PARALLEL_BUILD", "OFF").upper() == "ON"
+SPHERICART_PARALLEL_BUILD = (
+    os.environ.get("SPHERICART_PARALLEL_BUILD", "ON").upper() == "ON"
 )
 SPHERICART_JOBS = os.environ.get("SPHERICART_JOBS")
 
@@ -77,7 +77,7 @@ class cmake_ext(build_ext):
             "--target",
             "install",
         ]
-        if not SPHERICART_DISABLE_PARALLEL:
+        if SPHERICART_PARALLEL_BUILD:
             if SPHERICART_JOBS is None:
                 jobs = str(min(8, multiprocessing.cpu_count()))
             else:
