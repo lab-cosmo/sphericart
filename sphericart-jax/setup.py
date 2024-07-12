@@ -15,6 +15,17 @@ SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
 class cmake_ext(build_ext):
     """Build the native library using cmake"""
 
+    user_options = build_ext.user_options + [
+        ("disable-parallel-build", None, "Disable parallel build")
+    ]
+
+    def initialize_options(self):
+        build_ext.initialize_options(self)
+        self.disable_parallel = False
+
+    def finalize_options(self):
+        build_ext.finalize_options(self)
+
     def run(self):
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
@@ -53,18 +64,22 @@ class cmake_ext(build_ext):
             cwd=build_dir,
             check=True,
         )
-        subprocess.run(
-            [
-                "cmake",
-                "--build",
-                build_dir,
-                "--parallel",
-                str(min(8, multiprocessing.cpu_count())),
-                "--target",
-                "install",
-            ],
-            check=True,
-        )
+
+        build_command = [
+            "cmake",
+            "--build",
+            build_dir,
+            "--target",
+            "install",
+        ]
+        if not self.disable_parallel:
+            build_command.extend(
+                ["--parallel", str(min(8, multiprocessing.cpu_count()))]
+            )
+        else:
+            build_command.extend(["--parallel", str(1)])
+
+        subprocess.run(build_command, check=True)
 
 
 class bdist_egg_disabled(bdist_egg):

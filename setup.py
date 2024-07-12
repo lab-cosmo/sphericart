@@ -30,6 +30,17 @@ class universal_wheel(bdist_wheel):
 class cmake_ext(build_ext):
     """Build the native library using cmake"""
 
+    user_options = build_ext.user_options + [
+        ("disable-parallel-build", None, "Disable parallel build")
+    ]
+
+    def initialize_options(self):
+        build_ext.initialize_options(self)
+        self.disable_parallel = False
+
+    def finalize_options(self):
+        build_ext.finalize_options(self)
+
     def run(self):
         source_dir = os.path.join(ROOT, "sphericart")
         build_dir = os.path.join(ROOT, "build", "cmake-build")
@@ -65,18 +76,22 @@ class cmake_ext(build_ext):
             cwd=build_dir,
             check=True,
         )
-        subprocess.run(
-            [
-                "cmake",
-                "--build",
-                build_dir,
-                "--parallel",
-                str(min(8, multiprocessing.cpu_count())),
-                "--target",
-                "install",
-            ],
-            check=True,
-        )
+
+        build_command = [
+            "cmake",
+            "--build",
+            build_dir,
+            "--target",
+            "install",
+        ]
+        if not self.disable_parallel:
+            build_command.extend(
+                ["--parallel", str(min(8, multiprocessing.cpu_count()))]
+            )
+        else:
+            build_command.extend(["--parallel", str(1)])
+
+        subprocess.run(build_command, check=True)
 
 
 class bdist_egg_disabled(bdist_egg):
@@ -108,9 +123,9 @@ if __name__ == "__main__":
         # add a random uuid to the file url to prevent pip from using a cached
         # wheel for sphericart-torch, and force it to re-build from scratch
         uuid_ = uuid.uuid4()
-        extras_require["torch"] = (
-            f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid_}"
-        )
+        extras_require[
+            "torch"
+        ] = f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid_}"
     else:
         # installing wheel/sdist
         extras_require["torch"] = "sphericart-torch"
