@@ -10,21 +10,14 @@ from setuptools.command.build_ext import build_ext
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
 SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
-
+SPHERICART_DISABLE_PARALLEL = (
+    os.environ.get("SPHERICART_DISABLE_PARALLEL", "OFF").upper() == "ON"
+)
+SPHERICART_JOBS = os.environ.get("SPHERICART_JOBS")
 
 class cmake_ext(build_ext):
     """Build the native library using cmake"""
 
-    user_options = build_ext.user_options + [
-        ("disable-parallel-build", None, "Disable parallel build")
-    ]
-
-    def initialize_options(self):
-        build_ext.initialize_options(self)
-        self.disable_parallel = False
-
-    def finalize_options(self):
-        build_ext.finalize_options(self)
 
     def run(self):
         source_dir = ROOT
@@ -72,12 +65,14 @@ class cmake_ext(build_ext):
             "--target",
             "install",
         ]
-        if not self.disable_parallel:
-            build_command.extend(
-                ["--parallel", str(min(8, multiprocessing.cpu_count()))]
-            )
+        if not SPHERICART_DISABLE_PARALLEL:
+            if SPHERICART_JOBS is None:
+                jobs = str(min(8, multiprocessing.cpu_count()))
+            else:
+                jobs = str(SPHERICART_JOBS)
+            build_command.extend(["--parallel", jobs])
         else:
-            build_command.extend(["--parallel", str(1)])
+            build_command.extend(["--parallel", "1"])
 
         subprocess.run(build_command, check=True)
 
