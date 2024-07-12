@@ -11,7 +11,7 @@ from setuptools.command.build_ext import build_ext
 ROOT = os.path.realpath(os.path.dirname(__file__))
 SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
 SPHERICART_DISABLE_PARALLEL = (
-    os.environ.get("SPHERICART_DISABLE_PARALLEL", "OFF").upper() == "ON"
+    os.environ.get("SPHERICART_DISABLE_PARALLEL_BUILD", "OFF").upper() == "ON"
 )
 SPHERICART_JOBS = os.environ.get("SPHERICART_JOBS")
 
