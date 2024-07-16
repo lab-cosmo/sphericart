@@ -52,7 +52,6 @@ if (CMAKE_CUDA_COMPILER AND NOT SPHERICART_ENABLE_CUDA)
     message(STATUS "Found a CUDA compiler but SPHERICART_ENABLE_CUDA=OFF, set SPHERICART_ENABLE_CUDA=ON in order to compile with CUDA support.")
 endif()
 
-
 # Append the relevant CUDA files to sources
 list(APPEND COMMON_SOURCES "include/cuda_base.hpp")
 list(APPEND COMMON_SOURCES "include/sphericart_cuda.hpp")
@@ -67,8 +66,8 @@ endif()
 
 add_library(sphericart ${COMMON_SOURCES})
 
-if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA AND SPHERICART_ARCH_NATIVE)
-    set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES native)
+if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+    set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES all)
 endif()
 
 

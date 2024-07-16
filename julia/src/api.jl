@@ -1,3 +1,4 @@
+
 """
 `struct SolidHarmonics` : datatype representing a solid harmonics basis. 
 
@@ -36,7 +37,6 @@ See documentation for more details.
 """
 struct SolidHarmonics{L, NORM, STATIC, T1}
    Flm::OffsetMatrix{T1, Matrix{T1}}
-   cache::TSafe{ArrayPool{FlexArrayCache}}
 end
 
 function SolidHarmonics(L::Integer; 
@@ -45,7 +45,7 @@ function SolidHarmonics(L::Integer;
                         T = Float64) 
    Flm = generate_Flms(L; normalisation = normalisation, T = T)
    @assert eltype(Flm) == T   
-   SolidHarmonics{L, normalisation, static, T}(Flm, TSafe(ArrayPool(FlexArrayCache)))
+   SolidHarmonics{L, normalisation, static, T}(Flm)
 end
 
 @inline (basis::SolidHarmonics)(args...) = compute(basis, args...)
@@ -82,28 +82,23 @@ function compute!(Z::AbstractMatrix,
    nX = length(Rs)
    T = promote_type(T1, T2)
 
-   # allocate temporary arrays from an array cache 
-   temps = (x = acquire!(basis.cache, :x,  (nX, ),    T),
-            y = acquire!(basis.cache, :y,  (nX, ),    T),
-            z = acquire!(basis.cache, :z,  (nX, ),    T), 
-           r² = acquire!(basis.cache, :r2, (nX, ),    T),
-            s = acquire!(basis.cache, :s,  (nX, L+1), T),
-            c = acquire!(basis.cache, :c,  (nX, L+1), T),
-            Q = acquire!(basis.cache, :Q,  (nX, sizeY(L)), T), 
-            Flm = basis.Flm )
+   @no_escape begin 
 
-   # the actual evaluation kernel 
-   solid_harmonics!(Z, Val{L}(), Rs, temps)
+      # allocate temporary arrays from an array cache 
+      temps = (x = @alloc(T, nX), 
+               y = @alloc(T, nX),
+               z = @alloc(T, nX), 
+              r² = @alloc(T, nX),
+               s = @alloc(T, nX, L+1), 
+               c = @alloc(T, nX, L+1),
+               Q = @alloc(T, nX, sizeY(L)),
+             Flm = basis.Flm )
 
-   # release the temporary arrays back into the cache
-   # (don't release Flm!!)
-   release!(temps.x)
-   release!(temps.y)
-   release!(temps.z)
-   release!(temps.r²)
-   release!(temps.s)
-   release!(temps.c)
-   release!(temps.Q)
+      # the actual evaluation kernel 
+      solid_harmonics!(Z, Val{L}(), Rs, temps)
+
+      nothing
+   end # @no_escape 
 
    return Z 
 end 
@@ -152,28 +147,22 @@ function compute_with_gradients!(
    nX = length(Rs)
    T = promote_type(T1, T2)
 
-   # allocate temporary arrays from an array cache 
-   temps = (x = acquire!(basis.cache, :x,  (nX, ),    T),
-            y = acquire!(basis.cache, :y,  (nX, ),    T),
-            z = acquire!(basis.cache, :z,  (nX, ),    T), 
-           r² = acquire!(basis.cache, :r2, (nX, ),    T),
-            s = acquire!(basis.cache, :s,  (nX, L+1), T),
-            c = acquire!(basis.cache, :c,  (nX, L+1), T),
-            Q = acquire!(basis.cache, :Q,  (nX, sizeY(L)), T),
-            Flm = basis.Flm )
+   @no_escape begin 
 
-   # the actual evaluation kernel 
-   solid_harmonics_with_grad!(Z, dZ, Val{L}(), Rs, temps)
+      # allocate temporary arrays from an array cache 
+      temps = (x = @alloc(T, nX),    
+               y = @alloc(T, nX),    
+               z = @alloc(T, nX),    
+              r² = @alloc(T, nX),    
+               s = @alloc(T, nX, L+1), 
+               c = @alloc(T, nX, L+1), 
+               Q = @alloc(T, nX, sizeY(L)), 
+             Flm = basis.Flm )
 
-   # release the temporary arrays back into the cache
-   # (don't release Flm!!)
-   release!(temps.x)
-   release!(temps.y)
-   release!(temps.z)
-   release!(temps.r²)
-   release!(temps.s)
-   release!(temps.c)
-   release!(temps.Q)
+      # the actual evaluation kernel 
+      solid_harmonics_with_grad!(Z, dZ, Val{L}(), Rs, temps)
+      nothing
+   end
 
    return Z 
 end 
