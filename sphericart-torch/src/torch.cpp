@@ -1,5 +1,3 @@
-
-#include <torch/script.h>
 #include <torch/torch.h>
 
 #include "sphericart/torch.hpp"

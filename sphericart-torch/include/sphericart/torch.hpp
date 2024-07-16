@@ -1,7 +1,7 @@
 #ifndef SPHERICART_TORCH_HPP
 #define SPHERICART_TORCH_HPP
 
-#include <torch/script.h>
+#include <torch/torch.h>
 
 #include <mutex>
 
