@@ -2,7 +2,7 @@
 name = "sphericart"
 dynamic = ["version", "optional-dependencies"]
 requires-python = ">=3.8"
-dependencies = ["numpy"]
+dependencies = ["numpy<2.0.0"]
 
 readme = "README.md"
 license = {text = "Apache-2.0 or MIT"}
