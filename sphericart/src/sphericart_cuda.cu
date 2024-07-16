@@ -103,7 +103,7 @@ void SphericalHarmonics<T>::compute(
     T* ddsph,
     void* cuda_stream
 ) {
-    if (n_samples == 0) {
+    if (nsamples == 0) {
         // nothing to compute; we return here because some libraries (e.g. torch)
         // seem to use nullptrs for tensors with 0 elements
         return;

@@ -7,14 +7,12 @@ import sphericart.torch
 torch.manual_seed(0)
 
 
-@pytest.fixture
-def xyz():
-    return torch.zeros(0, 3, dtype=torch.float64, requires_grad=True)
+@pytest.mark.parametrize("normalized", [False, True])
+@pytest.mark.parametrize("l_max", [0, 3, 7, 10, 20, 50])
+def test_error(l_max, normalized):
+    xyz = torch.zeros(0, 3, dtype=torch.float64)
 
-
-def test_error(xyz):
-
-    calculator = sphericart.torch.SphericalHarmonics(l_max=20, normalized=False)
+    calculator = sphericart.torch.SphericalHarmonics(l_max=l_max, normalized=normalized)
 
     try:
         sph = calculator.compute(xyz)
