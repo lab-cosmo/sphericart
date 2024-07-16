@@ -99,6 +99,25 @@ for ntest = 1:10
    @test cond(G) < 1.5
 end
 
+## 
+
+@info("check Racah scaling")
+
+L = 3
+racah = SolidHarmonics(L; normalisation=:racah)
+
+for ntest = 1:10
+   local Z
+   Rs = [ rand_sphere() for _ = 1:10_000 ] 
+   Z = compute(racah, Rs)
+   G = (Z' * Z) / length(Rs) * 4 * π
+   dd = [ 4*π/(2*l+1) for l = 0:L for m = -l:l ]
+   D = Diagonal(dd)
+   Drtinv = Diagonal(dd.^(-0.5))
+   @test norm(G - D) < 1.0
+   @test cond( Drtinv * G * Drtinv ) < 1.5
+end
+
 
 ##
 
