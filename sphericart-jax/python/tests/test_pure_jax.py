@@ -1,10 +1,9 @@
-import numpy as np
 import jax
 import jax.numpy as jnp
 import pytest
+from pure_jax_sph import pure_jax_spherical_harmonics
 
 import sphericart.jax
-from pure_jax_sph import pure_jax_spherical_harmonics
 
 
 @pytest.fixture
@@ -42,14 +41,16 @@ def test_jacrev(xyz, l_max):
 
 @pytest.mark.parametrize("l_max", [2, 7])
 def test_gradgrad(xyz, l_max):
-    sum_sph = lambda x, l_max, normalized: jnp.sum(
+    sum_sph = lambda x, l_max, normalized: jnp.sum(  # noqa: E731
         sphericart.jax.spherical_harmonics(x, l_max, normalized)
     )
-    pure_jax_sum_sph = lambda x, l_max: jnp.sum(pure_jax_spherical_harmonics(x, l_max))
-    sum_grad_sph = lambda x, l_max, normalized: jnp.sum(
+    pure_jax_sum_sph = lambda x, l_max: jnp.sum(  # noqa: E731
+        pure_jax_spherical_harmonics(x, l_max)
+    )
+    sum_grad_sph = lambda x, l_max, normalized: jnp.sum(  # noqa: E731
         jax.grad(sum_sph)(x, l_max, normalized)
     )
-    pure_jax_sum_grad_sph = lambda x, l_max: jnp.sum(
+    pure_jax_sum_grad_sph = lambda x, l_max: jnp.sum(  # noqa: E731
         jax.grad(pure_jax_sum_sph)(x, l_max)
     )
     gradgrad_sph = jax.grad(sum_grad_sph)
