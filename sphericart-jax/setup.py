@@ -1,7 +1,6 @@
 import os
 import subprocess
 import sys
-import multiprocessing
 
 from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
