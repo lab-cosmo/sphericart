@@ -1,4 +1,3 @@
-import multiprocessing
 import os
 import subprocess
 import sys
@@ -12,10 +11,6 @@ from wheel.bdist_wheel import bdist_wheel
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
 SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
-SPHERICART_PARALLEL_BUILD = (
-    os.environ.get("SPHERICART_PARALLEL_BUILD", "ON").upper() == "ON"
-)
-SPHERICART_JOBS = os.environ.get("SPHERICART_JOBS")
 
 
 class universal_wheel(bdist_wheel):
@@ -74,17 +69,11 @@ class cmake_ext(build_ext):
             "cmake",
             "--build",
             build_dir,
+            "--parallel",
+            "2",  # only two jobs to avoid OOM, we don't have many files
             "--target",
             "install",
         ]
-        if SPHERICART_PARALLEL_BUILD:
-            if SPHERICART_JOBS is None:
-                jobs = str(min(8, multiprocessing.cpu_count()))
-            else:
-                jobs = str(SPHERICART_JOBS)
-            build_command.extend(["--parallel", jobs])
-        else:
-            build_command.extend(["--parallel", "1"])
 
         subprocess.run(build_command, check=True)
 
