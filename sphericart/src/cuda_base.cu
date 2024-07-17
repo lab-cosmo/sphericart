@@ -900,7 +900,6 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     scalar_t* __restrict__ xyz_grad,
     void* cuda_stream
 ) {
-
     dim3 grid_dim(4, 32);
 
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };

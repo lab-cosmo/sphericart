@@ -233,7 +233,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
         }
 
         if (xyz.dtype() == c10::kDouble) {
-            calculator.calculator_cuda_double_.compute(
+            calculator.calculator_cuda_double_ptr->compute(
                 xyz.data_ptr<double>(),
                 xyz.size(0),
                 requires_grad,
@@ -245,7 +245,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
             );
 
         } else if (xyz.dtype() == c10::kFloat) {
-            calculator.calculator_cuda_float_.compute(
+            calculator.calculator_cuda_float_ptr->compute(
                 xyz.data_ptr<float>(),
                 xyz.size(0),
                 requires_grad,

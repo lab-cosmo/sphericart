@@ -1,20 +1,25 @@
-
-#include <torch/script.h>
+#include <torch/torch.h>
 
 #include "sphericart/torch.hpp"
 #include "sphericart/autograd.hpp"
 
+using namespace torch;
 using namespace sphericart_torch;
+using namespace std;
+
 SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalized, bool backward_second_derivatives)
     : l_max_(l_max), normalized_(normalized),
       backward_second_derivatives_(backward_second_derivatives),
-
-      calculator_double_(l_max_, normalized_), calculator_float_(l_max_, normalized_),
-
-      calculator_cuda_double_(l_max_, normalized_), calculator_cuda_float_(l_max_, normalized_) //,
-
-{
+      calculator_double_(l_max_, normalized_), calculator_float_(l_max_, normalized_) {
     this->omp_num_threads_ = calculator_double_.get_omp_num_threads();
+
+    if (torch::cuda::is_available()) {
+        this->calculator_cuda_double_ptr =
+            std::make_unique<sphericart::cuda::SphericalHarmonics<double>>(l_max_, normalized_);
+
+        this->calculator_cuda_float_ptr =
+            std::make_unique<sphericart::cuda::SphericalHarmonics<float>>(l_max_, normalized_);
+    }
 }
 
 torch::Tensor SphericalHarmonics::compute(torch::Tensor xyz) {
