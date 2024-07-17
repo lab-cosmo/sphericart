@@ -206,6 +206,11 @@ void SphericalHarmonics<T>::compute_array(const T* xyz, size_t xyz_length, T* sp
     }
 
     auto n_samples = xyz_length / 3;
+    if (n_samples == 0) {
+        // nothing to compute; we return here because some libraries (e.g. torch)
+        // seem to use nullptrs for tensors with 0 elements
+        return;
+    }
     if (sph == nullptr || sph_length < (n_samples * (l_max + 1) * (l_max + 1))) {
         throw std::runtime_error("SphericalHarmonics::compute_array: expected "
                                  "sph array with `n_samples "
@@ -228,6 +233,11 @@ void SphericalHarmonics<T>::compute_array_with_gradients(
     }
 
     auto n_samples = xyz_length / 3;
+    if (n_samples == 0) {
+        // nothing to compute; we return here because some libraries (e.g. torch)
+        // seem to use nullptrs for tensors with 0 elements
+        return;
+    }
     if (sph == nullptr || sph_length < (n_samples * (l_max + 1) * (l_max + 1))) {
         throw std::runtime_error("SphericalHarmonics::compute_array: expected "
                                  "sph array with `n_samples "
@@ -262,6 +272,11 @@ void SphericalHarmonics<T>::compute_array_with_hessians(
     }
 
     auto n_samples = xyz_length / 3;
+    if (n_samples == 0) {
+        // nothing to compute; we return here because some libraries (e.g. torch)
+        // seem to use nullptrs for tensors with 0 elements
+        return;
+    }
     if (sph == nullptr || sph_length < (n_samples * (l_max + 1) * (l_max + 1))) {
         throw std::runtime_error("SphericalHarmonics::compute_array: expected "
                                  "sph array with `n_samples "

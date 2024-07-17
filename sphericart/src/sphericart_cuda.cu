@@ -103,6 +103,11 @@ void SphericalHarmonics<T>::compute(
     T* ddsph,
     void* cuda_stream
 ) {
+    if (nsamples == 0) {
+        // nothing to compute; we return here because some libraries (e.g. torch)
+        // seem to use nullptrs for tensors with 0 elements
+        return;
+    }
 
     if (sph == nullptr) {
         throw std::runtime_error("sphericart::cuda::SphericalHarmonics::compute expected "
