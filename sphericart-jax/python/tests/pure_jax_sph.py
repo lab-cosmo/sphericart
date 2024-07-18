@@ -1,6 +1,7 @@
+from functools import partial
+
 import jax
 import jax.numpy as jnp
-from functools import partial
 
 
 @partial(jax.vmap, in_axes=(0, None))
@@ -14,7 +15,7 @@ def pure_jax_spherical_harmonics(xyz, l_max):
     prefactors = jnp.empty(((l_max + 1) ** 2,))
     ylm = jnp.empty(((l_max + 1) ** 2,))
 
-    for l in range(l_max + 1):
+    for l in range(l_max + 1):  # noqa: E741
         prefactors = prefactors.at[l**2 + l].set(jnp.sqrt((2 * l + 1) / (2 * jnp.pi)))
         for m in range(1, l + 1):
             prefactors = prefactors.at[l**2 + l + m].set(

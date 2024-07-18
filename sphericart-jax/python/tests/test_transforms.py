@@ -1,7 +1,7 @@
-import numpy as np
-import pytest
 import jax
 import jax.numpy as jnp
+import numpy as np
+import pytest
 
 import sphericart.jax
 
@@ -19,18 +19,16 @@ def test_script(xyz):
 
     # jit compile the function
     jcompute = jax.jit(compute)
-    out = jcompute(xyz)
+    jcompute(xyz)
     # get gradients for the compiled function
-    dout = jax.grad(jcompute)(xyz)
+    jax.grad(jcompute)(xyz)
 
 
 @pytest.mark.parametrize("normalized", [True, False])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_jit(xyz, l_max, normalized):
     jitted_sph = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1, 2))
-    calculator = sphericart.SphericalHarmonics(
-        l_max=l_max, normalized=normalized
-    )
+    calculator = sphericart.SphericalHarmonics(l_max=l_max, normalized=normalized)
     sph = jitted_sph(xyz=xyz, l_max=l_max, normalized=normalized)
     sph_ref = calculator.compute(np.asarray(xyz))
     np.testing.assert_allclose(sph, sph_ref, rtol=2e-5, atol=1e-6)
@@ -40,9 +38,7 @@ def test_jit(xyz, l_max, normalized):
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_vmap(xyz, l_max, normalized):
     vmapped_sph = jax.vmap(sphericart.jax.spherical_harmonics, in_axes=(0, None, None))
-    calculator = sphericart.SphericalHarmonics(
-        l_max=l_max, normalized=normalized
-    )
+    calculator = sphericart.SphericalHarmonics(l_max=l_max, normalized=normalized)
     sph = vmapped_sph(xyz, l_max, normalized)
     sph_ref = calculator.compute(np.asarray(xyz))
     np.testing.assert_allclose(sph, sph_ref, rtol=2e-5, atol=1e-6)

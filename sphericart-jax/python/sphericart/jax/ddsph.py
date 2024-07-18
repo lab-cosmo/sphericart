@@ -1,11 +1,13 @@
-import jax
 import math
 from functools import partial
+
+import jax
 from jax import core
 from jax.core import ShapedArray
 from jax.interpreters import mlir, xla
-from jax.interpreters.mlir import ir, custom_call
-from .utils import default_layouts, build_sph_descriptor
+from jax.interpreters.mlir import custom_call, ir
+
+from .utils import build_sph_descriptor, default_layouts
 
 
 # This file registers the _ddsph_p primitive and defines its implementation,
@@ -18,7 +20,9 @@ _ddsph_p.def_impl(partial(xla.apply_primitive, _ddsph_p))
 
 
 def ddsph(xyz, l_max, normalized):
-    sph, dsph, ddsph = _ddsph_p.bind(xyz, l_max, normalized, l_max_c=l_max, normalized_c=normalized)
+    sph, dsph, ddsph = _ddsph_p.bind(
+        xyz, l_max, normalized, l_max_c=l_max, normalized_c=normalized
+    )
     return sph, dsph, ddsph
 
 
@@ -105,7 +109,7 @@ def ddsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
         operands=[xyz],
         operand_layouts=default_layouts(xyz_shape),
         result_layouts=default_layouts(sph_shape, dsph_shape, ddsph_shape),
-        backend_config=descriptor
+        backend_config=descriptor,
     ).results
 
 

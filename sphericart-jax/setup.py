@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 
+import pybind11
 from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
 from setuptools.command.build_ext import build_ext
@@ -20,8 +21,6 @@ class cmake_ext(build_ext):
         install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart/jax")
 
         os.makedirs(build_dir, exist_ok=True)
-
-        import pybind11
 
         cmake_prefix_path = [pybind11.get_cmake_dir()]
 
