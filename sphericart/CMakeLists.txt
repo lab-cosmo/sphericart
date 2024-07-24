@@ -64,7 +64,7 @@ else()
     list(APPEND COMMON_SOURCES "src/sphericart_cuda_stub.cpp")
 endif()
 
-add_library(sphericart ${COMMON_SOURCES})
+add_library(sphericart SHARED ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES all)

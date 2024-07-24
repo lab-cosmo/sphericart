@@ -4,9 +4,9 @@
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
-    const scalar_t* __restrict__ /*xyz*/,
+    const scalar_t* /*xyz*/,
     const int /*nedges*/,
-    const scalar_t* __restrict__ /*prefactors*/,
+    const scalar_t* /*prefactors*/,
     const int /*nprefactors*/,
     const int64_t /*l_max*/,
     const bool /*normalize*/,
@@ -14,9 +14,9 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     const int64_t /*GRID_DIM_Y*/,
     const bool /*gradients*/,
     const bool /*hessian*/,
-    scalar_t* __restrict__ /*sph*/,
-    scalar_t* __restrict__ /*dsph*/,
-    scalar_t* __restrict__ /*ddsph*/,
+    scalar_t* /*sph*/,
+    scalar_t* /*dsph*/,
+    scalar_t* /*ddsph*/,
     void* /*cuda_stream*/
 ) {
 
@@ -24,9 +24,9 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
-    const double* __restrict__ xyz,
+    const double* xyz,
     const int nedges,
-    const double* __restrict__ prefactors,
+    const double* prefactors,
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,
@@ -34,16 +34,16 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
     const int64_t GRID_DIM_Y,
     const bool gradients,
     const bool hessian,
-    double* __restrict__ sph,
-    double* __restrict__ dsph,
-    double* __restrict__ ddsph,
+    double* sph,
+    double* dsph,
+    double* ddsph,
     void* cuda_stream
 );
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
-    const float* __restrict__ xyz,
+    const float* xyz,
     const int nedges,
-    const float* __restrict__ prefactors,
+    const float* prefactors,
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,
@@ -51,39 +51,39 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
     const int64_t GRID_DIM_Y,
     const bool gradients,
     const bool hessian,
-    float* __restrict__ sph,
-    float* __restrict__ dsph,
-    float* __restrict__ ddsph,
+    float* sph,
+    float* dsph,
+    float* ddsph,
     void* cuda_stream
 );
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_backward_cuda_base(
-    const scalar_t* __restrict__ /*dsph*/,
-    const scalar_t* __restrict__ /*sph_grad*/,
+    const scalar_t* /*dsph*/,
+    const scalar_t* /*sph_grad*/,
     const int /*nedges*/,
     const int /*ntotal*/,
-    scalar_t* __restrict__ /*xyz_grad*/,
+    scalar_t* /*xyz_grad*/,
     void* /*cuda_stream*/
 ) {
     throw std::runtime_error("sphericart was not compiled with CUDA support");
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
-    const float* __restrict__ dsph,
-    const float* __restrict__ sph_grad,
+    const float* dsph,
+    const float* sph_grad,
     const int nedges,
     const int ntotal,
-    float* __restrict__ xyz_grad,
+    float* xyz_grad,
     void* cuda_stream
 );
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
-    const double* __restrict__ dsph,
-    const double* __restrict__ sph_grad,
+    const double* dsph,
+    const double* sph_grad,
     const int nedges,
     const int ntotal,
-    double* __restrict__ xyz_grad,
+    double* xyz_grad,
     void* cuda_stream
 );
 

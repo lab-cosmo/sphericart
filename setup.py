@@ -40,6 +40,8 @@ class cmake_ext(build_ext):
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DBUILD_SHARED_LIBS=ON",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
+            f"-DSPHERICART_OPENMP=OFF",
+            f"-DBUILD_SHARED_LIBS=ON",
         ]
 
         CUDA_HOME = os.environ.get("CUDA_HOME")
