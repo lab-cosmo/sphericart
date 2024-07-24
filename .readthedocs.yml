@@ -11,13 +11,14 @@ build:
   apt_packages:
     - cmake
   tools:
-    python: "3.10"
+    python: "3.12"
   jobs:
     # install sphericart-torch with the CPU version of PyTorch
     # we can not use the `python` section below since it does not allow
     # to specify `--extra-index-url`
     post_install:
-      - pip install --extra-index-url https://download.pytorch.org/whl/cpu ./sphericart-torch
+      - python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu ./sphericart-torch
+      - python -m pip install ./sphericart-jax
 
 # Declare the Python requirements required to build the docs
 python:

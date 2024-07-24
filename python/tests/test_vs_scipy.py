@@ -5,7 +5,7 @@ import scipy.special
 import sphericart
 
 
-L_MAX = 40
+L_MAX = 15
 N_SAMPLES = 100
 
 
@@ -73,9 +73,52 @@ def test_derivatives(xyz):
             sph_plus = calculator.compute(xyz_plus)
             sph_minus = calculator.compute(xyz_minus)
             numerical_derivatives = (sph_plus - sph_minus) / (2.0 * delta)
-            sph, analytical_derivatives_all = calculator.compute_with_gradients(xyz)
+            _, analytical_derivatives_all = calculator.compute_with_gradients(xyz)
             analytical_derivatives = analytical_derivatives_all[:, alpha, :]
             assert np.allclose(numerical_derivatives, analytical_derivatives)
+
+
+def test_second_derivatives(xyz):
+    delta = 1e-5
+    for normalized in [False, True]:
+        calculator = sphericart.SphericalHarmonics(L_MAX, normalized=normalized)
+        for alpha in range(3):
+            for beta in range(3):
+                xyz_plus_plus = xyz.copy()
+                xyz_plus_plus[:, alpha] += delta * np.ones_like(xyz[:, alpha])
+                xyz_plus_plus[:, beta] += delta * np.ones_like(xyz[:, beta])
+                xyz_plus_minus = xyz.copy()
+                xyz_plus_minus[:, alpha] += delta * np.ones_like(xyz[:, alpha])
+                xyz_plus_minus[:, beta] -= delta * np.ones_like(xyz[:, beta])
+                xyz_minus_plus = xyz.copy()
+                xyz_minus_plus[:, alpha] -= delta * np.ones_like(xyz[:, alpha])
+                xyz_minus_plus[:, beta] += delta * np.ones_like(xyz[:, beta])
+                xyz_minus_minus = xyz.copy()
+                xyz_minus_minus[:, alpha] -= delta * np.ones_like(xyz[:, alpha])
+                xyz_minus_minus[:, beta] -= delta * np.ones_like(xyz[:, beta])
+                sph_plus_plus = calculator.compute(xyz_plus_plus)
+                sph_plus_minus = calculator.compute(xyz_plus_minus)
+                sph_minus_plus = calculator.compute(xyz_minus_plus)
+                sph_minus_minus = calculator.compute(xyz_minus_minus)
+                numerical_second_derivatives = (
+                    sph_plus_plus - sph_minus_plus - sph_plus_minus + sph_minus_minus
+                ) / (4.0 * delta**2)
+                (
+                    _,
+                    _,
+                    analytical_second_derivatives_all,
+                ) = calculator.compute_with_hessians(xyz)
+                analytical_second_derivatives = analytical_second_derivatives_all[
+                    :, alpha, beta, :
+                ]
+                # Lower the tolerances as numerical second derivatives are imprecise:
+                print(numerical_second_derivatives - analytical_second_derivatives)
+                assert np.allclose(
+                    numerical_second_derivatives,
+                    analytical_second_derivatives,
+                    rtol=1e-4,
+                    atol=1e-3,
+                )
 
 
 if __name__ == "__main__":

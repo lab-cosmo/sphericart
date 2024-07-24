@@ -39,6 +39,13 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # the same calculator automatically chooses between float64 and float32
     sh_sphericart_f, dsh_sphericart_f = sh_calculator.compute_with_gradients(xyz_f)
 
+    # we can also compute second derivatives!
+    (
+        sh_sphericart,
+        dsh_sphericart,
+        d2sh_sphericart,
+    ) = sh_calculator.compute_with_hessians(xyz)
+
     # ===== check results =====
 
     print(

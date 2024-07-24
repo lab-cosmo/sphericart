@@ -10,6 +10,7 @@ from wheel.bdist_wheel import bdist_wheel
 
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
+SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
 
 
 class universal_wheel(bdist_wheel):
@@ -38,8 +39,15 @@ class cmake_ext(build_ext):
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DBUILD_SHARED_LIBS=ON",
-            "-DSPHERICART_BUILD_TESTS=OFF",
+            f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
         ]
+
+        CUDA_HOME = os.environ.get("CUDA_HOME")
+        print("sphericart: CUDA_HOME: ", CUDA_HOME)
+
+        if CUDA_HOME is not None:
+            cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")
+            cmake_options.append("-DSPHERICART_ENABLE_CUDA=ON")
 
         if sys.platform.startswith("darwin"):
             cmake_options.append("-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=11.0")
@@ -56,10 +64,18 @@ class cmake_ext(build_ext):
             cwd=build_dir,
             check=True,
         )
-        subprocess.run(
-            ["cmake", "--build", build_dir, "--target", "install"],
-            check=True,
-        )
+
+        build_command = [
+            "cmake",
+            "--build",
+            build_dir,
+            "--parallel",
+            "2",  # only two jobs to avoid OOM, we don't have many files
+            "--target",
+            "install",
+        ]
+
+        subprocess.run(build_command, check=True)
 
 
 class bdist_egg_disabled(bdist_egg):
@@ -78,18 +94,36 @@ class bdist_egg_disabled(bdist_egg):
 
 
 if __name__ == "__main__":
+    extras_require = {}
     SPHERICART_TORCH = os.path.realpath(os.path.join(ROOT, "sphericart-torch"))
-    extras_require = {"torch": []}
-    if os.path.exists(SPHERICART_TORCH):
+    SPHERICART_JAX = os.path.realpath(os.path.join(ROOT, "sphericart-jax"))
+
+    # when creating a sdist for release, we should never use local dependencies
+    SPHERICART_NO_LOCAL_DEPS = os.environ.get("SPHERICART_NO_LOCAL_DEPS", "0") == "1"
+
+    if not SPHERICART_NO_LOCAL_DEPS and os.path.exists(SPHERICART_TORCH):
         # we are building from a checkout
 
         # add a random uuid to the file url to prevent pip from using a cached
         # wheel for sphericart-torch, and force it to re-build from scratch
-        uuid = uuid.uuid4()
-        extras_require["torch"] = f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid}"
+        uuid_ = uuid.uuid4()
+        extras_require["torch"] = (
+            f"sphericart-torch @ file://{SPHERICART_TORCH}?{uuid_}"
+        )
     else:
         # installing wheel/sdist
         extras_require["torch"] = "sphericart-torch"
+
+    if not SPHERICART_NO_LOCAL_DEPS and os.path.exists(SPHERICART_JAX):
+        # we are building from a checkout
+
+        # add a random uuid to the file url to prevent pip from using a cached
+        # wheel for sphericart-jax, and force it to re-build from scratch
+        uuid_ = uuid.uuid4()
+        extras_require["jax"] = f"sphericart-jax @ file://{SPHERICART_JAX}?{uuid_}"
+    else:
+        # installing wheel/sdist
+        extras_require["jax"] = "sphericart-jax"
 
     setup(
         version=open(os.path.join("sphericart", "VERSION")).readline().strip(),

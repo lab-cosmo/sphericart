@@ -5,8 +5,8 @@ enable_testing()
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     if("${CMAKE_BUILD_TYPE}" STREQUAL "" AND "${CMAKE_CONFIGURATION_TYPES}" STREQUAL "")
-        message(STATUS "Setting build type to 'relwithdebinfo' as none was specified.")
-        set(CMAKE_BUILD_TYPE "relwithdebinfo"
+        message(STATUS "Setting build type to 'release' as none was specified.")
+        set(CMAKE_BUILD_TYPE "release"
             CACHE STRING
             "Choose the type of build, options are: none(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) debug release relwithdebinfo minsizerel."
         FORCE)
@@ -27,3 +27,4 @@ endif()
 if (SPHERICART_BUILD_TORCH)
     add_subdirectory(sphericart-torch)
 endif()
+

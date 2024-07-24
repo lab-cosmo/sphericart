@@ -8,6 +8,7 @@ from setuptools.command.build_ext import build_ext
 
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
+SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
 
 
 class cmake_ext(build_ext):
@@ -24,7 +25,13 @@ class cmake_ext(build_ext):
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
+            f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
         ]
+
+        CUDA_HOME = os.environ.get("CUDA_HOME")
+        if CUDA_HOME is not None:
+            cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")
+            cmake_options.append("-DSPHERICART_ENABLE_CUDA=ON")
 
         if sys.platform.startswith("darwin"):
             cmake_options.append("-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=11.0")
@@ -41,10 +48,17 @@ class cmake_ext(build_ext):
             cwd=build_dir,
             check=True,
         )
-        subprocess.run(
-            ["cmake", "--build", build_dir, "--target", "install"],
-            check=True,
-        )
+        build_command = [
+            "cmake",
+            "--build",
+            build_dir,
+            "--parallel",
+            "2",  # only two jobs to avoid OOM, we don't have many files
+            "--target",
+            "install",
+        ]
+
+        subprocess.run(build_command, check=True)
 
 
 class bdist_egg_disabled(bdist_egg):
@@ -57,9 +71,7 @@ class bdist_egg_disabled(bdist_egg):
     def run(self):
         sys.exit(
             "Aborting implicit building of eggs. "
-            + "Use `pip install .` or `python setup.py bdist_wheel && pip "
-            + "uninstall -y sphericart-torch && pip install "
-            + "dist/sphericart-torch-*.whl` to install from source."
+            "Use `pip install .` to install from source."
         )
 
 

@@ -1,11 +1,11 @@
 [project]
 name = "sphericart"
 dynamic = ["version", "optional-dependencies"]
-requires-python = ">=3.7"
-dependencies = ["numpy"]
+requires-python = ">=3.8"
+dependencies = ["numpy<2.0.0"]
 
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = {text = "Apache-2.0 or MIT"}
 description = "Fast calculation of spherical harmonics"
 authors = [
     {name = "Filippo Bigi"},

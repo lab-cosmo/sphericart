@@ -14,7 +14,7 @@ jobs:
       matrix:
         include:
           # - os: ubuntu-20.04
-          # - os: macos-11
+          # - os: macos-13
           - os: windows-2019
     steps:
       - uses: actions/checkout@v3
@@ -22,7 +22,12 @@ jobs:
       - name: setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.12"
+
+      - name: setup Julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.9.2'
 
       - name: install tests dependencies
         run: |
@@ -48,13 +53,23 @@ jobs:
           # Use the CPU only version of torch when building/running the code
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
+      - name: run Julia tests
+        run: |
+          cd julia/test/
+          julia --project=.. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
+          julia --project=.. runtests.jl
+          cd python/
+          julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.instantiate();'
+          python -m pip install numpy pytest sphericart julia
+          python -m pytest .
+
   # check that we can build Python wheels on any Python version
   python-build:
     runs-on: ubuntu-20.04
     name: check Python build
     strategy:
       matrix:
-        python-version: ['3.7', '3.11']
+        python-version: ['3.8', '3.12']
     steps:
       - uses: actions/checkout@v3
 
