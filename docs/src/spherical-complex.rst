@@ -16,7 +16,7 @@ performance is critical, as they introduce some computational overhead.
 
 
 Computing harmonics from spherical coordinates
-----------------------------------------------
+**********************************************
 
 This is a simple class that computes the spherical harmonics from spherical coordinates.
 
@@ -25,7 +25,7 @@ This is a simple class that computes the spherical harmonics from spherical coor
 
 
 Computing complex harmonics
----------------------------
+***************************
 
 This is a simple class that computes complex spherical harmonics.
 
@@ -34,7 +34,7 @@ This is a simple class that computes complex spherical harmonics.
 
 
 Computing complex harmonics from spherical coordinates
--------------------------------------------------------
+******************************************************
 
 This is a simple class that computes complex spherical harmonics from spherical coordinates.
 Its correctness can be verified against the scipy implementation of the spherical harmonics.
