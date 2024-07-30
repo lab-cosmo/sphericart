@@ -244,11 +244,6 @@ std::string load_cuda_source(const std::string& filename) {
     return ss.str();
 }
 
-static std::vector<char> g_ptxCode;
-static CUmodule g_module = nullptr;
-static std::string g_last_kernel_name;
-static const char* name;
-
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
     scalar_t* xyz,
@@ -266,17 +261,21 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     scalar_t* ddsph,
     void* cuda_stream
 ) {
-    ///
+
+    std::vector<char> g_ptxCode;
+    CUmodule g_module = nullptr;
+    std::string g_last_kernel_name;
+    nvrtcProgram prog;
+
+    std::vector<std::string> kernel_name_vec = {
+        "spherical_harmonics_kernel<double>", "spherical_harmonics_kernel<float>"
+    };
+
     if (g_ptxCode.empty()) {
         std::string kernel_code = load_cuda_source(SPHERICART_CUDA_SRC_PATH);
 
-        nvrtcProgram prog;
         nvrtcResult result =
             nvrtcCreateProgram(&prog, kernel_code.c_str(), "sphericart_impl.cu", 0, nullptr, nullptr);
-
-        std::vector<std::string> kernel_name_vec = {
-            "spherical_harmonics_kernel<double>", "spherical_harmonics_kernel<float>"
-        };
 
         for (int i = 0; i < kernel_name_vec.size(); i++) {
             NVRTC_SAFE_CALL(nvrtcAddNameExpression(prog, kernel_name_vec[i].c_str()));
@@ -304,11 +303,6 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         g_ptxCode.resize(ptxSize);
         NVRTC_SAFE_CALL(nvrtcGetPTX(prog, g_ptxCode.data()));
 
-        const char* kernel_name =
-            sizeof(scalar_t) == 8 ? kernel_name_vec[0].c_str() : kernel_name_vec[1].c_str();
-
-        NVRTC_SAFE_CALL(nvrtcGetLoweredName(prog, kernel_name, &name));
-
         /*std::cout << "mangled name: " << name << std::endl;
         std::cout << "PTX code size: " << ptxSize << " (bytes: " << ptxSize * sizeof(char) << ")"
                   << std::endl; */
@@ -329,6 +323,13 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 
         g_module = module;
     }
+
+    const char* kernel_name =
+        sizeof(scalar_t) == 8 ? kernel_name_vec[0].c_str() : kernel_name_vec[1].c_str();
+
+    const char* name;
+
+    NVRTC_SAFE_CALL(nvrtcGetLoweredName(prog, kernel_name, &name));
 
     CUfunction kernel;
 
