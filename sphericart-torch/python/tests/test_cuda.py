@@ -19,12 +19,9 @@ def test_cpu_vs_cuda(xyz):
         calculator = sphericart.torch.SphericalHarmonics(l_max=3, normalized=False)
         sph, grad_sph = calculator.compute_with_gradients(xyz)
         sph_cuda, grad_sph_cuda = calculator.compute_with_gradients(xyz_cuda)
-        print (sph)
-        print (sph_cuda)
         print((sph - sph_cuda.to("cpu")).flatten().max())
         print((sph - sph_cuda.to("cpu"))[0])
         print((sph - sph_cuda.to("cpu"))[1])
-        print (grad_sph - grad_sph_cuda.cpu())
         assert torch.allclose(sph, sph_cuda.to("cpu"))
         assert torch.allclose(grad_sph, grad_sph_cuda.to("cpu"))
 
@@ -32,9 +29,5 @@ def test_cpu_vs_cuda(xyz):
         sph, grad_sph = calculator.compute_with_gradients(xyz)
         sph_cuda, grad_sph_cuda = calculator.compute_with_gradients(xyz_cuda)
 
-        torch.cuda.synchronize()
-        
-        print (sph - sph_cuda.cpu())
-        
         assert torch.allclose(sph, sph_cuda.to("cpu"))
         assert torch.allclose(grad_sph, grad_sph_cuda.to("cpu"))
