@@ -379,7 +379,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         grid_dim.y,
         grid_dim.z, // block dim
         total_buff_size,
-        0,
+        cstream,
         args, // arguments
         0
     );
