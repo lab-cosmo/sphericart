@@ -66,9 +66,9 @@ namespace cuda {
  */
 template <typename scalar_t>
 void spherical_harmonics_cuda_base(
-    const scalar_t* __restrict__ xyz,
+    scalar_t* xyz,
     const int nedges,
-    const scalar_t* __restrict__ prefactors,
+    scalar_t* prefactors,
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,
@@ -76,9 +76,9 @@ void spherical_harmonics_cuda_base(
     const int64_t GRID_DIM_Y,
     const bool gradients,
     const bool hessian,
-    scalar_t* __restrict__ sph,
-    scalar_t* __restrict__ dsph,
-    scalar_t* __restrict__ ddsph,
+    scalar_t* sph,
+    scalar_t* dsph,
+    scalar_t* ddsph,
     void* cuda_stream = nullptr
 );
 
