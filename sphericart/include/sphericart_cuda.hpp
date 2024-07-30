@@ -86,7 +86,7 @@ template <typename T> class SphericalHarmonics {
      */
 
     void compute(
-        const T* xyz,
+        T* xyz,
         size_t nsamples,
         bool compute_with_gradients,
         bool compute_with_hessian,

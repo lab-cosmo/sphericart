@@ -106,7 +106,7 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
 
 template <typename T>
 void SphericalHarmonics<T>::compute(
-    const T* xyz,
+    T* xyz,
     const size_t nsamples,
     bool compute_with_gradients,
     bool compute_with_hessian,

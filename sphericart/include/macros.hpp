@@ -35,7 +35,17 @@
 // double precision, as that slows down greatly floating-point execution.
 // basically this static casts the constant to the type of the target
 // pointer
-#define cast(sph, lit) static_cast<std::remove_pointer_t<decltype(sph)>>(lit)
+template <typename T> struct remove_pointer {
+    using type = T;
+};
+
+template <typename T> struct remove_pointer<T*> {
+    using type = T;
+};
+
+template <typename T> using remove_pointer_t = typename remove_pointer<T>::type;
+
+#define cast(sph, lit) static_cast<remove_pointer_t<decltype(sph)>>(lit)
 
 #define COMPUTE_SPH_L0(sph_i, SPH_IDX) (sph_i)[SPH_IDX(0)] = cast(sph_i, 0.282094791773878);
 

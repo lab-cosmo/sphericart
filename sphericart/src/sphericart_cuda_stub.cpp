@@ -11,8 +11,8 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {}
 
 template <typename T>
 void SphericalHarmonics<T>::compute(
-    const T* /*xyz*/,
-    const size_t /*nsamples*/,
+    T* /*xyz*/,
+    size_t /*nsamples*/,
     bool /*compute_with_gradients*/,
     bool /*compute_with_hessian*/,
     T* /*sph*/,
