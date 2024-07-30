@@ -84,11 +84,11 @@ void spherical_harmonics_cuda_base(
 
 template <typename scalar_t>
 void spherical_harmonics_backward_cuda_base(
-    const scalar_t* __restrict__ dsph,
-    const scalar_t* __restrict__ sph_grad,
+    scalar_t* dsph,
+    scalar_t* sph_grad,
     const int nedges,
     const int ntotal,
-    scalar_t* __restrict__ xyz_grad,
+    scalar_t* xyz_grad,
     void* cuda_stream = nullptr
 );
 

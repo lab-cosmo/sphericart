@@ -435,11 +435,7 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
 */
 template <typename scalar_t>
 __global__ void backward_kernel(
-    const scalar_t* __restrict__ dsph,
-    const scalar_t* __restrict__ sph_grad,
-    size_t nedges,
-    size_t n_total,
-    scalar_t* __restrict__ xyz_grad
+    scalar_t* dsph, scalar_t* sph_grad, size_t nedges, size_t n_total, scalar_t* xyz_grad
 ) {
 
     size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
@@ -475,11 +471,11 @@ __global__ void backward_kernel(
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_backward_cuda_base(
-    const scalar_t* __restrict__ dsph,
-    const scalar_t* __restrict__ sph_grad,
+    scalar_t* dsph,
+    scalar_t* sph_grad,
     const int nedges,
     const int ntotal,
-    scalar_t* __restrict__ xyz_grad,
+    scalar_t* xyz_grad,
     void* cuda_stream
 ) {
     dim3 grid_dim(4, 32);
@@ -499,19 +495,9 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
-    const float* __restrict__ dsph,
-    const float* __restrict__ sph_grad,
-    const int nedges,
-    const int ntotal,
-    float* __restrict__ xyz_grad,
-    void* cuda_stream
+    float* dsph, float* sph_grad, const int nedges, const int ntotal, float* xyz_grad, void* cuda_stream
 );
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
-    const double* __restrict__ dsph,
-    const double* __restrict__ sph_grad,
-    const int nedges,
-    const int ntotal,
-    double* __restrict__ xyz_grad,
-    void* cuda_stream
+    double* dsph, double* sph_grad, const int nedges, const int ntotal, double* xyz_grad, void* cuda_stream
 );
