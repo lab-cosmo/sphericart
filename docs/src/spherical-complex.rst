@@ -2,9 +2,9 @@ Spherical coordinates and/or complex harmonics
 ----------------------------------------------
 
 The algorithms implemented in ``sphericart`` are designed to work with Cartesian
-input positions and real spherical harmonics. However, depending on the use case,
-it might be more convenient to harmonics from spherical coordinates and/or work with
-complex harmonics.
+input positions and real spherical (or solid) harmonics. However, depending on the use 
+case, it might be more convenient to harmonics from spherical coordinates and/or work
+with complex harmonics.
 
 Below, we provide a series of Python examples that illustrate how to use the
 ``sphericart`` library in such cases. The examples can be easily adapted to the
