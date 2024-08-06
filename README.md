@@ -110,8 +110,8 @@ will build the documentation in a CPU-only environment.
 
 ## Other flavors of spherical harmonics
 
-Although sphericart natively calculates real spherical harmonics from
-Cartesian positions, it is easy to use it to calculate complex spherical
-harmonics and/or using inputs in spherical coordinates. You can find out
-more here: https://sphericart.readthedocs.io/en/latest/spherical-complex.html
+Although sphericart natively calculates real solid and spherical harmonics from
+Cartesian positions, it is easy to manipulate its output it to calculate complex 
+spherical harmonics and/or to accept spherical coordinates as inputs. You can see an
+example [here](https://sphericart.readthedocs.io/en/latest/spherical-complex.html)/.
 
