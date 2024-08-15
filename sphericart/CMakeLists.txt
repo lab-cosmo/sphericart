@@ -64,7 +64,7 @@ else()
     list(APPEND COMMON_SOURCES "src/sphericart_cuda_stub.cpp")
 endif()
 
-add_library(sphericart ${COMMON_SOURCES})
+add_library(sphericart SHARED ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     set_target_properties(sphericart PROPERTIES CUDA_ARCHITECTURES all)
@@ -149,10 +149,23 @@ if(COMPILER_SUPPORTS_WDOUBLE_PROMOTION)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wdouble-promotion")
 endif()
 
-
 check_cxx_compiler_flag("-Wfloat-conversion" COMPILER_SUPPORTS_WFLOAT_CONVERSION)
 if(COMPILER_SUPPORTS_WFLOAT_CONVERSION)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfloat-conversion")
+endif()
+
+
+# Disable some overly strict warnings with MSVC compiler
+if (MSVC)
+    # unreferenced inline function has been removed
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4514")
+    # padding added in struct/class
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4820")
+    # conversion from 'size_t' to 'int', signed/unsigned mismatch
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4365")
+    # conversion from 'size_t' to 'int', possible loss of data
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4267")
+
 endif()
 
 # Define test targets if required
