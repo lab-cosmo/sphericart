@@ -85,19 +85,19 @@ class SphericalHarmonics:
     and/or Hessians. For example:
 
     >>> import torch
-    >>> import sphericart.torch as sct
-    >>> sh = sct.SphericalHarmonics(l_max=8, normalized=False)
+    >>> import sphericart.torch
+    >>> sh = sphericart.torch.SphericalHarmonics(l_max=8, normalized=False)
     >>> xyz = torch.rand(size=(10,3))
     >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
     >>> sh_grads.shape
     torch.Size([10, 3, 81])
 
-    Alternatively, if `compute()` is called, the outputs support
-    single and double backpropagation.
+    Alternatively, if `compute()` is used, or if the class is called directly,
+    the outputs support single and double backpropagation.
 
     >>> xyz = xyz.detach().clone().requires_grad_()
-    >>> sh = sct.SphericalHarmonics(l_max=8, normalized=False)
-    >>> sh_values = sh.compute(xyz)
+    >>> sh = sphericart.torch.SphericalHarmonics(l_max=8, normalized=False)
+    >>> sh_values = sh(xyz)  # or sh.compute(xyz)
     >>> sh_values.sum().backward()
     >>> torch.allclose(xyz.grad, sh_grads.sum(axis=-1))
     True
@@ -168,6 +168,12 @@ class SphericalHarmonics:
             1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
         """
 
+        pass
+
+    def __call__(self, xyz: Tensor) -> Tensor:
+        """
+        Equivalent to ``compute()``.
+        """
         pass
 
     def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:

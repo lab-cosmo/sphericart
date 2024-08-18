@@ -9,6 +9,10 @@ stored on, and its ``dtype``, the calculations will be performed
 using 32- or 64- bits floating point arythmetics, and
 using the CPU or CUDA implementation.
 
+In short, although the :py:class:`sphericart.SphericalHarmonics`
+class is technically not a ``torch.nn.Module``, it can be used in
+the same way.
+
 .. autoclass:: sphericart.torch.SphericalHarmonics
     :members:
 
