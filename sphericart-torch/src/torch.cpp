@@ -5,7 +5,6 @@
 
 using namespace torch;
 using namespace sphericart_torch;
-using namespace std;
 
 SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool normalized, bool backward_second_derivatives)
     : l_max_(l_max), normalized_(normalized),
@@ -43,6 +42,7 @@ TORCH_LIBRARY(sphericart_torch, m) {
              torch::arg("normalized") = false,
              torch::arg("backward_second_derivatives") = false}
         )
+        .def("__call__", &SphericalHarmonics::compute, "", {torch::arg("xyz")})
         .def("compute", &SphericalHarmonics::compute, "", {torch::arg("xyz")})
         .def(
             "compute_with_gradients",

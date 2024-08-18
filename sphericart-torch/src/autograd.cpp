@@ -13,7 +13,6 @@
 #include "sphericart/torch_cuda_wrapper.hpp"
 #include <torch/torch.h>
 
-using namespace std;
 using namespace sphericart_torch;
 
 std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(

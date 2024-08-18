@@ -19,12 +19,12 @@ class SHModule(torch.nn.Module):
     `torch.nn.Module`"""
 
     def __init__(self, l_max, normalized=False):
-        self._sph = sphericart.torch.SphericalHarmonics(l_max, normalized)
+        self.spherical_harmonics = sphericart.torch.SphericalHarmonics(l_max, normalized)
         super().__init__()
 
     def forward(self, xyz):
-        sph = self._sph.compute(xyz)
-        return sph
+        sh = self.spherical_harmonics(xyz)  # or self.spherical_harmonics.compute(xyz)
+        return sh
 
 
 def sphericart_example(l_max=10, n_samples=10000, normalized=False):
@@ -47,7 +47,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # the interface allows to return directly the forward derivatives (up to second
     # order), similar to the Python version
-    sh_sphericart = sh_calculator.compute(xyz)
+    sh_sphericart = sh_calculator.compute(xyz)  # same as sh_calculator(xyz)
     sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
     (
         sh_sphericart,
