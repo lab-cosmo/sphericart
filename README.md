@@ -112,6 +112,6 @@ will build the documentation in a CPU-only environment.
 
 Although sphericart natively calculates real solid and spherical harmonics from
 Cartesian positions, it is easy to manipulate its output it to calculate complex 
-spherical harmonics and/or to accept spherical coordinates as inputs. You can see an
-example [here](https://sphericart.readthedocs.io/en/latest/spherical-complex.html)/.
+spherical harmonics and/or to accept spherical coordinates as inputs. You can see
+examples [here](https://sphericart.readthedocs.io/en/latest/spherical-complex.html).
 
