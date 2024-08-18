@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
     auto sph1 = std::vector<DTYPE>(n_samples * (l_max + 1) * (l_max + 1), 0.0);
     auto dsph1 = std::vector<DTYPE>(n_samples * 3 * (l_max + 1) * (l_max + 1), 0.0);
 
-    SphericalHarmonics<DTYPE> SH(l_max, false);
+    SphericalHarmonics<DTYPE> SH(l_max);
     SH.compute_with_gradients(xyz, sph1, dsph1);
 
     int size3 = 3 * (l_max + 1) * (l_max + 1); // Size of the third dimension in derivative

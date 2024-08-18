@@ -13,9 +13,8 @@
     1e-4 // High tolerance: finite differences are inaccurate for second
          // derivatives
 
-bool check_gradient_call(
-    int l_max, sphericart::SphericalHarmonics<double>& calculator, const std::vector<double>& xyz
-) {
+template <template <typename> class C>
+bool check_gradient_call(int l_max, C<double>& calculator, const std::vector<double>& xyz) {
     bool is_passed = true;
     int n_samples = xyz.size() / 3;
     int n_sph = (l_max + 1) * (l_max + 1);
@@ -60,9 +59,8 @@ bool check_gradient_call(
     return is_passed;
 }
 
-bool check_hessian_call(
-    int l_max, sphericart::SphericalHarmonics<double>& calculator, const std::vector<double>& xyz
-) {
+template <template <typename> class C>
+bool check_hessian_call(int l_max, C<double>& calculator, const std::vector<double>& xyz) {
     bool is_passed = true;
     int n_samples = xyz.size() / 3;
     int n_sph = (l_max + 1) * (l_max + 1);
@@ -178,20 +176,30 @@ int main() {
         }
     }
 
-    for (bool normalize : {false, true}) {                // Test with and without normalization
-        for (int l_max = 0; l_max < l_max_max; l_max++) { // Test for a range of l_max values
-            sphericart::SphericalHarmonics<double> normalized_calculator =
-                sphericart::SphericalHarmonics<double>(l_max, normalize);
-            is_passed = check_gradient_call(l_max, normalized_calculator, xyz);
-            if (!is_passed) {
-                std::cout << "Test failed" << std::endl;
-                return -1;
-            }
-            is_passed = check_hessian_call(l_max, normalized_calculator, xyz);
-            if (!is_passed) {
-                std::cout << "Test failed" << std::endl;
-                return -1;
-            }
+    for (int l_max = 0; l_max < l_max_max; l_max++) { // Test for a range of l_max values
+        sphericart::SphericalHarmonics<double> calculator =
+            sphericart::SphericalHarmonics<double>(l_max);
+        is_passed = check_gradient_call(l_max, calculator, xyz);
+        if (!is_passed) {
+            std::cout << "Test failed" << std::endl;
+            return -1;
+        }
+        is_passed = check_hessian_call(l_max, calculator, xyz);
+        if (!is_passed) {
+            std::cout << "Test failed" << std::endl;
+            return -1;
+        }
+
+        sphericart::SolidHarmonics<double> calculator = sphericart::SolidHarmonics<double>(l_max);
+        is_passed = check_gradient_call(l_max, calculator, xyz);
+        if (!is_passed) {
+            std::cout << "Test failed" << std::endl;
+            return -1;
+        }
+        is_passed = check_hessian_call(l_max, calculator, xyz);
+        if (!is_passed) {
+            std::cout << "Test failed" << std::endl;
+            return -1;
         }
     }
 
