@@ -382,10 +382,6 @@ void SphericalHarmonics<T>::compute_sample_with_hessians(
     );
 }
 
-// instantiates the SphericalHarmonics class for basic floating point types
-template class sphericart::SphericalHarmonics<float>;
-template class sphericart::SphericalHarmonics<double>;
-
 template <typename T>
 SolidHarmonics<T>::SolidHarmonics(size_t l_max) : SphericalHarmonics<T>(l_max) {
     /*
@@ -445,6 +441,9 @@ SolidHarmonics<T>::SolidHarmonics(size_t l_max) : SphericalHarmonics<T>(l_max) {
     }
 }
 
-// instantiates the SolidHarmonics class for basic floating point types
+// instantiates the SphericalHarmonics and SolidHarmonics classes
+// for basic floating point types
+template class sphericart::SphericalHarmonics<float>;
+template class sphericart::SphericalHarmonics<double>;
 template class sphericart::SolidHarmonics<float>;
 template class sphericart::SolidHarmonics<double>;

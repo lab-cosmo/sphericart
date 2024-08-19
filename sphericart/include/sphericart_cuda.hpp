@@ -31,15 +31,8 @@ template <typename T> class SphericalHarmonics {
      *
      *  @param l_max
      *      The maximum degree of the spherical harmonics to be calculated.
-     *  @param normalized
-     *      If `false` (default) computes the scaled spherical harmonics, which
-     * are homogeneous polynomials in the Cartesian coordinates of the input
-     * points. If `true`, computes the normalized spherical harmonics that are
-     * evaluated on the unit sphere. In practice, this simply computes the
-     * scaled harmonics at the normalized coordinates \f$(x/r, y/r, z/r)\f$, and
-     * adapts the derivatives accordingly.
      */
-    SphericalHarmonics(size_t l_max, bool normalized = false);
+    SphericalHarmonics(size_t l_max);
 
     /** Default constructor
      * Required so sphericart_torch can conditionally instantiate  this class
@@ -96,6 +89,7 @@ template <typename T> class SphericalHarmonics {
         void* cuda_stream = nullptr
     );
 
+    template <typename U> friend class SolidHarmonics;
     /* @cond */
   private:
     size_t l_max; // maximum l value computed by this class
@@ -110,6 +104,17 @@ template <typename T> class SphericalHarmonics {
     bool cached_compute_with_hessian = false;
     int64_t _current_shared_mem_allocation = 0;
     /* @endcond */
+};
+
+template <typename T> class SolidHarmonics : public SphericalHarmonics<T> {
+  public:
+    /** Initialize the SolidHarmonics class setting maximum degree and
+     * normalization
+     *
+     *  @param l_max
+     *      The maximum degree of the spherical harmonics to be calculated.
+     */
+    SolidHarmonics(size_t l_max);
 };
 
 } // namespace cuda
