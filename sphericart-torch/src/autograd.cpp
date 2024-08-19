@@ -163,9 +163,10 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph, torch::
     return xyz_grad;
 }
 
-torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
+template <class C>
+torch::autograd::variable_list SphericartAutograd::forward(
     torch::autograd::AutogradContext* ctx,
-    SphericalHarmonics& calculator,
+    C& calculator,
     torch::Tensor xyz,
     bool do_gradients,
     bool do_hessians
@@ -283,7 +284,7 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::forward(
     }
 }
 
-torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
+torch::autograd::variable_list SphericartAutograd::backward(
     torch::autograd::AutogradContext* ctx, torch::autograd::variable_list grad_outputs
 ) {
     if (grad_outputs.size() > 1) {
@@ -299,11 +300,11 @@ torch::autograd::variable_list SphericalHarmonicsAutograd::backward(
     // gradients with respect to it
     auto xyz = saved_variables[0];
     torch::Tensor xyz_grad =
-        SphericalHarmonicsAutogradBackward::apply(grad_outputs[0].contiguous(), xyz, saved_variables);
+        SphericartAutogradBackward::apply(grad_outputs[0].contiguous(), xyz, saved_variables);
     return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor()};
 }
 
-torch::Tensor SphericalHarmonicsAutogradBackward::forward(
+torch::Tensor SphericartAutogradBackward::forward(
     torch::autograd::AutogradContext* ctx,
     torch::Tensor grad_outputs,
     torch::Tensor xyz,
@@ -336,7 +337,7 @@ torch::Tensor SphericalHarmonicsAutogradBackward::forward(
     return xyz_grad;
 }
 
-torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
+torch::autograd::variable_list SphericartAutogradBackward::backward(
     torch::autograd::AutogradContext* ctx, torch::autograd::variable_list grad_2_outputs
 ) {
     auto saved_variables = ctx->get_saved_variables();
@@ -389,3 +390,19 @@ torch::autograd::variable_list SphericalHarmonicsAutogradBackward::backward(
 
     return {gradgrad_wrt_grad_out, gradgrad_wrt_xyz, torch::Tensor()};
 }
+
+// Explicit instantiation of SphericartAutograd::forward
+template torch::autograd::variable_list SphericartAutograd::forward<SphericalHarmonics>(
+    torch::autograd::AutogradContext* ctx,
+    SphericalHarmonics& calculator,
+    torch::Tensor xyz,
+    bool do_gradients,
+    bool do_hessians
+);
+template torch::autograd::variable_list SphericartAutograd::forward<SolidHarmonics>(
+    torch::autograd::AutogradContext* ctx,
+    SolidHarmonics& calculator,
+    torch::Tensor xyz,
+    bool do_gradients,
+    bool do_hessians
+);

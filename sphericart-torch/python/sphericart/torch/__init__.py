@@ -74,11 +74,8 @@ class SphericalHarmonics:
     """
     Spherical harmonics calculator, up to degree ``l_max``.
 
-    By default, this class computes a non-normalized form of the real spherical
-    harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
-    are homogeneous polynomials in the Cartesian coordinates of the input points.
-    ``normalized=True`` can be set to compute the normalized spherical harmonics
-    :math:`Y^l_m`, which are instead homogeneous polynomials of x/r, y/r, z/r.
+    This class computes :math:`Y^l_m`, which are instead homogeneous polynomials
+    of x/r, y/r, z/r.
 
     This class can be used similarly to :py:class:`sphericart.SphericalHarmonics`
     (its Python/NumPy counterpart), and it allows to return explicit forward gradients
@@ -86,7 +83,7 @@ class SphericalHarmonics:
 
     >>> import torch
     >>> import sphericart.torch
-    >>> sh = sphericart.torch.SphericalHarmonics(l_max=8, normalized=False)
+    >>> sh = sphericart.torch.SphericalHarmonics(l_max=8)
     >>> xyz = torch.rand(size=(10,3))
     >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
     >>> sh_grads.shape
@@ -96,7 +93,7 @@ class SphericalHarmonics:
     the outputs support single and double backpropagation.
 
     >>> xyz = xyz.detach().clone().requires_grad_()
-    >>> sh = sphericart.torch.SphericalHarmonics(l_max=8, normalized=False)
+    >>> sh = sphericart.torch.SphericalHarmonics(l_max=8)
     >>> sh_values = sh(xyz)  # or sh.compute(xyz)
     >>> sh_values.sum().backward()
     >>> torch.allclose(xyz.grad, sh_grads.sum(axis=-1))
@@ -116,8 +113,6 @@ class SphericalHarmonics:
 
     :param l_max:
         the maximum degree of the spherical harmonics to be calculated
-    :param normalized:
-        whether to normalize the spherical harmonics (default: False)
     :param backward_second_derivatives:
         if this parameter is set to `True`, second derivatives of the spherical
         harmonics are calculated and stored during forward calls to `compute`
@@ -129,15 +124,14 @@ class SphericalHarmonics:
     :return: a calculator, in the form of a SphericalHarmonics object
     """
 
-    def __new__(cls, l_max, normalized=False, backward_second_derivatives=False):
+    def __new__(cls, l_max, backward_second_derivatives=False):
         return torch.classes.sphericart_torch.SphericalHarmonics(
-            l_max, normalized, backward_second_derivatives
+            l_max, backward_second_derivatives
         )
 
     def __init__(
         self,
         l_max: int,
-        normalized: bool = False,
         backward_second_derivatives: bool = False,
     ):
         pass
@@ -255,8 +249,58 @@ class SphericalHarmonics:
         """Returns the maximum angular momentum setting for this calculator."""
         pass
 
-    def normalized(self):
-        """Returns normalization setting for this calculator."""
+
+class SolidHarmonics:
+    """
+    Solid harmonics calculator, up to degree ``l_max``.
+
+    This class computes the solid harmonics, a non-normalized form of the real
+    spherical harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
+    are polynomials in the Cartesian coordinates of the input points.
+
+    The usage of this class is identical to :py:class:`sphericart.SphericalHarmonics`.
+
+    :param l_max:
+        the maximum degree of the spherical harmonics to be calculated
+    :param backward_second_derivatives:
+        if this parameter is set to `True`, second derivatives of the spherical
+        harmonics are calculated and stored during forward calls to `compute`
+        (provided that `xyz.requires_grad` is `True`), making it possible to perform
+        double reverse-mode differentiation with respect to `xyz`. If `False`, only
+        the first derivatives will be computed and only a single reverse-mode
+        differentiation step will be possible with respect to `xyz`.
+
+    :return: a calculator, in the form of a SphericalHarmonics object
+    """
+
+    def __new__(cls, l_max, backward_second_derivatives=False):
+        return torch.classes.sphericart_torch.SolidHarmonics(
+            l_max, backward_second_derivatives
+        )
+
+    def __init__(
+        self,
+        l_max: int,
+        backward_second_derivatives: bool = False,
+    ):
+        pass
+
+    def compute(self, xyz: Tensor) -> Tensor:
+        pass
+
+    def __call__(self, xyz: Tensor) -> Tensor:
+        pass
+
+    def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
+        pass
+
+    def compute_with_hessians(self, xyz: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
+        pass
+
+    def omp_num_threads(self):
+        pass
+
+    def l_max(self):
         pass
 
 
@@ -285,8 +329,10 @@ def e3nn_spherical_harmonics(
         A `torch.Tensor` containing the coordinates, in the same format
         expected by the `e3nn` function.
     :param normalize:
-        Flag specifying whether the input positions should be normalized,
-        or whether the function should compute scaled :math:`\tilde{Y}^l_m`
+        Flag specifying whether the input positions should be normalized
+        (resulting in the computation of the spherical harmonics :math:`Y^l_m`),
+        or whether the function should compute the solid harmonics
+        :math:`\tilde{Y}^l_m`.
     :param normalization:
         String that can be "integral", "norm", "component", that controls
         a further scaling of the :math:`Y_m^l`. See the
@@ -299,11 +345,18 @@ def e3nn_spherical_harmonics(
     l_max = max(l_list)
     is_range_lmax = list(l_list) == list(range(l_max + 1))
 
-    sh = SphericalHarmonics(l_max, normalized=normalize).compute(
-        torch.index_select(
-            x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
+    if normalize:
+        sh = SphericalHarmonics(l_max).compute(
+            torch.index_select(
+                x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
+            )
         )
-    )
+    else:
+        sh = SolidHarmonics(l_max).compute(
+            torch.index_select(
+                x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
+            )
+        )
     assert normalization in ["integral", "norm", "component"]
     if normalization != "integral":
         sh *= math.sqrt(4 * math.pi)
@@ -358,6 +411,7 @@ def unpatch_e3nn(e3nn_module: ModuleType) -> None:
 
 __all__ = [
     "SphericalHarmonics",
+    "SolidHarmonics",
     "e3nn_spherical_harmonics",
     "patch_e3nn",
     "unpatch_e3nn",

@@ -14,8 +14,8 @@ def xyz():
 
 
 def test_autograd_cartesian(xyz):
-    calculator = sphericart.torch.SphericalHarmonics(
-        l_max=4, normalized=False, backward_second_derivatives=True
+    calculator = sphericart.torch.SolidHarmonics(
+        l_max=4, backward_second_derivatives=True
     )
 
     def compute(xyz):
@@ -33,8 +33,8 @@ def test_autograd_cartesian(xyz):
 
 
 def test_autograd_normalized(xyz):
-    calculator = sphericart.torch.SphericalHarmonics(
-        l_max=4, normalized=True, backward_second_derivatives=True
+    calculator = sphericart.torch.SolidHarmonics(
+        l_max=4, backward_second_derivatives=True
     )
 
     def compute(xyz):
@@ -53,8 +53,8 @@ def test_autograd_normalized(xyz):
 
 def test_autograd_hessian(xyz):
     # Initialize a calculator with l_max = 1
-    calculator = sphericart.torch.SphericalHarmonics(
-        l_max=1, normalized=False, backward_second_derivatives=True
+    calculator = sphericart.torch.SolidHarmonics(
+        l_max=1, backward_second_derivatives=True
     )
 
     # Fill a single xyz point with arbitrary numbers

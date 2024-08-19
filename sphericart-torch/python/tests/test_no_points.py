@@ -12,7 +12,10 @@ torch.manual_seed(0)
 def test_error(l_max, normalized):
     xyz = torch.zeros(0, 3, dtype=torch.float64)
 
-    calculator = sphericart.torch.SphericalHarmonics(l_max=l_max, normalized=normalized)
+    if normalized:
+        calculator = sphericart.torch.SphericalHarmonics(l_max=l_max)
+    else:
+        calculator = sphericart.torch.SolidHarmonics(l_max=l_max)
 
     sph = calculator.compute(xyz)
     assert sph.shape == (0, (l_max + 1) ** 2)

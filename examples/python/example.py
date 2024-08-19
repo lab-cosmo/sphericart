@@ -29,9 +29,10 @@ def sphericart_example(l_max=10, n_samples=10000, solid=False):
     # ===== API calls =====
 
     if solid:
-        sh_calculator = sphericart.SphericalHarmonics(l_max)
-    else:
         sh_calculator = sphericart.SolidHarmonics(l_max)
+    else:
+        sh_calculator = sphericart.SphericalHarmonics(l_max)
+        
 
     # without gradients
     sh_sphericart = sh_calculator.compute(xyz)

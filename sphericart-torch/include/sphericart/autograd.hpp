@@ -10,11 +10,12 @@ namespace sphericart_torch {
 
 class SphericalHarmonics;
 
-class SphericalHarmonicsAutograd : public torch::autograd::Function<SphericalHarmonicsAutograd> {
+class SphericartAutograd : public torch::autograd::Function<SphericartAutograd> {
   public:
+    template <typename C>
     static torch::autograd::variable_list forward(
         torch::autograd::AutogradContext* ctx,
-        SphericalHarmonics& calculator,
+        C& calculator,
         torch::Tensor xyz,
         bool do_gradients,
         bool do_hessians
@@ -25,8 +26,7 @@ class SphericalHarmonicsAutograd : public torch::autograd::Function<SphericalHar
     );
 };
 
-class SphericalHarmonicsAutogradBackward
-    : public torch::autograd::Function<SphericalHarmonicsAutogradBackward> {
+class SphericartAutogradBackward : public torch::autograd::Function<SphericartAutogradBackward> {
   public:
     static torch::Tensor forward(
         torch::autograd::AutogradContext* ctx,

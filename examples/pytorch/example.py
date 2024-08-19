@@ -19,7 +19,10 @@ class SHModule(torch.nn.Module):
     `torch.nn.Module`"""
 
     def __init__(self, l_max, normalized=False):
-        self.spherical_harmonics = sphericart.torch.SphericalHarmonics(l_max, normalized)
+        if normalized:
+            self.spherical_harmonics = sphericart.torch.SphericalHarmonics(l_max)
+        else:
+            self.spherical_harmonics = sphericart.torch.SolidHarmonics(l_max)
         super().__init__()
 
     def forward(self, xyz):
@@ -43,7 +46,10 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # ===== API calls =====
 
-    sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized)
+    if normalized:
+        sh_calculator = sphericart.torch.SphericalHarmonics(l_max)
+    else:
+        sh_calculator = sphericart.torch.SolidHarmonics(l_max)
 
     # the interface allows to return directly the forward derivatives (up to second
     # order), similar to the Python version
@@ -91,9 +97,14 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # double derivatives. In order to access them via back-propagation, an additional
     # flag must be specified at class instantiation:
-    sh_calculator_2 = sphericart.torch.SphericalHarmonics(
-        l_max, normalized=normalized, backward_second_derivatives=True
-    )
+    if normalized:
+        sh_calculator_2 = sphericart.torch.SphericalHarmonics(
+            l_max, backward_second_derivatives=True
+        )
+    else:
+        sh_calculator_2 = sphericart.torch.SolidHarmonics(
+            l_max, backward_second_derivatives=True
+        )
 
     # double grad() call:
     xyz_ag2 = xyz[:5].clone().detach().type(torch.float64).to("cpu").requires_grad_()

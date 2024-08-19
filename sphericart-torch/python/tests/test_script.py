@@ -12,7 +12,10 @@ class SHModule(torch.nn.Module):
     `torch.nn.Module`"""
 
     def __init__(self, l_max, normalized=False):
-        self._sph = sphericart.torch.SphericalHarmonics(l_max, normalized)
+        if normalized:
+            self._sph = sphericart.torch.SphericalHarmonics(l_max)
+        else:
+            self._sph = sphericart.torch.SolidHarmonics(l_max)
         super().__init__()
 
     def forward(self, xyz):
