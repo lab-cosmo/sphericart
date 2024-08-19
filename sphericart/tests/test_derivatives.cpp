@@ -177,26 +177,27 @@ int main() {
     }
 
     for (int l_max = 0; l_max < l_max_max; l_max++) { // Test for a range of l_max values
-        sphericart::SphericalHarmonics<double> calculator =
+        sphericart::SphericalHarmonics<double> calculator_spherical =
             sphericart::SphericalHarmonics<double>(l_max);
-        is_passed = check_gradient_call(l_max, calculator, xyz);
+        is_passed = check_gradient_call(l_max, calculator_spherical, xyz);
         if (!is_passed) {
             std::cout << "Test failed" << std::endl;
             return -1;
         }
-        is_passed = check_hessian_call(l_max, calculator, xyz);
+        is_passed = check_hessian_call(l_max, calculator_spherical, xyz);
         if (!is_passed) {
             std::cout << "Test failed" << std::endl;
             return -1;
         }
 
-        sphericart::SolidHarmonics<double> calculator = sphericart::SolidHarmonics<double>(l_max);
-        is_passed = check_gradient_call(l_max, calculator, xyz);
+        sphericart::SolidHarmonics<double> calculator_solid =
+            sphericart::SolidHarmonics<double>(l_max);
+        is_passed = check_gradient_call(l_max, calculator_solid, xyz);
         if (!is_passed) {
             std::cout << "Test failed" << std::endl;
             return -1;
         }
-        is_passed = check_hessian_call(l_max, calculator, xyz);
+        is_passed = check_hessian_call(l_max, calculator_solid, xyz);
         if (!is_passed) {
             std::cout << "Test failed" << std::endl;
             return -1;
