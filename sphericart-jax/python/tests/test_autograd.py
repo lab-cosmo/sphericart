@@ -1,8 +1,8 @@
-import pytest
 import jax
-
 import jax.numpy as jnp
-import jax._src.test_util as jtu
+import jax.test_util as jtu
+import pytest
+
 import sphericart.jax
 
 

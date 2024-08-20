@@ -1,15 +1,15 @@
-import jax
-import jax.numpy as jnp
 import math
 from functools import partial
+
+import jax
+import jax.numpy as jnp
 from jax import core
 from jax.core import ShapedArray
-from jax.interpreters import mlir, xla
-from jax.interpreters.mlir import ir, custom_call
-from jax.interpreters import ad
+from jax.interpreters import ad, mlir, xla
+from jax.interpreters.mlir import custom_call, ir
 
 from .dsph import dsph
-from .utils import default_layouts, build_sph_descriptor
+from .utils import build_sph_descriptor, default_layouts
 
 
 # register the sph primitive
@@ -101,7 +101,7 @@ def sph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
         raise NotImplementedError(f"Unsupported dtype {dtype}")
 
     descriptor = build_sph_descriptor(n_samples, l_max_c, normalized_c)
-    
+
     return custom_call(
         op_name,
         # Output types
@@ -113,7 +113,7 @@ def sph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
         # Layout specification:
         operand_layouts=default_layouts(xyz_shape),
         result_layouts=default_layouts(out_shape),
-        backend_config=descriptor
+        backend_config=descriptor,
     ).results
 
 

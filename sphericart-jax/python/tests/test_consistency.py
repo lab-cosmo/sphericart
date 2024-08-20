@@ -1,17 +1,16 @@
-import pytest
 import jax
+import numpy as np
+import pytest
+
 import sphericart
 import sphericart.jax
 
-
-
-import jax.numpy as jnp
-import numpy as np
 
 @pytest.fixture
 def xyz():
     key = jax.random.PRNGKey(0)
     return 6 * jax.random.normal(key, (100, 3))
+
 
 @pytest.mark.parametrize("normalized", [False, True])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
