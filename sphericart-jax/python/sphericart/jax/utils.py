@@ -4,7 +4,7 @@ def default_layouts(*shapes):
 try:
     from .lib.sphericart_jax_cuda import build_sph_descriptor
 except ImportError:
-    def build_sph_descriptor(a, b, c):
+    def build_sph_descriptor(a, b):
         raise ValueError(
             "Trying to use sphericart-jax on CUDA, "
             "but sphericart-jax was installed without CUDA support. "

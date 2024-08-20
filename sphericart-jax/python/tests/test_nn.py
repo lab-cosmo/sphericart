@@ -11,7 +11,7 @@ def test_nn():
             pass
 
         def __call__(self, xyz):
-            sph = sphericart.jax.spherical_harmonics(xyz, 4, True)
+            sph = sphericart.jax.spherical_harmonics(xyz, 4)
             sum = jnp.sum(sph)
             return sum
 
