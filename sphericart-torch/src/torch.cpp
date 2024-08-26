@@ -33,9 +33,8 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_with_hessians(torch::Tens
 }
 
 SolidHarmonics::SolidHarmonics(int64_t l_max, bool backward_second_derivatives)
-    : SphericalHarmonics(l_max, backward_second_derivatives), l_max_(l_max),
-      backward_second_derivatives_(backward_second_derivatives), calculator_double_(l_max_),
-      calculator_float_(l_max_) {
+    : l_max_(l_max), backward_second_derivatives_(backward_second_derivatives),
+      calculator_double_(l_max_), calculator_float_(l_max_) {
     this->omp_num_threads_ = calculator_double_.get_omp_num_threads();
 
     if (torch::cuda::is_available()) {
@@ -45,6 +44,18 @@ SolidHarmonics::SolidHarmonics(int64_t l_max, bool backward_second_derivatives)
         this->calculator_cuda_float_ptr =
             std::make_unique<sphericart::cuda::SolidHarmonics<float>>(l_max_);
     }
+}
+
+torch::Tensor SolidHarmonics::compute(torch::Tensor xyz) {
+    return SphericartAutograd::apply(*this, xyz, false, false)[0];
+}
+
+std::vector<torch::Tensor> SolidHarmonics::compute_with_gradients(torch::Tensor xyz) {
+    return SphericartAutograd::apply(*this, xyz, true, false);
+}
+
+std::vector<torch::Tensor> SolidHarmonics::compute_with_hessians(torch::Tensor xyz) {
+    return SphericartAutograd::apply(*this, xyz, true, true);
 }
 
 TORCH_LIBRARY(sphericart_torch, m) {
