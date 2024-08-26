@@ -1,8 +1,8 @@
-import pytest
 import jax
-
 import jax.numpy as jnp
 import jax.test_util as jtu
+import pytest
+
 import sphericart.jax
 
 
@@ -14,7 +14,12 @@ def test_autograd(normalized):
     key = jax.random.PRNGKey(0)
     xyz = 6 * jax.random.normal(key, (100, 3))
 
-    function = sphericart.jax.spherical_harmonics if normalized else sphericart.jax.solid_harmonics
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
+    )
+
     def compute(xyz):
         sph = function(xyz, 4)
         return jnp.sum(sph)
@@ -33,7 +38,12 @@ def test_autograd_second_derivatives(normalized):
     key = jax.random.PRNGKey(0)
     xyz = 6 * jax.random.normal(key, (100, 3))
 
-    function = sphericart.jax.spherical_harmonics if normalized else sphericart.jax.solid_harmonics
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
+    )
+
     def compute(xyz):
         sph = function(xyz, 4)
         return jnp.sum(sph)

@@ -1,7 +1,7 @@
-import numpy as np
-import pytest
 import jax
 import jax.numpy as jnp
+import numpy as np
+import pytest
 
 import sphericart.jax
 
@@ -19,15 +19,19 @@ def test_script(xyz):
 
     # jit compile the function
     jcompute = jax.jit(compute)
-    out = jcompute(xyz)
+    jcompute(xyz)
     # get gradients for the compiled function
-    dout = jax.grad(jcompute)(xyz)
+    jax.grad(jcompute)(xyz)
 
 
 @pytest.mark.parametrize("normalized", [True, False])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_jit(xyz, l_max, normalized):
-    function = sphericart.jax.spherical_harmonics if normalized else sphericart.jax.solid_harmonics
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
+    )
     jitted_sph = jax.jit(function, static_argnums=(1,))
     if normalized:
         calculator = sphericart.SphericalHarmonics(l_max=l_max)
@@ -41,7 +45,11 @@ def test_jit(xyz, l_max, normalized):
 @pytest.mark.parametrize("normalized", [True, False])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_vmap(xyz, l_max, normalized):
-    function = sphericart.jax.spherical_harmonics if normalized else sphericart.jax.solid_harmonics
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
+    )
     vmapped_sph = jax.vmap(function, in_axes=(0, None))
     if normalized:
         calculator = sphericart.SphericalHarmonics(l_max=l_max)
@@ -55,27 +63,36 @@ def test_vmap(xyz, l_max, normalized):
 @pytest.mark.parametrize("normalized", [True, False])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_jit_jacfwd(xyz, l_max, normalized):
-    function = sphericart.jax.spherical_harmonics if normalized else sphericart.jax.solid_harmonics
-    transformed_sph = jax.jit(
-        jax.jacfwd(function), static_argnums=(1,)
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
     )
+    transformed_sph = jax.jit(jax.jacfwd(function), static_argnums=(1,))
     transformed_sph(xyz, l_max)
 
 
 @pytest.mark.parametrize("normalized", [True, False])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_hessian_jit(xyz, l_max, normalized):
-    function = sphericart.jax.spherical_harmonics if normalized else sphericart.jax.solid_harmonics
-    transformed_sph = jax.hessian(
-        jax.jit(function, static_argnums=(1,))
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
     )
+    transformed_sph = jax.hessian(jax.jit(function, static_argnums=(1,)))
     transformed_sph(xyz, l_max)
 
 
 @pytest.mark.parametrize("normalized", [True, False])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_vmap_grad(xyz, l_max, normalized):
-    function = sphericart.jax.spherical_harmonics if normalized else sphericart.jax.solid_harmonics
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
+    )
+
     def single_scalar_output(x, l_max):
         return jnp.sum(function(x, l_max))
 
@@ -87,7 +104,12 @@ def test_vmap_grad(xyz, l_max, normalized):
 @pytest.mark.parametrize("normalized", [True, False])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_vmap_hessian(xyz, l_max, normalized):
-    function = sphericart.jax.spherical_harmonics if normalized else sphericart.jax.solid_harmonics
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
+    )
+
     def single_scalar_output(x, l_max):
         return jnp.sum(function(x, l_max))
 

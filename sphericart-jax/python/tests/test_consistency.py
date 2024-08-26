@@ -1,17 +1,16 @@
-import pytest
 import jax
+import numpy as np
+import pytest
+
 import sphericart
 import sphericart.jax
 
-
-
-import jax.numpy as jnp
-import numpy as np
 
 @pytest.fixture
 def xyz():
     key = jax.random.PRNGKey(0)
     return 6 * jax.random.normal(key, (100, 3))
+
 
 @pytest.mark.parametrize("normalized", [False, True])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
@@ -21,10 +20,12 @@ def test_consistency(xyz, l_max, normalized):
     else:
         calculator = sphericart.SolidHarmonics(l_max=l_max)
 
-    function = sphericart.jax.spherical_harmonics if normalized else sphericart.jax.solid_harmonics
-    sph = function(
-        l_max=l_max, xyz=xyz
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
     )
+    sph = function(l_max=l_max, xyz=xyz)
 
     sph_ref = calculator.compute(np.asarray(xyz))
 
