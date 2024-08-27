@@ -120,18 +120,25 @@ def test_second_derivative_error(xyz):
     l1 = torch.sum(d1)
 
     # case 1: autograd.grad raises an error
-    with pytest.raises(
-        RuntimeError,
-        match="One of the differentiated Tensors appears to not have "
-        "been used in the graph. Set allow_unused=True if this is the "
-        "desired behavior.",
+    # being the first time the second derivatives are requested, and since
+    # `backward_second_derivatives=False`, a warning is also displayed
+    with pytest.warns(
+        UserWarning,
+        match="Second derivatives of the spherical harmonics with respect "
+        "to the Cartesian coordinates were not requested at class creation.",
     ):
-        torch.autograd.grad(
-            outputs=l1,
-            inputs=xyz,
-            retain_graph=True,
-            create_graph=True,
-        )
+        with pytest.raises(
+            RuntimeError,
+            match="One of the differentiated Tensors appears to not have "
+            "been used in the graph. Set allow_unused=True if this is the "
+            "desired behavior.",
+        ):
+            torch.autograd.grad(
+                outputs=l1,
+                inputs=xyz,
+                retain_graph=True,
+                create_graph=True,
+            )
 
     # case 2: autograd.grad with allow_unused=True fails silently
     torch.autograd.grad(

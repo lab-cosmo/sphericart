@@ -109,6 +109,7 @@ class SphericalHarmonics:
     be incorrect, but a warning will be displayed. This is necessary to
     provide optimal performance for both use cases. In particular, the
     following will happen:
+
     -   when using ``torch.autograd.grad`` as the second backpropagation
         step, a warning will be displayed and torch will raise an error.
     -   when using ``torch.autograd.grad`` with ``allow_unused=True`` as
