@@ -8,12 +8,12 @@ from ._c_lib import _get_library
 
 class SphericalHarmonics:
     """
-    Spherical harmonics calculator, up to degree ``l_max``.
+    Spherical harmonics calculator, which computes the real spherical harmonics
+    :math:`Y^l_m` up to degree ``l_max``. The calculated spherical harmonics
+    are consistent with the definition of real spherical harmonics from Wikipedia.
 
-    This class computes the real spherical harmonics :math:`Y^l_m`.
-
-    In order to minimize the cost of each call, the `SphericalHarmonics` object
-    computes prefactors and initializes buffers upon creation
+    The `SphericalHarmonics` object computes prefactors and initializes buffers
+    upon creation
 
     >>> import numpy as np
     >>> import sphericart as sc
@@ -38,7 +38,7 @@ class SphericalHarmonics:
 
     :param l_max: the maximum degree of the spherical harmonics to be calculated
 
-    :return: a calculator, in the form of a `SphericalHarmonics` object
+    :return: a calculator, in the form of a ``SphericalHarmonics`` object
     """
 
     def __init__(self, l_max: int):
@@ -64,7 +64,7 @@ class SphericalHarmonics:
     def compute(self, xyz: np.ndarray) -> np.ndarray:
         """
         Calculates the spherical harmonics for a set of 3D points, whose
-        coordinates are in the ``xyz`` array.
+        coordinates are given by the ``xyz`` array.
 
         >>> import numpy as np
         >>> import sphericart as sc
@@ -141,12 +141,13 @@ class SphericalHarmonics:
 
         :return:
             A tuple containing:
-            * an array of shape ``(n_samples, (l_max+1)**2)`` containing all the
+
+            - an array of shape ``(n_samples, (l_max+1)**2)`` containing all the
             spherical harmonics up to degree `l_max` in lexicographic order.
             For example, if ``l_max = 2``, The last axis will correspond to
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
             1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
-            * An array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
+            - an array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
             the spherical harmonics' derivatives up to degree ``l_max``. The
             last axis is organized in the same way as in the spherical
             harmonics return array, while the second-to-last axis refers to
@@ -231,17 +232,17 @@ class SphericalHarmonics:
 
         :return:
             A tuple containing:
-            * an array of shape ``(n_samples, (l_max+1)**2)`` containing all the
+            - an array of shape ``(n_samples, (l_max+1)**2)`` containing all the
             spherical harmonics up to degree `l_max` in lexicographic order.
             For example, if ``l_max = 2``, The last axis will correspond to
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
             1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
-            * An array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
+            - an array of shape ``(n_samples, 3, (l_max+1)**2)`` containing all
             the spherical harmonics' derivatives up to degree ``l_max``. The
             last axis is organized in the same way as in the spherical
             harmonics return array, while the second-to-last axis refers to
             derivatives in the the x, y, and z directions, respectively.
-            * An array of shape ``(n_samples, 3, 3, (l_max+1)**2)`` containing all
+            - an array of shape ``(n_samples, 3, 3, (l_max+1)**2)`` containing all
             the spherical harmonics' second derivatives up to degree ``l_max``.
             The last axis is organized in the same way as in the spherical
             harmonics return array, while the two intermediate axes represent the
@@ -315,33 +316,10 @@ class SolidHarmonics:
 
     This class computes the solid harmonics, a non-normalized form of the real
     spherical harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
-    are polynomials in the Cartesian coordinates of the input points.
+    are polynomials in the Cartesian coordinates of the input points, and they
+    are therefore faster to compute.
 
-    In order to minimize the cost of each call, the `SolidHarmonics` object
-    computes prefactors and initializes buffers upon creation
-
-    >>> import numpy as np
-    >>> import sphericart as sc
-    >>> sh = sc.SolidHarmonics(l_max=8)
-
-    Then, the :py:func:`compute` method can be called on an array of 3D
-    Cartesian points to compute the solid harmonics
-
-    >>> xyz = np.random.normal(size=(10,3))
-    >>> sh_values = sh.compute(xyz)
-    >>> sh_values.shape
-    (10, 81)
-
-    In order to also compute derivatives, you can use
-
-    >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
-    >>> sh_grads.shape
-    (10, 3, 81)
-
-    which returns the gradient as a tensor with size
-    `(n_samples, 3, (l_max+1)**2)`.
-
-    :param l_max: the maximum degree of the spherical harmonics to be calculated
+    :param l_max: the maximum degree of the solid harmonics to be calculated
 
     :return: a calculator, in the form of a `SolidHarmonics` object
     """
