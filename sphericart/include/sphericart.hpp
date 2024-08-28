@@ -1,5 +1,10 @@
 /** \file sphericart.hpp
- *  Defines the C++ API for `sphericart`.
+ *  Defines the C++ API for `sphericart`. Two classes are available:
+ *  `SphericalHarmonics` and `SolidHarmonics`. The former calculates the
+ *  real spherical harmonics :math:`Y^m_l: as defined on Wikipedia,
+ *  which are homogeneous polynomials of (x/r, y/r, z/r). The latter
+ *  calculates the same polynomials but as a function of the Cartesian coordinates
+ *  (x, y, z), or, equivalently, :math:`r^l Y^m_l`.
  */
 
 #ifndef SPHERICART_HPP
@@ -353,13 +358,20 @@ template <typename T> class SphericalHarmonics {
     );
 
     /**
+     * Returns the maximum degree of the spherical harmonics computed by this
+     * calculator.
+     */
+    size_t get_l_max() { return this->l_max; }
+
+    /**
     Returns the number of threads used in the calculation
     */
     int get_omp_num_threads() { return this->omp_num_threads; }
 
-    template <typename U> friend class SolidHarmonics;
     /* @cond */
   private:
+    template <typename U> friend class SolidHarmonics;
+
     size_t l_max;        // maximum l value computed by this class
     size_t size_y;       // size of the Ylm rows (l_max+1)**2
     size_t size_q;       // size of the prefactor-like arrays (l_max+1)*(l_max+2)/2
@@ -381,13 +393,20 @@ template <typename T> class SphericalHarmonics {
     /* @endcond */
 };
 
+/**
+ * A solid harmonics calculator.
+ *
+ * Its interface is the same as that of the `SphericalHarmonics` class, but it
+ * calculates the solid harmonics :math:`r^l Y^m_l` instead of the real spherical
+ * harmonics :math:`Y^m_l`, allowing for faster computations.
+ */
 template <typename T> class SolidHarmonics : public SphericalHarmonics<T> {
   public:
-    /** Initialize the SphericalHarmonics class setting maximum degree and
+    /** Initialize the SolidHarmonics class setting maximum degree and
      * normalization
      *
      *  @param l_max
-     *      The maximum degree of the spherical harmonics to be calculated.
+     *      The maximum degree of the solid harmonics to be calculated.
      */
     SolidHarmonics(size_t l_max);
 };

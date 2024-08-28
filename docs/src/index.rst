@@ -15,8 +15,8 @@ The theory behind this efficient implementation is detailed in this
 `paper <https://arxiv.org/abs/2302.08381>`_. 
 
 The core library is implemented in C++ (with OpenMP parallelism) and CUDA.
-It provides APIs for C, Python (NumPy), PyTorch and JAX. The torch and JAX
-implementations provide fast spherical harmonics evaluations on GPUs.
+It also provides APIs for C, Python (NumPy), PyTorch and JAX. The torch and JAX
+implementations provide fast spherical harmonics on GPUs.
 
 A native Julia package is also available.
 

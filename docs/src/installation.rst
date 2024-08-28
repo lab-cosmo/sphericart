@@ -19,8 +19,8 @@ This basic package makes use of NumPy. A PyTorch-based implementation can be ins
 
 This pre-built version available on PyPI sacrifices some performance to ensure it
 can run on all systems, and it does not include GPU support.
-If you need an extra 5-10% of performance or you want to evaluate the spherical harmonics on GPUs,
-you should build the code from source:
+If you need an extra 5-10% of performance, you want to evaluate the spherical harmonics on GPUs,
+and/or you want to use it in JAX, you should build the code from source:
 
 .. code-block:: bash
 
@@ -35,8 +35,9 @@ you should build the code from source:
     # torch bindings (CPU-only)
     pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 
-Before installing the JAX version of ``sphericart``, you should already have the JAX
-library installed according to the official JAX installation instructions. 
+Before installing the JAX version of ``sphericart``, make sure you already have the JAX
+library installed according to the official JAX installation instructions at
+<https://jax.readthedocs.io/en/latest/installation.html>.
 
 
 Julia package
