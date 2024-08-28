@@ -12,11 +12,21 @@ There are multiple conventions for choosing normalization and phases, and it is
 possible to reformulate the spherical harmonics in a real-valued form, which leads
 to even further ambiguity in the definitions. 
 
-Within `sphericart` we take an opinionated stance: we compute only real-valued
-harmonics, we express them as a function of the full Cartesian coordinates of a 
-point in three dimensions :math:`(x,y,z)` and compute by default "scaled" 
-versions :math:`\tilde{Y}^m_l(x, y, z)` which correspond to homogeneous polynomials
-of the Cartesian coordinates:
+Within `sphericart`, we compute only real-valued spherical harmonics and we express
+them as a function of the full Cartesian coordinates of a point in three dimensions.
+These correspond to the real spherical harmonics as defined in the corresponding 
+`Wikipedia article <https://en.wikipedia.org/wiki/Spherical_harmonics>`_, which we
+refer to as :math:`Y^m_l`.
+
+We also offer the possibility to compute "solid" harmonics, which are given by
+:math:`\tilde{Y}^m_l = r^l\,{Y}_l^m`. Since these can be expressed as homogeneous
+polynomials of the Cartesian coordinates :math:`(x,y,z)`, as opposed to
+:math:`(x/r,y/r,z/r)`, they are less computationally expensive to evaluate.
+Besides being slightly faster, they can also
+provide a more natural scaling if used together with a radial expansion.
+
+The formulas used to compute the solid harmonics (and, with few modifications,
+also for the spherical harmonics) are:
 
 .. math ::
     \tilde{Y}_l^m(x, y, z) = r^l\,{Y}_l^m(x, y, z) = F_l^{|m|} Q_l^{|m|}(z, r) \times
@@ -40,13 +50,6 @@ If we neglect some constant normalization factors, these correspond to the
 `regular solid harmonics <https://en.wikipedia.org/wiki/Solid_harmonics>`_. 
 See also the `reference paper <https://arxiv.org/abs/2302.08381>`_ for further 
 implementation details.
-
-The radially normalized version of the spherical harmonics can also be computed by providing
-the appropriate flag when creating the `sphericart` calculators. These correspond to
-the real spherical harmonics as defined in the corresponding 
-`Wikipedia article <https://en.wikipedia.org/wiki/Spherical_harmonics>`_.
-However, we recommend using the scaled versions, which are slightly faster and 
-provide a more natural scaling if used together with a radial expansion.
 
 The :math:`\tilde{Y}^m_l(x)` are stored contiguously in memory, e.g. as
 :math:`\{ (l,m)=(0,0), (1,-1), (1,0), (1,1), (2,-2), \ldots \}`. 
