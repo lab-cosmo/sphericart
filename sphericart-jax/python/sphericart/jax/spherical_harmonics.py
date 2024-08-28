@@ -1,20 +1,16 @@
 from .sph import sph
 
 
-def spherical_harmonics(xyz, l_max, normalized=False):
+def spherical_harmonics(xyz, l_max):
     """Computes the Spherical harmonics and their derivatives within
     the JAX framework.
 
-    This function supports ``jit``, ``vmap``, and up to two rounds of forward and/or
-    backward automatic differentiation (``grad``, ``jacfwd``, ``jacrev``, ``hessian``,
-    ...). For the moment, it does not support ``pmap``.
-
-    Note that the ``l_max`` and ``normalized`` arguments (positions 1 and 2 in the
-    signature) should be tagged as static when jit-ing the function:
+    Note that the ``l_max`` argument (position 1 in the signature) should be tagged as
+    static when jit-ing the function:
 
     >>> import jax
     >>> import sphericart.jax
-    >>> sph_fn_jit = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1, 2))
+    >>> jitted_sph_fn = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=1)
 
     Parameters
     ----------
@@ -23,9 +19,6 @@ def spherical_harmonics(xyz, l_max, normalized=False):
         the last
     l_max : int
         maximum order of the spherical harmonics (included)
-    normalized : bool
-        whether the function computes Cartesian solid harmonics (``normalized=False``,
-        default) or normalized spherical harmonicsi (``normalized=True``)
 
     Returns
     -------
@@ -35,5 +28,16 @@ def spherical_harmonics(xyz, l_max, normalized=False):
     if xyz.shape[-1] != 3:
         raise ValueError("the last axis of xyz must have size 3")
     xyz = xyz.ravel().reshape(xyz.shape)  # make contiguous (???)
-    output = sph(xyz, l_max, normalized)
+    output = sph(xyz, l_max, normalized=True)
+    return output
+
+
+def solid_harmonics(xyz, l_max, normalized=False):
+    """
+    Same as `spherical_harmonics`, but computes the solid harmonics instead.
+    """
+    if xyz.shape[-1] != 3:
+        raise ValueError("the last axis of xyz must have size 3")
+    xyz = xyz.ravel().reshape(xyz.shape)  # make contiguous (???)
+    output = sph(xyz, l_max, normalized=False)
     return output

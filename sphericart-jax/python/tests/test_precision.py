@@ -15,7 +15,7 @@ def test_precision(xyz):
     jax.config.update("jax_enable_x64", True)
 
     def compute(xyz):
-        sph = sphericart.jax.spherical_harmonics(xyz, l_max=4, normalized=False)
+        sph = sphericart.jax.solid_harmonics(xyz, l_max=4)
         return sph
 
     xyz_64 = jnp.array(xyz, dtype=jnp.float64)

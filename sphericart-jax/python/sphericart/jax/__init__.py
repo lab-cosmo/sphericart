@@ -1,6 +1,6 @@
 import jax
 from .lib import sphericart_jax_cpu
-from .spherical_harmonics import spherical_harmonics  # noqa: F401
+from .spherical_harmonics import spherical_harmonics, solid_harmonics  # noqa: F401
 
 
 # register the operations to xla

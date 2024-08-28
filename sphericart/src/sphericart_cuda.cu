@@ -24,7 +24,7 @@ using namespace sphericart::cuda;
         }                                                                                          \
     } while (0)
 
-template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
+template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max) {
     /*
         This is the constructor of the SphericalHarmonics class. It initizlizes
        buffer space, compute prefactors, and sets the function pointers that are
@@ -32,7 +32,7 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
     */
     this->l_max = (int)l_max;
     this->nprefactors = (int)(l_max + 1) * (l_max + 2);
-    this->normalized = normalized;
+    this->normalized = true; // SphericalHarmonics class
     this->prefactors_cpu = new T[this->nprefactors];
 
     CUDA_CHECK(cudaGetDeviceCount(&this->device_count));
@@ -211,6 +211,14 @@ void SphericalHarmonics<T>::compute(
     CUDA_CHECK(cudaSetDevice(current_device));
 }
 
-// instantiates the SphericalHarmonics class for basic floating point types
+template <typename T>
+SolidHarmonics<T>::SolidHarmonics(size_t l_max) : SphericalHarmonics<T>(l_max) {
+    this->normalized = false; // SolidHarmonics class
+}
+
+// instantiates the SphericalHarmonics and SolidHarmonics classes
+// for basic floating point types
 template class sphericart::cuda::SphericalHarmonics<float>;
 template class sphericart::cuda::SphericalHarmonics<double>;
+template class sphericart::cuda::SolidHarmonics<float>;
+template class sphericart::cuda::SolidHarmonics<double>;

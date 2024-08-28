@@ -9,6 +9,9 @@ import sphericart
 def test_no_points(l_max, normalized):
     xyz = np.empty((0, 3))
 
-    calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
+    if normalized:
+        calculator = sphericart.SphericalHarmonics(l_max)
+    else:
+        calculator = sphericart.SolidHarmonics(l_max)
     sph_sphericart = calculator.compute(xyz)
     assert sph_sphericart.shape == (0, l_max * l_max + 2 * l_max + 1)

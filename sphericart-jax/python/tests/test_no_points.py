@@ -9,7 +9,10 @@ import sphericart.jax
 def test_no_points(l_max, normalized):
     xyz = jnp.empty((0, 3))
 
-    sph = sphericart.jax.spherical_harmonics(
-        l_max=l_max, normalized=normalized, xyz=xyz
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
     )
+    sph = function(l_max=l_max, xyz=xyz)
     assert sph.shape == (0, l_max * l_max + 2 * l_max + 1)

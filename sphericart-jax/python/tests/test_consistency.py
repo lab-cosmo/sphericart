@@ -15,10 +15,17 @@ def xyz():
 @pytest.mark.parametrize("normalized", [False, True])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_consistency(xyz, l_max, normalized):
-    calculator = sphericart.SphericalHarmonics(l_max=l_max, normalized=normalized)
-    sph = sphericart.jax.spherical_harmonics(
-        l_max=l_max, normalized=normalized, xyz=xyz
+    if normalized:
+        calculator = sphericart.SphericalHarmonics(l_max=l_max)
+    else:
+        calculator = sphericart.SolidHarmonics(l_max=l_max)
+
+    function = (
+        sphericart.jax.spherical_harmonics
+        if normalized
+        else sphericart.jax.solid_harmonics
     )
+    sph = function(l_max=l_max, xyz=xyz)
 
     sph_ref = calculator.compute(np.asarray(xyz))
 

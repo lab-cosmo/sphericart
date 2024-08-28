@@ -30,15 +30,8 @@ template <typename T> class SphericalHarmonics {
      *
      *  @param l_max
      *      The maximum degree of the spherical harmonics to be calculated.
-     *  @param normalized
-     *      If `false` (default) computes the scaled spherical harmonics, which
-     * are homogeneous polynomials in the Cartesian coordinates of the input
-     * points. If `true`, computes the normalized spherical harmonics that are
-     * evaluated on the unit sphere. In practice, this simply computes the
-     * scaled harmonics at the normalized coordinates \f$(x/r, y/r, z/r)\f$, and
-     * adapts the derivatives accordingly.
      */
-    SphericalHarmonics(size_t l_max, bool normalized = false);
+    SphericalHarmonics(size_t l_max);
 
     /* @cond */
     ~SphericalHarmonics();
@@ -364,12 +357,12 @@ template <typename T> class SphericalHarmonics {
     */
     int get_omp_num_threads() { return this->omp_num_threads; }
 
+    template <typename U> friend class SolidHarmonics;
     /* @cond */
   private:
     size_t l_max;        // maximum l value computed by this class
     size_t size_y;       // size of the Ylm rows (l_max+1)**2
     size_t size_q;       // size of the prefactor-like arrays (l_max+1)*(l_max+2)/2
-    bool normalized;     // should we normalize the input vectors?
     int omp_num_threads; // number of openmp thread
     T* prefactors;       // storage space for prefactor and buffers
     T* buffers;
@@ -386,6 +379,17 @@ template <typename T> class SphericalHarmonics {
     void (*_sample_with_derivatives)(const T*, T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
     void (*_sample_with_hessians)(const T*, T*, T*, T*, int, int, const T*, const T*, T*, T*, T*);
     /* @endcond */
+};
+
+template <typename T> class SolidHarmonics : public SphericalHarmonics<T> {
+  public:
+    /** Initialize the SphericalHarmonics class setting maximum degree and
+     * normalization
+     *
+     *  @param l_max
+     *      The maximum degree of the spherical harmonics to be calculated.
+     */
+    SolidHarmonics(size_t l_max);
 };
 
 } // namespace sphericart

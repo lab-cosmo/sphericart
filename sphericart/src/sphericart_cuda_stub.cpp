@@ -4,8 +4,7 @@
 
 using namespace sphericart::cuda;
 
-template <typename T>
-SphericalHarmonics<T>::SphericalHarmonics(size_t /*l_max*/, bool /*normalized*/) {}
+template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t /*l_max*/) {}
 
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {}
 
@@ -23,6 +22,12 @@ void SphericalHarmonics<T>::compute(
     throw std::runtime_error("sphericart was not compiled with CUDA support");
 }
 
-// instantiates the SphericalHarmonics class for basic floating point types
+template <typename T>
+SolidHarmonics<T>::SolidHarmonics(size_t l_max) : SphericalHarmonics<T>(l_max) {}
+
+// instantiates the SphericalHarmonics and SolidHarmonics classes
+// for basic floating point types
 template class sphericart::cuda::SphericalHarmonics<float>;
 template class sphericart::cuda::SphericalHarmonics<double>;
+template class sphericart::cuda::SolidHarmonics<float>;
+template class sphericart::cuda::SolidHarmonics<double>;
