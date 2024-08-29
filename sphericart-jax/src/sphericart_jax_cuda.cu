@@ -50,9 +50,7 @@ inline void cuda_sph(cudaStream_t stream, void** in, const char* opaque, std::si
 
     auto& calculator = _get_or_create_sph_cuda(sph_cache, cache_mutex, lmax);
 
-    calculator->compute(
-        xyz, n_samples, false, false, sph, nullptr, nullptr, reinterpret_cast<void*>(stream)
-    );
+    calculator->compute(xyz, n_samples, sph, reinterpret_cast<void*>(stream));
 }
 
 template <template <typename> class C, typename T>
@@ -73,9 +71,7 @@ inline void cuda_sph_with_gradients(
     const std::int64_t lmax = d.lmax;
 
     auto& calculator = _get_or_create_sph_cuda(sph_cache, cache_mutex, lmax);
-    calculator->compute(
-        xyz, n_samples, true, false, sph, dsph, nullptr, reinterpret_cast<void*>(stream)
-    );
+    calculator->compute_with_gradients(xyz, n_samples, sph, dsph, reinterpret_cast<void*>(stream));
 }
 
 template <template <typename> class C, typename T>
@@ -97,8 +93,8 @@ inline void cuda_sph_with_hessians(
     const std::int64_t lmax = d.lmax;
 
     auto& calculator = _get_or_create_sph_cuda(sph_cache, cache_mutex, lmax);
-    calculator->compute(
-        xyz, n_samples, true, true, sph, dsph, ddsph, reinterpret_cast<void*>(stream)
+    calculator->compute_with_hessians(
+        xyz, n_samples, sph, dsph, ddsph, reinterpret_cast<void*>(stream)
     );
 }
 
