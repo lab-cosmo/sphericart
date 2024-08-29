@@ -70,6 +70,61 @@ std::vector<torch::Tensor> _compute_raw_cpu(
     }
 }
 
+template <template <typename> class C, typename scalar_t>
+std::vector<torch::Tensor> _compute_raw_cuda(
+    C<scalar_t>* calculator,
+    torch::Tensor xyz,
+    int64_t l_max,
+    bool do_gradients,
+    bool do_hessians,
+    void* stream
+) {
+    if (!xyz.is_contiguous()) {
+        throw std::runtime_error("this code only runs with contiguous tensors");
+    }
+
+    if (!xyz.device().is_cuda()) {
+        throw std::runtime_error("internal error: called CUDA version on non-CUDA tensor");
+    }
+
+    if (do_hessians && !do_gradients) {
+        throw std::runtime_error("internal error: cannot request hessians without gradients");
+    }
+
+    auto n_samples = xyz.sizes()[0];
+    auto lmtotal = (l_max + 1) * (l_max + 1);
+    auto options = torch::TensorOptions().device(xyz.device()).dtype(xyz.dtype());
+
+    auto sph = torch::empty({n_samples, lmtotal}, options);
+
+    if (do_hessians) {
+        auto dsph = torch::empty({n_samples, 3, lmtotal}, options);
+        auto ddsph = torch::empty({n_samples, 3, 3, lmtotal}, options);
+        calculator->compute_with_hessians(
+            xyz.data_ptr<scalar_t>(),
+            n_samples,
+            sph.data_ptr<scalar_t>(),
+            dsph.data_ptr<scalar_t>(),
+            ddsph.data_ptr<scalar_t>(),
+            stream
+        );
+        return {sph, dsph, ddsph};
+    } else if (do_gradients) {
+        auto dsph = torch::empty({n_samples, 3, lmtotal}, options);
+        calculator->compute_with_gradients(
+            xyz.data_ptr<scalar_t>(),
+            n_samples,
+            sph.data_ptr<scalar_t>(),
+            dsph.data_ptr<scalar_t>(),
+            stream
+        );
+        return {sph, dsph, torch::Tensor()};
+    } else {
+        calculator->compute(xyz.data_ptr<scalar_t>(), n_samples, sph.data_ptr<scalar_t>(), stream);
+        return {sph, torch::Tensor(), torch::Tensor()};
+    }
+}
+
 std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(
     torch::Tensor xyz, bool do_gradients, bool do_hessians
 ) {
@@ -86,6 +141,22 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(
     }
 }
 
+std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cuda(
+    torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream
+) {
+    if (xyz.dtype() == c10::kDouble) {
+        return _compute_raw_cuda<sphericart::cuda::SphericalHarmonics, double>(
+            calculator_cuda_double_ptr.get(), xyz, l_max_, do_gradients, do_hessians, stream
+        );
+    } else if (xyz.dtype() == c10::kFloat) {
+        return _compute_raw_cuda<sphericart::cuda::SphericalHarmonics, float>(
+            calculator_cuda_float_ptr.get(), xyz, l_max_, do_gradients, do_hessians, stream
+        );
+    } else {
+        throw std::runtime_error("this code only runs on float64 and float32 arrays");
+    }
+}
+
 std::vector<torch::Tensor> SolidHarmonics::compute_raw_cpu(
     torch::Tensor xyz, bool do_gradients, bool do_hessians
 ) {
@@ -96,6 +167,22 @@ std::vector<torch::Tensor> SolidHarmonics::compute_raw_cpu(
     } else if (xyz.dtype() == c10::kFloat) {
         return _compute_raw_cpu<sphericart::SolidHarmonics, float>(
             calculator_float_, xyz, l_max_, do_gradients, do_hessians
+        );
+    } else {
+        throw std::runtime_error("this code only runs on float64 and float32 arrays");
+    }
+}
+
+std::vector<torch::Tensor> SolidHarmonics::compute_raw_cuda(
+    torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream
+) {
+    if (xyz.dtype() == c10::kDouble) {
+        return _compute_raw_cuda<sphericart::cuda::SolidHarmonics, double>(
+            calculator_cuda_double_ptr.get(), xyz, l_max_, do_gradients, do_hessians, stream
+        );
+    } else if (xyz.dtype() == c10::kFloat) {
+        return _compute_raw_cuda<sphericart::cuda::SolidHarmonics, float>(
+            calculator_cuda_float_ptr.get(), xyz, l_max_, do_gradients, do_hessians, stream
         );
     } else {
         throw std::runtime_error("this code only runs on float64 and float32 arrays");
@@ -197,6 +284,12 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
         stream = reinterpret_cast<void*>(currstream);
 #endif
 
+        auto results = calculator.compute_raw_cuda(xyz, requires_grad, requires_hessian, stream);
+        sph = results[0];
+        dsph = results[1];
+        ddsph = results[2];
+
+        /*
         int n_total = (calculator.l_max_ + 1) * (calculator.l_max_ + 1);
 
         sph = torch::empty(
@@ -261,6 +354,7 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
         if (!requires_hessian) {
             ddsph = torch::Tensor();
         }
+         */
 
     } else {
         throw std::runtime_error("Spherical harmonics are only implemented for CPU and CUDA");

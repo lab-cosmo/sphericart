@@ -31,23 +31,14 @@ void SphericalHarmonics<T>::compute(
 
 template <typename T>
 void SphericalHarmonics<T>::compute_with_gradients(
-    const T* /*xyz*/,
-    const size_t /*nsamples*/,
-    T* /*sph*/,
-    T* /*dsph*/,
-    void* /*cuda_stream*/
+    const T* /*xyz*/, const size_t /*nsamples*/, T* /*sph*/, T* /*dsph*/, void* /*cuda_stream*/
 ) {
     throw std::runtime_error("sphericart was not compiled with CUDA support");
 }
 
 template <typename T>
 void SphericalHarmonics<T>::compute_with_hessians(
-    const T* /*xyz*/,
-    const size_t /*nsamples*/,
-    T* /*sph*/,
-    T* /*dsph*/,
-    T* /*ddsph*/,
-    void* /*cuda_stream*/
+    const T* /*xyz*/, const size_t /*nsamples*/, T* /*sph*/, T* /*dsph*/, T* /*ddsph*/, void* /*cuda_stream*/
 ) {
     throw std::runtime_error("sphericart was not compiled with CUDA support");
 }
