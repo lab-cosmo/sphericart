@@ -2,6 +2,7 @@ build/
 dist/
 *.egg-info
 .tox/
+tests/
 *.pyc
 *.py
 !setup.py

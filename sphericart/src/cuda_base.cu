@@ -11,6 +11,7 @@
 
 #include "cuda_base.hpp"
 #include "sphericart_impl.cuh"
+#include "jittify.hpp"
 
 /* MASK used for warp reductions */
 #define FULL_MASK 0xffffffff
@@ -174,8 +175,19 @@ int sphericart::cuda::adjust_shared_memory(
     }
 }
 
+// Function to load CUDA source code from a file
+std::string load_cuda_source(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open file: " + filename);
+    }
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    return ss.str();
+}
+
 /*
-    Wrapper to launch the CUDA kernel. Returns a vector containing the spherical
+    Wrapper to compile and launch the CUDA kernel. Returns a vector containing the spherical
    harmonics and their gradients if required, otherwise returns the spherical
    harmonics and an empty tensor.
 
@@ -190,59 +202,6 @@ int sphericart::cuda::adjust_shared_memory(
     a cudaStream_t, first do void * stream_ptr = reinterpret_cast<void *>
    (stream);
 */
-
-/*
-template <typename scalar_t>
-void sphericart::cuda::spherical_harmonics_cuda_base(
-    const scalar_t* __restrict__ xyz,
-    const int nedges,
-    const scalar_t* __restrict__ prefactors,
-    const int nprefactors,
-    const int64_t l_max,
-    const bool normalize,
-    const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y,
-    const bool gradients,
-    const bool hessian,
-    scalar_t* __restrict__ sph,
-    scalar_t* __restrict__ dsph,
-    scalar_t* __restrict__ ddsph,
-    void* cuda_stream
-) {
-
-    int n_total = (l_max + 1) * (l_max + 1);
-
-    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
-
-    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
-
-    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-
-    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
-
-    size_t total_buff_size =
-        total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
-
-    spherical_harmonics_kernel<scalar_t><<<block_dim, grid_dim, total_buff_size, cstream>>>(
-        const_cast<scalar_t*>(xyz), nedges, const_cast<scalar_t*>(prefactors), nprefactors, l_max,
-n_total, gradients, hessian, normalize, sph, dsph, ddsph
-    );
-
-    CUDA_CHECK_KERNEL();
-
-    CUDA_CHECK(cudaStreamSynchronize(cstream));
-} */
-
-// Function to load CUDA source code from a file
-std::string load_cuda_source(const std::string& filename) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file: " + filename);
-    }
-    std::ostringstream ss;
-    ss << file.rdbuf();
-    return ss.str();
-}
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
@@ -261,17 +220,15 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     scalar_t* ddsph,
     void* cuda_stream
 ) {
-
-    std::vector<char> g_ptxCode;
-    CUmodule g_module = nullptr;
-    std::string g_last_kernel_name;
-    nvrtcProgram prog;
+    static std::vector<char> g_ptxCode;
+    static CUmodule g_module = nullptr;
+    static nvrtcProgram prog;
 
     std::vector<std::string> kernel_name_vec = {
         "spherical_harmonics_kernel<double>", "spherical_harmonics_kernel<float>"
     };
 
-    if (g_ptxCode.empty()) {
+    if (!g_module) {
         std::string kernel_code = load_cuda_source(SPHERICART_CUDA_SRC_PATH);
 
         nvrtcResult result =
@@ -303,10 +260,6 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         g_ptxCode.resize(ptxSize);
         NVRTC_SAFE_CALL(nvrtcGetPTX(prog, g_ptxCode.data()));
 
-        /*std::cout << "mangled name: " << name << std::endl;
-        std::cout << "PTX code size: " << ptxSize << " (bytes: " << ptxSize * sizeof(char) << ")"
-                  << std::endl; */
-
         CUdevice cuDevice;
         CUcontext context;
         CUmodule module;
@@ -314,14 +267,14 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         cuInit(0);
         cuDeviceGet(&cuDevice, 0);
         cuCtxCreate(&context, 0, cuDevice);
-        CUresult cuResult = cuModuleLoadDataEx(&module, g_ptxCode.data(), 0, 0, 0);
+        CUresult cuResult = cuModuleLoadDataEx(&g_module, g_ptxCode.data(), 0, 0, 0);
 
         if (cuResult != CUDA_SUCCESS) {
             std::cerr << "Failed to load PTX code into CUDA module" << std::endl;
             exit(1);
         }
 
-        g_module = module;
+        //g_module = module;
     }
 
     const char* kernel_name =
@@ -331,19 +284,19 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 
     NVRTC_SAFE_CALL(nvrtcGetLoweredName(prog, kernel_name, &name));
 
-    CUfunction kernel;
+    static CUfunction kernel;
 
     cuModuleGetFunction(&kernel, g_module, name);
 
     int n_total = (l_max + 1) * (l_max + 1);
 
-    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
+    dim3 block_dim(GRID_DIM_X, GRID_DIM_Y);
 
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
 
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
+    dim3 grid_dim(find_num_blocks(nedges, GRID_DIM_Y));
 
     size_t total_buff_size =
         total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
@@ -373,27 +326,19 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 
     cuLaunchKernel(
         kernel,
-        block_dim.x,
-        block_dim.y,
-        block_dim.z, // grid dim
         grid_dim.x,
         grid_dim.y,
-        grid_dim.z, // block dim
+        grid_dim.z, // grid dim
+        block_dim.x,
+        block_dim.y,
+        block_dim.z, // block dim
         total_buff_size,
         cstream,
         args, // arguments
         0
     );
-
-    // spherical_harmonics_kernel<scalar_t><<<block_dim, grid_dim, total_buff_size, cstream>>>(
-    //     const_cast<scalar_t*>(xyz), nedges, const_cast<scalar_t*>(prefactors), nprefactors,
-    //     l_max, n_total, gradients, hessian, normalize, sph, dsph, ddsph
-    //);
+    
     cuCtxSynchronize();
-
-    // CUDA_CHECK_KERNEL();
-
-    // CUDA_CHECK(cudaStreamSynchronize(cstream));
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
@@ -430,45 +375,6 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
     void* cuda_stream
 );
 
-/*
-    CUDA kernel to computes the backwards pass for autograd.
-*/
-template <typename scalar_t>
-__global__ void backward_kernel(
-    scalar_t* dsph, scalar_t* sph_grad, size_t nedges, size_t n_total, scalar_t* xyz_grad
-) {
-
-    size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
-
-    int spatial = blockIdx.y;
-
-    scalar_t sum = 0.0;
-
-    if (edge_idx < nedges) {
-        // for (int j = threadIdx.x; j < sph_grad.size(1); j += blockDim.x) {
-        for (int j = threadIdx.x; j < n_total; j += blockDim.x) {
-
-            // sum += dsph[edge_idx][spatial][j] * sph_grad[edge_idx][j];
-            sum += dsph[edge_idx * 3 * n_total + spatial * n_total + j] *
-                   sph_grad[edge_idx * n_total + j];
-        }
-    }
-
-    __syncthreads();
-
-    // reduce across the sub-warp
-    for (int offset = blockDim.x / 2; offset > 0; offset /= 2) {
-        sum += __shfl_down_sync(FULL_MASK, sum, offset);
-    }
-
-    if (edge_idx < nedges) {
-        if (threadIdx.x == 0) {
-            // xyz_grad[sample_idx][spatial] = sum;
-            xyz_grad[edge_idx * 3 + spatial] = sum;
-        }
-    }
-}
-
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     scalar_t* dsph,
@@ -478,20 +384,109 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     scalar_t* xyz_grad,
     void* cuda_stream
 ) {
-    dim3 grid_dim(4, 32);
+
+    static std::vector<char> g_ptxCode;
+    static CUmodule g_module = nullptr;
+    static nvrtcProgram prog;
+
+    std::vector<std::string> kernel_name_vec = {
+        "backward_kernel<double>", "backward_kernel<float>"
+    };
+
+    if (!g_module) {
+        std::string kernel_code = load_cuda_source(SPHERICART_CUDA_SRC_PATH);
+
+        nvrtcResult result =
+            nvrtcCreateProgram(&prog, kernel_code.c_str(), "sphericart_impl.cu", 0, nullptr, nullptr);
+
+        for (int i = 0; i < kernel_name_vec.size(); i++) {
+            NVRTC_SAFE_CALL(nvrtcAddNameExpression(prog, kernel_name_vec[i].c_str()));
+        }
+
+        const char* opts[] = {
+            "--include-path=" SPHERICART_INCLUDE_PATH, "--define-macro=CUDA_DEVICE_PREFIX=__device__"
+        };
+        nvrtcResult compileResult = nvrtcCompileProgram(prog, 2, opts);
+
+        if (compileResult != NVRTC_SUCCESS) {
+            size_t logSize;
+            NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &logSize));
+            char* log = new char[logSize];
+            NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, log));
+            std::cout << log << '\n';
+            delete[] log;
+            std::cerr << "Failed to compile CUDA program" << std::endl;
+            exit(1);
+        }
+
+        // Get PTX code
+        size_t ptxSize;
+        NVRTC_SAFE_CALL(nvrtcGetPTXSize(prog, &ptxSize));
+        g_ptxCode.resize(ptxSize);
+        NVRTC_SAFE_CALL(nvrtcGetPTX(prog, g_ptxCode.data()));
+
+        CUdevice cuDevice;
+        CUcontext context;
+        CUmodule module;
+
+        cuInit(0);
+        cuDeviceGet(&cuDevice, 0);
+        cuCtxCreate(&context, 0, cuDevice);
+        CUresult cuResult = cuModuleLoadDataEx(&g_module, g_ptxCode.data(), 0, 0, 0);
+
+        if (cuResult != CUDA_SUCCESS) {
+            std::cerr << "Failed to load PTX code into CUDA module" << std::endl;
+            exit(1);
+        }
+
+        //g_module = module;
+    }
+
+    const char* kernel_name =
+        sizeof(scalar_t) == 8 ? kernel_name_vec[0].c_str() : kernel_name_vec[1].c_str();
+
+    const char* name;
+
+    NVRTC_SAFE_CALL(nvrtcGetLoweredName(prog, kernel_name, &name));
+
+    static CUfunction kernel;
+
+    cuModuleGetFunction(&kernel, g_module, name);
+
+    dim3 block_dim(4, 32);
 
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
 
-    dim3 block_dim(find_num_blocks(nedges, 32), 3);
+    dim3 grid_dim(find_num_blocks(nedges, 32), 3);
 
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    backward_kernel<scalar_t>
-        <<<block_dim, grid_dim, 0, cstream>>>(dsph, sph_grad, nedges, ntotal, xyz_grad);
+    int _n_total = ntotal;
+    int _nedges = nedges;
 
-    CUDA_CHECK_KERNEL();
+    void* args[] = {
+        &dsph,
+        &sph_grad,
+        &_nedges,
+        &_n_total,
+        &xyz_grad
+    };
 
-    cudaStreamSynchronize(cstream);
+    cuLaunchKernel(
+        kernel,
+        grid_dim.x,
+        grid_dim.y,
+        grid_dim.z, // grid dim
+        block_dim.x,
+        block_dim.y,
+        block_dim.z, // block dim
+        0,
+        cstream,
+        args, // arguments
+        0
+    );
+
+    cuCtxSynchronize();
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(

@@ -685,3 +685,11 @@ __global__ void backward_kernel(
         }
     }
 }
+
+template __global__ void backward_kernel<float>(
+     float* dsph, float* sph_grad, size_t nedges, size_t n_total, float* xyz_grad
+);
+
+template __global__ void backward_kernel<double>(
+     double* dsph, double* sph_grad, size_t nedges, size_t n_total, double* xyz_grad
+);
