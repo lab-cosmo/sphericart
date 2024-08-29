@@ -65,7 +65,6 @@ TORCH_LIBRARY(sphericart_torch, m) {
             "",
             {torch::arg("l_max"), torch::arg("backward_second_derivatives") = false}
         )
-        .def("__call__", &SphericalHarmonics::compute, "", {torch::arg("xyz")})
         .def("compute", &SphericalHarmonics::compute, "", {torch::arg("xyz")})
         .def(
             "compute_with_gradients",
@@ -100,7 +99,6 @@ TORCH_LIBRARY(sphericart_torch, m) {
             "",
             {torch::arg("l_max"), torch::arg("backward_second_derivatives") = false}
         )
-        .def("__call__", &SolidHarmonics::compute, "", {torch::arg("xyz")})
         .def("compute", &SolidHarmonics::compute, "", {torch::arg("xyz")})
         .def(
             "compute_with_gradients", &SolidHarmonics::compute_with_gradients, "", {torch::arg("xyz")}

@@ -70,7 +70,7 @@ torch.classes.load_library(_lib_path())
 # code). The class reproduces the API of the TorchScript class, but has empty
 # functions. Instead, when __new__ is called, an instance of the TorchScript
 # class is directly returned.
-class SphericalHarmonics:
+class SphericalHarmonics(torch.nn.Module):
     """
     Spherical harmonics calculator, up to degree ``l_max``.
 
@@ -136,19 +136,17 @@ class SphericalHarmonics:
     :return: a calculator, in the form of a SphericalHarmonics object
     """
 
-    def __new__(cls, l_max, backward_second_derivatives=False):
-        return torch.classes.sphericart_torch.SphericalHarmonics(
-            l_max, backward_second_derivatives
-        )
-
     def __init__(
         self,
         l_max: int,
         backward_second_derivatives: bool = False,
     ):
-        pass
+        super().__init__()
+        self.calculator = torch.classes.sphericart_torch.SphericalHarmonics(
+            l_max, backward_second_derivatives
+        )
 
-    def compute(self, xyz: Tensor) -> Tensor:
+    def forward(self, xyz: Tensor) -> Tensor:
         """
         Calculates the spherical harmonics for a set of 3D points.
 
@@ -173,14 +171,11 @@ class SphericalHarmonics:
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
             1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
         """
+        return self.calculator.compute(xyz)
 
-        pass
-
-    def __call__(self, xyz: Tensor) -> Tensor:
-        """
-        Equivalent to ``compute()``.
-        """
-        pass
+    def compute(self, xyz: Tensor) -> Tensor:
+        """Equivalent to ``forward``"""
+        return self.calculator.compute(xyz)
 
     def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
         """
@@ -212,8 +207,7 @@ class SphericalHarmonics:
               derivatives in the the x, y, and z directions, respectively.
 
         """
-
-        pass
+        return self.calculator.compute_with_gradients(xyz)
 
     def compute_with_hessians(self, xyz: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
         """
@@ -250,19 +244,18 @@ class SphericalHarmonics:
               hessian dimensions.
 
         """
-
-        pass
+        return self.calculator.compute_with_hessians(xyz)
 
     def omp_num_threads(self):
         """Returns the number of threads available for calculations on the CPU."""
-        pass
+        return self.calculator.omp_num_threads()
 
     def l_max(self):
         """Returns the maximum angular momentum setting for this calculator."""
-        pass
+        return self.calculator.l_max()
 
 
-class SolidHarmonics:
+class SolidHarmonics(torch.nn.Module):
     """
     Solid harmonics calculator, up to degree ``l_max``.
 
@@ -282,38 +275,42 @@ class SolidHarmonics:
         the first derivatives will be computed and only a single reverse-mode
         differentiation step will be possible with respect to `xyz`.
 
-    :return: a calculator, in the form of a SphericalHarmonics object
+    :return: a calculator, in the form of a SolidHarmonics object
     """
-
-    def __new__(cls, l_max, backward_second_derivatives=False):
-        return torch.classes.sphericart_torch.SolidHarmonics(
-            l_max, backward_second_derivatives
-        )
 
     def __init__(
         self,
         l_max: int,
         backward_second_derivatives: bool = False,
     ):
-        pass
+        super().__init__()
+        self.calculator = torch.classes.sphericart_torch.SolidHarmonics(
+            l_max, backward_second_derivatives
+        )
+
+    def forward(self, xyz: Tensor) -> Tensor:
+        """See :py:meth:`SphericalHarmonics.forward`"""
+        return self.calculator.compute(xyz)
 
     def compute(self, xyz: Tensor) -> Tensor:
-        pass
-
-    def __call__(self, xyz: Tensor) -> Tensor:
-        pass
+        """Equivalent to ``forward``"""
+        return self.calculator.compute(xyz)
 
     def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
-        pass
+        """See :py:meth:`SphericalHarmonics.compute_with_gradients`"""
+        return self.calculator.compute_with_gradients(xyz)
 
     def compute_with_hessians(self, xyz: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
-        pass
+        """See :py:meth:`SphericalHarmonics.compute_with_hessians`"""
+        return self.calculator.compute_with_hessians(xyz)
 
     def omp_num_threads(self):
-        pass
+        """Returns the number of threads available for calculations on the CPU."""
+        return self.calculator.omp_num_threads()
 
     def l_max(self):
-        pass
+        """Returns the maximum angular momentum setting for this calculator."""
+        return self.calculator.l_max()
 
 
 def e3nn_spherical_harmonics(
@@ -358,13 +355,13 @@ def e3nn_spherical_harmonics(
     is_range_lmax = list(l_list) == list(range(l_max + 1))
 
     if normalize:
-        sh = SphericalHarmonics(l_max).compute(
+        sh = SphericalHarmonics(l_max)(
             torch.index_select(
                 x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
             )
         )
     else:
-        sh = SolidHarmonics(l_max).compute(
+        sh = SolidHarmonics(l_max)(
             torch.index_select(
                 x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
             )
