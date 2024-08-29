@@ -31,6 +31,10 @@ class SphericalHarmonics : public torch::CustomClassHolder {
 
     // Raw calculation, without autograd support, running on CPU
     std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients, bool do_hessians);
+    // Raw calculation, without autograd support, running on CUDA
+    std::vector<torch::Tensor> compute_raw_cuda(
+        torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream = nullptr
+    );
 
     int64_t omp_num_threads_;
     int64_t l_max_;
@@ -63,6 +67,10 @@ class SolidHarmonics : public torch::CustomClassHolder {
 
     // Raw calculation, without autograd support, running on CPU
     std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients, bool do_hessians);
+    // Raw calculation, without autograd support, running on CUDA
+    std::vector<torch::Tensor> compute_raw_cuda(
+        torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream = nullptr
+    );
 
     int64_t omp_num_threads_;
     int64_t l_max_;
