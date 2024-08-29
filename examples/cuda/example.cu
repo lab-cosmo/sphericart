@@ -66,8 +66,7 @@ int main() {
     double* sph_cuda;
     CUDA_CHECK(cudaMalloc(&sph_cuda, n_samples * (l_max + 1) * (l_max + 1) * sizeof(double)));
 
-    calculator_cuda.compute(xyz_cuda, n_samples, false, false,
-                            sph_cuda); // no gradients */
+    calculator_cuda.compute(xyz_cuda, n_samples, sph_cuda); // no gradients
 
     CUDA_CHECK(cudaMemcpy(
         sph.data(), sph_cuda, n_samples * (l_max + 1) * (l_max + 1) * sizeof(double), cudaMemcpyDeviceToHost
@@ -84,8 +83,7 @@ int main() {
     float* sph_cuda_f;
     CUDA_CHECK(cudaMalloc(&sph_cuda_f, n_samples * (l_max + 1) * (l_max + 1) * sizeof(float)));
 
-    calculator_cuda_f.compute(xyz_cuda_f, n_samples, false, false,
-                              sph_cuda_f); // no gradients */
+    calculator_cuda_f.compute(xyz_cuda_f, n_samples, sph_cuda_f); // no gradients
 
     CUDA_CHECK(cudaMemcpy(
         sph_f.data(),
