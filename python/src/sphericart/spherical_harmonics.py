@@ -9,7 +9,7 @@ from ._c_lib import _get_library
 class SphericalHarmonics:
     """
     Spherical harmonics calculator, which computes the real spherical harmonics
-    :math:`Y^l_m` up to degree ``l_max``. The calculated spherical harmonics
+    :math:`Y^m_l` up to degree ``l_max``. The calculated spherical harmonics
     are consistent with the definition of real spherical harmonics from Wikipedia.
 
     The `SphericalHarmonics` object computes prefactors and initializes buffers
@@ -312,7 +312,7 @@ class SolidHarmonics:
     Solid harmonics calculator, up to degree ``l_max``.
 
     This class computes the solid harmonics, a non-normalized form of the real
-    spherical harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
+    spherical harmonics, i.e. :math:`r^l Y^m_l`. These scaled spherical harmonics
     are polynomials in the Cartesian coordinates of the input points, and they
     are therefore faster to compute.
 

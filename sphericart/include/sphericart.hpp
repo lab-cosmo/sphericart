@@ -1,10 +1,10 @@
 /** \file sphericart.hpp
  *  Defines the C++ API for `sphericart`. Two classes are available:
  *  `SphericalHarmonics` and `SolidHarmonics`. The former calculates the
- *  real spherical harmonics :math:`Y^m_l: as defined on Wikipedia,
+ *  real spherical harmonics \f$ Y^m_l \f$ as defined on Wikipedia,
  *  which are homogeneous polynomials of (x/r, y/r, z/r). The latter
  *  calculates the same polynomials but as a function of the Cartesian coordinates
- *  (x, y, z), or, equivalently, :math:`r^l Y^m_l`.
+ *  (x, y, z), or, equivalently, \f$ r^l\,Y^m_l \f$.
  */
 
 #ifndef SPHERICART_HPP
@@ -397,8 +397,8 @@ template <typename T> class SphericalHarmonics {
  * A solid harmonics calculator.
  *
  * Its interface is the same as that of the `SphericalHarmonics` class, but it
- * calculates the solid harmonics :math:`r^l Y^m_l` instead of the real spherical
- * harmonics :math:`Y^m_l`, allowing for faster computations.
+ * calculates the solid harmonics \f$ r^l\,Y^m_l \f$ instead of the real spherical
+ * harmonics \f$ Y^m_l \f$, allowing for faster computations.
  */
 template <typename T> class SolidHarmonics : public SphericalHarmonics<T> {
   public:

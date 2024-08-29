@@ -74,7 +74,7 @@ class SphericalHarmonics(torch.nn.Module):
     """
     Spherical harmonics calculator, up to degree ``l_max``.
 
-    This class computes :math:`Y^l_m`, which are instead homogeneous polynomials
+    This class computes :math:`Y^m_l`, which are instead homogeneous polynomials
     of x/r, y/r, z/r.
 
     This class can be used similarly to :py:class:`sphericart.SphericalHarmonics`
@@ -248,7 +248,7 @@ class SolidHarmonics(torch.nn.Module):
     Solid harmonics calculator, up to degree ``l_max``.
 
     This class computes the solid harmonics, a non-normalized form of the real
-    spherical harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
+    spherical harmonics, i.e. :math:`r^lY^m_l`. These scaled spherical harmonics
     are polynomials in the Cartesian coordinates of the input points.
 
     The usage of this class is identical to :py:class:`sphericart.SphericalHarmonics`.
@@ -319,7 +319,7 @@ def e3nn_spherical_harmonics(
 
     :param l_list:
         Either a single integer or a list of integers specifying which
-        :math:`Y^l_m` should be computed. All values up to the maximum
+        :math:`Y^m_l` should be computed. All values up to the maximum
         l value are computed, so this may be inefficient for use cases
         requiring a single, or few, angular momentum channels.
     :param x:
@@ -327,12 +327,12 @@ def e3nn_spherical_harmonics(
         expected by the `e3nn` function.
     :param normalize:
         Flag specifying whether the input positions should be normalized
-        (resulting in the computation of the spherical harmonics :math:`Y^l_m`),
+        (resulting in the computation of the spherical harmonics :math:`Y^m_l`),
         or whether the function should compute the solid harmonics
-        :math:`\tilde{Y}^l_m`.
+        :math:`\tilde{Y}^m_l=r^lY^m_l`.
     :param normalization:
         String that can be "integral", "norm", "component", that controls
-        a further scaling of the :math:`Y_m^l`. See the
+        a further scaling of the :math:`Y^m_l`. See the
         documentation of :py:func:`e3nn.o3.spherical_harmonics()`
         for a detailed explanation of the different conventions.
     """

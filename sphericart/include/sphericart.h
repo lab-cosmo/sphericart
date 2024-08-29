@@ -6,11 +6,11 @@
  *  while those for the `double` data type do not.
  *  Similarly, types and functions for spherical harmonics calculations contain
  *  `_spherical_harmonics` in their name, and they calculate the
- *  real spherical harmonics :math:`Y^m_l: as defined on Wikipedia,
+ *  real spherical harmonics \f$ Y^m_l \f$ as defined on Wikipedia,
  *  which are homogeneous polynomials of (x/r, y/r, z/r). In contrast, types
  *  and functions for solid harmonics calculations contain `_solid_harmonics` in
  *  their name, and thay calculate the same polynomials but as a function of the
- *  Cartesian coordinates (x, y, z), or, equivalently, :math:`r^l Y^m_l`.
+ *  Cartesian coordinates (x, y, z), or, equivalently, \f$ r^l\,Y^m_l \f$.
  */
 
 #ifndef SPHERICART_H

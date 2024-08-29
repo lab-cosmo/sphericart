@@ -40,7 +40,7 @@ def solid_harmonics(xyz: jax.Array, l_max: int):
     Same as `spherical_harmonics`, but computes the solid harmonics instead.
 
     These are a non-normalized form of the real
-    spherical harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
+    spherical harmonics, i.e. :math:`r^lY^m_l`. These scaled spherical harmonics
     are polynomials in the Cartesian coordinates of the input points, and they
     are therefore less expoensive to compute.
     """
