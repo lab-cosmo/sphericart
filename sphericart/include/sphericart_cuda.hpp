@@ -60,11 +60,11 @@ template <typename T> class SphericalHarmonics {
      *        the x, y, and z coordinates respectively.
      * @param n_samples Number of samples contained within `xyz`.
      * @param sph On entry, a preallocated device-side array of size  `n_samples
-     * x (l_max + 1) x (l_max + 1)`. On exit, this array will contain the
+     * x (l_max + 1)^2`. On exit, this array will contain the
      * spherical harmonics organized along two dimensions. The leading dimension
      * is `n_samples` long and it represents the different samples, while the
      * inner dimension is
-     * `(l_max + 1) x (l_max + 1)` long and it contains the spherical harmonics.
+     * `(l_max + 1)^2` long and it contains the spherical harmonics.
      * These are laid out in lexicographic order. For example, if `l_max=2`, it
      * will contain `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1),
      * (2, 0), (2, 1), (2, 2)`, in this order.
@@ -84,16 +84,16 @@ template <typename T> class SphericalHarmonics {
      *        the x, y, and z coordinates respectively.
      * @param n_samples Number of samples contained within `xyz`.
      * @param sph On entry, a preallocated device-side array of size  `n_samples
-     * * (l_max + 1) x (l_max + 1)`. On exit, this array will contain the
+     * x (l_max + 1)^2`. On exit, this array will contain the
      * spherical harmonics organized along two dimensions. The leading dimension
      * is `n_samples` long and it represents the different samples, while the
      * inner dimension is
-     * `(l_max + 1) x (l_max + 1)` long and it contains the spherical harmonics.
+     * `(l_max + 1)^2` long and it contains the spherical harmonics.
      * These are laid out in lexicographic order. For example, if `l_max=2`, it
      * will contain `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1),
      * (2, 0), (2, 1), (2, 2)`, in this order.
      * @param dsph On entry, nullptr or a preallocated device-side array of size
-     * `n_samples x 3 x (l_max + 1) x (l_max + 1)`. If the pointer is not
+     * `n_samples x 3 x (l_max + 1)^2`. If the pointer is not
      * nullptr, then compute_with_gradients must also be true in order for
      * gradients to be computed.
      * @param cuda_stream Pointer to a cudaStream_t or nullptr. If this is
@@ -118,20 +118,20 @@ template <typename T> class SphericalHarmonics {
      * @param compute_with_hessians Whether we should compute ddsph. If true,
      * the pointer ddsph must also be allocated on device.
      * @param sph On entry, a preallocated device-side array of size  `n_samples
-     * * (l_max + 1) x (l_max + 1)`. On exit, this array will contain the
+     * x (l_max + 1)^2`. On exit, this array will contain the
      * spherical harmonics organized along two dimensions. The leading dimension
      * is `n_samples` long and it represents the different samples, while the
      * inner dimension is
-     * `(l_max + 1) x (l_max + 1)` long and it contains the spherical harmonics.
+     * `(l_max + 1)^2` long and it contains the spherical harmonics.
      * These are laid out in lexicographic order. For example, if `l_max=2`, it
      * will contain `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1),
      * (2, 0), (2, 1), (2, 2)`, in this order.
      * @param dsph On entry, nullptr or a preallocated device-side array of size
-     * `n_samples x 3 x (l_max + 1) x (l_max + 1)`. If the pointer is not
+     * `n_samples x 3 x (l_max + 1)^2`. If the pointer is not
      * nullptr, then compute_with_gradients must also be true in order for
      * gradients to be computed.
      * @param ddsph On entry, nullptr or a preallocated device-side array of
-     * size `n_samples x 3 x 3 x (l_max + 1) x (l_max + 1)`. If the pointer is
+     * size `n_samples x 3 x 3 x (l_max + 1)^2`. If the pointer is
      * not nullptr, then compute_with_hessians must also be true in order for
      * gradients to be computed.
      * @param cuda_stream Pointer to a cudaStream_t or nullptr. If this is
