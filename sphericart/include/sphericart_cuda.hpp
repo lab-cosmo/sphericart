@@ -78,15 +78,14 @@ template <typename T> class SphericalHarmonics {
      * nullptr, the kernel launch will be performed on the default stream.
      */
 
-    void compute(
-        const T* xyz,
-        size_t nsamples,
-        bool compute_with_gradients,
-        bool compute_with_hessian,
-        T* sph,
-        T* dsph = nullptr,
-        T* ddsph = nullptr,
-        void* cuda_stream = nullptr
+    void compute(const T* xyz, size_t nsamples, T* sph, void* cuda_stream = nullptr);
+
+    void compute_with_gradients(
+        const T* xyz, size_t nsamples, T* sph, T* dsph, void* cuda_stream = nullptr
+    );
+
+    void compute_with_hessians(
+        const T* xyz, size_t nsamples, T* sph, T* dsph, T* ddsph, void* cuda_stream = nullptr
     );
 
     template <typename U> friend class SolidHarmonics;
@@ -103,6 +102,17 @@ template <typename T> class SphericalHarmonics {
     bool cached_compute_with_gradients = false;
     bool cached_compute_with_hessian = false;
     int64_t _current_shared_mem_allocation = 0;
+
+    void compute_internal(
+        const T* xyz,
+        const size_t nsamples,
+        bool compute_with_gradients,
+        bool compute_with_hessian,
+        T* sph,
+        T* dsph,
+        T* ddsph,
+        void* cuda_stream
+    );
     /* @endcond */
 };
 
