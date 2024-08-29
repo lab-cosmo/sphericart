@@ -33,7 +33,6 @@ template <typename T>
 void SphericalHarmonics<T>::compute_with_gradients(
     const T* /*xyz*/,
     const size_t /*nsamples*/,
-    bool /*compute_with_gradients*/,
     T* /*sph*/,
     T* /*dsph*/,
     void* /*cuda_stream*/
@@ -45,8 +44,6 @@ template <typename T>
 void SphericalHarmonics<T>::compute_with_hessians(
     const T* /*xyz*/,
     const size_t /*nsamples*/,
-    bool /*compute_with_gradients*/,
-    bool /*compute_with_hessian*/,
     T* /*sph*/,
     T* /*dsph*/,
     T* /*ddsph*/,
