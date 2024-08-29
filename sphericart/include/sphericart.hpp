@@ -402,8 +402,7 @@ template <typename T> class SphericalHarmonics {
  */
 template <typename T> class SolidHarmonics : public SphericalHarmonics<T> {
   public:
-    /** Initialize the SolidHarmonics class setting maximum degree and
-     * normalization
+    /** Initialize the SolidHarmonics class setting its maximum degree
      *
      *  @param l_max
      *      The maximum degree of the solid harmonics to be calculated.
