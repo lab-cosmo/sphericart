@@ -34,7 +34,7 @@ class SphericalHarmonics:
     (10, 3, 81)
 
     which returns the gradient as a tensor with size
-    `(n_samples, 3, (l_max+1)**2)`.
+    ``(n_samples, 3, (l_max+1)**2)``.
 
     :param l_max: the maximum degree of the spherical harmonics to be calculated
 
@@ -141,7 +141,7 @@ class SphericalHarmonics:
         :return: A tuple containing:
 
             - an array of shape ``(n_samples, (l_max+1)**2)`` containing all the
-              spherical harmonics up to degree `l_max` in lexicographic order.
+              spherical harmonics up to degree ``l_max`` in lexicographic order.
               For example, if ``l_max = 2``, The last axis will correspond to
               spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
               1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
@@ -230,7 +230,7 @@ class SphericalHarmonics:
         :return: A tuple containing:
 
             - an array of shape ``(n_samples, (l_max+1)**2)`` containing all the
-              spherical harmonics up to degree `l_max` in lexicographic order.
+              spherical harmonics up to degree ``l_max`` in lexicographic order.
               For example, if ``l_max = 2``, The last axis will correspond to
               spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
               1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
@@ -318,7 +318,7 @@ class SolidHarmonics:
 
     :param l_max: the maximum degree of the solid harmonics to be calculated
 
-    :return: a calculator, in the form of a `SolidHarmonics` object
+    :return: a calculator, in the form of a ``SolidHarmonics`` object
     """
 
     def __init__(self, l_max: int):
