@@ -19,7 +19,7 @@ These correspond to the real spherical harmonics as defined in the corresponding
 refer to as :math:`Y^m_l`. 
 If you need complex spherical harmonics, or use a different convention for normalization
 and storage order it is usually simple - if tedious and inefficient - to perform the
-conversion manually, see :ref:`spherical-complex` for a simple example.
+conversion manually, see :doc:`spherical-complex` for a simple example.
 
 
 We also offer the possibility to compute "solid" harmonics, which are given by
