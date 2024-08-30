@@ -36,15 +36,16 @@ and/or you want to use it in JAX, you should build the code from source:
     pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 
 Before installing the JAX version of ``sphericart``, make sure you already have the JAX
-library installed according to the official JAX installation instructions at
-<https://jax.readthedocs.io/en/latest/installation.html>.
+library installed according to the `official JAX installation instructions
+<https://jax.readthedocs.io/en/latest/installation.html>`_.
 
 
 Julia package
 -------------
 
 The native Julia package can be installed by opening a REPL,
-switching to the package manager by typing ``]`` and then ``add SpheriCart``.
+switching to the package manager by typing ``]`` and then executing 
+the command ``add SpheriCart``.
 
 
 C/C++/CUDA library

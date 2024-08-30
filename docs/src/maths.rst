@@ -16,14 +16,19 @@ Within `sphericart`, we compute only real-valued spherical harmonics and we expr
 them as a function of the full Cartesian coordinates of a point in three dimensions.
 These correspond to the real spherical harmonics as defined in the corresponding 
 `Wikipedia article <https://en.wikipedia.org/wiki/Spherical_harmonics>`_, which we
-refer to as :math:`Y^m_l`.
+refer to as :math:`Y^m_l`. 
+If you need complex spherical harmonics, or use a different convention for normalization
+and storage order it is usually simple - if tedious and inefficient - to perform the
+conversion manually, see :ref:`spherical-complex` for a simple example.
+
 
 We also offer the possibility to compute "solid" harmonics, which are given by
 :math:`\tilde{Y}^m_l = r^l\,{Y}_l^m`. Since these can be expressed as homogeneous
 polynomials of the Cartesian coordinates :math:`(x,y,z)`, as opposed to
 :math:`(x/r,y/r,z/r)`, they are less computationally expensive to evaluate.
-Besides being slightly faster, they can also
-provide a more natural scaling if used together with a radial expansion.
+Besides being slightly faster, they can also provide a more natural scaling if 
+used together with a radial expansion, and we recommend using them unless you
+need the normalized version.
 
 The formulas used to compute the solid harmonics (and, with few modifications,
 also for the spherical harmonics) are:

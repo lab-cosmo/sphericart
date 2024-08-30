@@ -42,7 +42,7 @@ def solid_harmonics(xyz: jax.Array, l_max: int):
     These are a non-normalized form of the real
     spherical harmonics, i.e. :math:`r^lY^m_l`. These scaled spherical harmonics
     are polynomials in the Cartesian coordinates of the input points, and they
-    are therefore less expoensive to compute.
+    are therefore less expensive to compute.
     """
     if xyz.shape[-1] != 3:
         raise ValueError("the last axis of xyz must have size 3")
