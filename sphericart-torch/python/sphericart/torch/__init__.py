@@ -74,7 +74,7 @@ class SphericalHarmonics(torch.nn.Module):
     """
     Spherical harmonics calculator, up to degree ``l_max``.
 
-    This class computes :math:`Y^l_m`, which are instead homogeneous polynomials
+    This class computes :math:`Y^m_l`, which are instead homogeneous polynomials
     of x/r, y/r, z/r.
 
     This class can be used similarly to :py:class:`sphericart.SphericalHarmonics`
@@ -89,7 +89,7 @@ class SphericalHarmonics(torch.nn.Module):
     >>> sh_grads.shape
     torch.Size([10, 3, 81])
 
-    Alternatively, if `compute()` is used, or if the class is called directly,
+    Alternatively, if ``compute()`` is used, or if the class is called directly,
     the outputs support single and double backpropagation.
 
     >>> xyz = xyz.detach().clone().requires_grad_()
@@ -100,12 +100,12 @@ class SphericalHarmonics(torch.nn.Module):
     True
 
     By default, only single backpropagation with respect to `xyz` is
-    enabled (this includes mixed second derivatives where `xyz` appears
+    enabled (this includes mixed second derivatives where ``xyz`` appears
     as only one of the differentiation steps). To activate support
-    for double backpropagation with respect to `xyz`, please set
-    `backward_second_derivatives=True` at class creation. Warning: if
-    `backward_second_derivatives` is not set to `True` and double
-    differentiation with respect to `xyz` is requested, the results may
+    for double backpropagation with respect to ``xyz``, please set
+    ``backward_second_derivatives=True`` at class creation. Warning: if
+    ``backward_second_derivatives`` is not set to ``True`` and double
+    differentiation with respect to ``xyz`` is requested, the results may
     be incorrect and no warnings will be displayed. This is necessary to
     provide optimal performance for both use cases.
 
@@ -114,12 +114,12 @@ class SphericalHarmonics(torch.nn.Module):
     :param l_max:
         the maximum degree of the spherical harmonics to be calculated
     :param backward_second_derivatives:
-        if this parameter is set to `True`, second derivatives of the spherical
-        harmonics are calculated and stored during forward calls to `compute`
-        (provided that `xyz.requires_grad` is `True`), making it possible to perform
-        double reverse-mode differentiation with respect to `xyz`. If `False`, only
+        if this parameter is set to ``True``, second derivatives of the spherical
+        harmonics are calculated and stored during forward calls to ``compute``
+        (provided that ``xyz.requires_grad`` is ``True``), making it possible to perform
+        double reverse-mode differentiation with respect to ``xyz``. If ``False``, only
         the first derivatives will be computed and only a single reverse-mode
-        differentiation step will be possible with respect to `xyz`.
+        differentiation step will be possible with respect to ``xyz``.
 
     :return: a calculator, in the form of a SphericalHarmonics object
     """
@@ -139,14 +139,14 @@ class SphericalHarmonics(torch.nn.Module):
         Calculates the spherical harmonics for a set of 3D points.
 
         The coordinates should be stored in the ``xyz`` array. If ``xyz``
-        has `requires_grad = True` it stores the forward derivatives which
+        has ``requires_grad = True`` it stores the forward derivatives which
         are then used in the backward pass.
-        The type of the entries of `xyz` determines the precision used,
+        The type of the entries of ``xyz`` determines the precision used,
         and the device the tensor is stored on determines whether the
         CPU or CUDA implementation is used for the calculation backend.
         It always supports single reverse-mode differentiation, as well as
-        double reverse-mode differentiation if `backward_second_derivatives`
-        was set to `True` during class creation.
+        double reverse-mode differentiation if ``backward_second_derivatives``
+        was set to ``True`` during class creation.
 
         :param xyz:
             The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
@@ -171,7 +171,7 @@ class SphericalHarmonics(torch.nn.Module):
         and also returns the forward-mode derivatives.
 
         The coordinates should be stored in the ``xyz`` array.
-        The type of the entries of `xyz` determines the precision used,
+        The type of the entries of ``xyz`` determines the precision used,
         and the device the tensor is stored on determines whether the
         CPU or CUDA implementation is used for the calculation backend.
         Reverse-mode differentiation is not supported for this function.
@@ -184,7 +184,7 @@ class SphericalHarmonics(torch.nn.Module):
             A tuple that contains:
 
             * A ``(n_samples, (l_max+1)**2)`` tensor containing all the
-              spherical harmonics up to degree `l_max` in lexicographic order.
+              spherical harmonics up to degree ``l_max`` in lexicographic order.
               For example, if ``l_max = 2``, The last axis will correspond to
               spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
               1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
@@ -203,20 +203,20 @@ class SphericalHarmonics(torch.nn.Module):
         and also returns the forward derivatives and second derivatives.
 
         The coordinates should be stored in the ``xyz`` array.
-        The type of the entries of `xyz` determines the precision used,
+        The type of the entries of ``xyz`` determines the precision used,
         and the device the tensor is stored on determines whether the
         CPU or CUDA implementation is used for the calculation backend.
         Reverse-mode differentiation is not supported for this function.
 
         :param xyz:
-            The Cartesian coordinates of the 3D points, as a `torch.Tensor` with
+            The Cartesian coordinates of the 3D points, as a ``torch.Tensor`` with
             shape ``(n_samples, 3)``.
 
         :return:
             A tuple that contains:
 
             * A ``(n_samples, (l_max+1)**2)`` tensor containing all the
-              spherical harmonics up to degree `l_max` in lexicographic order.
+              spherical harmonics up to degree ``l_max`` in lexicographic order.
               For example, if ``l_max = 2``, The last axis will correspond to
               spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
               1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
@@ -248,7 +248,7 @@ class SolidHarmonics(torch.nn.Module):
     Solid harmonics calculator, up to degree ``l_max``.
 
     This class computes the solid harmonics, a non-normalized form of the real
-    spherical harmonics, i.e. :math:`r^l Y^l_m`. These scaled spherical harmonics
+    spherical harmonics, i.e. :math:`r^lY^m_l`. These scaled spherical harmonics
     are polynomials in the Cartesian coordinates of the input points.
 
     The usage of this class is identical to :py:class:`sphericart.SphericalHarmonics`.
@@ -256,12 +256,12 @@ class SolidHarmonics(torch.nn.Module):
     :param l_max:
         the maximum degree of the spherical harmonics to be calculated
     :param backward_second_derivatives:
-        if this parameter is set to `True`, second derivatives of the spherical
-        harmonics are calculated and stored during forward calls to `compute`
-        (provided that `xyz.requires_grad` is `True`), making it possible to perform
-        double reverse-mode differentiation with respect to `xyz`. If `False`, only
+        if this parameter is set to ``True``, second derivatives of the spherical
+        harmonics are calculated and stored during forward calls to ``compute``
+        (provided that ``xyz.requires_grad`` is ``True``), making it possible to perform
+        double reverse-mode differentiation with respect to ``xyz``. If ``False``, only
         the first derivatives will be computed and only a single reverse-mode
-        differentiation step will be possible with respect to `xyz`.
+        differentiation step will be possible with respect to ``xyz``.
 
     :return: a calculator, in the form of a SolidHarmonics object
     """
@@ -319,20 +319,20 @@ def e3nn_spherical_harmonics(
 
     :param l_list:
         Either a single integer or a list of integers specifying which
-        :math:`Y^l_m` should be computed. All values up to the maximum
+        :math:`Y^m_l` should be computed. All values up to the maximum
         l value are computed, so this may be inefficient for use cases
         requiring a single, or few, angular momentum channels.
     :param x:
-        A `torch.Tensor` containing the coordinates, in the same format
-        expected by the `e3nn` function.
+        A ``torch.Tensor`` containing the coordinates, in the same format
+        expected by the ``e3nn`` function.
     :param normalize:
         Flag specifying whether the input positions should be normalized
-        (resulting in the computation of the spherical harmonics :math:`Y^l_m`),
+        (resulting in the computation of the spherical harmonics :math:`Y^m_l`),
         or whether the function should compute the solid harmonics
-        :math:`\tilde{Y}^l_m`.
+        :math:`r^lY^m_l`.
     :param normalization:
         String that can be "integral", "norm", "component", that controls
-        a further scaling of the :math:`Y_m^l`. See the
+        a further scaling of the :math:`Y^m_l`. See the
         documentation of :py:func:`e3nn.o3.spherical_harmonics()`
         for a detailed explanation of the different conventions.
     """

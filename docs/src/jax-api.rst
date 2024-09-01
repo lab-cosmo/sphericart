@@ -14,3 +14,5 @@ using the CPU or CUDA implementation.
 
 .. autofunction:: sphericart.jax.spherical_harmonics
 
+.. autofunction:: sphericart.jax.solid_harmonics
+
