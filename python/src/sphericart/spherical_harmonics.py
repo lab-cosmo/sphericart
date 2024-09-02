@@ -12,7 +12,7 @@ class SphericalHarmonics:
     :math:`Y^m_l` up to degree ``l_max``. The calculated spherical harmonics
     are consistent with the definition of real spherical harmonics from Wikipedia.
 
-    The `SphericalHarmonics` object computes prefactors and initializes buffers
+    The ``SphericalHarmonics`` object computes prefactors and initializes buffers
     upon creation
 
     >>> import numpy as np
