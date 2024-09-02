@@ -2,12 +2,12 @@ PyTorch API
 ===========
 
 The classes for computing spherical harmonics using a
-``torch``-compatible framework follow the same syntax as
+``torch``-compatible framework follow a similar syntax to
 the Python versions :py:class:`sphericart.SphericalHarmonics`
 and :py:class:`sphericart.SolidHarmonics`, while inheriting
 from ``torch.nn.Module``.
 Depending on the ``device`` the tensor is
-stored on, and its ``dtype``, the calculations will be performed
+stored on and its ``dtype``, the calculations will be performed
 using 32- or 64- bits floating point arythmetics, and
 using the CPU or CUDA implementation.
 
