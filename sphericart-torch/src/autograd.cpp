@@ -374,7 +374,19 @@ std::vector<torch::Tensor> SphericartAutogradBackward::backward(
     auto gradgrad_wrt_xyz = torch::Tensor();
 
     bool double_backward = ddsph.defined(); // If the double backward was not requested in
-                                            // advance, this  tensor will be uninitialized
+                                            // advance, this tensor will be uninitialized
+
+    if (!double_backward) {
+        TORCH_WARN_ONCE(
+            "Second derivatives of the spherical harmonics with respect to the Cartesian "
+            "coordinates were not requested at class creation. The second derivative of "
+            "the spherical harmonics with respect to the Cartesian coordinates will be "
+            "treated as zero, potentially causing incorrect results. Make sure you either "
+            "do not need (i.e., are not using) these second derivatives, or that you set "
+            "`backward_second_derivatives=True` when creating the SphericalHarmonics or "
+            "SolidHarmonics class."
+        );
+    }
 
     if (grad_out.requires_grad()) {
         // gradgrad_wrt_grad_out, unlike gradgrad_wrt_xyz, is needed for mixed

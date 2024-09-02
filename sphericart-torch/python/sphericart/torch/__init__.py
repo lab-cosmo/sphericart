@@ -102,12 +102,24 @@ class SphericalHarmonics(torch.nn.Module):
     By default, only single backpropagation with respect to `xyz` is
     enabled (this includes mixed second derivatives where ``xyz`` appears
     as only one of the differentiation steps). To activate support
-    for double backpropagation with respect to ``xyz``, please set
-    ``backward_second_derivatives=True`` at class creation. Warning: if
-    ``backward_second_derivatives`` is not set to ``True`` and double
-    differentiation with respect to ``xyz`` is requested, the results may
-    be incorrect and no warnings will be displayed. This is necessary to
-    provide optimal performance for both use cases.
+    for double backpropagation with respect to `xyz`, please set
+    `backward_second_derivatives=True` at class creation. Warning: if
+    `backward_second_derivatives` is not set to `True` and double
+    differentiation with respect to `xyz` is requested, the results may
+    be incorrect, but a warning will be displayed. This is necessary to
+    provide optimal performance for both use cases. In particular, the
+    following will happen:
+
+    -   when using ``torch.autograd.grad`` as the second backpropagation
+        step, a warning will be displayed and torch will raise an error.
+    -   when using ``torch.autograd.grad`` with ``allow_unused=True`` as
+        the second backpropagation step, the results will be incorrect
+        and only a warning will be displayed.
+    -   when using ``backward`` as the second backpropagation step, the
+        results will be incorrect and only a warning will be displayed.
+    -   when using ``torch.autograd.functional.hessian``, the results will
+        be incorrect and only a warning will be displayed.
+
 
     This class supports TorchScript.
 
