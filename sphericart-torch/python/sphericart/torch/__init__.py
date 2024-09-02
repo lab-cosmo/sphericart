@@ -72,25 +72,13 @@ torch.classes.load_library(_lib_path())
 # class is directly returned.
 class SphericalHarmonics(torch.nn.Module):
     """
-    Spherical harmonics calculator, up to degree ``l_max``.
-
-    This class computes :math:`Y^m_l`, which are instead homogeneous polynomials
-    of x/r, y/r, z/r.
+    Spherical harmonics calculator, which computes the real spherical harmonics
+    :math:`Y^m_l` up to degree ``l_max``. The calculated spherical harmonics
+    are consistent with the definition of real spherical harmonics from Wikipedia.
 
     This class can be used similarly to :py:class:`sphericart.SphericalHarmonics`
-    (its Python/NumPy counterpart), and it allows to return explicit forward gradients
-    and/or Hessians. For example:
-
-    >>> import torch
-    >>> import sphericart.torch
-    >>> sh = sphericart.torch.SphericalHarmonics(l_max=8)
-    >>> xyz = torch.rand(size=(10,3))
-    >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
-    >>> sh_grads.shape
-    torch.Size([10, 3, 81])
-
-    Alternatively, if ``compute()`` is used, or if the class is called directly,
-    the outputs support single and double backpropagation.
+    (its Python/NumPy counterpart). If the class is called directly, the outputs
+    support single and double backpropagation.
 
     >>> xyz = xyz.detach().clone().requires_grad_()
     >>> sh = sphericart.torch.SphericalHarmonics(l_max=8)
@@ -99,13 +87,13 @@ class SphericalHarmonics(torch.nn.Module):
     >>> torch.allclose(xyz.grad, sh_grads.sum(axis=-1))
     True
 
-    By default, only single backpropagation with respect to `xyz` is
+    By default, only single backpropagation with respect to ``xyz`` is
     enabled (this includes mixed second derivatives where ``xyz`` appears
     as only one of the differentiation steps). To activate support
-    for double backpropagation with respect to `xyz`, please set
-    `backward_second_derivatives=True` at class creation. Warning: if
-    `backward_second_derivatives` is not set to `True` and double
-    differentiation with respect to `xyz` is requested, the results may
+    for double backpropagation with respect to ``xyz``, please set
+    ``backward_second_derivatives=True`` at class creation. Warning: if
+    ``backward_second_derivatives`` is not set to ``True`` and double
+    differentiation with respect to ``xyz`` is requested, the results may
     be incorrect, but a warning will be displayed. This is necessary to
     provide optimal performance for both use cases. In particular, the
     following will happen:
@@ -120,6 +108,16 @@ class SphericalHarmonics(torch.nn.Module):
     -   when using ``torch.autograd.functional.hessian``, the results will
         be incorrect and only a warning will be displayed.
 
+    Alternatively, the class allows to return explicit forward gradients and/or
+    Hessians of the spherical harmonics. For example:
+
+    >>> import torch
+    >>> import sphericart.torch
+    >>> sh = sphericart.torch.SphericalHarmonics(l_max=8)
+    >>> xyz = torch.rand(size=(10,3))
+    >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
+    >>> sh_grads.shape
+    torch.Size([10, 3, 81])
 
     This class supports TorchScript.
 
