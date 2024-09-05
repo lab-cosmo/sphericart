@@ -58,7 +58,7 @@ list(APPEND COMMON_SOURCES "include/cuda_base.hpp")
 list(APPEND COMMON_SOURCES "include/sphericart_cuda.hpp")
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    list(APPEND COMMON_SOURCES "include/jittify.hpp")
+    list(APPEND COMMON_SOURCES "include/cuda_cache.hpp")
     list(APPEND COMMON_SOURCES "src/cuda_base.cu")
     list(APPEND COMMON_SOURCES "src/sphericart_cuda.cu")
     list(APPEND COMMON_SOURCES "src/sphericart_impl.cu")

@@ -235,43 +235,104 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 
     std::string kernel_name = getKernelNameForType<scalar_t>("spherical_harmonics_kernel");
 
-    auto& kernel_factory = KernelFactory::instance();
+    auto& cache_manager = CudaCacheManager::instance();
 
-    CachedKernel kernel =
-        kernel_factory.getOrCreateKernel(kernel_name, SPHERICART_CUDA_SRC_PATH, "sphericart_impl.cu");
+    CUcontext currentContext;
+    // Get current context
+    cuCtxGetCurrent(&currentContext);
 
-    int n_total = (l_max + 1) * (l_max + 1);
-    dim3 block_dim(GRID_DIM_X, GRID_DIM_Y);
-    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
-    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-    dim3 grid_dim(find_num_blocks(nedges, GRID_DIM_Y));
+    if (!cache_manager.hasKernel(kernel_name)) {
 
-    size_t total_buff_size =
-        total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
+        std::string kernel_code = load_cuda_source(SPHERICART_CUDA_SRC_PATH);
 
-    int _nprefactors = nprefactors;
-    int _lmax = l_max;
-    int _n_total = n_total;
-    int _nedges = nedges;
-    bool _gradients = gradients;
-    bool _hessian = hessian;
-    bool _normalize = normalize;
+        nvrtcProgram prog;
+        nvrtcResult result =
+            nvrtcCreateProgram(&prog, kernel_code.c_str(), "sphericart_impl.cu", 0, nullptr, nullptr);
 
-    void* args[] = {
-        &xyz,
-        &_nedges,
-        &prefactors,
-        &_nprefactors,
-        &_lmax,
-        &_n_total,
-        &_gradients,
-        &_hessian,
-        &_normalize,
-        &sph,
-        &dsph,
-        &ddsph};
+        NVRTC_SAFE_CALL(nvrtcAddNameExpression(prog, kernel_name.c_str()));
 
-    kernel.launch(grid_dim, block_dim, total_buff_size, cstream, args);
+        const char* opts[] = {
+            "--include-path=" SPHERICART_INCLUDE_PATH,
+            "--define-macro=CUDA_DEVICE_PREFIX=__device__"};
+
+        nvrtcResult compileResult = nvrtcCompileProgram(prog, 2, opts);
+        if (compileResult != NVRTC_SUCCESS) {
+            size_t logSize;
+            NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &logSize));
+            std::string log(logSize, '\0');
+            NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, &log[0]));
+            std::cerr << log << std::endl;
+            std::cerr << "Failed to compile CUDA program" << std::endl;
+            exit(1);
+        }
+
+        // Get PTX code
+        size_t ptxSize;
+        NVRTC_SAFE_CALL(nvrtcGetPTXSize(prog, &ptxSize));
+        std::vector<char> ptxCode(ptxSize);
+        NVRTC_SAFE_CALL(nvrtcGetPTX(prog, ptxCode.data()));
+
+        CUdevice cuDevice;
+        CUcontext context;
+        CUmodule module;
+        cuInit(0);
+        cuDeviceGet(&cuDevice, 0);
+        CUresult cuResult = cuModuleLoadDataEx(&module, ptxCode.data(), 0, 0, 0);
+
+        if (cuResult != CUDA_SUCCESS) {
+            std::cerr << "Failed to load PTX code into CUDA module" << std::endl;
+            exit(1);
+        }
+
+        const char* lowered_name;
+        nvrtcGetLoweredName(prog, kernel_name.c_str(), &lowered_name);
+        CUfunction kernel;
+        cuModuleGetFunction(&kernel, module, lowered_name);
+        cache_manager.cacheKernel(kernel_name, module, kernel, currentContext);
+
+        // CUDA_SAFE_CALL(cuModuleUnload(module));
+        NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
+    }
+
+    if (cache_manager.hasKernel(kernel_name)) {
+
+        CachedKernel kernel = cache_manager.getKernel(kernel_name);
+
+        int n_total = (l_max + 1) * (l_max + 1);
+        dim3 block_dim(GRID_DIM_X, GRID_DIM_Y);
+        auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
+        cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
+        dim3 grid_dim(find_num_blocks(nedges, GRID_DIM_Y));
+
+        size_t total_buff_size =
+            total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
+
+        int _nprefactors = nprefactors;
+        int _lmax = l_max;
+        int _n_total = n_total;
+        int _nedges = nedges;
+        bool _gradients = gradients;
+        bool _hessian = hessian;
+        bool _normalize = normalize;
+
+        void* args[] = {
+            &xyz,
+            &_nedges,
+            &prefactors,
+            &_nprefactors,
+            &_lmax,
+            &_n_total,
+            &_gradients,
+            &_hessian,
+            &_normalize,
+            &sph,
+            &dsph,
+            &ddsph};
+
+        kernel.launch(grid_dim, block_dim, total_buff_size, cstream, args);
+
+        cuCtxSynchronize();
+    }
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(

@@ -4,6 +4,8 @@
 #include <stdexcept>
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
+
+#include "sphericart.hpp"
 #include "cuda_base.hpp"
 #include "sphericart_cuda.hpp"
 
