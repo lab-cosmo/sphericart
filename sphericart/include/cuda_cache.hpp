@@ -45,7 +45,7 @@ std::string demangleTypeName(const std::string& name) {
     );
     return (status == 0) ? demangled_name.get() : name;
 #else
-    return name; // No demangling needed or supported
+    throw std::runtime_error("demangling not supported using this toolchain.");
 #endif
 }
 
