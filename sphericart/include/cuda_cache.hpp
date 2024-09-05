@@ -74,20 +74,15 @@ class CachedKernel {
         return value;
     }
 
-    void launch(
-        dim3 grid,
-        dim3 block,
-        size_t shared_mem_size,
-        void* cuda_stream,
-        void** args,
-        bool synchronize = true
-    ) {
-
-        CUDA_SAFE_CALL(cuCtxSetCurrent(context));
-
+    /*
+    The default shared memory space on most recent NVIDIA cards is defaulted
+   49152 bytes, regarldess if there is more available per SM. This method
+   attempts to adjust the shared memory to fit the requested configuration if
+   the kernel launch parameters exceeds the default 49152 bytes.
+*/
+    void checkAndAdjustSharedMem(int query_shared_mem_size) {
         /*Check whether we need to adjust shared memory size */
         if (current_smem_size == 0) {
-
             CUdevice cuDevice;
             CUresult res = cuCtxGetDevice(&cuDevice);
 
@@ -106,28 +101,37 @@ class CachedKernel {
             CUDA_SAFE_CALL(cuDeviceGetAttribute(
                 &curr_max_smem_per_block, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, cuDevice
             ));
-            // cuDeviceGetAttribute
-            // CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK
-            // CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES
-            // CU_DEVICE_ATTRIBUTE_RESERVED_SHARED_MEMORY_PER_BLOCK
-            // CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN
+
             current_smem_size = (curr_max_smem_per_block - reserved_smem_per_block);
-            // max_smem_size = deviceProp.sharedMemPerBlockOptin;
         }
 
-        if (shared_mem_size > current_smem_size) {
+        if (query_shared_mem_size > current_smem_size) {
 
-            if (shared_mem_size > max_smem_size_optin) {
+            if (query_shared_mem_size > max_smem_size_optin) {
                 throw std::runtime_error(
                     "CachedKernel::launch requested more smem than available on card."
                 );
             } else {
                 CUDA_SAFE_CALL(cuFuncSetAttribute(
-                    function, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, shared_mem_size
+                    function, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, query_shared_mem_size
                 ));
-                current_smem_size = shared_mem_size;
+                current_smem_size = query_shared_mem_size;
             }
         }
+    }
+
+    void launch(
+        dim3 grid,
+        dim3 block,
+        size_t shared_mem_size,
+        void* cuda_stream,
+        void** args,
+        bool synchronize = true
+    ) {
+
+        CUDA_SAFE_CALL(cuCtxSetCurrent(context));
+
+        checkAndAdjustSharedMem(shared_mem_size);
 
         cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
@@ -187,13 +191,16 @@ class KernelFactory {
     }
 
     CachedKernel* getOrCreateKernel(
-        const std::string& kernel_name, const std::string& source_path, const std::string& source_file
+        const std::string& kernel_name,
+        const std::string& source_path,
+        const std::string& source_file,
+        const std::vector<std::string>& options
     ) {
 
         if (!cacheManager.hasKernel(kernel_name)) {
             std::string kernel_code = load_cuda_source(source_path);
             // Kernel not found in cache, compile and cache it
-            compileAndCacheKernel(kernel_name, kernel_code, source_file);
+            compileAndCacheKernel(kernel_name, kernel_code, source_file, options);
         }
 
         return cacheManager.getKernel(kernel_name);
@@ -206,7 +213,10 @@ class KernelFactory {
     CudaCacheManager& cacheManager;
 
     void compileAndCacheKernel(
-        const std::string& kernel_name, const std::string& kernel_code, const std::string& source_name
+        const std::string& kernel_name,
+        const std::string& kernel_code,
+        const std::string& source_name,
+        const std::vector<std::string>& options
     ) {
 
         initCudaDriver();
@@ -238,11 +248,13 @@ class KernelFactory {
 
         NVRTC_SAFE_CALL(nvrtcAddNameExpression(prog, kernel_name.c_str()));
 
-        const char* opts[] = {
-            "--include-path=" SPHERICART_INCLUDE_PATH, "--define-macro=CUDA_DEVICE_PREFIX=__device__"
-        };
+        std::vector<const char*> c_options;
+        c_options.reserve(options.size());
+        for (const auto& option : options) {
+            c_options.push_back(option.c_str());
+        }
 
-        nvrtcResult compileResult = nvrtcCompileProgram(prog, 2, opts);
+        nvrtcResult compileResult = nvrtcCompileProgram(prog, options.size(), c_options.data());
         if (compileResult != NVRTC_SUCCESS) {
             size_t logSize;
             NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &logSize));
@@ -282,10 +294,8 @@ class KernelFactory {
 
     void initCudaDriver() {
         int deviceCount = 0;
-
         // Check if CUDA has already been initialized
         CUresult res = cuDeviceGetCount(&deviceCount);
-
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
             // CUDA hasn't been initialized, so we initialize it now
             res = cuInit(0);

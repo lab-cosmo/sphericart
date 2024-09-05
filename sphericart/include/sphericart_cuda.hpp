@@ -106,9 +106,6 @@ template <typename T> class SphericalHarmonics {
     int device_count = 0;          // number of visible GPU devices
     int64_t CUDA_GRID_DIM_X_ = 8;
     int64_t CUDA_GRID_DIM_Y_ = 8;
-    bool cached_compute_with_gradients = false;
-    bool cached_compute_with_hessian = false;
-    int64_t _current_shared_mem_allocation = 0;
     /* @endcond */
 };
 

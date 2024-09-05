@@ -63,17 +63,6 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
             ));
         }
 
-        // initialise the currently available amount of shared memory on all visible devices
-        this->_current_shared_mem_allocation = adjust_shared_memory(
-            sizeof(T),
-            this->l_max,
-            this->CUDA_GRID_DIM_X_,
-            this->CUDA_GRID_DIM_Y_,
-            false,
-            false,
-            this->_current_shared_mem_allocation
-        );
-
         // set the context back to the current device
         CUDA_CHECK(cudaSetDevice(current_device));
     }
@@ -82,7 +71,7 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     // Destructor, frees the prefactors
     if (this->prefactors_cpu != nullptr) {
-        delete[] (this->prefactors_cpu);
+        delete[](this->prefactors_cpu);
         this->prefactors_cpu = nullptr;
     }
 
@@ -139,46 +128,6 @@ void SphericalHarmonics<T>::compute(
         throw std::runtime_error("sphericart::cuda::SphericalHarmonics::compute expected "
                                  "ddsph != nullptr since compute_with_hessian = true. "
                                  "initialise ddsph with cudaMalloc.");
-    }
-
-    if (this->cached_compute_with_gradients != compute_with_gradients ||
-        this->cached_compute_with_hessian != compute_with_hessian) {
-
-        this->_current_shared_mem_allocation = adjust_shared_memory(
-            sizeof(T),
-            this->l_max,
-            this->CUDA_GRID_DIM_X_,
-            this->CUDA_GRID_DIM_Y_,
-            compute_with_gradients,
-            compute_with_hessian,
-            this->_current_shared_mem_allocation
-        );
-
-        if (this->_current_shared_mem_allocation == -1) {
-
-            std::cerr << "Warning: Failed to update shared memory size, "
-                         "re-attempting with  GRID_DIM_Y = 4\n"
-                      << std::endl;
-
-            this->CUDA_GRID_DIM_Y_ = 4;
-            this->_current_shared_mem_allocation = adjust_shared_memory(
-                sizeof(T),
-                this->l_max,
-                this->CUDA_GRID_DIM_X_,
-                this->CUDA_GRID_DIM_Y_,
-                compute_with_gradients,
-                compute_with_hessian,
-                this->_current_shared_mem_allocation
-            );
-
-            if (this->_current_shared_mem_allocation == -1) {
-                throw std::runtime_error("Insufficient shared memory available to compute "
-                                         "spherical_harmonics with requested parameters.");
-            }
-        }
-
-        this->cached_compute_with_gradients = compute_with_gradients;
-        this->cached_compute_with_hessian = compute_with_hessian;
     }
 
     cudaPointerAttributes attributes;

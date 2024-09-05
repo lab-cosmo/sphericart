@@ -18,7 +18,6 @@
 
 #include "cuda_cache.hpp"
 #include "cuda_base.hpp"
-#include "sphericart_impl.cuh"
 
 /* MASK used for warp reductions */
 #define FULL_MASK 0xffffffff
@@ -109,78 +108,7 @@ static size_t total_buffer_size(
     return total_buff_size;
 }
 
-/*
-    The default shared memory space on most recent NVIDIA cards is defaulted
-   49152 bytes, regarldess if there is more available per SM. This method
-   attempts to adjust the shared memory to fit the requested configuration if
-   the kernel launch parameters exceeds the default 49152 bytes.
-*/
 
-int sphericart::cuda::adjust_shared_memory(
-    size_t element_size,
-    int64_t l_max,
-    int64_t GRID_DIM_X,
-    int64_t GRID_DIM_Y,
-    bool requires_grad,
-    bool requires_hessian,
-    int64_t current_shared_mem_alloc
-) {
-
-    int device_count;
-
-    cudaGetDeviceCount(&device_count);
-
-    int current_device;
-    cudaGetDevice(&current_device);
-
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, current_device);
-
-    auto required_buff_size = total_buffer_size(
-        l_max, GRID_DIM_X, GRID_DIM_Y, element_size, requires_grad, requires_hessian
-    );
-
-    if (required_buff_size > current_shared_mem_alloc &&
-        required_buff_size > (deviceProp.sharedMemPerBlock - deviceProp.reservedSharedMemPerBlock)) {
-
-        if (required_buff_size > deviceProp.sharedMemPerBlockOptin) {
-            return -1; // failure - need to adjust parameters
-        }
-
-        // broadcast changes to all visible GPUs
-        for (int device = 0; device < device_count; device++) {
-
-            CUDA_CHECK(cudaSetDevice(device));
-
-            switch (element_size) {
-            case 8:
-                cudaFuncSetAttribute(
-                    spherical_harmonics_kernel<double>,
-                    cudaFuncAttributeMaxDynamicSharedMemorySize,
-                    required_buff_size
-                );
-                break;
-            case 4:
-                cudaFuncSetAttribute(
-                    spherical_harmonics_kernel<float>,
-                    cudaFuncAttributeMaxDynamicSharedMemorySize,
-                    required_buff_size
-                );
-                break;
-            }
-        }
-
-        CUDA_CHECK(cudaSetDevice(current_device));
-
-        return required_buff_size;
-
-    } else {
-        return (current_shared_mem_alloc >
-                (deviceProp.sharedMemPerBlock - deviceProp.reservedSharedMemPerBlock))
-                   ? current_shared_mem_alloc
-                   : (deviceProp.sharedMemPerBlock - deviceProp.reservedSharedMemPerBlock);
-    }
-}
 
 /*
     Wrapper to compile and launch the CUDA kernel. Returns a vector containing the spherical
@@ -237,8 +165,12 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 
     auto& kernel_factory = KernelFactory::instance();
 
-    CachedKernel* kernel =
-        kernel_factory.getOrCreateKernel(kernel_name, SPHERICART_CUDA_SRC_PATH, "sphericart_impl.cu");
+    CachedKernel* kernel = kernel_factory.getOrCreateKernel(
+        kernel_name,
+        SPHERICART_CUDA_SRC_PATH,
+        "sphericart_impl.cu",
+        {"--include-path=" SPHERICART_INCLUDE_PATH, "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+    );
 
     int n_total = (l_max + 1) * (l_max + 1);
     dim3 block_dim(GRID_DIM_X, GRID_DIM_Y);
@@ -324,8 +256,12 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     auto& kernel_factory = KernelFactory::instance();
 
-    CachedKernel* kernel =
-        kernel_factory.getOrCreateKernel(kernel_name, SPHERICART_CUDA_SRC_PATH, "sphericart_impl.cu");
+    CachedKernel* kernel = kernel_factory.getOrCreateKernel(
+        kernel_name,
+        SPHERICART_CUDA_SRC_PATH,
+        "sphericart_impl.cu",
+        {"--include-path=" SPHERICART_INCLUDE_PATH, "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+    );
 
     dim3 block_dim(4, 32);
 
