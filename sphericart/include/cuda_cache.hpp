@@ -80,9 +80,55 @@ class CachedKernel {
         size_t shared_mem_size,
         void* cuda_stream,
         void** args,
-        bool synchronize = false
+        bool synchronize = true
     ) {
+
         CUDA_SAFE_CALL(cuCtxSetCurrent(context));
+
+        /*Check whether we need to adjust shared memory size */
+        if (current_smem_size == 0) {
+
+            CUdevice cuDevice;
+            CUresult res = cuCtxGetDevice(&cuDevice);
+
+            CUDA_SAFE_CALL(cuDeviceGetAttribute(
+                &max_smem_size_optin, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, cuDevice
+            ));
+
+            int reserved_smem_per_block = 0;
+
+            CUDA_SAFE_CALL(cuDeviceGetAttribute(
+                &reserved_smem_per_block, CU_DEVICE_ATTRIBUTE_RESERVED_SHARED_MEMORY_PER_BLOCK, cuDevice
+            ));
+
+            int curr_max_smem_per_block = 0;
+
+            CUDA_SAFE_CALL(cuDeviceGetAttribute(
+                &curr_max_smem_per_block, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, cuDevice
+            ));
+            // cuDeviceGetAttribute
+            // CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK
+            // CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES
+            // CU_DEVICE_ATTRIBUTE_RESERVED_SHARED_MEMORY_PER_BLOCK
+            // CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN
+            current_smem_size = (curr_max_smem_per_block - reserved_smem_per_block);
+            // max_smem_size = deviceProp.sharedMemPerBlockOptin;
+        }
+
+        if (shared_mem_size > current_smem_size) {
+
+            if (shared_mem_size > max_smem_size_optin) {
+                throw std::runtime_error(
+                    "CachedKernel::launch requested more smem than available on card."
+                );
+            } else {
+                CUDA_SAFE_CALL(cuFuncSetAttribute(
+                    function, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, shared_mem_size
+                ));
+                current_smem_size = shared_mem_size;
+            }
+        }
+
         cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
         CUDA_SAFE_CALL(cuLaunchKernel(
@@ -94,6 +140,8 @@ class CachedKernel {
     }
 
   private:
+    int current_smem_size = 0;
+    int max_smem_size_optin = 0;
     CUmodule module;
     CUfunction function;
     CUcontext context;
