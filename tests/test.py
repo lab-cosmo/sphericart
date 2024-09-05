@@ -27,14 +27,14 @@ print(ylm_2 - ylm)
 # ylm.sum().backward()
 
 sph = sphericart.torch.SphericalHarmonics(8)
-xyz = torch.rand(10000, 3, device='cuda',
-                 requires_grad=True, dtype=torch.float32)
+xyz = torch.rand(100000, 3, device='cuda',
+                 requires_grad=False, dtype=torch.float32)
 
-#warmup
+# warmup
 torch.cuda.synchronize()
 for i in range(100):
     ylm = sph.compute(xyz)
-    
+
 torch.cuda.synchronize()
 start = time()
 

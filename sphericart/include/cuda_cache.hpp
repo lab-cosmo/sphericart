@@ -80,7 +80,7 @@ class CachedKernel {
         size_t shared_mem_size,
         void* cuda_stream,
         void** args,
-        bool synchronize = false
+        bool synchronize = true
     ) {
         CUDA_SAFE_CALL(cuCtxSetCurrent(context));
         cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
