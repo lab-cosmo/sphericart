@@ -18,8 +18,8 @@
     do {                                                                                           \
         nvrtcResult result = x;                                                                    \
         if (result != NVRTC_SUCCESS) {                                                             \
-            std::cerr << "\nerror: " #x " failed with error " << nvrtcGetErrorString(result)       \
-                      << '\n';                                                                     \
+            std::cerr << "\nerror: " #x " failed with error "                                      \
+                      << DynamicCUDA::instance().nvrtcGetErrorString(result) << '\n';              \
             exit(1);                                                                               \
         }                                                                                          \
     } while (0)
@@ -29,7 +29,7 @@
         CUresult result = x;                                                                       \
         if (result != CUDA_SUCCESS) {                                                              \
             const char* msg;                                                                       \
-            cuGetErrorName(result, &msg);                                                          \
+            DynamicCUDA::instance().cuGetErrorName(result, &msg);                                  \
             std::cerr << "\nerror: " #x " failed with error " << msg << '\n';                      \
             exit(1);                                                                               \
         }                                                                                          \
@@ -345,6 +345,7 @@ class KernelFactory {
         // Check if CUDA has already been initialized
         CUresult res = dynamicCuda.cuDeviceGetCount(&deviceCount);
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
+            std::cout << "CUDA has not been initialized for some reason..." << std::endl;
             // CUDA hasn't been initialized, so we initialize it now
             res = dynamicCuda.cuInit(0);
             if (res != CUDA_SUCCESS) {
