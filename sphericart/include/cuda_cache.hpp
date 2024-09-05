@@ -1,12 +1,11 @@
 // Cache Manager Header
-#ifndef SPHERICART_CUDA_CACHE_HPP
-#define SPHERICART_CUDA_CACHE_HPP
+#ifndef CUDA_CACHE_HPP
+#define CUDA_CACHE_HPP
 
 #include <nvrtc.h>
 #include <vector>
 #include <unordered_map>
 #include <string>
-#include <optional>
 
 #define NVRTC_SAFE_CALL(x)                                                                         \
     do {                                                                                           \

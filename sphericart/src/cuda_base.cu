@@ -318,69 +318,14 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     void* cuda_stream
 ) {
 
-    static std::vector<char> g_ptxCode;
-    static CUmodule g_module = nullptr;
-    static nvrtcProgram prog;
+    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    std::vector<std::string> kernel_name_vec = {"backward_kernel<double>", "backward_kernel<float>"};
+    std::string kernel_name = getKernelNameForType<scalar_t>("backward_kernel");
 
-    if (!g_module) {
-        std::string kernel_code = load_cuda_source(SPHERICART_CUDA_SRC_PATH);
+    auto& kernel_factory = KernelFactory::instance();
 
-        nvrtcResult result =
-            nvrtcCreateProgram(&prog, kernel_code.c_str(), "sphericart_impl.cu", 0, nullptr, nullptr);
-
-        for (int i = 0; i < kernel_name_vec.size(); i++) {
-            NVRTC_SAFE_CALL(nvrtcAddNameExpression(prog, kernel_name_vec[i].c_str()));
-        }
-
-        const char* opts[] = {
-            "--include-path=" SPHERICART_INCLUDE_PATH,
-            "--define-macro=CUDA_DEVICE_PREFIX=__device__"};
-        nvrtcResult compileResult = nvrtcCompileProgram(prog, 2, opts);
-
-        if (compileResult != NVRTC_SUCCESS) {
-            size_t logSize;
-            NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &logSize));
-            char* log = new char[logSize];
-            NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, log));
-            std::cout << log << '\n';
-            delete[] log;
-            std::cerr << "Failed to compile CUDA program" << std::endl;
-            exit(1);
-        }
-
-        // Get PTX code
-        size_t ptxSize;
-        NVRTC_SAFE_CALL(nvrtcGetPTXSize(prog, &ptxSize));
-        g_ptxCode.resize(ptxSize);
-        NVRTC_SAFE_CALL(nvrtcGetPTX(prog, g_ptxCode.data()));
-
-        CUdevice cuDevice;
-        CUcontext context;
-        CUmodule module;
-
-        cuInit(0);
-        cuDeviceGet(&cuDevice, 0);
-        cuCtxCreate(&context, 0, cuDevice);
-        CUresult cuResult = cuModuleLoadDataEx(&g_module, g_ptxCode.data(), 0, 0, 0);
-
-        if (cuResult != CUDA_SUCCESS) {
-            std::cerr << "Failed to load PTX code into CUDA module" << std::endl;
-            exit(1);
-        }
-    }
-
-    const char* kernel_name =
-        sizeof(scalar_t) == 8 ? kernel_name_vec[0].c_str() : kernel_name_vec[1].c_str();
-
-    const char* name;
-
-    NVRTC_SAFE_CALL(nvrtcGetLoweredName(prog, kernel_name, &name));
-
-    static CUfunction kernel;
-
-    cuModuleGetFunction(&kernel, g_module, name);
+    CachedKernel kernel =
+        kernel_factory.getOrCreateKernel(kernel_name, SPHERICART_CUDA_SRC_PATH, "sphericart_impl.cu");
 
     dim3 block_dim(4, 32);
 
@@ -388,28 +333,12 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     dim3 grid_dim(find_num_blocks(nedges, 32), 3);
 
-    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-
     int _n_total = ntotal;
     int _nedges = nedges;
 
     void* args[] = {&dsph, &sph_grad, &_nedges, &_n_total, &xyz_grad};
 
-    cuLaunchKernel(
-        kernel,
-        grid_dim.x,
-        grid_dim.y,
-        grid_dim.z, // grid dim
-        block_dim.x,
-        block_dim.y,
-        block_dim.z, // block dim
-        0,
-        cstream,
-        args, // arguments
-        0
-    );
-
-    cuCtxSynchronize();
+    kernel.launch(grid_dim, block_dim, 0, cstream, args);
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
