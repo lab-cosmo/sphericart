@@ -37,6 +37,7 @@ class DynamicCUDA {
     using cuStreamDestroy_t = CUresult (*)(CUstream);
     using cuCtxSynchronize_t = CUresult (*)(void);
     using cuGetErrorName_t = CUresult (*)(CUresult, const char**);
+    using cuCtxPushCurrent_t = CUresult (*)(CUcontext);
 
     using nvrtcCreateProgram_t =
         nvrtcResult (*)(nvrtcProgram*, const char*, const char*, int, const char*[], const char*[]);
@@ -68,6 +69,7 @@ class DynamicCUDA {
     cuStreamDestroy_t cuStreamDestroy;
     cuGetErrorName_t cuGetErrorName;
     cuCtxSynchronize_t cuCtxSynchronize;
+    cuCtxPushCurrent_t cuCtxPushCurrent;
 
     nvrtcCreateProgram_t nvrtcCreateProgram;
     nvrtcCompileProgram_t nvrtcCompileProgram;
@@ -121,6 +123,7 @@ class DynamicCUDA {
         cuStreamDestroy = (cuStreamDestroy_t)dlsym(cudaHandle, "cuStreamDestroy");
         cuCtxSynchronize = (cuCtxSynchronize_t)dlsym(cudaHandle, "cuCtxSynchronize");
         cuGetErrorName = (cuGetErrorName_t)dlsym(cudaHandle, "cuGetErrorName");
+        cuCtxPushCurrent = (cuCtxPushCurrent_t)dlsym(cudaHandle, "cuCtxPushCurrent");
 
         // Load NVRTC function pointers
         nvrtcCreateProgram = (nvrtcCreateProgram_t)dlsym(nvrtcHandle, "nvrtcCreateProgram");
@@ -141,10 +144,10 @@ class DynamicCUDA {
             !cuModuleLoadDataEx || !cuModuleGetFunction || !cuFuncSetAttribute ||
             !cuFuncGetAttribute || !cuCtxGetDevice || !cuDeviceGetAttribute || !cuDeviceGetName ||
             !cuDeviceTotalMem || !cuLaunchKernel || !cuStreamCreate || !cuStreamDestroy ||
-            !cuCtxSynchronize || !cuGetErrorName || !nvrtcCreateProgram || !nvrtcCompileProgram ||
-            !nvrtcGetPTX || !nvrtcGetPTXSize || !nvrtcGetProgramLog || !nvrtcGetProgramLogSize ||
-            !nvrtcGetLoweredName || !nvrtcAddNameExpression || !nvrtcDestroyProgram ||
-            !nvrtcGetErrorString) {
+            !cuCtxSynchronize || !cuGetErrorName || !cuCtxPushCurrent || !nvrtcCreateProgram ||
+            !nvrtcCompileProgram || !nvrtcGetPTX || !nvrtcGetPTXSize || !nvrtcGetProgramLog ||
+            !nvrtcGetProgramLogSize || !nvrtcGetLoweredName || !nvrtcAddNameExpression ||
+            !nvrtcDestroyProgram || !nvrtcGetErrorString) {
             dlclose(cudaHandle);
             dlclose(nvrtcHandle);
             throw std::runtime_error("Failed to load one or more CUDA/NVRTC functions. Post an "

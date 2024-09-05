@@ -268,13 +268,13 @@ class KernelFactory {
         CUresult res = dynamicCuda.cuCtxGetDevice(&cuDevice);
 
         CUcontext currentContext;
+        // CUresult ctxResult = dynamicCuda.cuCtxCreate(&currentContext, 0, cuDevice);
+
         // Get current context
         CUresult result = dynamicCuda.cuCtxGetCurrent(&currentContext);
         // If no context exists, create a new one
         if (res != CUDA_SUCCESS || currentContext == NULL) {
             // Select device (you can modify the device selection logic as needed)
-
-            std::cout << "We are creating a new context for some reason..." << std::endl;
             // Create a new context
             CUresult ctxResult = dynamicCuda.cuCtxCreate(&currentContext, 0, cuDevice);
 
@@ -345,7 +345,6 @@ class KernelFactory {
         // Check if CUDA has already been initialized
         CUresult res = dynamicCuda.cuDeviceGetCount(&deviceCount);
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
-            std::cout << "CUDA has not been initialized for some reason..." << std::endl;
             // CUDA hasn't been initialized, so we initialize it now
             res = dynamicCuda.cuInit(0);
             if (res != CUDA_SUCCESS) {
