@@ -237,7 +237,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 
     auto& kernel_factory = KernelFactory::instance();
 
-    CachedKernel kernel =
+    CachedKernel* kernel =
         kernel_factory.getOrCreateKernel(kernel_name, SPHERICART_CUDA_SRC_PATH, "sphericart_impl.cu");
 
     int n_total = (l_max + 1) * (l_max + 1);
@@ -271,7 +271,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         &dsph,
         &ddsph};
 
-    kernel.launch(grid_dim, block_dim, total_buff_size, cstream, args);
+    kernel->launch(grid_dim, block_dim, total_buff_size, cstream, args);
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
@@ -324,7 +324,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     auto& kernel_factory = KernelFactory::instance();
 
-    CachedKernel kernel =
+    CachedKernel* kernel =
         kernel_factory.getOrCreateKernel(kernel_name, SPHERICART_CUDA_SRC_PATH, "sphericart_impl.cu");
 
     dim3 block_dim(4, 32);
@@ -338,7 +338,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     void* args[] = {&dsph, &sph_grad, &_nedges, &_n_total, &xyz_grad};
 
-    kernel.launch(grid_dim, block_dim, 0, cstream, args);
+    kernel->launch(grid_dim, block_dim, 0, cstream, args);
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(

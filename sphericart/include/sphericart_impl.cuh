@@ -31,8 +31,8 @@ __device__ inline void clear_buffers(
 */
 template <typename scalar_t>
 __device__ inline void write_buffers(
-    size_t edge_idx,
-    size_t nedges,
+    int edge_idx,
+    int nedges,
     scalar_t x,
     scalar_t y,
     scalar_t z,
@@ -59,7 +59,7 @@ __device__ inline void write_buffers(
     scalar_t* sph,
     scalar_t* dsph,
     scalar_t* ddsph,
-    size_t n_total,
+    int n_total,
     bool requires_grad,
     bool requires_hessian,
     bool normalize
@@ -90,5 +90,5 @@ __global__ void spherical_harmonics_kernel(
 */
 template <typename scalar_t>
 __global__ void backward_kernel(
-    scalar_t* dsph, scalar_t* sph_grad, size_t nedges, size_t n_total, scalar_t* xyz_grad
+    scalar_t* dsph, scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
 );

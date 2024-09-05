@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include <memory>
 
 #define NVRTC_SAFE_CALL(x)                                                                         \
     do {                                                                                           \
@@ -79,7 +80,7 @@ class CachedKernel {
         size_t shared_mem_size,
         void* cuda_stream,
         void** args,
-        bool synchronize = true
+        bool synchronize = false
     ) {
         CUDA_SAFE_CALL(cuCtxSetCurrent(context));
         cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
@@ -106,18 +107,17 @@ class CudaCacheManager {
     }
 
     void cacheKernel(const std::string& kernel_name, CUmodule module, CUfunction fn, CUcontext ctx) {
-        CachedKernel k(module, fn, ctx);
-        kernel_cache[kernel_name] = k;
+        kernel_cache[kernel_name] = std::make_unique<CachedKernel>(module, fn, ctx);
     }
 
     bool hasKernel(const std::string& kernel_name) const {
         return kernel_cache.find(kernel_name) != kernel_cache.end();
     }
 
-    CachedKernel getKernel(const std::string& kernel_name) const {
+    CachedKernel* getKernel(const std::string& kernel_name) const {
         auto it = kernel_cache.find(kernel_name);
         if (it != kernel_cache.end()) {
-            return it->second;
+            return it->second.get();
         }
         throw std::runtime_error("Kernel not found in cache.");
     }
@@ -127,7 +127,7 @@ class CudaCacheManager {
     CudaCacheManager(const CudaCacheManager&) = delete;
     CudaCacheManager& operator=(const CudaCacheManager&) = delete;
 
-    std::unordered_map<std::string, CachedKernel> kernel_cache;
+    std::unordered_map<std::string, std::unique_ptr<CachedKernel>> kernel_cache;
 };
 
 class KernelFactory {
@@ -138,7 +138,7 @@ class KernelFactory {
         return instance;
     }
 
-    CachedKernel getOrCreateKernel(
+    CachedKernel* getOrCreateKernel(
         const std::string& kernel_name, const std::string& source_path, const std::string& source_file
     ) {
 

@@ -129,7 +129,7 @@ endif()
 
 if(CMAKE_CUDA_COMPILER)
     target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
-    set_target_properties(sphericart_torch PROPERTIES CUDA_NVCC_FLAGS "-lineinfo")
+    #set_target_properties(sphericart_torch PROPERTIES CUDA_NVCC_FLAGS "-lineinfo")
 endif()
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
 

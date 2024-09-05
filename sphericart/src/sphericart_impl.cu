@@ -74,8 +74,8 @@ __device__ inline void clear_buffers(
 */
 template <typename scalar_t>
 __device__ inline void write_buffers(
-    size_t edge_idx,
-    size_t nedges,
+    int edge_idx,
+    int nedges,
     scalar_t x,
     scalar_t y,
     scalar_t z,
@@ -102,7 +102,7 @@ __device__ inline void write_buffers(
     scalar_t* sph,
     scalar_t* dsph,
     scalar_t* ddsph,
-    size_t n_total,
+    int n_total,
     bool requires_grad,
     bool requires_hessian,
     bool normalize
@@ -225,7 +225,7 @@ __global__ void spherical_harmonics_kernel(
 
     extern __shared__ char buffer[];
 
-    size_t offset = 0;
+    int offset = 0;
 
     scalar_t* buffer_c = reinterpret_cast<scalar_t*>(buffer + offset);
     offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
@@ -287,7 +287,7 @@ __global__ void spherical_harmonics_kernel(
         offset += blockDim.y * nl * sizeof(scalar_t);
     }
 
-    size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    int edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
 
     scalar_t x = 0.0;
     scalar_t y = 0.0;
@@ -652,10 +652,10 @@ template __global__ void spherical_harmonics_kernel<double>(
 */
 template <typename scalar_t>
 __global__ void backward_kernel(
-    scalar_t* dsph, scalar_t* sph_grad, size_t nedges, size_t n_total, scalar_t* xyz_grad
+    scalar_t* dsph, scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
 ) {
 
-    size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    int edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
 
     int spatial = blockIdx.y;
 
@@ -687,9 +687,9 @@ __global__ void backward_kernel(
 }
 
 template __global__ void backward_kernel<float>(
-     float* dsph, float* sph_grad, size_t nedges, size_t n_total, float* xyz_grad
+     float* dsph, float* sph_grad, int nedges, int n_total, float* xyz_grad
 );
 
 template __global__ void backward_kernel<double>(
-     double* dsph, double* sph_grad, size_t nedges, size_t n_total, double* xyz_grad
+     double* dsph, double* sph_grad, int nedges, int n_total, double* xyz_grad
 );

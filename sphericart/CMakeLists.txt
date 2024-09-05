@@ -71,10 +71,9 @@ endif()
 add_library(sphericart ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    set_target_properties(sphericart PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-    set_target_properties(sphericart PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+    #set_target_properties(sphericart PROPERTIES CUDA_NVCC_FLAGS "-lineinfo")
     target_link_libraries(sphericart INTERFACE CUDA::nvrtc)
-
+   
     set(SPHERICART_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/../sphericart/include")
     add_definitions(-DSPHERICART_INCLUDE_PATH="${SPHERICART_INCLUDE_PATH}")
 
