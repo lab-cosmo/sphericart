@@ -71,7 +71,7 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     // Destructor, frees the prefactors
     if (this->prefactors_cpu != nullptr) {
-        delete[](this->prefactors_cpu);
+        delete[] (this->prefactors_cpu);
         this->prefactors_cpu = nullptr;
     }
 

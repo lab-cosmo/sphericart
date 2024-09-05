@@ -1,97 +1,119 @@
 #include <iostream>
 #include <dlfcn.h>
-#include <cuda_runtime.h>
+#include <cuda.h>
+#include <nvrtc.h>
+#include <vector>
+#include <string>
 
-// Define function pointers for CUDA Runtime API functions
-typedef cudaError_t (*cudaSetDevice_t)(int);
-typedef cudaError_t (*cudaMalloc_t)(void**, size_t);
-typedef cudaError_t (*cudaMemcpy_t)(void*, const void*, size_t, cudaMemcpyKind);
-typedef cudaError_t (*cudaFree_t)(void*);
-typedef cudaError_t (*cudaDeviceSynchronize_t)();
-typedef cudaError_t (*cudaLaunchKernel_t)(const void*, dim3, dim3, void**, size_t, cudaStream_t);
-typedef cudaError_t (*cudaGetLastError_t)();
-typedef const char* (*cudaGetErrorString_t)(cudaError_t);
+#define CUDA_DLOPEN_SAFE_CALL(func_call)                                                           \
+    do {                                                                                           \
+        if (!func_call) {                                                                          \
+            std::cerr << "CUDA function " #func_call " not loaded\n";                              \
+            exit(EXIT_FAILURE);                                                                    \
+        }                                                                                          \
+    } while (0)
 
-// Function pointers
-void* cuda_handle;
-cudaSetDevice_t cudaSetDevice;
-cudaMalloc_t cudaMalloc;
-cudaMemcpy_t cudaMemcpy;
-cudaFree_t cudaFree;
-cudaDeviceSynchronize_t cudaDeviceSynchronize;
-cudaLaunchKernel_t cudaLaunchKernel;
-cudaGetLastError_t cudaGetLastError;
-cudaGetErrorString_t cudaGetErrorString;
-
-// Function to dynamically load CUDA functions
-void load_cuda_functions() {
-    cuda_handle = dlopen("libcuda.so", RTLD_LAZY);
-    if (!cuda_handle) {
-        std::cerr << "Failed to load CUDA library: " << dlerror() << std::endl;
-        exit(EXIT_FAILURE);
+class CudaDynamicLoader {
+  public:
+    CudaDynamicLoader() {
+        loadCudaLibrary();
+        loadNvrtcLibrary();
     }
 
-    cudaSetDevice = (cudaSetDevice_t)dlsym(cuda_handle, "cudaSetDevice");
-    cudaMalloc = (cudaMalloc_t)dlsym(cuda_handle, "cudaMalloc");
-    cudaMemcpy = (cudaMemcpy_t)dlsym(cuda_handle, "cudaMemcpy");
-    cudaFree = (cudaFree_t)dlsym(cuda_handle, "cudaFree");
-    cudaDeviceSynchronize = (cudaDeviceSynchronize_t)dlsym(cuda_handle, "cudaDeviceSynchronize");
-    cudaLaunchKernel = (cudaLaunchKernel_t)dlsym(cuda_handle, "cudaLaunchKernel");
-    cudaGetLastError = (cudaGetLastError_t)dlsym(cuda_handle, "cudaGetLastError");
-    cudaGetErrorString = (cudaGetErrorString_t)dlsym(cuda_handle, "cudaGetErrorString");
-
-    if (!cudaSetDevice || !cudaMalloc || !cudaMemcpy || !cudaFree || !cudaDeviceSynchronize || !cudaLaunchKernel || !cudaGetLastError || !cudaGetErrorString) {
-        std::cerr << "Failed to get CUDA function pointers: " << dlerror() << std::endl;
-        dlclose(cuda_handle);
-        exit(EXIT_FAILURE);
+    ~CudaDynamicLoader() {
+        if (cudaLib)
+            dlclose(cudaLib);
+        if (nvrtcLib)
+            dlclose(nvrtcLib);
     }
-}
 
-// Define a simple CUDA kernel
-__global__ void simpleKernel(int* data) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    data[idx] = idx;
-}
+    // Wrapper for cuInit
+    CUresult cuInit() { return p_cuInit(0); }
+
+    // Wrapper for nvrtcCreateProgram
+    nvrtcResult nvrtcCreateProgram(nvrtcProgram* prog, const char* src, const char* name) {
+        return p_nvrtcCreateProgram(prog, src, name, 0, nullptr, nullptr);
+    }
+
+    // Wrapper for nvrtcCompileProgram
+    nvrtcResult nvrtcCompileProgram(nvrtcProgram prog, const std::vector<std::string>& options) {
+        std::vector<const char*> c_options;
+        c_options.reserve(options.size());
+        for (const auto& option : options) {
+            c_options.push_back(option.c_str());
+        }
+        return p_nvrtcCompileProgram(prog, c_options.size(), c_options.data());
+    }
+
+  private:
+    void* cudaLib = nullptr;
+    void* nvrtcLib = nullptr;
+
+    // Pointers to dynamically loaded functions
+    CUresult (*p_cuInit)(unsigned int) = nullptr;
+    nvrtcResult (*p_nvrtcCreateProgram)(nvrtcProgram*, const char*, const char*, int, const char**, const char**) =
+        nullptr;
+    nvrtcResult (*p_nvrtcCompileProgram)(nvrtcProgram, int, const char* const*) = nullptr;
+
+    // Function to load the CUDA Driver library (libcuda.so)
+    void loadCudaLibrary() {
+        cudaLib = dlopen("libcuda.so", RTLD_NOW);
+        if (!cudaLib) {
+            std::cerr << "Failed to load libcuda.so: "
+                      << dlerror() << ". Please run the command: find /usr -name libcuda.so and add the directory to you $LD_LIBRARY_PATH"
+                      << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        p_cuInit = (CUresult(*)(unsigned int))dlsym(cudaLib, "cuInit");
+        CUDA_DLOPEN_SAFE_CALL(p_cuInit);
+    }
+
+    // Function to load the NVRTC library (libnvrtc.so)
+    void loadNvrtcLibrary() {
+        nvrtcLib = dlopen("libnvrtc.so", RTLD_NOW);
+        if (!nvrtcLib) {
+            std::cerr << "Failed to load libnvrtc.so: " << dlerror() << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        p_nvrtcCreateProgram =
+            (nvrtcResult(*)(nvrtcProgram*, const char*, const char*, int, const char**, const char**)
+            )dlsym(nvrtcLib, "nvrtcCreateProgram");
+        CUDA_DLOPEN_SAFE_CALL(p_nvrtcCreateProgram);
+
+        p_nvrtcCompileProgram = (nvrtcResult(*)(nvrtcProgram, int, const char* const*)
+        )dlsym(nvrtcLib, "nvrtcCompileProgram");
+        CUDA_DLOPEN_SAFE_CALL(p_nvrtcCompileProgram);
+    }
+};
 
 int main() {
-    load_cuda_functions();
+    // Dynamically load and use CUDA and NVRTC
+    CudaDynamicLoader cudaLoader;
 
-    // Set the device to use (assuming device 0)
-    cudaSetDevice(0);
-
-    // Allocate memory on the device
-    int* d_data;
-    int* h_data = new int[256];
-    cudaMalloc((void**)&d_data, sizeof(int) * 256);
-
-    // Define grid and block dimensions
-    dim3 threadsPerBlock(256);
-    dim3 blocksPerGrid(1);
-
-    // Launch the kernel
-    void* kernel_args[] = { &d_data };
-    cudaLaunchKernel((const void*)simpleKernel, blocksPerGrid, threadsPerBlock, kernel_args, 0, 0);
-
-    // Synchronize and check for errors
-    cudaError_t error = cudaDeviceSynchronize();
-    if (error != cudaSuccess) {
-        std::cerr << "CUDA error: " << cudaGetErrorString(error) << std::endl;
+    // Call CUDA functions via dynamic loading
+    CUresult init_result = cudaLoader.cuInit();
+    if (init_result != CUDA_SUCCESS) {
+        std::cerr << "cuInit failed with error code: " << init_result << std::endl;
         return EXIT_FAILURE;
     }
 
-    // Copy results from device to host
-    cudaMemcpy(h_data, d_data, sizeof(int) * 256, cudaMemcpyDeviceToHost);
-
-    // Print results
-    for (int i = 0; i < 10; ++i) {
-        std::cout << h_data[i] << " ";
+    nvrtcProgram prog;
+    const std::string kernel_code = "__global__ void kernel() {}";
+    nvrtcResult createResult =
+        cudaLoader.nvrtcCreateProgram(&prog, kernel_code.c_str(), "kernel.cu");
+    if (createResult != NVRTC_SUCCESS) {
+        std::cerr << "Failed to create NVRTC program" << std::endl;
+        return EXIT_FAILURE;
     }
-    std::cout << std::endl;
 
-    // Clean up
-    cudaFree(d_data);
-    delete[] h_data;
-    dlclose(cuda_handle);
+    std::vector<std::string> compile_options;
+    nvrtcResult compileResult = cudaLoader.nvrtcCompileProgram(prog, compile_options);
+    if (compileResult != NVRTC_SUCCESS) {
+        std::cerr << "Failed to compile NVRTC program" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    std::cout << "CUDA initialized and program compiled successfully!" << std::endl;
 
     return 0;
 }

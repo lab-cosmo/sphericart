@@ -2,11 +2,17 @@
 #ifndef CUDA_CACHE_HPP
 #define CUDA_CACHE_HPP
 
-#include <nvrtc.h>
 #include <vector>
 #include <unordered_map>
 #include <string>
 #include <memory>
+#include <iostream>
+#include <typeinfo>
+
+#include <dynamic_cuda.hpp>
+#include <nvrtc.h>
+#include <cuda.h>
+#include <cxxabi.h>
 
 #define NVRTC_SAFE_CALL(x)                                                                         \
     do {                                                                                           \
@@ -29,16 +35,50 @@
         }                                                                                          \
     } while (0)
 
-#define CUDA_CALL_CHECK(call)                                                                      \
-    do {                                                                                           \
-        cudaError_t cudaStatus = (call);                                                           \
-        if (cudaStatus != cudaSuccess) {                                                           \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
-                      << cudaGetErrorString(cudaStatus) << std::endl;                              \
-            cudaDeviceReset();                                                                     \
-            exit(EXIT_FAILURE);                                                                    \
-        }                                                                                          \
-    } while (0)
+// TODO demangling below only works for Itanium C++ ABI on Unix-like systems (GNUC or clang)
+// Helper function to demangle the type name if necessary
+std::string demangleTypeName(const std::string& name) {
+#if defined(__GNUC__) || defined(__clang__)
+    int status = 0;
+    std::unique_ptr<char, void (*)(void*)> demangled_name(
+        abi::__cxa_demangle(name.c_str(), nullptr, nullptr, &status), std::free
+    );
+    return (status == 0) ? demangled_name.get() : name;
+#else
+    return name; // No demangling needed or supported
+#endif
+}
+
+// Base case: No template arguments, return function name without any type information
+std::string getKernelName(const std::string& fn_name) { return fn_name; }
+
+// Function to get type name of a single type
+template <typename T> std::string typeName() { return demangleTypeName(typeid(T).name()); }
+
+// Variadic template function to build type list
+template <typename T, typename... Ts> void buildTemplateTypes(std::string& base) {
+    base += typeName<T>(); // Add the first type
+    // If there are more types, add a comma and recursively call for the remaining types
+    if constexpr (sizeof...(Ts) > 0) {
+        base += ", ";
+        buildTemplateTypes<Ts...>(base); // Recursively call for the rest of the types
+    }
+}
+
+// Helper function to start building the types
+template <typename T, typename... Ts> std::string buildTemplateTypes() {
+    std::string result;
+    buildTemplateTypes<T, Ts...>(result); // Use recursive variadic template
+    return result;
+}
+
+/*
+Function to get the kernel name with the list of templated types if any:
+*/
+template <typename T, typename... Ts> std::string getKernelName(const std::string& fn_name) {
+    std::string type_list = buildTemplateTypes<T, Ts...>(); // Build type list
+    return fn_name + "<" + type_list + ">"; // Return function name with type list in angle brackets
+}
 
 // Function to load CUDA source code from a file
 std::string load_cuda_source(const std::string& filename) {
@@ -65,12 +105,12 @@ class CachedKernel {
     CachedKernel& operator=(const CachedKernel&) = default;
 
     inline void setFuncAttribute(CUfunction_attribute attribute, int value) const {
-        CUDA_SAFE_CALL(cuFuncSetAttribute(function, attribute, value));
+        CUDA_SAFE_CALL(DynamicCUDA::instance().cuFuncSetAttribute(function, attribute, value));
     }
 
     int getFuncAttribute(CUfunction_attribute attribute) const {
         int value;
-        CUDA_SAFE_CALL(cuFuncGetAttribute(&value, attribute, function));
+        CUDA_SAFE_CALL(DynamicCUDA::instance().cuFuncGetAttribute(&value, attribute, function));
         return value;
     }
 
@@ -82,23 +122,24 @@ class CachedKernel {
 */
     void checkAndAdjustSharedMem(int query_shared_mem_size) {
         /*Check whether we need to adjust shared memory size */
+        auto& dynamicCuda = DynamicCUDA::instance();
         if (current_smem_size == 0) {
             CUdevice cuDevice;
-            CUresult res = cuCtxGetDevice(&cuDevice);
+            CUresult res = dynamicCuda.cuCtxGetDevice(&cuDevice);
 
-            CUDA_SAFE_CALL(cuDeviceGetAttribute(
+            CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
                 &max_smem_size_optin, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, cuDevice
             ));
 
             int reserved_smem_per_block = 0;
 
-            CUDA_SAFE_CALL(cuDeviceGetAttribute(
+            CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
                 &reserved_smem_per_block, CU_DEVICE_ATTRIBUTE_RESERVED_SHARED_MEMORY_PER_BLOCK, cuDevice
             ));
 
             int curr_max_smem_per_block = 0;
 
-            CUDA_SAFE_CALL(cuDeviceGetAttribute(
+            CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
                 &curr_max_smem_per_block, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, cuDevice
             ));
 
@@ -112,7 +153,7 @@ class CachedKernel {
                     "CachedKernel::launch requested more smem than available on card."
                 );
             } else {
-                CUDA_SAFE_CALL(cuFuncSetAttribute(
+                CUDA_SAFE_CALL(dynamicCuda.cuFuncSetAttribute(
                     function, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, query_shared_mem_size
                 ));
                 current_smem_size = query_shared_mem_size;
@@ -126,21 +167,23 @@ class CachedKernel {
         size_t shared_mem_size,
         void* cuda_stream,
         void** args,
-        bool synchronize = true
+        bool synchronize = false
     ) {
 
-        CUDA_SAFE_CALL(cuCtxSetCurrent(context));
+        auto& dynamicCuda = DynamicCUDA::instance();
+
+        CUDA_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(context));
 
         checkAndAdjustSharedMem(shared_mem_size);
 
         cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-        CUDA_SAFE_CALL(cuLaunchKernel(
+        CUDA_SAFE_CALL(dynamicCuda.cuLaunchKernel(
             function, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem_size, cstream, args, 0
         ));
 
         if (synchronize)
-            CUDA_SAFE_CALL(cuCtxSynchronize());
+            CUDA_SAFE_CALL(dynamicCuda.cuCtxSynchronize());
     }
 
   private:
@@ -218,21 +261,22 @@ class KernelFactory {
         const std::string& source_name,
         const std::vector<std::string>& options
     ) {
-
+        auto& dynamicCuda = DynamicCUDA::instance();
         initCudaDriver();
 
         CUdevice cuDevice;
-        CUresult res = cuCtxGetDevice(&cuDevice);
+        CUresult res = dynamicCuda.cuCtxGetDevice(&cuDevice);
 
         CUcontext currentContext;
         // Get current context
-        CUresult result = cuCtxGetCurrent(&currentContext);
+        CUresult result = dynamicCuda.cuCtxGetCurrent(&currentContext);
         // If no context exists, create a new one
         if (res != CUDA_SUCCESS || currentContext == NULL) {
             // Select device (you can modify the device selection logic as needed)
 
+            std::cout << "We are creating a new context for some reason..." << std::endl;
             // Create a new context
-            CUresult ctxResult = cuCtxCreate(&currentContext, 0, cuDevice);
+            CUresult ctxResult = dynamicCuda.cuCtxCreate(&currentContext, 0, cuDevice);
 
             if (ctxResult != CUDA_SUCCESS) {
                 throw std::runtime_error(
@@ -242,11 +286,11 @@ class KernelFactory {
         }
 
         nvrtcProgram prog;
-        NVRTC_SAFE_CALL(
-            nvrtcCreateProgram(&prog, kernel_code.c_str(), source_name.c_str(), 0, nullptr, nullptr)
-        );
+        NVRTC_SAFE_CALL(dynamicCuda.nvrtcCreateProgram(
+            &prog, kernel_code.c_str(), source_name.c_str(), 0, nullptr, nullptr
+        ));
 
-        NVRTC_SAFE_CALL(nvrtcAddNameExpression(prog, kernel_name.c_str()));
+        NVRTC_SAFE_CALL(dynamicCuda.nvrtcAddNameExpression(prog, kernel_name.c_str()));
 
         std::vector<const char*> c_options;
         c_options.reserve(options.size());
@@ -254,12 +298,13 @@ class KernelFactory {
             c_options.push_back(option.c_str());
         }
 
-        nvrtcResult compileResult = nvrtcCompileProgram(prog, options.size(), c_options.data());
+        nvrtcResult compileResult =
+            dynamicCuda.nvrtcCompileProgram(prog, options.size(), c_options.data());
         if (compileResult != NVRTC_SUCCESS) {
             size_t logSize;
-            NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &logSize));
+            NVRTC_SAFE_CALL(dynamicCuda.nvrtcGetProgramLogSize(prog, &logSize));
             std::string log(logSize, '\0');
-            NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, &log[0]));
+            NVRTC_SAFE_CALL(dynamicCuda.nvrtcGetProgramLog(prog, &log[0]));
             std::cerr << log << std::endl;
             throw std::runtime_error(
                 "KernelFactory::compileAndCacheKernel: Failed to compile CUDA program."
@@ -268,13 +313,13 @@ class KernelFactory {
 
         // Get PTX code
         size_t ptxSize;
-        NVRTC_SAFE_CALL(nvrtcGetPTXSize(prog, &ptxSize));
+        NVRTC_SAFE_CALL(dynamicCuda.nvrtcGetPTXSize(prog, &ptxSize));
         std::vector<char> ptxCode(ptxSize);
-        NVRTC_SAFE_CALL(nvrtcGetPTX(prog, ptxCode.data()));
+        NVRTC_SAFE_CALL(dynamicCuda.nvrtcGetPTX(prog, ptxCode.data()));
 
         CUmodule module;
 
-        CUresult cuResult = cuModuleLoadDataEx(&module, ptxCode.data(), 0, 0, 0);
+        CUresult cuResult = dynamicCuda.cuModuleLoadDataEx(&module, ptxCode.data(), 0, 0, 0);
 
         if (cuResult != CUDA_SUCCESS) {
             throw std::runtime_error(
@@ -283,22 +328,25 @@ class KernelFactory {
         }
 
         const char* lowered_name;
-        NVRTC_SAFE_CALL(nvrtcGetLoweredName(prog, kernel_name.c_str(), &lowered_name));
+        NVRTC_SAFE_CALL(dynamicCuda.nvrtcGetLoweredName(prog, kernel_name.c_str(), &lowered_name));
         CUfunction kernel;
-        CUDA_SAFE_CALL(cuModuleGetFunction(&kernel, module, lowered_name));
+        CUDA_SAFE_CALL(dynamicCuda.cuModuleGetFunction(&kernel, module, lowered_name));
 
         cacheManager.cacheKernel(kernel_name, module, kernel, currentContext);
 
-        NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
+        NVRTC_SAFE_CALL(dynamicCuda.nvrtcDestroyProgram(&prog));
     }
 
     void initCudaDriver() {
+
+        auto& dynamicCuda = DynamicCUDA::instance();
+
         int deviceCount = 0;
         // Check if CUDA has already been initialized
-        CUresult res = cuDeviceGetCount(&deviceCount);
+        CUresult res = dynamicCuda.cuDeviceGetCount(&deviceCount);
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
             // CUDA hasn't been initialized, so we initialize it now
-            res = cuInit(0);
+            res = dynamicCuda.cuInit(0);
             if (res != CUDA_SUCCESS) {
                 throw std::runtime_error(
                     "KernelFactory::initCudaDriver: Failed to initialize CUDA driver."

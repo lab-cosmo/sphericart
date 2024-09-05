@@ -1,19 +1,6 @@
 #ifndef SPHERICART_CUDA_BASE_HPP
 #define SPHERICART_CUDA_BASE_HPP
 
-#include "sphericart.hpp"
-
-#define CUDA_CHECK(call)                                                                           \
-    do {                                                                                           \
-        cudaError_t cudaStatus = (call);                                                           \
-        if (cudaStatus != cudaSuccess) {                                                           \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
-                      << cudaGetErrorString(cudaStatus) << std::endl;                              \
-            cudaDeviceReset();                                                                     \
-            exit(EXIT_FAILURE);                                                                    \
-        }                                                                                          \
-    } while (0)
-
 namespace sphericart {
 
 namespace cuda {

@@ -22,13 +22,10 @@ print(ylm)
 ylm_2 = sph.compute(xyz)
 print(ylm_2)
 
-print(ylm_2 - ylm)
-
 # ylm.sum().backward()
 
-sph = sphericart.torch.SphericalHarmonics(8)
 xyz = torch.rand(100000, 3, device='cuda',
-                 requires_grad=False, dtype=torch.float32)
+                 requires_grad=False, dtype=torch.float64)
 
 # warmup
 torch.cuda.synchronize()

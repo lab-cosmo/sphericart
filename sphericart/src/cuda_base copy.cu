@@ -252,8 +252,8 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         NVRTC_SAFE_CALL(nvrtcAddNameExpression(prog, kernel_name.c_str()));
 
         const char* opts[] = {
-            "--include-path=" SPHERICART_INCLUDE_PATH,
-            "--define-macro=CUDA_DEVICE_PREFIX=__device__"};
+            "--include-path=" SPHERICART_INCLUDE_PATH, "--define-macro=CUDA_DEVICE_PREFIX=__device__"
+        };
 
         nvrtcResult compileResult = nvrtcCompileProgram(prog, 2, opts);
         if (compileResult != NVRTC_SUCCESS) {
@@ -327,7 +327,8 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
             &_normalize,
             &sph,
             &dsph,
-            &ddsph};
+            &ddsph
+        };
 
         kernel.launch(grid_dim, block_dim, total_buff_size, cstream, args);
 
@@ -396,8 +397,8 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
         }
 
         const char* opts[] = {
-            "--include-path=" SPHERICART_INCLUDE_PATH,
-            "--define-macro=CUDA_DEVICE_PREFIX=__device__"};
+            "--include-path=" SPHERICART_INCLUDE_PATH, "--define-macro=CUDA_DEVICE_PREFIX=__device__"
+        };
         nvrtcResult compileResult = nvrtcCompileProgram(prog, 2, opts);
 
         if (compileResult != NVRTC_SUCCESS) {

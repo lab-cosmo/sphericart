@@ -5,10 +5,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <cuda.h>
-#include <nvrtc.h>
-#include <cuda_runtime.h>
-
 #include <string>
 #include <typeinfo>
 
@@ -22,54 +18,7 @@
 /* MASK used for warp reductions */
 #define FULL_MASK 0xffffffff
 
-#define NVRTC_SAFE_CALL(x)                                                                         \
-    do {                                                                                           \
-        nvrtcResult result = x;                                                                    \
-        if (result != NVRTC_SUCCESS) {                                                             \
-            std::cerr << "\nerror: " #x " failed with error " << nvrtcGetErrorString(result)       \
-                      << '\n';                                                                     \
-            exit(1);                                                                               \
-        }                                                                                          \
-    } while (0)
-#define CUDA_SAFE_CALL(x)                                                                          \
-    do {                                                                                           \
-        CUresult result = x;                                                                       \
-        if (result != CUDA_SUCCESS) {                                                              \
-            const char* msg;                                                                       \
-            cuGetErrorName(result, &msg);                                                          \
-            std::cerr << "\nerror: " #x " failed with error " << msg << '\n';                      \
-            exit(1);                                                                               \
-        }                                                                                          \
-    } while (0)
-
 #define HARDCODED_LMAX 1
-
-#define CUDA_CHECK(call)                                                                           \
-    do {                                                                                           \
-        cudaError_t cudaStatus = (call);                                                           \
-        if (cudaStatus != cudaSuccess) {                                                           \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
-                      << cudaGetErrorString(cudaStatus) << std::endl;                              \
-            cudaDeviceReset();                                                                     \
-            exit(EXIT_FAILURE);                                                                    \
-        }                                                                                          \
-    } while (0)
-
-#define CUDA_CHECK_KERNEL()                                                                        \
-    do {                                                                                           \
-        cudaDeviceSynchronize();                                                                   \
-        cudaError_t err = cudaGetLastError();                                                      \
-        if (err != cudaSuccess) {                                                                  \
-            fprintf(                                                                               \
-                stderr,                                                                            \
-                "CUDA error after kernel launch in %s at line %d: %s\n",                           \
-                __FILE__,                                                                          \
-                __LINE__,                                                                          \
-                cudaGetErrorString(err)                                                            \
-            );                                                                                     \
-            exit(EXIT_FAILURE);                                                                    \
-        }                                                                                          \
-    } while (0)
 
 /*
     Computes the total amount of shared memory space required by
@@ -108,12 +57,9 @@ static size_t total_buffer_size(
     return total_buff_size;
 }
 
-
-
 /*
-    Wrapper to compile and launch the CUDA kernel. Returns a vector containing the spherical
-   harmonics and their gradients if required, otherwise returns the spherical
-   harmonics and an empty tensor.
+    Wrapper to compile and launch the CUDA kernel. outputs a vector containing the spherical
+   harmonics and their gradients if required to sph, dsph and ddsph pointers.
 
     GRID_DIM_X is the number of threads to launch in the x dimension. Used to
    parallelize over the sample dimension. GRID_DIM_Y is the number of threads to
@@ -126,23 +72,6 @@ static size_t total_buffer_size(
     a cudaStream_t, first do void * stream_ptr = reinterpret_cast<void *>
    (stream);
 */
-
-template <typename T> std::string getKernelNameForType(const std::string& fn_name) {
-    std::string type_name = typeid(T).name();
-
-// Demangle the type name if necessary
-#if defined(__GNUC__) || defined(__clang__)
-    int status = 0;
-    char* demangled_name = abi::__cxa_demangle(type_name.c_str(), nullptr, nullptr, &status);
-    if (status == 0 && demangled_name != nullptr) {
-        type_name = demangled_name;
-    }
-    free(demangled_name);
-#endif
-
-    return fn_name + "<" + type_name + ">";
-}
-
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
     scalar_t* xyz,
@@ -161,8 +90,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     void* cuda_stream
 ) {
 
-    std::string kernel_name = getKernelNameForType<scalar_t>("spherical_harmonics_kernel");
-
+    std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
 
     CachedKernel* kernel = kernel_factory.getOrCreateKernel(
@@ -201,7 +129,8 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         &_normalize,
         &sph,
         &dsph,
-        &ddsph};
+        &ddsph
+    };
 
     kernel->launch(grid_dim, block_dim, total_buff_size, cstream, args);
 }
@@ -252,7 +181,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    std::string kernel_name = getKernelNameForType<scalar_t>("backward_kernel");
+    std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 
     auto& kernel_factory = KernelFactory::instance();
 

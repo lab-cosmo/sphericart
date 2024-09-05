@@ -687,9 +687,9 @@ __global__ void backward_kernel(
 }
 
 template __global__ void backward_kernel<float>(
-     float* dsph, float* sph_grad, int nedges, int n_total, float* xyz_grad
+    float* dsph, float* sph_grad, int nedges, int n_total, float* xyz_grad
 );
 
 template __global__ void backward_kernel<double>(
-     double* dsph, double* sph_grad, int nedges, int n_total, double* xyz_grad
+    double* dsph, double* sph_grad, int nedges, int n_total, double* xyz_grad
 );
