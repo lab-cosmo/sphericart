@@ -267,23 +267,32 @@ class KernelFactory {
         CUdevice cuDevice;
         CUresult res = dynamicCuda.cuCtxGetDevice(&cuDevice);
 
-        CUcontext currentContext;
+        CUcontext currentContext = nullptr;
         // CUresult ctxResult = dynamicCuda.cuCtxCreate(&currentContext, 0, cuDevice);
 
         // Get current context
         CUresult result = dynamicCuda.cuCtxGetCurrent(&currentContext);
-        // If no context exists, create a new one
-        if (res != CUDA_SUCCESS || currentContext == NULL) {
-            // Select device (you can modify the device selection logic as needed)
-            // Create a new context
-            CUresult ctxResult = dynamicCuda.cuCtxCreate(&currentContext, 0, cuDevice);
 
-            if (ctxResult != CUDA_SUCCESS) {
-                throw std::runtime_error(
-                    "KernelFactory::compileAndCacheKernel: Failed to create CUDA context."
-                );
-            }
+        if (!currentContext) {
+            // workaround for corner case where a primary context exists but is not
+            // the current context, seen in multithreaded use-cases
+            dynamicCuda.cuDevicePrimaryCtxRetain(&currentContext, cuDevice);
+            dynamicCuda.cuCtxSetCurrent(currentContext);
         }
+
+        // If no context exists, create a new one
+        /*if (currentContext == NULL) {
+           std::cout << "we need to create a new context it seems..." << std::endl;
+           // Select device (you can modify the device selection logic as needed)
+           // Create a new context
+           CUresult ctxResult = dynamicCuda.cuCtxCreate(&currentContext, 0, cuDevice);
+
+           if (ctxResult != CUDA_SUCCESS) {
+               throw std::runtime_error(
+                   "KernelFactory::compileAndCacheKernel: Failed to create CUDA context."
+               );
+           }
+       }*/
 
         nvrtcProgram prog;
         NVRTC_SAFE_CALL(dynamicCuda.nvrtcCreateProgram(

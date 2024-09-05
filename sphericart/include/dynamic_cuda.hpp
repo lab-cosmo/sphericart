@@ -20,7 +20,9 @@ class DynamicCUDA {
     // Function pointers for CUDA and NVRTC functions
     using cuInit_t = CUresult (*)(unsigned int);
     using cuDeviceGetCount_t = CUresult (*)(int*);
+    using cuDevicePrimaryCtxRetain_t = CUresult (*)(CUcontext*, CUdevice);
     using cuCtxCreate_t = CUresult (*)(CUcontext*, unsigned int, CUdevice);
+    using cuCtxDestroy_t = CUresult (*)(CUcontext);
     using cuCtxGetCurrent_t = CUresult (*)(CUcontext*);
     using cuCtxSetCurrent_t = CUresult (*)(CUcontext);
     using cuModuleLoadDataEx_t = CUresult (*)(CUmodule*, const void*, unsigned int, int*, int*);
@@ -54,6 +56,8 @@ class DynamicCUDA {
     cuInit_t cuInit;
     cuDeviceGetCount_t cuDeviceGetCount;
     cuCtxCreate_t cuCtxCreate;
+    cuCtxDestroy_t cuCtxDestroy;
+    cuDevicePrimaryCtxRetain_t cuDevicePrimaryCtxRetain;
     cuCtxGetCurrent_t cuCtxGetCurrent;
     cuCtxSetCurrent_t cuCtxSetCurrent;
     cuModuleLoadDataEx_t cuModuleLoadDataEx;
@@ -108,6 +112,9 @@ class DynamicCUDA {
         cuInit = (cuInit_t)dlsym(cudaHandle, "cuInit");
         cuDeviceGetCount = (cuDeviceGetCount_t)dlsym(cudaHandle, "cuDeviceGetCount");
         cuCtxCreate = (cuCtxCreate_t)dlsym(cudaHandle, "cuCtxCreate");
+        cuCtxDestroy = (cuCtxDestroy_t)dlsym(cudaHandle, "cuCtxDestroy");
+        cuDevicePrimaryCtxRetain =
+            (cuDevicePrimaryCtxRetain_t)dlsym(cudaHandle, "cuDevicePrimaryCtxRetain");
         cuCtxGetCurrent = (cuCtxGetCurrent_t)dlsym(cudaHandle, "cuCtxGetCurrent");
         cuCtxSetCurrent = (cuCtxSetCurrent_t)dlsym(cudaHandle, "cuCtxSetCurrent");
         cuModuleLoadDataEx = (cuModuleLoadDataEx_t)dlsym(cudaHandle, "cuModuleLoadDataEx");
@@ -140,7 +147,8 @@ class DynamicCUDA {
         nvrtcGetErrorString = (nvrtcGetErrorString_t)dlsym(nvrtcHandle, "nvrtcGetErrorString");
 
         // Check for missing symbols
-        if (!cuInit || !cuDeviceGetCount || !cuCtxCreate || !cuCtxGetCurrent || !cuCtxSetCurrent ||
+        if (!cuInit || !cuDeviceGetCount || !cuCtxCreate || !cuCtxDestroy ||
+            !cuDevicePrimaryCtxRetain || !cuCtxGetCurrent || !cuCtxSetCurrent ||
             !cuModuleLoadDataEx || !cuModuleGetFunction || !cuFuncSetAttribute ||
             !cuFuncGetAttribute || !cuCtxGetDevice || !cuDeviceGetAttribute || !cuDeviceGetName ||
             !cuDeviceTotalMem || !cuLaunchKernel || !cuStreamCreate || !cuStreamDestroy ||
