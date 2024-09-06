@@ -71,7 +71,7 @@ template <typename T> class SphericalHarmonics {
      * @param cuda_stream Pointer to a cudaStream_t or nullptr. If this is
      * nullptr, the kernel launch will be performed on the default stream.
      */
-    void compute(const T* xyz, const size_t n_samples, T* sph, void* cuda_stream = nullptr);
+    void compute(T* xyz, const size_t n_samples, T* sph, void* cuda_stream = nullptr);
 
     /** Computes the spherical harmonics and their first derivatives for one or
      *  more 3D points, using pre-allocated device-side pointers
@@ -100,7 +100,7 @@ template <typename T> class SphericalHarmonics {
      * nullptr, the kernel launch will be performed on the default stream.
      */
     void compute_with_gradients(
-        const T* xyz, const size_t n_samples, T* sph, T* dsph, void* cuda_stream = nullptr
+        T* xyz, const size_t n_samples, T* sph, T* dsph, void* cuda_stream = nullptr
     );
 
     /** Computes the spherical harmonics and their first and second derivatives
@@ -138,7 +138,7 @@ template <typename T> class SphericalHarmonics {
      * nullptr, the kernel launch will be performed on the default stream.
      */
     void compute_with_hessians(
-        const T* xyz, const size_t n_samples, T* sph, T* dsph, T* ddsph, void* cuda_stream = nullptr
+        T* xyz, const size_t n_samples, T* sph, T* dsph, T* ddsph, void* cuda_stream = nullptr
     );
 
     template <typename U> friend class SolidHarmonics;
@@ -157,7 +157,7 @@ template <typename T> class SphericalHarmonics {
     int64_t _current_shared_mem_allocation = 0;
 
     void compute_internal(
-        const T* xyz,
+        T* xyz,
         const size_t n_samples,
         bool compute_with_gradients,
         bool compute_with_hessian,
