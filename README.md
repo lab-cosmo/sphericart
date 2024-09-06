@@ -2,7 +2,7 @@
 
 [![Test](https://github.com/lab-cosmo/sphericart/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/lab-cosmo/sphericart/actions/workflows/tests.yml)
 
-This is sphericart, a multi-language library for the efficient calculation of the
+This is sphericart, a multi-language library for the efficient calculation of real
 spherical harmonics and their derivatives in Cartesian coordinates.
 
 For instructions and examples on the usage of the library, please refer to our
@@ -106,3 +106,12 @@ PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu tox -e docs
 ```
 
 will build the documentation in a CPU-only environment.
+
+
+## Other flavors of spherical harmonics
+
+Although sphericart natively calculates real solid and spherical harmonics from
+Cartesian positions, it is easy to manipulate its output it to calculate complex 
+spherical harmonics and/or to accept spherical coordinates as inputs. You can see
+examples [here](https://sphericart.readthedocs.io/en/latest/spherical-complex.html).
+

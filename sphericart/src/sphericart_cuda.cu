@@ -26,7 +26,7 @@ using namespace sphericart::cuda;
         }                                                                                          \
     } while (0)
 
-template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
+template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max) {
     /*
         This is the constructor of the SphericalHarmonics class. It initizlizes
        buffer space, compute prefactors, and sets the function pointers that are
@@ -34,7 +34,7 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
     */
     this->l_max = (int)l_max;
     this->nprefactors = (int)(l_max + 1) * (l_max + 2);
-    this->normalized = normalized;
+    this->normalized = true; // SphericalHarmonics class
     this->prefactors_cpu = new T[this->nprefactors];
 
     CUDA_CHECK(cudaGetDeviceCount(&this->device_count));
@@ -96,9 +96,9 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
 }
 
 template <typename T>
-void SphericalHarmonics<T>::compute(
-    T* xyz,
-    const size_t nsamples,
+void SphericalHarmonics<T>::compute_internal(
+    const T* xyz,
+    const size_t n_samples,
     bool compute_with_gradients,
     bool compute_with_hessian,
     T* sph,
@@ -106,7 +106,7 @@ void SphericalHarmonics<T>::compute(
     T* ddsph,
     void* cuda_stream
 ) {
-    if (nsamples == 0) {
+    if (n_samples == 0) {
         // nothing to compute; we return here because some libraries (e.g. torch)
         // seem to use nullptrs for tensors with 0 elements
         return;
@@ -144,7 +144,7 @@ void SphericalHarmonics<T>::compute(
 
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz,
-        nsamples,
+        n_samples,
         this->prefactors_cuda[attributes.device],
         this->nprefactors,
         this->l_max,
@@ -161,7 +161,39 @@ void SphericalHarmonics<T>::compute(
 
     CUDA_CHECK(cudaSetDevice(current_device));
 }
+template <typename T>
+void SphericalHarmonics<T>::compute(const T* xyz, const size_t n_samples, T* sph, void* cuda_stream) {
+    SphericalHarmonics<T>::compute_internal(
+        xyz, n_samples, false, false, sph, nullptr, nullptr, cuda_stream
+    );
+}
 
-// instantiates the SphericalHarmonics class for basic floating point types
+template <typename T>
+void SphericalHarmonics<T>::compute_with_gradients(
+    const T* xyz, const size_t n_samples, T* sph, T* dsph, void* cuda_stream
+) {
+    SphericalHarmonics<T>::compute_internal(
+        xyz, n_samples, true, false, sph, dsph, nullptr, cuda_stream
+    );
+}
+
+template <typename T>
+void SphericalHarmonics<T>::compute_with_hessians(
+    const T* xyz, const size_t n_samples, T* sph, T* dsph, T* ddsph, void* cuda_stream
+) {
+    SphericalHarmonics<T>::compute_internal(
+        xyz, n_samples, true, true, sph, dsph, ddsph, cuda_stream
+    );
+}
+
+template <typename T>
+SolidHarmonics<T>::SolidHarmonics(size_t l_max) : SphericalHarmonics<T>(l_max) {
+    this->normalized = false; // SolidHarmonics class
+}
+
+// instantiates the SphericalHarmonics and SolidHarmonics classes
+// for basic floating point types
 template class sphericart::cuda::SphericalHarmonics<float>;
 template class sphericart::cuda::SphericalHarmonics<double>;
+template class sphericart::cuda::SolidHarmonics<float>;
+template class sphericart::cuda::SolidHarmonics<double>;

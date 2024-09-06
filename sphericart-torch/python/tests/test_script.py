@@ -12,8 +12,11 @@ class SHModule(torch.nn.Module):
     `torch.nn.Module`"""
 
     def __init__(self, l_max, normalized=False):
-        self._sph = sphericart.torch.SphericalHarmonics(l_max, normalized)
         super().__init__()
+        if normalized:
+            self._sph = sphericart.torch.SphericalHarmonics(l_max)
+        else:
+            self._sph = sphericart.torch.SolidHarmonics(l_max)
 
     def forward(self, xyz):
         sph = self._sph.compute(xyz)
@@ -25,9 +28,10 @@ def xyz():
     return 6 * torch.randn(100, 3, dtype=torch.float64, requires_grad=True)
 
 
-def test_script(xyz):
+@pytest.mark.parametrize("normalized", [True, False])
+def test_script(xyz, normalized):
     xyz_jit = xyz.detach().clone().requires_grad_()
-    module = SHModule(l_max=10, normalized=False)
+    module = SHModule(l_max=10, normalized=normalized)
     sh_module = module.forward(xyz)
     sh_module.sum().backward()
 
