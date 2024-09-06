@@ -317,8 +317,8 @@ class KernelFactory {
 
         if (cuResult != CUDA_SUCCESS) {
             throw std::runtime_error(
-                "KernelFactory::compileAndCacheKernel: Failed to load PTX code into CUDA module"
-            );
+                "KernelFactory::compileAndCacheKernel: Failed to load PTX code into CUDA module (error code: "+ std::to_string(cuResult) + ")"
+		);
         }
 
         const char* lowered_name;
