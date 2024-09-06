@@ -144,10 +144,10 @@ void SphericalHarmonics<T>::compute_internal(
 
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz,
-        n_samples,
+        static_cast<int64_t>(n_samples),
         this->prefactors_cuda[attributes.device],
-        this->nprefactors,
-        this->l_max,
+        static_cast<int64_t>(this->nprefactors),
+        static_cast<int64_t>(this->l_max),
         this->normalized,
         this->CUDA_GRID_DIM_X_,
         this->CUDA_GRID_DIM_Y_,

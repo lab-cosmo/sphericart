@@ -2899,8 +2899,8 @@ inline void load_program(
             )) {
 #if JITIFY_PRINT_HEADER_PATHS
             std::cout << "Found #include " << include_name << " from " << include_parent << ":"
-                      << line_num << " [" << include_parent_fullpath << "]"
-                      << " at:\n  " << header_fullpaths[include_name] << std::endl;
+                      << line_num << " [" << include_parent_fullpath << "]" << " at:\n  "
+                      << header_fullpaths[include_name] << std::endl;
 #endif
         } else { // Failed to find header file.
             // Comment-out the include line and print a warning
@@ -3562,8 +3562,8 @@ inline void KernelLauncher_impl::pre_launch(jitify::detail::vector<std::string> 
     Kernel_impl const& kernel = _kernel_inst._kernel;
     std::string arg_types_string = (arg_types.empty() ? "..." : reflection::reflect_list(arg_types));
     std::cout << "Launching " << kernel._name << _kernel_inst._template_inst << "<<<" << _grid
-              << "," << _block << "," << _smem << "," << _stream << ">>>"
-              << "(" << arg_types_string << ")" << std::endl;
+              << "," << _block << "," << _smem << "," << _stream << ">>>" << "(" << arg_types_string
+              << ")" << std::endl;
 #endif
     if (!_kernel_inst._cuda_kernel) {
         throw std::runtime_error(
@@ -4422,8 +4422,8 @@ class KernelLauncher {
         std::string arg_types_string =
             (arg_types.empty() ? "..." : reflection::reflect_list(arg_types));
         std::cout << "Launching " << _kernel_inst->_cuda_kernel->function_name() << "<<<" << _grid
-                  << "," << _block << "," << _smem << "," << _stream << ">>>"
-                  << "(" << arg_types_string << ")" << std::endl;
+                  << "," << _block << "," << _smem << "," << _stream << ">>>" << "("
+                  << arg_types_string << ")" << std::endl;
 #endif
     }
 

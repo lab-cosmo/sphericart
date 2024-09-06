@@ -74,10 +74,10 @@ static size_t total_buffer_size(
 */
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
-    scalar_t* xyz,
-    const int nedges,
+    const scalar_t* xyz,
+    const int64_t nedges,
     scalar_t* prefactors,
-    const int nprefactors,
+    const int64_t nprefactors,
     const int64_t l_max,
     const bool normalize,
     const int64_t GRID_DIM_X,
@@ -136,10 +136,10 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
-    float* xyz,
-    const int nedges,
+    const float* xyz,
+    const int64_t nedges,
     float* prefactors,
-    const int nprefactors,
+    const int64_t nprefactors,
     const int64_t l_max,
     const bool normalize,
     const int64_t GRID_DIM_X,
@@ -153,10 +153,10 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
 );
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
-    double* xyz,
-    const int nedges,
+    const double* xyz,
+    const int64_t nedges,
     double* prefactors,
-    const int nprefactors,
+    const int64_t nprefactors,
     const int64_t l_max,
     const bool normalize,
     const int64_t GRID_DIM_X,
