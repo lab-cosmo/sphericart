@@ -72,16 +72,16 @@ endif()
 add_library(sphericart ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    find_library(NVRTC_LIBRARY_STATIC nvrtc_static HINTS ${CUDAToolkit_LIBRARY_DIR})
+    #find_library(NVRTC_LIBRARY_STATIC nvrtc_static HINTS ${CUDAToolkit_LIBRARY_DIR})
 
-    if(NOT NVRTC_LIBRARY_STATIC)
-        message(FATAL_ERROR "Static nvrtc library not found.")
-    endif()
+    #if(NOT NVRTC_LIBRARY_STATIC)
+    #    message(FATAL_ERROR "Static nvrtc library not found.")
+    #endif()
 
-    set_target_properties(sphericart PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    #set_target_properties(sphericart PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_link_libraries(sphericart PRIVATE dl) # libdl
-    target_link_libraries(sphericart PRIVATE ${NVRTC_LIBRARY_STATIC})
-    #target_link_libraries(sphericart INTERFACE CUDA::nvrtc)
+    #target_link_libraries(sphericart PRIVATE ${NVRTC_LIBRARY_STATIC})
+    target_link_libraries(sphericart INTERFACE CUDA::nvrtc)
    
     set(SPHERICART_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/sphericart/include")
     add_definitions(-DSPHERICART_INCLUDE_PATH="${SPHERICART_INCLUDE_PATH}")
