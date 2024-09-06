@@ -167,7 +167,7 @@ class CachedKernel {
         size_t shared_mem_size,
         void* cuda_stream,
         void** args,
-        bool synchronize = false
+        bool synchronize = true
     ) {
 
         auto& dynamicCuda = DynamicCUDA::instance();
@@ -330,8 +330,10 @@ class KernelFactory {
 
         if (cuResult != CUDA_SUCCESS) {
             throw std::runtime_error(
-                "KernelFactory::compileAndCacheKernel: Failed to load PTX code into CUDA module (error code: "+ std::to_string(cuResult) + ")"
-		);
+                "KernelFactory::compileAndCacheKernel: Failed to load PTX code into CUDA module "
+                "(error code: " +
+                std::to_string(cuResult) + ")"
+            );
         }
 
         const char* lowered_name;
