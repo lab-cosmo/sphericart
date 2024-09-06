@@ -37,7 +37,7 @@ std::unique_ptr<C<T>>& _get_or_create_sph_cuda(
 template <template <typename> class C, typename T>
 inline void cuda_sph(cudaStream_t stream, void** in, const char* opaque, std::size_t opaque_len) {
     // Parse the inputs
-    const T* xyz = reinterpret_cast<const T*>(in[0]);
+    T* xyz = reinterpret_cast<T*>(in[0]);
     T* sph = reinterpret_cast<T*>(in[1]);
 
     // Static map to cache instances based on parameters
@@ -58,7 +58,7 @@ inline void cuda_sph_with_gradients(
     cudaStream_t stream, void** in, const char* opaque, std::size_t opaque_len
 ) {
     // Parse the inputs
-    const T* xyz = reinterpret_cast<const T*>(in[0]);
+    T* xyz = reinterpret_cast<T*>(in[0]);
     T* sph = reinterpret_cast<T*>(in[1]);
     T* dsph = reinterpret_cast<T*>(in[2]);
 
@@ -79,7 +79,7 @@ inline void cuda_sph_with_hessians(
     cudaStream_t stream, void** in, const char* opaque, std::size_t opaque_len
 ) {
     // Parse the inputs
-    const T* xyz = reinterpret_cast<const T*>(in[0]);
+    T* xyz = reinterpret_cast<T*>(in[0]);
     T* sph = reinterpret_cast<T*>(in[1]);
     T* dsph = reinterpret_cast<T*>(in[2]);
     T* ddsph = reinterpret_cast<T*>(in[3]);
