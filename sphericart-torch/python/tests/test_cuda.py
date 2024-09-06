@@ -29,9 +29,9 @@ def test_cpu_vs_cuda(xyz):
         sph, grad_sph = calculator.compute_with_gradients(xyz)
         sph_cuda, grad_sph_cuda = calculator.compute_with_gradients(xyz_cuda)
 
-        print ("--grads--")
-        print (grad_sph)
-        print (grad_sph_cuda)
-        
+        print("--grads--")
+        print(grad_sph)
+        print(grad_sph_cuda)
+
         assert torch.allclose(sph, sph_cuda.to("cpu"), rtol=1e-7)
         assert torch.allclose(grad_sph, grad_sph_cuda.to("cpu"), rtol=1e-7)
