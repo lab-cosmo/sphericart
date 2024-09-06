@@ -217,7 +217,7 @@ template <typename T> std::string getKernelNameForType(const std::string& fn_nam
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
-    scalar_t* xyz,
+    const scalar_t* xyz,
     const int nedges,
     scalar_t* prefactors,
     const int nprefactors,
@@ -337,7 +337,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
-    float* xyz,
+    const float* xyz,
     const int nedges,
     float* prefactors,
     const int nprefactors,
@@ -354,7 +354,7 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
 );
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
-    double* xyz,
+    const double* xyz,
     const int nedges,
     double* prefactors,
     const int nprefactors,
