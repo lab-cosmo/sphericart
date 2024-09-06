@@ -294,12 +294,12 @@ class KernelFactory {
 
         int major = 0;
         int minor = 0;
-        CUDA_SAFE_CALL(
-            cuDeviceGetAttribute(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, cuDevice)
-        );
-        CUDA_SAFE_CALL(
-            cuDeviceGetAttribute(&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, cuDevice)
-        );
+        CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
+            &major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, cuDevice
+        ));
+        CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
+            &minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, cuDevice
+        ));
         int arch = major * 10 + minor;
         std::string smbuf = "--gpu-architecture=sm_" + std::to_string(arch);
         std::cout << "Compiling kernels with option: " << smbuf << std::endl;
