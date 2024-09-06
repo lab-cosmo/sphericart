@@ -292,8 +292,21 @@ class KernelFactory {
             c_options.push_back(option.c_str());
         }
 
+        int major = 0;
+        int minor = 0;
+        CUDA_SAFE_CALL(
+            cuDeviceGetAttribute(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, cuDevice)
+        );
+        CUDA_SAFE_CALL(
+            cuDeviceGetAttribute(&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, cuDevice)
+        );
+        int arch = major * 10 + minor;
+        std::string smbuf = "--gpu-architecture=sm_" + std::to_string(arch);
+        std::cout << "Compiling kernels with option: " << smbuf << std::endl;
+        c_options.push_back(smbuf.c_str());
+
         nvrtcResult compileResult =
-            dynamicCuda.nvrtcCompileProgram(prog, options.size(), c_options.data());
+            dynamicCuda.nvrtcCompileProgram(prog, c_options.size(), c_options.data());
         if (compileResult != NVRTC_SUCCESS) {
             size_t logSize;
             NVRTC_SAFE_CALL(dynamicCuda.nvrtcGetProgramLogSize(prog, &logSize));
