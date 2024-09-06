@@ -75,10 +75,10 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     #set_target_properties(sphericart PROPERTIES CUDA_NVCC_FLAGS "-lineinfo")
     target_link_libraries(sphericart INTERFACE CUDA::nvrtc)
    
-    set(SPHERICART_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/../sphericart/include")
+    set(SPHERICART_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/sphericart/include")
     add_definitions(-DSPHERICART_INCLUDE_PATH="${SPHERICART_INCLUDE_PATH}")
 
-    set(SPHERICART_CUDA_SRC_PATH "${CMAKE_SOURCE_DIR}/../sphericart/src/sphericart_impl.cu")
+    set(SPHERICART_CUDA_SRC_PATH "${CMAKE_SOURCE_DIR}/sphericart/src/sphericart_impl.cu")
     add_definitions(-DSPHERICART_CUDA_SRC_PATH="${SPHERICART_CUDA_SRC_PATH}")
 endif()
 
