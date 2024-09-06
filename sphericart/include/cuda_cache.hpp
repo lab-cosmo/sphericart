@@ -265,18 +265,18 @@ class KernelFactory {
         initCudaDriver();
 
         CUdevice cuDevice;
-        NVRTC_SAFE_CALL(dynamicCuda.cuCtxGetDevice(&cuDevice));
+        CUDA_SAFE_CALL(dynamicCuda.cuCtxGetDevice(&cuDevice));
 
         CUcontext currentContext = nullptr;
 
         // Get current context
-        NVRTC_SAFE_CALL(dynamicCuda.cuCtxGetCurrent(&currentContext));
+        CUDA_SAFE_CALL(dynamicCuda.cuCtxGetCurrent(&currentContext));
 
         if (!currentContext) {
             // workaround for corner case where a primary context exists but is not
             // the current context, seen in multithreaded use-cases
-            NVRTC_SAFE_CALL(dynamicCuda.cuDevicePrimaryCtxRetain(&currentContext, cuDevice));
-            NVRTC_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(currentContext));
+            CUDA_SAFE_CALL(dynamicCuda.cuDevicePrimaryCtxRetain(&currentContext, cuDevice));
+            CUDA_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(currentContext));
         }
 
         nvrtcProgram prog;
