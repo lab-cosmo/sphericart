@@ -14,12 +14,63 @@
 
 using namespace sphericart::cuda;
 
+struct CudaError {
+    bool success;
+    std::string errorMessage;
+};
+
+CudaError isCudaAvailable() {
+    void* cudaHandle = dlopen("libcuda.so", RTLD_NOW);
+    void* nvrtcHandle = dlopen("libnvrtc.so", RTLD_NOW);
+    void* cudartHandle = dlopen("libcudart.so", RTLD_NOW);
+
+    CudaError result;
+    result.success = true;
+
+    if (!cudaHandle) {
+        result.success = false;
+        result.errorMessage =
+            "Failed to load libcuda.so. Try running \"find /usr -name libcuda.so\" and "
+            "appending the directory to your $LD_LIBRARY_PATH environment variable.";
+    } else if (!cudartHandle) {
+        result.success = false;
+        result.errorMessage =
+            "Failed to load libcudart.so. Try running \"find /usr -name libcudart.so\" and "
+            "appending the directory to your $LD_LIBRARY_PATH environment variable.";
+    } else if (!nvrtcHandle) {
+        result.success = false;
+        result.errorMessage =
+            "Failed to load libnvrtc.so. Try running \"find /usr -name libnvrtc.so\" and "
+            "appending the directory to your $LD_LIBRARY_PATH environment variable.";
+    }
+
+    // Close libraries if they were opened
+    if (cudaHandle)
+        dlclose(cudaHandle);
+    if (cudartHandle)
+        dlclose(cudartHandle);
+    if (nvrtcHandle)
+        dlclose(nvrtcHandle);
+
+    return result;
+}
+
+void checkCuda() {
+    CudaError cudaCheck = isCudaAvailable();
+    if (!cudaCheck.success) {
+        throw std::runtime_error(cudaCheck.errorMessage);
+    }
+}
+
 template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max) {
     /*
         This is the constructor of the SphericalHarmonics class. It initizlizes
        buffer space, compute prefactors, and sets the function pointers that are
        used for the actual calls
     */
+
+    checkCuda();
+
     this->l_max = (int)l_max;
     this->nprefactors = (int)(l_max + 1) * (l_max + 2);
     this->normalized = true; // SphericalHarmonics class
