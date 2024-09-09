@@ -75,7 +75,7 @@ class CachedKernel {
 
   public:
     CachedKernel(CUmodule m, CUfunction f, CUcontext c) : module(m), function(f), context(c) {}
-    // Default constructor (optional but can be useful)
+    // Default constructor
     CachedKernel() = default;
 
     // Copy constructor
