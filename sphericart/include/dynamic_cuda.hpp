@@ -239,6 +239,9 @@ class DynamicCUDA {
         if (cudaHandle) {
             dlclose(cudaHandle);
         }
+        if (cudartHandle) {
+            dlclose(cudartHandle);
+        }
         if (nvrtcHandle) {
             dlclose(nvrtcHandle);
         }
