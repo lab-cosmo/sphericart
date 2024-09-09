@@ -9,31 +9,11 @@
 #include <iostream>
 #include <typeinfo>
 
-#include <dynamic_cuda.hpp>
+#include "dynamic_cuda.hpp"
+
 #include <nvrtc.h>
 #include <cuda.h>
 #include <cxxabi.h>
-
-#define NVRTC_SAFE_CALL(x)                                                                         \
-    do {                                                                                           \
-        nvrtcResult result = x;                                                                    \
-        if (result != NVRTC_SUCCESS) {                                                             \
-            std::cerr << "\nerror: " #x " failed with error "                                      \
-                      << DynamicCUDA::instance().nvrtcGetErrorString(result) << '\n';              \
-            exit(1);                                                                               \
-        }                                                                                          \
-    } while (0)
-
-#define CUDA_SAFE_CALL(x)                                                                          \
-    do {                                                                                           \
-        CUresult result = x;                                                                       \
-        if (result != CUDA_SUCCESS) {                                                              \
-            const char* msg;                                                                       \
-            DynamicCUDA::instance().cuGetErrorName(result, &msg);                                  \
-            std::cerr << "\nerror: " #x " failed with error " << msg << '\n';                      \
-            exit(1);                                                                               \
-        }                                                                                          \
-    } while (0)
 
 // TODO demangling below only works for Itanium C++ ABI on Unix-like systems (GNUC or clang)
 // Helper function to demangle the type name if necessary
@@ -105,12 +85,13 @@ class CachedKernel {
     CachedKernel& operator=(const CachedKernel&) = default;
 
     inline void setFuncAttribute(CUfunction_attribute attribute, int value) const {
-        CUDA_SAFE_CALL(DynamicCUDA::instance().cuFuncSetAttribute(function, attribute, value));
+        CUDADRIVER_SAFE_CALL(DynamicCUDA::instance().cuFuncSetAttribute(function, attribute, value));
     }
 
     int getFuncAttribute(CUfunction_attribute attribute) const {
         int value;
-        CUDA_SAFE_CALL(DynamicCUDA::instance().cuFuncGetAttribute(&value, attribute, function));
+        CUDADRIVER_SAFE_CALL(DynamicCUDA::instance().cuFuncGetAttribute(&value, attribute, function)
+        );
         return value;
     }
 
@@ -127,19 +108,19 @@ class CachedKernel {
             CUdevice cuDevice;
             CUresult res = dynamicCuda.cuCtxGetDevice(&cuDevice);
 
-            CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
+            CUDADRIVER_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
                 &max_smem_size_optin, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, cuDevice
             ));
 
             int reserved_smem_per_block = 0;
 
-            CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
+            CUDADRIVER_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
                 &reserved_smem_per_block, CU_DEVICE_ATTRIBUTE_RESERVED_SHARED_MEMORY_PER_BLOCK, cuDevice
             ));
 
             int curr_max_smem_per_block = 0;
 
-            CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
+            CUDADRIVER_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
                 &curr_max_smem_per_block, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, cuDevice
             ));
 
@@ -153,7 +134,7 @@ class CachedKernel {
                     "CachedKernel::launch requested more smem than available on card."
                 );
             } else {
-                CUDA_SAFE_CALL(dynamicCuda.cuFuncSetAttribute(
+                CUDADRIVER_SAFE_CALL(dynamicCuda.cuFuncSetAttribute(
                     function, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, query_shared_mem_size
                 ));
                 current_smem_size = query_shared_mem_size;
@@ -172,18 +153,18 @@ class CachedKernel {
 
         auto& dynamicCuda = DynamicCUDA::instance();
 
-        CUDA_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(context));
+        CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(context));
 
         checkAndAdjustSharedMem(shared_mem_size);
 
         cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-        CUDA_SAFE_CALL(dynamicCuda.cuLaunchKernel(
+        CUDADRIVER_SAFE_CALL(dynamicCuda.cuLaunchKernel(
             function, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem_size, cstream, args, 0
         ));
 
         if (synchronize)
-            CUDA_SAFE_CALL(dynamicCuda.cuCtxSynchronize());
+            CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxSynchronize());
     }
 
   private:
@@ -294,10 +275,10 @@ class KernelFactory {
 
         int major = 0;
         int minor = 0;
-        CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
+        CUDADRIVER_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
             &major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, cuDevice
         ));
-        CUDA_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
+        CUDADRIVER_SAFE_CALL(dynamicCuda.cuDeviceGetAttribute(
             &minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, cuDevice
         ));
         int arch = major * 10 + minor;
@@ -339,7 +320,7 @@ class KernelFactory {
         const char* lowered_name;
         NVRTC_SAFE_CALL(dynamicCuda.nvrtcGetLoweredName(prog, kernel_name.c_str(), &lowered_name));
         CUfunction kernel;
-        CUDA_SAFE_CALL(dynamicCuda.cuModuleGetFunction(&kernel, module, lowered_name));
+        CUDADRIVER_SAFE_CALL(dynamicCuda.cuModuleGetFunction(&kernel, module, lowered_name));
 
         cacheManager.cacheKernel(kernel_name, module, kernel, currentContext);
 

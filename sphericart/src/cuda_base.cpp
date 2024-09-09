@@ -36,7 +36,8 @@ static size_t total_buffer_size(
     bool requires_grad,
     bool requires_hessian
 ) {
-    int nl = max(static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)), 2 * l_max + 1);
+    int nl =
+        std::max(static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)), 2 * l_max + 1);
 
     size_t total_buff_size = 0;
 
