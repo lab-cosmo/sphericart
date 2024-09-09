@@ -282,7 +282,6 @@ class KernelFactory {
         ));
         int arch = major * 10 + minor;
         std::string smbuf = "--gpu-architecture=sm_" + std::to_string(arch);
-        std::cout << "Compiling kernels with option: " << smbuf << std::endl;
         c_options.push_back(smbuf.c_str());
 
         nvrtcResult compileResult =
