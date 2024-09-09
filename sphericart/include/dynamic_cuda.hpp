@@ -105,10 +105,7 @@ class DynamicCUDA {
     using cudaPointerGetAttributes_t = cudaError_t (*)(cudaPointerAttributes*, const void*);
     using cudaFree_t = cudaError_t (*)(void*);
 
-    //__host__​cudaError_t cudaMemcpy ( void* dst, const void* src, size_t count, cudaMemcpyKind kind )
-
     // Public methods to access function pointers
-
     // cuda driver functions
     cuInit_t cuInit;
     cuDeviceGetCount_t cuDeviceGetCount;
