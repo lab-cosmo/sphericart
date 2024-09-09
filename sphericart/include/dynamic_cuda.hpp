@@ -37,8 +37,7 @@
         if (cudaStatus != cudaSuccess) {                                                           \
             std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
                       << DynamicCUDA::instance().cudaGetErrorString(cudaStatus) << std::endl;      \
-            cudaDeviceReset();                                                                     \
-            exit(EXIT_FAILURE);                                                                    \
+            exit(1);                                                                               \
         }                                                                                          \
     } while (0)
 

@@ -8,10 +8,6 @@
 #include "cuda_base.hpp"
 #include "sphericart_cuda.hpp"
 
-/*host macro that checks for errors in CUDA calls, and prints the file + line
- * and error string if one occurs
- */
-
 using namespace sphericart::cuda;
 
 struct CudaError {
@@ -19,6 +15,9 @@ struct CudaError {
     std::string errorMessage;
 };
 
+/*
+    This code checks whether the cuda libraries we'd need to dynamically load are available on the host
+*/
 CudaError isCudaAvailable() {
     void* cudaHandle = dlopen("libcuda.so", RTLD_NOW);
     void* nvrtcHandle = dlopen("libnvrtc.so", RTLD_NOW);

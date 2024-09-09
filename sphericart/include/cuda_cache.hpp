@@ -9,11 +9,11 @@
 #include <iostream>
 #include <typeinfo>
 
-#include "dynamic_cuda.hpp"
-
 #include <nvrtc.h>
 #include <cuda.h>
 #include <cxxabi.h>
+
+#include "dynamic_cuda.hpp"
 
 // TODO demangling below only works for Itanium C++ ABI on Unix-like systems (GNUC or clang)
 // Helper function to demangle the type name if necessary
@@ -141,6 +141,9 @@ class CachedKernel {
         }
     }
 
+    /*
+    launches the kernel, and additionally synchronizes until control can be passed back to host.
+    */
     void launch(
         dim3 grid,
         dim3 block,
@@ -213,6 +216,9 @@ class KernelFactory {
         return instance;
     }
 
+    /*
+    Tries to retrieve the kernel "kernel_name". If not found, compile it and save to cache.
+    */
     CachedKernel* getOrCreateKernel(
         const std::string& kernel_name,
         const std::string& source_path,
@@ -235,6 +241,10 @@ class KernelFactory {
     // Reference to the singleton instance of CudaCacheManager
     CudaCacheManager& cacheManager;
 
+    /*
+    Compiles the kernel "kernel_name" located in source file "kernel_code", which additional
+    parameters "options" passed to nvrtc. Will auto-detect the compute capability of the available card.
+    */
     void compileAndCacheKernel(
         const std::string& kernel_name,
         const std::string& kernel_code,
