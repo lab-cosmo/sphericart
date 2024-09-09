@@ -97,12 +97,11 @@ class CachedKernel {
 
     /*
     The default shared memory space on most recent NVIDIA cards is defaulted
-   49152 bytes, regarldess if there is more available per SM. This method
+   49152 bytes. This method
    attempts to adjust the shared memory to fit the requested configuration if
    the kernel launch parameters exceeds the default 49152 bytes.
 */
     void checkAndAdjustSharedMem(int query_shared_mem_size) {
-        /*Check whether we need to adjust shared memory size */
         auto& dynamicCuda = DynamicCUDA::instance();
         if (current_smem_size == 0) {
             CUdevice cuDevice;
