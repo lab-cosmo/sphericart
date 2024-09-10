@@ -1,3 +1,6 @@
+#ifndef SPHERICART_IMPL_CUH
+#define SPHERICART_IMPL_CUH
+
 /*
     Clears the shared memory buffers for the spherical harmonics and gradients
    if required.
@@ -92,3 +95,5 @@ template <typename scalar_t>
 __global__ void backward_kernel(
     scalar_t* dsph, scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
 );
+
+#endif

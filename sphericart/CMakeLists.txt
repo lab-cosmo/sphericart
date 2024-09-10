@@ -15,6 +15,7 @@ OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 OPTION(SPHERICART_ARCH_NATIVE "Try to use -march=native when compiling Sphericart" ON)
 OPTION(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" ON)
 
+set(PACKAGE_DATA_INSTALL_DIR "package_data" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to additional files")
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install DLL/binaries")
 set(INCLUDE_INSTALL_DIR "include" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install headers")
@@ -58,10 +59,10 @@ list(APPEND COMMON_SOURCES "include/cuda_base.hpp")
 list(APPEND COMMON_SOURCES "include/sphericart_cuda.hpp")
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-list(APPEND COMMON_SOURCES "include/dynamic_cuda.hpp")
-list(APPEND COMMON_SOURCES "include/cuda_cache.hpp")
-list(APPEND COMMON_SOURCES "src/cuda_base.cpp")
-list(APPEND COMMON_SOURCES "src/sphericart_cuda.cpp")
+    list(APPEND COMMON_SOURCES "include/dynamic_cuda.hpp")
+    list(APPEND COMMON_SOURCES "include/cuda_cache.hpp")
+    list(APPEND COMMON_SOURCES "src/cuda_base.cpp")
+    list(APPEND COMMON_SOURCES "src/sphericart_cuda.cpp")
 #list(APPEND COMMON_SOURCES "src/sphericart_impl.cu")
 #list(APPEND COMMON_SOURCES "include/sphericart_impl.cuh")
 else()
@@ -206,3 +207,8 @@ install(FILES "${PROJECT_BINARY_DIR}/sphericart-config-version.cmake"
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${INCLUDE_INSTALL_DIR})
 install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION ${INCLUDE_INSTALL_DIR})
+
+#include directory is already part of install, so don't need sphericart_impl dependencies
+install(FILES
+    ${PROJECT_SOURCE_DIR}/src/sphericart_impl.cu
+    DESTINATION ${PACKAGE_DATA_INSTALL_DIR})

@@ -8,6 +8,11 @@
 #include <string>
 #include <typeinfo>
 
+#include <dlfcn.h>
+#include <cstring>
+
+#include <cstdlib> //std::getenv
+
 #if defined(__GNUC__) || defined(__clang__)
 #include <cxxabi.h>
 #endif
@@ -59,6 +64,35 @@ static size_t total_buffer_size(
 }
 
 /*
+hack to obtain sphericart base directory from
+sphericart.so/sphericart_jax.so/sphericart_torch.so path
+linux only - windows can be done as well
+*/
+std::string get_library_path() {
+    Dl_info dl_info;
+    if (dladdr((void*)get_library_path, &dl_info) && dl_info.dli_fname) {
+        std::string libpath = std::string(dl_info.dli_fname);
+        // Find the start of 'sphericart' in the path
+        std::string base_name = "sphericart";
+        size_t start_pos = libpath.find(base_name);
+
+        if (start_pos == std::string::npos) {
+            return ""; // 'sphericart' not found
+        }
+
+        // Find the end of the path by locating the directory separator before 'sphericart'
+        size_t end_pos = libpath.find_last_of("/\\", start_pos);
+        if (end_pos == std::string::npos) {
+            return ""; // No directory separator found
+        }
+
+        // Extract the base directory path
+        return libpath.substr(0, end_pos + 1) + base_name;
+    }
+    return "";
+}
+
+/*
     Wrapper to compile and launch the CUDA kernel. outputs a vector containing the spherical
    harmonics and their gradients if required to sph, dsph and ddsph pointers.
 
@@ -91,14 +125,16 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     void* cuda_stream
 ) {
 
+    std::string libpath = get_library_path();
+
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
 
     CachedKernel* kernel = kernel_factory.getOrCreateKernel(
         kernel_name,
-        SPHERICART_CUDA_SRC_PATH,
+        libpath + "/package_data/sphericart_impl.cu",
         "sphericart_impl.cu",
-        {"--include-path=" SPHERICART_INCLUDE_PATH, "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+        {"--include-path=" + libpath + "/include", "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
     );
 
     int n_total = (l_max + 1) * (l_max + 1);
@@ -107,7 +143,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
     dim3 grid_dim(find_num_blocks(nedges, GRID_DIM_Y));
 
-    size_t total_buff_size =
+    size_t smem_size =
         total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
 
     int _nprefactors = nprefactors;
@@ -133,7 +169,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         &ddsph
     };
 
-    kernel->launch(grid_dim, block_dim, total_buff_size, cstream, args);
+    kernel->launch(grid_dim, block_dim, smem_size, cstream, args);
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
@@ -180,7 +216,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     void* cuda_stream
 ) {
 
-    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
+    std::string libpath = get_library_path();
 
     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 
@@ -188,16 +224,15 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     CachedKernel* kernel = kernel_factory.getOrCreateKernel(
         kernel_name,
-        SPHERICART_CUDA_SRC_PATH,
+        libpath + "/package_data/sphericart_impl.cu",
         "sphericart_impl.cu",
-        {"--include-path=" SPHERICART_INCLUDE_PATH, "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+        {"--include-path=" + libpath + "/include", "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
     );
 
     dim3 block_dim(4, 32);
-
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
-
     dim3 grid_dim(find_num_blocks(nedges, 32), 3);
+    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
     int _n_total = ntotal;
     int _nedges = nedges;
