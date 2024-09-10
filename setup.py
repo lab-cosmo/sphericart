@@ -150,8 +150,6 @@ if __name__ == "__main__":
                 "sphericart/lib/*",
                 "sphericart/include/*",
             ],
-            "sphericart/package_data": ["sphericart/src/sphericart_impl.cu"],
         },
-        include_package_data=True,
         extras_require=extras_require,
     )
