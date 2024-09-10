@@ -104,6 +104,8 @@ if __name__ == "__main__":
             "sphericart-jax": [
                 "sphericart/jax/lib/*",
                 "sphericart/jax/include/*",
-            ]
+            ],
+            "sphericart/package_data": ["sphericart/src/sphericart_impl.cu"],
         },
+        include_package_data=True,
     )
