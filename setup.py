@@ -32,8 +32,7 @@ class cmake_ext(build_ext):
     def run(self):
         source_dir = os.path.join(ROOT, "sphericart")
         build_dir = os.path.join(ROOT, "build", "cmake-build")
-        install_dir = os.path.join(
-            os.path.realpath(self.build_lib), "sphericart")
+        install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart")
 
         os.makedirs(build_dir, exist_ok=True)
 
@@ -100,8 +99,7 @@ if __name__ == "__main__":
     SPHERICART_JAX = os.path.realpath(os.path.join(ROOT, "sphericart-jax"))
 
     # when creating a sdist for release, we should never use local dependencies
-    SPHERICART_NO_LOCAL_DEPS = os.environ.get(
-        "SPHERICART_NO_LOCAL_DEPS", "0") == "1"
+    SPHERICART_NO_LOCAL_DEPS = os.environ.get("SPHERICART_NO_LOCAL_DEPS", "0") == "1"
 
     if not SPHERICART_NO_LOCAL_DEPS and os.path.exists(SPHERICART_TORCH):
         # we are building from a checkout
@@ -142,9 +140,7 @@ if __name__ == "__main__":
                 "sphericart/lib/*",
                 "sphericart/include/*",
             ],
-            "sphericart/package_data": [
-                "sphericart/src/sphericart_impl.cu"
-            ]
+            "sphericart/package_data": ["sphericart/src/sphericart_impl.cu"],
         },
         include_package_data=True,
         extras_require=extras_require,
