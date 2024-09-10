@@ -68,26 +68,29 @@ hack to obtain sphericart base directory from
 sphericart.so/sphericart_jax.so/sphericart_torch.so path
 linux only - windows can be done as well
 */
-std::string get_library_path() {
+
+/// home/nick/miniconda3/envs/sphericart/lib/python3.12/site-packages/sphericart/torch/lib/sphericart/package_data/sphericart_impl.cu
+std::string getPathRelativeToLib(std::string directoryName) {
     Dl_info dl_info;
-    if (dladdr((void*)get_library_path, &dl_info) && dl_info.dli_fname) {
+    if (dladdr((void*)getPathRelativeToLib, &dl_info) && dl_info.dli_fname) {
         std::string libpath = std::string(dl_info.dli_fname);
-        // Find the start of 'sphericart' in the path
-        std::string base_name = "sphericart";
-        size_t start_pos = libpath.find(base_name);
+        // Find the last occurrence of 'sphericart' in the path
+        std::string base_name = directoryName + "/";
+        size_t start_pos =
+            libpath.rfind(base_name); // Use rfind to start from the end of the string
 
         if (start_pos == std::string::npos) {
             return ""; // 'sphericart' not found
         }
 
-        // Find the end of the path by locating the directory separator before 'sphericart'
+        // Find the last directory separator before the 'sphericart' occurrence
         size_t end_pos = libpath.find_last_of("/\\", start_pos);
         if (end_pos == std::string::npos) {
             return ""; // No directory separator found
         }
 
         // Extract the base directory path
-        return libpath.substr(0, end_pos + 1) + base_name;
+        return libpath.substr(0, end_pos + 1) + directoryName;
     }
     return "";
 }
@@ -125,7 +128,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     void* cuda_stream
 ) {
 
-    std::string libpath = get_library_path();
+    std::string libpath = getPathRelativeToLib("sphericart");
 
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
@@ -216,7 +219,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     void* cuda_stream
 ) {
 
-    std::string libpath = get_library_path();
+    std::string libpath = getPathRelativeToLib("sphericart");
 
     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 
