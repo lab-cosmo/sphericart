@@ -10,7 +10,17 @@ from wheel.bdist_wheel import bdist_wheel
 
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
-SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
+
+
+def get_arch_native():
+    # may not want to build processor-specific instructions
+    SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
+    if SPHERICART_ARCH_NATIVE == "ON" and (
+        "bdist_wheel" in sys.argv or "wheel" in sys.argv
+    ):
+        return "OFF"
+    else:
+        return SPHERICART_ARCH_NATIVE
 
 
 class universal_wheel(bdist_wheel):
@@ -39,7 +49,7 @@ class cmake_ext(build_ext):
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DBUILD_SHARED_LIBS=ON",
-            f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
+            f"-DSPHERICART_ARCH_NATIVE={get_arch_native()}",
         ]
 
         CUDA_HOME = os.environ.get("CUDA_HOME")
