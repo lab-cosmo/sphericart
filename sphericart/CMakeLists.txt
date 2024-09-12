@@ -77,7 +77,7 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
 
     target_link_libraries(sphericart PRIVATE dl) # libdl
     #target_link_libraries(sphericart PRIVATE ${NVRTC_LIBRARY_STATIC})
-    target_link_libraries(sphericart INTERFACE CUDA::cudart CUDA::nvrtc)
+    #target_link_libraries(sphericart INTERFACE CUDA::cudart CUDA::nvrtc)
    
     set(SPHERICART_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/sphericart/include")
     add_definitions(-DSPHERICART_INCLUDE_PATH="${SPHERICART_INCLUDE_PATH}")

@@ -70,9 +70,9 @@ linux only - windows can be done as well
 */
 
 /// home/nick/miniconda3/envs/sphericart/lib/python3.12/site-packages/sphericart/torch/lib/sphericart/package_data/sphericart_impl.cu
-std::string getPathRelativeToLib(std::string directoryName) {
+std::string getDirRelativeToLib(std::string directoryName) {
     Dl_info dl_info;
-    if (dladdr((void*)getPathRelativeToLib, &dl_info) && dl_info.dli_fname) {
+    if (dladdr((void*)getDirRelativeToLib, &dl_info) && dl_info.dli_fname) {
         std::string libpath = std::string(dl_info.dli_fname);
         // Find the last occurrence of 'sphericart' in the path
         std::string base_name = directoryName + "/";
@@ -128,16 +128,16 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     void* cuda_stream
 ) {
 
-    std::string libpath = getPathRelativeToLib("sphericart");
+    std::string base_dir = getDirRelativeToLib("sphericart");
 
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
 
     CachedKernel* kernel = kernel_factory.getOrCreateKernel(
         kernel_name,
-        libpath + "/package_data/sphericart_impl.cu",
+        base_dir + "/package_data/sphericart_impl.cu",
         "sphericart_impl.cu",
-        {"--include-path=" + libpath + "/include", "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+        {"--include-path=" + base_dir + "/include", "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
     );
 
     int n_total = (l_max + 1) * (l_max + 1);
@@ -219,7 +219,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     void* cuda_stream
 ) {
 
-    std::string libpath = getPathRelativeToLib("sphericart");
+    std::string base_dir = getDirRelativeToLib("sphericart");
 
     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 
@@ -227,9 +227,9 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     CachedKernel* kernel = kernel_factory.getOrCreateKernel(
         kernel_name,
-        libpath + "/package_data/sphericart_impl.cu",
+        base_dir + "/package_data/sphericart_impl.cu",
         "sphericart_impl.cu",
-        {"--include-path=" + libpath + "/include", "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+        {"--include-path=" + base_dir + "/include", "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
     );
 
     dim3 block_dim(4, 32);
