@@ -127,9 +127,9 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     scalar_t* ddsph,
     void* cuda_stream
 ) {
-    constexpr char *sphericartcu_src = #include "src/sphericart_impl_includeable.cu";
+#include "generated/sphericart_impl_includeable.h"
 
-    //std::string base_dir = getDirRelativeToLib("sphericart");
+constexpr char sphericartcu_src[] = sphericart_impl_includeable_cu;
 
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
@@ -220,7 +220,8 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     void* cuda_stream
 ) {
 
-    constexpr char *sphericartcu_src = #include "src/sphericart_impl_includeable.cu";
+#include "generated/sphericart_impl_includeable.h"
+constexpr char sphericartcu_src[] = sphericart_impl_includeable_cu;
 
     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 

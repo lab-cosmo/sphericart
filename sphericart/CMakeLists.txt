@@ -12,9 +12,9 @@ function(make_includeable input_file output_file)
     file(WRITE ${output_file} "${content}")
 endfunction()
 
-function(prepend_headers_to_source FILE HEADERS)
+function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
     # Read the current content of the source file
-    file(READ ${FILE} CONTENTS)
+    file(READ ${INPUT_FILE} CONTENTS)
     # Initialize a variable to hold the accumulated headers
     set(HEADER_CONTENTS "")
     # Loop through each header and append its contents to HEADER_CONTENTS
@@ -25,7 +25,8 @@ function(prepend_headers_to_source FILE HEADERS)
     # Prepend the accumulated headers to the original source file content
     set(NEW_CONTENTS "${HEADER_CONTENTS}\n${CONTENTS}")
     # Write the new contents back to the source file
-    file(WRITE ${FILE} "${NEW_CONTENTS}")
+    message(INFO "writing contents to ${OUTPUT_FILE}")
+    file(WRITE ${OUTPUT_FILE} "${NEW_CONTENTS}")
 endfunction()
 
 file(READ ${PROJECT_SOURCE_DIR}/VERSION SPHERICART_VERSION)
@@ -108,15 +109,24 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
         "include/templates_core.hpp"
     )
 
+    # Prepend headers to the source file
     prepend_headers_to_source(
-        ${SPHERICART_CUDA_HEADERS} 
         ${CMAKE_SOURCE_DIR}/src/sphericart_impl.cu
+        ${CMAKE_BINARY_DIR}/generated/sphericart_impl_tmp.cu
+        ${SPHERICART_CUDA_HEADERS}
     )
 
+    # Make the source file includeable by converting it to a string literal
     make_includeable(
-        ${CMAKE_SOURCE_DIR}/src/sphericart_impl.cu
-        ${CMAKE_SOURCE_DIR}/src/sphericart_impl_includeable.cu
+        ${CMAKE_BINARY_DIR}/generated/sphericart_impl_tmp.cu
+        ${CMAKE_BINARY_DIR}/generated/sphericart_impl_includeable.h
     )
+
+    # Ensure that the generated header is available before the compilation
+    add_custom_target(GenerateIncludeable ALL
+        DEPENDS "${CMAKE_BINARY_DIR}/generated/sphericart_impl_includeable.h"
+    )
+
     #target_link_libraries(sphericart PRIVATE ${NVRTC_LIBRARY_STATIC})
     #target_link_libraries(sphericart INTERFACE CUDA::cudart CUDA::nvrtc)
    
