@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(sphericart LANGUAGES C CXX)
+#R"======(, )======"
 
 function(make_includeable input_file output_file)
     file(READ ${input_file} content)
-    # Raw string delimiter
-    set(delim "for_c++_include")
     # Format the content to be included as a raw string in C++
-    set(content "R\"${delim}(\n${content}\n)${delim}\"")
+    set(content "R\"======(\n${content}\n)======\"")
     # Write the formatted content to the output file
     file(WRITE ${output_file} "${content}")
 endfunction()
@@ -90,8 +89,6 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     list(APPEND COMMON_SOURCES "include/cuda_cache.hpp")
     list(APPEND COMMON_SOURCES "src/cuda_base.cpp")
     list(APPEND COMMON_SOURCES "src/sphericart_cuda.cpp")
-#list(APPEND COMMON_SOURCES "src/sphericart_impl.cu")
-#list(APPEND COMMON_SOURCES "include/sphericart_impl.cuh")
 else()
     list(APPEND COMMON_SOURCES "src/cuda_stub.cpp")
     list(APPEND COMMON_SOURCES "src/sphericart_cuda_stub.cpp")
@@ -100,6 +97,8 @@ endif()
 add_library(sphericart ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+    set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
     target_include_directories(sphericart PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
     target_link_libraries(sphericart PRIVATE dl) # libdl
 
@@ -120,11 +119,6 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     make_includeable(
         ${CMAKE_BINARY_DIR}/generated/sphericart_impl_tmp.cu
         ${CMAKE_BINARY_DIR}/generated/sphericart_impl_includeable.h
-    )
-
-    # Ensure that the generated header is available before the compilation
-    add_custom_target(GenerateIncludeable ALL
-        DEPENDS "${CMAKE_BINARY_DIR}/generated/sphericart_impl_includeable.h"
     )
 
     #target_link_libraries(sphericart PRIVATE ${NVRTC_LIBRARY_STATIC})
