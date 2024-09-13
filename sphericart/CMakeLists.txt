@@ -3,21 +3,30 @@ cmake_minimum_required(VERSION 3.10)
 project(sphericart LANGUAGES C CXX)
 #R"======(, )======"
 
-function(make_includeable input_file output_file)
-    file(READ ${input_file} content)
+function(make_includeable INPUT_FILE OUTPUT_FILE)
+    if(NOT EXISTS ${INPUT_FILE})
+    message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
+    endif()
+    file(READ ${INPUT_FILE} content)
     # Format the content to be included as a raw string in C++
     set(content "R\"======(\n${content}\n)======\"")
     # Write the formatted content to the output file
-    file(WRITE ${output_file} "${content}")
+    file(WRITE ${OUTPUT_FILE} "${content}")
 endfunction()
 
 function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
     # Read the current content of the source file
+    if(NOT EXISTS ${INPUT_FILE})
+        message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
+    endif()
     file(READ ${INPUT_FILE} CONTENTS)
     # Initialize a variable to hold the accumulated headers
     set(HEADER_CONTENTS "")
     # Loop through each header and append its contents to HEADER_CONTENTS
     foreach(HEADER IN LISTS HEADERS)
+        if(NOT EXISTS ${INPUT_FILE})
+        message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
+        endif()
         file(READ ${HEADER} SINGLE_HEADER_CONTENT)
         set(HEADER_CONTENTS "${HEADER_CONTENTS}\n${SINGLE_HEADER_CONTENT}")
     endforeach()
@@ -111,15 +120,15 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
 
     # Prepend headers to the source file
     prepend_headers_to_source(
-        ${CMAKE_SOURCE_DIR}/src/sphericart_impl.cu
-        ${CMAKE_BINARY_DIR}/generated/sphericart_impl_tmp.cu
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sphericart_impl.cu
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/sphericart_impl_tmp.cu
         ${SPHERICART_CUDA_HEADERS}
     )
 
     # Make the source file includeable by converting it to a string literal
     make_includeable(
-        ${CMAKE_BINARY_DIR}/generated/sphericart_impl_tmp.cu
-        ${CMAKE_BINARY_DIR}/generated/sphericart_impl_includeable.h
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/sphericart_impl_tmp.cu
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/sphericart_impl_includeable.h
     )
 
 endif()
