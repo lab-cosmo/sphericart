@@ -1,11 +1,4 @@
 
-#define _SPHERICART_INTERNAL_IMPLEMENTATION
-#define CUDA_DEVICE_PREFIX __device__
-
-#include "macros.hpp"
-#include "templates_core.hpp"
-#include "sphericart_impl.cuh"
-
 #define HARDCODED_LMAX 1
 
 /* MASK used for warp reductions */

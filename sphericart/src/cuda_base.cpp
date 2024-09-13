@@ -129,7 +129,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 ) {
 
     static const char* CUDA_CODE =
-#include "generated/sphericart_impl_includeable.h"
+#include "generated/wrapped_sphericart_impl.cuh"
         ;
 
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
@@ -222,7 +222,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 ) {
 
     static const char* CUDA_CODE =
-#include "generated/sphericart_impl_includeable.h"
+#include "generated/wrapped_sphericart_impl.cuh"
         ;
     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 

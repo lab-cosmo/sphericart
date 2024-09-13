@@ -2,6 +2,8 @@
 #ifndef SPHERICART_MACROS_HPP
 #define SPHERICART_MACROS_HPP
 
+#define CUDA_DEVICE_PREFIX __device__
+
 /*
     Hard-coded expressions for low-l Cartesian spherical harmonics and their
    derivatives.

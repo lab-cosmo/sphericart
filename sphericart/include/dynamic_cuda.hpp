@@ -15,7 +15,9 @@
         nvrtcResult result = x;                                                                    \
         if (result != NVRTC_SUCCESS) {                                                             \
             std::cerr << "\nerror: " #x " failed with error "                                      \
-                      << DynamicCUDA::instance().nvrtcGetErrorString(result) << '\n';              \
+                      << DynamicCUDA::instance().nvrtcGetErrorString(result) << '\n'               \
+                      << "File: " << __FILE__ << '\n'                                              \
+                      << "Line: " << __LINE__ << '\n';                                             \
             exit(1);                                                                               \
         }                                                                                          \
     } while (0)
@@ -26,7 +28,9 @@
         if (result != CUDA_SUCCESS) {                                                              \
             const char* msg;                                                                       \
             DynamicCUDA::instance().cuGetErrorName(result, &msg);                                  \
-            std::cerr << "\nerror: " #x " failed with error " << msg << '\n';                      \
+            std::cerr << "\nerror: " #x " failed with error " << msg << '\n'                       \
+                      << "File: " << __FILE__ << '\n'                                              \
+                      << "Line: " << __LINE__ << '\n';                                             \
             exit(1);                                                                               \
         }                                                                                          \
     } while (0)
@@ -36,7 +40,9 @@
         cudaError_t cudaStatus = (call);                                                           \
         if (cudaStatus != cudaSuccess) {                                                           \
             std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
-                      << DynamicCUDA::instance().cudaGetErrorString(cudaStatus) << std::endl;      \
+                      << DynamicCUDA::instance().cudaGetErrorString(cudaStatus) << '\n'            \
+                      << "File: " << __FILE__ << '\n'                                              \
+                      << "Line: " << __LINE__ << '\n';                                             \
             exit(1);                                                                               \
         }                                                                                          \
     } while (0)

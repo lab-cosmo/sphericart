@@ -5,7 +5,7 @@ project(sphericart LANGUAGES C CXX)
 
 function(make_includeable INPUT_FILE OUTPUT_FILE)
     if(NOT EXISTS ${INPUT_FILE})
-    message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
+        message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
     endif()
     file(READ ${INPUT_FILE} content)
     # Format the content to be included as a raw string in C++
@@ -15,6 +15,7 @@ function(make_includeable INPUT_FILE OUTPUT_FILE)
 endfunction()
 
 function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
+    message ("Headers to include: ${HEADERS}")
     # Read the current content of the source file
     if(NOT EXISTS ${INPUT_FILE})
         message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
@@ -25,8 +26,9 @@ function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
     # Loop through each header and append its contents to HEADER_CONTENTS
     foreach(HEADER IN LISTS HEADERS)
         if(NOT EXISTS ${INPUT_FILE})
-        message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
+            message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
         endif()
+        message ("Prepending ${HEADER} to ${INPUT_FILE}")
         file(READ ${HEADER} SINGLE_HEADER_CONTENT)
         set(HEADER_CONTENTS "${HEADER_CONTENTS}\n${SINGLE_HEADER_CONTENT}")
     endforeach()
@@ -113,24 +115,27 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     target_link_libraries(sphericart PRIVATE dl) # libdl
 
     set(SPHERICART_CUDA_HEADERS
-        "include/sphericart_impl.cuh"
-        "include/macros.hpp"
+        "include/sphericart_impl_i.cuh"
         "include/templates_core.hpp"
+        "include/macros.hpp"
+        "include/sphericart_impl.cuh"
     )
 
+    message ("sphericart CUDA headers: ${SPHERICART_CUDA_HEADERS}")
     # Prepend headers to the source file
     prepend_headers_to_source(
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/sphericart_impl.cu
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/sphericart_impl_tmp.cu
-        ${SPHERICART_CUDA_HEADERS}
-    )
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/sphericart_impl.cu"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cuh" 
+        "${SPHERICART_CUDA_HEADERS}"
+        )
 
     # Make the source file includeable by converting it to a string literal
     make_includeable(
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/sphericart_impl_tmp.cu
-        ${CMAKE_CURRENT_BINARY_DIR}/generated/sphericart_impl_includeable.h
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cuh"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/wrapped_sphericart_impl.cuh"
     )
 
+    file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cuh")
 endif()
 
 set_target_properties(sphericart PROPERTIES
