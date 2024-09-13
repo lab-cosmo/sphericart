@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(sphericart LANGUAGES C CXX)
 
-include(${CMAKE_SOURCE_DIR}/prepend_headers.cmake)
-include(${CMAKE_SOURCE_DIR}/make_includeable.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/prepend_headers.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/make_includeable.cmake)
 
 file(READ ${PROJECT_SOURCE_DIR}/VERSION SPHERICART_VERSION)
 string(STRIP ${SPHERICART_VERSION} SPHERICART_VERSION)
