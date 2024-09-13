@@ -97,6 +97,7 @@ endif()
 add_library(sphericart ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+    #include the build/generated folder for compilation
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
     target_include_directories(sphericart PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
@@ -121,14 +122,6 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
         ${CMAKE_BINARY_DIR}/generated/sphericart_impl_includeable.h
     )
 
-    #target_link_libraries(sphericart PRIVATE ${NVRTC_LIBRARY_STATIC})
-    #target_link_libraries(sphericart INTERFACE CUDA::cudart CUDA::nvrtc)
-   
-    set(SPHERICART_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/sphericart/include")
-    add_definitions(-DSPHERICART_INCLUDE_PATH="${SPHERICART_INCLUDE_PATH}")
-
-    set(SPHERICART_CUDA_SRC_PATH "${CMAKE_SOURCE_DIR}/sphericart/src/sphericart_impl.cu")
-    add_definitions(-DSPHERICART_CUDA_SRC_PATH="${SPHERICART_CUDA_SRC_PATH}")
 endif()
 
 set_target_properties(sphericart PROPERTIES
