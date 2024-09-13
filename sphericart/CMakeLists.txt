@@ -2,8 +2,31 @@ cmake_minimum_required(VERSION 3.10)
 
 project(sphericart LANGUAGES C CXX)
 
-include(${CMAKE_SOURCE_DIR}/cmake/prepend_headers.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/make_includeable.cmake)
+function(make_includeable input_file output_file)
+    file(READ ${input_file} content)
+    # Raw string delimiter
+    set(delim "for_c++_include")
+    # Format the content to be included as a raw string in C++
+    set(content "R\"${delim}(\n${content}\n)${delim}\"")
+    # Write the formatted content to the output file
+    file(WRITE ${output_file} "${content}")
+endfunction()
+
+function(prepend_headers_to_source FILE HEADERS)
+    # Read the current content of the source file
+    file(READ ${FILE} CONTENTS)
+    # Initialize a variable to hold the accumulated headers
+    set(HEADER_CONTENTS "")
+    # Loop through each header and append its contents to HEADER_CONTENTS
+    foreach(HEADER IN LISTS HEADERS)
+        file(READ ${HEADER} SINGLE_HEADER_CONTENT)
+        set(HEADER_CONTENTS "${HEADER_CONTENTS}\n${SINGLE_HEADER_CONTENT}")
+    endforeach()
+    # Prepend the accumulated headers to the original source file content
+    set(NEW_CONTENTS "${HEADER_CONTENTS}\n${CONTENTS}")
+    # Write the new contents back to the source file
+    file(WRITE ${FILE} "${NEW_CONTENTS}")
+endfunction()
 
 file(READ ${PROJECT_SOURCE_DIR}/VERSION SPHERICART_VERSION)
 string(STRIP ${SPHERICART_VERSION} SPHERICART_VERSION)
@@ -87,12 +110,12 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
 
     prepend_headers_to_source(
         ${SPHERICART_CUDA_HEADERS} 
-        ${CMAKE_SOURCE_DIR}/sphericart/src/sphericart_impl.cu
+        ${CMAKE_SOURCE_DIR}/src/sphericart_impl.cu
     )
 
-    make_includable(
-        ${CMAKE_SOURCE_DIR}/sphericart/src/sphericart_impl.cu
-        ${CMAKE_SOURCE_DIR}/sphericart/src/sphericart_impl_includeable.cu
+    make_includeable(
+        ${CMAKE_SOURCE_DIR}/src/sphericart_impl.cu
+        ${CMAKE_SOURCE_DIR}/src/sphericart_impl_includeable.cu
     )
     #target_link_libraries(sphericart PRIVATE ${NVRTC_LIBRARY_STATIC})
     #target_link_libraries(sphericart INTERFACE CUDA::cudart CUDA::nvrtc)
