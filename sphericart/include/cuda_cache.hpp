@@ -276,8 +276,6 @@ class KernelFactory {
         // Get current context
         CUresult result = dynamicCuda.cuCtxGetCurrent(&currentContext);
 
-        std::cout << result << std::endl;
-
         if (result != CUDA_SUCCESS || !currentContext) {
             std::cerr << "Error getting current context\n";
             exit(1);
@@ -285,8 +283,6 @@ class KernelFactory {
 
         CUdevice cuDevice;
         result = dynamicCuda.cuCtxGetDevice(&cuDevice);
-
-        std::cout << result << std::endl;
 
         if (result != CUDA_SUCCESS) {
             std::cerr << "Error getting device from context\n";

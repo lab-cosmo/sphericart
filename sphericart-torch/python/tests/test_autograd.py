@@ -27,7 +27,10 @@ def test_autograd_cartesian(xyz):
     assert torch.autograd.gradgradcheck(compute, xyz, fast_mode=True)
 
     if torch.cuda.is_available():
+        
         xyz_cuda = xyz.detach().cuda().requires_grad_(True)
+        sph = compute(xyz_cuda)
+        sph.sum().backward()
         assert torch.autograd.gradcheck(compute, xyz_cuda, fast_mode=True)
         assert torch.autograd.gradgradcheck(compute, xyz_cuda, fast_mode=True)
 
@@ -47,6 +50,8 @@ def test_autograd_normalized(xyz):
 
     if torch.cuda.is_available():
         xyz_cuda = xyz.detach().cuda().requires_grad_(True)
+        sph = compute(xyz_cuda)
+        sph.sum().backward()
         assert torch.autograd.gradcheck(compute, xyz_cuda, fast_mode=True)
         assert torch.autograd.gradgradcheck(compute, xyz_cuda, fast_mode=True)
 
