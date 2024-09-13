@@ -127,17 +127,18 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     scalar_t* ddsph,
     void* cuda_stream
 ) {
+    constexpr char *sphericartcu_src = #include "src/sphericart_impl_includeable.cu";
 
-    std::string base_dir = getDirRelativeToLib("sphericart");
+    //std::string base_dir = getDirRelativeToLib("sphericart");
 
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
 
     CachedKernel* kernel = kernel_factory.getOrCreateKernel(
         kernel_name,
-        base_dir + "/package_data/sphericart_impl.cu",
+        std::string(sphericartcu_src),
         "sphericart_impl.cu",
-        {"--include-path=" + base_dir + "/include", "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+        {"--define-macro=CUDA_DEVICE_PREFIX=__device__"}
     );
 
     int n_total = (l_max + 1) * (l_max + 1);
@@ -219,7 +220,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     void* cuda_stream
 ) {
 
-    std::string base_dir = getDirRelativeToLib("sphericart");
+    constexpr char *sphericartcu_src = #include "src/sphericart_impl_includeable.cu";
 
     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 
@@ -227,9 +228,9 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     CachedKernel* kernel = kernel_factory.getOrCreateKernel(
         kernel_name,
-        base_dir + "/package_data/sphericart_impl.cu",
+        std::string(sphericartcu_src),
         "sphericart_impl.cu",
-        {"--include-path=" + base_dir + "/include", "--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+        {"--define-macro=CUDA_DEVICE_PREFIX=__device__"}
     );
 
     dim3 block_dim(4, 32);

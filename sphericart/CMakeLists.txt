@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.10)
 
 project(sphericart LANGUAGES C CXX)
 
+include(${CMAKE_SOURCE_DIR}/prepend_headers.cmake)
+include(${CMAKE_SOURCE_DIR}/make_includeable.cmake)
+
 file(READ ${PROJECT_SOURCE_DIR}/VERSION SPHERICART_VERSION)
 string(STRIP ${SPHERICART_VERSION} SPHERICART_VERSION)
 string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" SPHERICART_VERSION_MAJOR "${SPHERICART_VERSION}")
@@ -74,8 +77,23 @@ add_library(sphericart ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     target_include_directories(sphericart PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-
     target_link_libraries(sphericart PRIVATE dl) # libdl
+
+    set(SPHERICART_CUDA_HEADERS
+        "include/sphericart_impl.cuh"
+        "include/macros.hpp"
+        "include/templates_core.hpp"
+    )
+
+    prepend_headers_to_source(
+        ${SPHERICART_CUDA_HEADERS} 
+        ${CMAKE_SOURCE_DIR}/sphericart/src/sphericart_impl.cu
+    )
+
+    make_includable(
+        ${CMAKE_SOURCE_DIR}/sphericart/src/sphericart_impl.cu
+        ${CMAKE_SOURCE_DIR}/sphericart/src/sphericart_impl_includeable.cu
+    )
     #target_link_libraries(sphericart PRIVATE ${NVRTC_LIBRARY_STATIC})
     #target_link_libraries(sphericart INTERFACE CUDA::cudart CUDA::nvrtc)
    

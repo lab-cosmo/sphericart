@@ -219,17 +219,35 @@ class KernelFactory {
     /*
     Tries to retrieve the kernel "kernel_name". If not found, compile it and save to cache.
     */
-    CachedKernel* getOrCreateKernel(
+    CachedKernel* getOrCreateKernelFromSrcFile(
         const std::string& kernel_name,
         const std::string& source_path,
-        const std::string& source_file,
+        const std::string& source_name,
         const std::vector<std::string>& options
     ) {
 
         if (!cacheManager.hasKernel(kernel_name)) {
             std::string kernel_code = load_cuda_source(source_path);
             // Kernel not found in cache, compile and cache it
-            compileAndCacheKernel(kernel_name, kernel_code, source_file, options);
+            compileAndCacheKernel(kernel_name, kernel_code, source_name, options);
+        }
+
+        return cacheManager.getKernel(kernel_name);
+    }
+
+    /*
+    Tries to retrieve the kernel "kernel_name". If not found, compile it and save to cache.
+    */
+    CachedKernel* getOrCreateKernel(
+        const std::string& kernel_name,
+        const std::string& source_variable,
+        const std::string& source_name,
+        const std::vector<std::string>& options
+    ) {
+
+        if (!cacheManager.hasKernel(kernel_name)) {
+            // Kernel not found in cache, compile and cache it
+            compileAndCacheKernel(kernel_name, source_variable, source_name, options);
         }
 
         return cacheManager.getKernel(kernel_name);
