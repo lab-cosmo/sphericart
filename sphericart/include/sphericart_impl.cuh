@@ -572,7 +572,6 @@ which macro(s) should be called
 
 #endif
 
-
 #ifndef SPHERICART_MACROS_HPP
 #define SPHERICART_MACROS_HPP
 

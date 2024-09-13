@@ -128,10 +128,9 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     void* cuda_stream
 ) {
 
-
-static const char* CUDA_CODE =
+    static const char* CUDA_CODE =
 #include "generated/sphericart_impl_includeable.h"
-;
+        ;
 
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
@@ -222,9 +221,9 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     void* cuda_stream
 ) {
 
-static const char* CUDA_CODE =
+    static const char* CUDA_CODE =
 #include "generated/sphericart_impl_includeable.h"
-;
+        ;
     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 
     auto& kernel_factory = KernelFactory::instance();
