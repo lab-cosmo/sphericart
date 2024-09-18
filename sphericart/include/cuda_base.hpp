@@ -53,7 +53,7 @@ namespace cuda {
  */
 template <typename scalar_t>
 void spherical_harmonics_cuda_base(
-    const scalar_t* xyz,
+    scalar_t* xyz,
     const int nedges,
     scalar_t* prefactors,
     const int nprefactors,

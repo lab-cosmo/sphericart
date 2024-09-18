@@ -150,14 +150,27 @@ class CachedKernel {
         size_t shared_mem_size,
         void* cuda_stream,
         void** args,
-        bool synchronize = true
+        bool synchronize = false
     ) {
 
         auto& dynamicCuda = DynamicCUDA::instance();
 
-        CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(context));
+        CUcontext currentContext = nullptr;
+        // Get current context
+        CUresult result = dynamicCuda.cuCtxGetCurrent(&currentContext);
 
-        checkAndAdjustSharedMem(shared_mem_size);
+        if (result != CUDA_SUCCESS || !currentContext) {
+            std::cerr << "launch::Error getting current context\n";
+            std::cerr << "launch::result: " << result << '\n';
+            std::cerr << "launch::currentContext: " << currentContext << '\n';
+            exit(1);
+        }
+
+        if (currentContext != context) {
+            CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(context));
+        }
+
+        // checkAndAdjustSharedMem(shared_mem_size);
 
         cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
@@ -167,6 +180,10 @@ class CachedKernel {
 
         if (synchronize)
             CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxSynchronize());
+
+        if (currentContext != context) {
+            CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(currentContext));
+        }
     }
 
   private:
@@ -192,6 +209,8 @@ class CudaCacheManager {
         return kernel_cache.find(kernel_name) != kernel_cache.end();
     }
 
+    // TODO - change this to an instantiate. We want to compile the kernel on first call to launch,
+    // because we need to query the input pointers for their CUcontext
     CachedKernel* getKernel(const std::string& kernel_name) const {
         auto it = kernel_cache.find(kernel_name);
         if (it != kernel_cache.end()) {
@@ -223,15 +242,16 @@ class KernelFactory {
         const std::string& kernel_name,
         const std::string& source_path,
         const std::string& source_name,
-        const std::vector<std::string>& options
+        const std::vector<std::string>& options,
+        void** kernel_args,
+        size_t kernel_nargs
     ) {
-
         if (!cacheManager.hasKernel(kernel_name)) {
             std::string kernel_code = load_cuda_source(source_path);
-            // Kernel not found in cache, compile and cache it
-            compileAndCacheKernel(kernel_name, kernel_code, source_name, options);
+            compileAndCacheKernel(
+                kernel_name, kernel_code, source_name, options, kernel_args, kernel_nargs
+            );
         }
-
         return cacheManager.getKernel(kernel_name);
     }
 
@@ -242,14 +262,16 @@ class KernelFactory {
         const std::string& kernel_name,
         const std::string& source_variable,
         const std::string& source_name,
-        const std::vector<std::string>& options
+        const std::vector<std::string>& options,
+        void** kernel_args,
+        size_t kernel_nargs
     ) {
 
         if (!cacheManager.hasKernel(kernel_name)) {
-            // Kernel not found in cache, compile and cache it
-            compileAndCacheKernel(kernel_name, source_variable, source_name, options);
+            compileAndCacheKernel(
+                kernel_name, source_variable, source_name, options, kernel_args, kernel_nargs
+            );
         }
-
         return cacheManager.getKernel(kernel_name);
     }
 
@@ -262,41 +284,55 @@ class KernelFactory {
     /*
     Compiles the kernel "kernel_name" located in source file "kernel_code", which additional
     parameters "options" passed to nvrtc. Will auto-detect the compute capability of the available card.
+    args for the launch need to be queried as we need to grab the CUcontext in which these ptrs exist.
     */
     void compileAndCacheKernel(
         const std::string& kernel_name,
         const std::string& kernel_code,
         const std::string& source_name,
-        const std::vector<std::string>& options
+        const std::vector<std::string>& options,
+        void** kernel_args,
+        size_t nargs
     ) {
-        auto& dynamicCuda = DynamicCUDA::instance();
+
         initCudaDriver();
 
+        /*
+        std::cout << "KernelFactory::compileAndCacheKernel: " << kernel_name
+                  << " does not exist, compiling." << '\n';
+        */
+
+        auto& dynamicCuda = DynamicCUDA::instance();
+
         CUcontext currentContext = nullptr;
-        // Get current context
-        CUresult result = dynamicCuda.cuCtxGetCurrent(&currentContext);
 
-        if (result != CUDA_SUCCESS || !currentContext) {
-            std::cerr << "Error getting current context\n";
-            exit(1);
+        for (size_t ptr_id = 0; ptr_id < nargs; ptr_id++) {
+            unsigned int memtype = 0;
+            CUdeviceptr device_ptr = *reinterpret_cast<CUdeviceptr*>(kernel_args[ptr_id]);
+
+            CUresult res = dynamicCuda.cuPointerGetAttribute(
+                &memtype, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, device_ptr
+            );
+
+            if (res == CUDA_SUCCESS && memtype == CU_MEMORYTYPE_DEVICE) {
+                CUresult res2 = dynamicCuda.cuPointerGetAttribute(
+                    &currentContext, CU_POINTER_ATTRIBUTE_CONTEXT, device_ptr
+                );
+            }
         }
 
-        CUdevice cuDevice;
-        result = dynamicCuda.cuCtxGetDevice(&cuDevice);
+        CUcontext query = nullptr;
+        CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxGetCurrent(&query));
 
-        if (result != CUDA_SUCCESS) {
-            std::cerr << "Error getting device from context\n";
-            exit(1);
-        }
-
-        if (!currentContext) {
-            // workaround for corner case where a primary context exists but is not
-            // the current context, seen in multithreaded use-cases
-            CUDADRIVER_SAFE_CALL(dynamicCuda.cuDevicePrimaryCtxRetain(&currentContext, cuDevice));
+        if (query != currentContext) {
             CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(currentContext));
         }
 
+        CUdevice cuDevice;
+        CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxGetDevice(&cuDevice));
+
         nvrtcProgram prog;
+
         NVRTC_SAFE_CALL(dynamicCuda.nvrtcCreateProgram(
             &prog, kernel_code.c_str(), source_name.c_str(), 0, nullptr, nullptr
         ));
@@ -346,7 +382,8 @@ class KernelFactory {
 
         if (cuResult != CUDA_SUCCESS) {
             throw std::runtime_error(
-                "KernelFactory::compileAndCacheKernel: Failed to load PTX code into CUDA module "
+                "KernelFactory::compileAndCacheKernel: Failed to load PTX code into CUDA "
+                "module "
                 "(error code: " +
                 std::to_string(cuResult) + ")"
             );

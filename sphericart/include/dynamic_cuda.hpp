@@ -67,6 +67,7 @@ class DynamicCUDA {
     using cuInit_t = CUresult (*)(unsigned int);
     using cuDeviceGetCount_t = CUresult (*)(int*);
     using cuDevicePrimaryCtxRetain_t = CUresult (*)(CUcontext*, CUdevice);
+    using cuDevicePrimaryCtxRelease_t = CUresult (*)(CUdevice);
     using cuCtxCreate_t = CUresult (*)(CUcontext*, unsigned int, CUdevice);
     using cuCtxDestroy_t = CUresult (*)(CUcontext);
     using cuCtxGetCurrent_t = CUresult (*)(CUcontext*);
@@ -86,6 +87,7 @@ class DynamicCUDA {
     using cuCtxSynchronize_t = CUresult (*)(void);
     using cuGetErrorName_t = CUresult (*)(CUresult, const char**);
     using cuCtxPushCurrent_t = CUresult (*)(CUcontext);
+    using cuPointerGetAttribute_t = CUresult (*)(void*, CUpointer_attribute, CUdeviceptr);
 
     using nvrtcCreateProgram_t =
         nvrtcResult (*)(nvrtcProgram*, const char*, const char*, int, const char*[], const char*[]);
@@ -110,7 +112,7 @@ class DynamicCUDA {
     using cudaDeviceSynchronize_t = cudaError_t (*)(void);
     using cudaPointerGetAttributes_t = cudaError_t (*)(cudaPointerAttributes*, const void*);
     using cudaFree_t = cudaError_t (*)(void*);
-
+    using cudaInitDevice_t = cudaError_t (*)(int, unsigned int, unsigned int);
     // Public methods to access function pointers
     // cuda driver functions
     cuInit_t cuInit;
@@ -118,6 +120,7 @@ class DynamicCUDA {
     cuCtxCreate_t cuCtxCreate;
     cuCtxDestroy_t cuCtxDestroy;
     cuDevicePrimaryCtxRetain_t cuDevicePrimaryCtxRetain;
+    cuDevicePrimaryCtxRelease_t cuDevicePrimaryCtxRelease;
     cuCtxGetCurrent_t cuCtxGetCurrent;
     cuCtxSetCurrent_t cuCtxSetCurrent;
     cuModuleLoadDataEx_t cuModuleLoadDataEx;
@@ -134,6 +137,7 @@ class DynamicCUDA {
     cuGetErrorName_t cuGetErrorName;
     cuCtxSynchronize_t cuCtxSynchronize;
     cuCtxPushCurrent_t cuCtxPushCurrent;
+    cuPointerGetAttribute_t cuPointerGetAttribute;
 
     // cuda runtime functions
     cudaGetDeviceCount_t cudaGetDeviceCount;
@@ -146,6 +150,7 @@ class DynamicCUDA {
     cudaDeviceSynchronize_t cudaDeviceSynchronize;
     cudaPointerGetAttributes_t cudaPointerGetAttributes;
     cudaFree_t cudaFree;
+    cudaInitDevice_t cudaInitDevice;
 
     // nvrtc functions
     nvrtcCreateProgram_t nvrtcCreateProgram;
@@ -196,6 +201,8 @@ class DynamicCUDA {
         cuCtxDestroy = load<cuCtxDestroy_t>(cudaHandle, "cuCtxDestroy");
         cuDevicePrimaryCtxRetain =
             load<cuDevicePrimaryCtxRetain_t>(cudaHandle, "cuDevicePrimaryCtxRetain");
+        cuDevicePrimaryCtxRelease =
+            load<cuDevicePrimaryCtxRelease_t>(cudaHandle, "cuDevicePrimaryCtxRelease");
         cuCtxGetCurrent = load<cuCtxGetCurrent_t>(cudaHandle, "cuCtxGetCurrent");
         cuCtxSetCurrent = load<cuCtxSetCurrent_t>(cudaHandle, "cuCtxSetCurrent");
         cuModuleLoadDataEx = load<cuModuleLoadDataEx_t>(cudaHandle, "cuModuleLoadDataEx");
@@ -212,6 +219,7 @@ class DynamicCUDA {
         cuCtxSynchronize = load<cuCtxSynchronize_t>(cudaHandle, "cuCtxSynchronize");
         cuGetErrorName = load<cuGetErrorName_t>(cudaHandle, "cuGetErrorName");
         cuCtxPushCurrent = load<cuCtxPushCurrent_t>(cudaHandle, "cuCtxPushCurrent");
+        cuPointerGetAttribute = load<cuPointerGetAttribute_t>(cudaHandle, "cuPointerGetAttribute");
 
         // load cudart function pointers using template
         cudaGetDeviceCount = load<cudaGetDeviceCount_t>(cudartHandle, "cudaGetDeviceCount");
@@ -225,6 +233,7 @@ class DynamicCUDA {
         cudaPointerGetAttributes =
             load<cudaPointerGetAttributes_t>(cudartHandle, "cudaPointerGetAttributes");
         cudaFree = load<cudaFree_t>(cudartHandle, "cudaFree");
+        cudaInitDevice = load<cudaInitDevice_t>(cudartHandle, "cudaInitDevice");
 
         // Load NVRTC function pointers using template
         nvrtcCreateProgram = load<nvrtcCreateProgram_t>(nvrtcHandle, "nvrtcCreateProgram");

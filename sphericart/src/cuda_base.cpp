@@ -112,7 +112,7 @@ std::string getDirRelativeToLib(std::string directoryName) {
 */
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
-    const scalar_t* xyz,
+    scalar_t* xyz,
     const int nedges,
     scalar_t* prefactors,
     const int nprefactors,
@@ -131,16 +131,6 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     static const char* CUDA_CODE =
 #include "generated/wrapped_sphericart_impl.cuh"
         ;
-
-    std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
-    auto& kernel_factory = KernelFactory::instance();
-
-    CachedKernel* kernel = kernel_factory.getOrCreateKernel(
-        kernel_name,
-        std::string(CUDA_CODE),
-        "sphericart_impl.cu",
-        {"--define-macro=CUDA_DEVICE_PREFIX=__device__"}
-    );
 
     int n_total = (l_max + 1) * (l_max + 1);
     dim3 block_dim(GRID_DIM_X, GRID_DIM_Y);
@@ -174,11 +164,23 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         &ddsph
     };
 
+    std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
+    auto& kernel_factory = KernelFactory::instance();
+
+    CachedKernel* kernel = kernel_factory.getOrCreateKernel(
+        kernel_name,
+        std::string(CUDA_CODE),
+        "sphericart_impl.cu",
+        {"--define-macro=CUDA_DEVICE_PREFIX=__device__"},
+        args,
+        12
+    );
+
     kernel->launch(grid_dim, block_dim, smem_size, cstream, args);
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
-    const float* xyz,
+    float* xyz,
     const int nedges,
     float* prefactors,
     const int nprefactors,
@@ -195,7 +197,7 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
 );
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
-    const double* xyz,
+    double* xyz,
     const int nedges,
     double* prefactors,
     const int nprefactors,
@@ -228,13 +230,6 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     auto& kernel_factory = KernelFactory::instance();
 
-    CachedKernel* kernel = kernel_factory.getOrCreateKernel(
-        kernel_name,
-        std::string(CUDA_CODE),
-        "sphericart_impl.cu",
-        {"--define-macro=CUDA_DEVICE_PREFIX=__device__"}
-    );
-
     dim3 block_dim(4, 32);
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
     dim3 grid_dim(find_num_blocks(nedges, 32), 3);
@@ -244,6 +239,15 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     int _nedges = nedges;
 
     void* args[] = {&dsph, &sph_grad, &_nedges, &_n_total, &xyz_grad};
+
+    CachedKernel* kernel = kernel_factory.getOrCreateKernel(
+        kernel_name,
+        std::string(CUDA_CODE),
+        "sphericart_impl.cu",
+        {"--define-macro=CUDA_DEVICE_PREFIX=__device__"},
+        args,
+        5
+    );
 
     kernel->launch(grid_dim, block_dim, 0, cstream, args);
 }
