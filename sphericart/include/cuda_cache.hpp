@@ -170,7 +170,7 @@ class CachedKernel {
             CUDADRIVER_SAFE_CALL(dynamicCuda.cuCtxSetCurrent(context));
         }
 
-        // checkAndAdjustSharedMem(shared_mem_size);
+        checkAndAdjustSharedMem(shared_mem_size);
 
         cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
