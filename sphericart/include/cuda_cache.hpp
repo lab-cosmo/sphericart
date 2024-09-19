@@ -150,7 +150,7 @@ class CachedKernel {
         size_t shared_mem_size,
         void* cuda_stream,
         void** args,
-        bool synchronize = false
+        bool synchronize = true
     ) {
 
         auto& dynamicCuda = DynamicCUDA::instance();
@@ -189,9 +189,9 @@ class CachedKernel {
   private:
     int current_smem_size = 0;
     int max_smem_size_optin = 0;
-    CUmodule module;
-    CUfunction function;
-    CUcontext context;
+    CUmodule module = nullptr;
+    CUfunction function = nullptr;
+    CUcontext context = nullptr;
 };
 
 class CudaCacheManager {
@@ -297,11 +297,6 @@ class KernelFactory {
 
         initCudaDriver();
 
-        /*
-        std::cout << "KernelFactory::compileAndCacheKernel: " << kernel_name
-                  << " does not exist, compiling." << '\n';
-        */
-
         auto& dynamicCuda = DynamicCUDA::instance();
 
         CUcontext currentContext = nullptr;
@@ -315,9 +310,13 @@ class KernelFactory {
             );
 
             if (res == CUDA_SUCCESS && memtype == CU_MEMORYTYPE_DEVICE) {
-                CUresult res2 = dynamicCuda.cuPointerGetAttribute(
+                CUDADRIVER_SAFE_CALL(dynamicCuda.cuPointerGetAttribute(
                     &currentContext, CU_POINTER_ATTRIBUTE_CONTEXT, device_ptr
-                );
+                ));
+
+                if (currentContext) {
+                    break;
+                }
             }
         }
 
