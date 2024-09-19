@@ -15,7 +15,7 @@
         nvrtcResult result = x;                                                                    \
         if (result != NVRTC_SUCCESS) {                                                             \
             std::cerr << "\nerror: " #x " failed with error "                                      \
-                      << DynamicCUDA::instance().nvrtcGetErrorString(result) << '\n'               \
+                      << NVRTC::instance().nvrtcGetErrorString(result) << '\n'                     \
                       << "File: " << __FILE__ << '\n'                                              \
                       << "Line: " << __LINE__ << '\n';                                             \
             exit(1);                                                                               \
@@ -27,7 +27,7 @@
         CUresult result = x;                                                                       \
         if (result != CUDA_SUCCESS) {                                                              \
             const char* msg;                                                                       \
-            DynamicCUDA::instance().cuGetErrorName(result, &msg);                                  \
+            CUDADriver::instance().cuGetErrorName(result, &msg);                                   \
             std::cerr << "\nerror: " #x " failed with error " << msg << '\n'                       \
                       << "File: " << __FILE__ << '\n'                                              \
                       << "Line: " << __LINE__ << '\n';                                             \
@@ -40,7 +40,7 @@
         cudaError_t cudaStatus = (call);                                                           \
         if (cudaStatus != cudaSuccess) {                                                           \
             std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
-                      << DynamicCUDA::instance().cudaGetErrorString(cudaStatus) << '\n'            \
+                      << CUDART::instance().cudaGetErrorString(cudaStatus) << '\n'                 \
                       << "File: " << __FILE__ << '\n'                                              \
                       << "Line: " << __LINE__ << '\n';                                             \
             exit(1);                                                                               \
@@ -56,14 +56,82 @@ template <typename FuncType> FuncType load(void* handle, const char* functionNam
     return func;
 }
 
-class DynamicCUDA {
+class CUDART {
   public:
-    static DynamicCUDA& instance() {
-        static DynamicCUDA instance;
+    static CUDART& instance() {
+        static CUDART instance;
         return instance;
     }
 
-    // Function pointers for CUDA and NVRTC functions
+    using cudaGetDeviceCount_t = cudaError_t (*)(int*);
+    using cudaGetDevice_t = cudaError_t (*)(int*);
+    using cudaSetDevice_t = cudaError_t (*)(int);
+    using cudaMalloc_t = cudaError_t (*)(void**, size_t);
+    using cudaMemcpy_t = cudaError_t (*)(void*, const void*, size_t, cudaMemcpyKind);
+    using cudaGetErrorName_t = const char* (*)(cudaError_t);
+    using cudaGetErrorString_t = const char* (*)(cudaError_t);
+    using cudaDeviceSynchronize_t = cudaError_t (*)(void);
+    using cudaPointerGetAttributes_t = cudaError_t (*)(cudaPointerAttributes*, const void*);
+    using cudaFree_t = cudaError_t (*)(void*);
+    using cudaInitDevice_t = cudaError_t (*)(int, unsigned int, unsigned int);
+
+    cudaGetDeviceCount_t cudaGetDeviceCount;
+    cudaGetDevice_t cudaGetDevice;
+    cudaSetDevice_t cudaSetDevice;
+    cudaMalloc_t cudaMalloc;
+    cudaMemcpy_t cudaMemcpy;
+    cudaGetErrorName_t cudaGetErrorName;
+    cudaGetErrorString_t cudaGetErrorString;
+    cudaDeviceSynchronize_t cudaDeviceSynchronize;
+    cudaPointerGetAttributes_t cudaPointerGetAttributes;
+    cudaFree_t cudaFree;
+    cudaInitDevice_t cudaInitDevice;
+
+  private:
+    CUDART() {
+        cudartHandle = dlopen("libcudart.so", RTLD_NOW);
+
+        if (!cudartHandle) {
+            throw std::runtime_error(
+                "Failed to load libcudart.so. Try running \"find /usr -name libcudart.so\" and "
+                "appending the directory to your $LD_LIBRARY_PATH environment variable."
+            );
+        }
+        // load cudart function pointers using template
+        cudaGetDeviceCount = load<cudaGetDeviceCount_t>(cudartHandle, "cudaGetDeviceCount");
+        cudaGetDevice = load<cudaGetDevice_t>(cudartHandle, "cudaGetDevice");
+        cudaSetDevice = load<cudaSetDevice_t>(cudartHandle, "cudaSetDevice");
+        cudaMalloc = load<cudaMalloc_t>(cudartHandle, "cudaMalloc");
+        cudaMemcpy = load<cudaMemcpy_t>(cudartHandle, "cudaMemcpy");
+        cudaGetErrorName = load<cudaGetErrorName_t>(cudartHandle, "cudaGetErrorName");
+        cudaGetErrorString = load<cudaGetErrorString_t>(cudartHandle, "cudaGetErrorString");
+        cudaDeviceSynchronize = load<cudaDeviceSynchronize_t>(cudartHandle, "cudaDeviceSynchronize");
+        cudaPointerGetAttributes =
+            load<cudaPointerGetAttributes_t>(cudartHandle, "cudaPointerGetAttributes");
+        cudaFree = load<cudaFree_t>(cudartHandle, "cudaFree");
+        cudaInitDevice = load<cudaInitDevice_t>(cudartHandle, "cudaInitDevice");
+    }
+
+    ~CUDART() {
+        if (cudartHandle) {
+            dlclose(cudartHandle);
+        }
+    }
+
+    // Prevent copying
+    CUDART(const CUDART&) = delete;
+    CUDART& operator=(const CUDART&) = delete;
+
+    void* cudartHandle = nullptr;
+};
+
+class CUDADriver {
+  public:
+    static CUDADriver& instance() {
+        static CUDADriver instance;
+        return instance;
+    }
+
     using cuInit_t = CUresult (*)(unsigned int);
     using cuDeviceGetCount_t = CUresult (*)(int*);
     using cuDevicePrimaryCtxRetain_t = CUresult (*)(CUcontext*, CUdevice);
@@ -89,32 +157,6 @@ class DynamicCUDA {
     using cuCtxPushCurrent_t = CUresult (*)(CUcontext);
     using cuPointerGetAttribute_t = CUresult (*)(void*, CUpointer_attribute, CUdeviceptr);
 
-    using nvrtcCreateProgram_t =
-        nvrtcResult (*)(nvrtcProgram*, const char*, const char*, int, const char*[], const char*[]);
-    using nvrtcCompileProgram_t = nvrtcResult (*)(nvrtcProgram, int, const char*[]);
-    using nvrtcGetPTX_t = nvrtcResult (*)(nvrtcProgram, char*);
-    using nvrtcGetPTXSize_t = nvrtcResult (*)(nvrtcProgram, size_t*);
-    using nvrtcGetProgramLog_t = nvrtcResult (*)(nvrtcProgram, char*);
-    using nvrtcGetProgramLogSize_t = nvrtcResult (*)(nvrtcProgram, size_t*);
-    using nvrtcAddNameExpression_t = nvrtcResult (*)(nvrtcProgram, const char* const);
-    using nvrtcGetLoweredName_t = nvrtcResult (*)(nvrtcProgram, const char*, const char**);
-    using nvrtcDestroyProgram_t = nvrtcResult (*)(nvrtcProgram*);
-    using nvrtcGetErrorString_t = const char* (*)(nvrtcResult);
-
-    /*CUDA Runtime*/
-    using cudaGetDeviceCount_t = cudaError_t (*)(int*);
-    using cudaGetDevice_t = cudaError_t (*)(int*);
-    using cudaSetDevice_t = cudaError_t (*)(int);
-    using cudaMalloc_t = cudaError_t (*)(void**, size_t);
-    using cudaMemcpy_t = cudaError_t (*)(void*, const void*, size_t, cudaMemcpyKind);
-    using cudaGetErrorName_t = const char* (*)(cudaError_t);
-    using cudaGetErrorString_t = const char* (*)(cudaError_t);
-    using cudaDeviceSynchronize_t = cudaError_t (*)(void);
-    using cudaPointerGetAttributes_t = cudaError_t (*)(cudaPointerAttributes*, const void*);
-    using cudaFree_t = cudaError_t (*)(void*);
-    using cudaInitDevice_t = cudaError_t (*)(int, unsigned int, unsigned int);
-    // Public methods to access function pointers
-    // cuda driver functions
     cuInit_t cuInit;
     cuDeviceGetCount_t cuDeviceGetCount;
     cuCtxCreate_t cuCtxCreate;
@@ -139,57 +181,14 @@ class DynamicCUDA {
     cuCtxPushCurrent_t cuCtxPushCurrent;
     cuPointerGetAttribute_t cuPointerGetAttribute;
 
-    // cuda runtime functions
-    cudaGetDeviceCount_t cudaGetDeviceCount;
-    cudaGetDevice_t cudaGetDevice;
-    cudaSetDevice_t cudaSetDevice;
-    cudaMalloc_t cudaMalloc;
-    cudaMemcpy_t cudaMemcpy;
-    cudaGetErrorName_t cudaGetErrorName;
-    cudaGetErrorString_t cudaGetErrorString;
-    cudaDeviceSynchronize_t cudaDeviceSynchronize;
-    cudaPointerGetAttributes_t cudaPointerGetAttributes;
-    cudaFree_t cudaFree;
-    cudaInitDevice_t cudaInitDevice;
-
-    // nvrtc functions
-    nvrtcCreateProgram_t nvrtcCreateProgram;
-    nvrtcCompileProgram_t nvrtcCompileProgram;
-    nvrtcGetPTX_t nvrtcGetPTX;
-    nvrtcGetPTXSize_t nvrtcGetPTXSize;
-    nvrtcGetProgramLog_t nvrtcGetProgramLog;
-    nvrtcGetProgramLogSize_t nvrtcGetProgramLogSize;
-    nvrtcGetLoweredName_t nvrtcGetLoweredName;
-    nvrtcAddNameExpression_t nvrtcAddNameExpression;
-    nvrtcDestroyProgram_t nvrtcDestroyProgram;
-    nvrtcGetErrorString_t nvrtcGetErrorString;
-
   private:
-    DynamicCUDA() {
+    CUDADriver() {
         // Load CUDA driver, cuda runtime and NVRTC libraries
         cudaHandle = dlopen("libcuda.so", RTLD_NOW);
 
         if (!cudaHandle) {
             throw std::runtime_error(
                 "Failed to load libcuda.so. Try running \"find /usr -name libcuda.so\" and "
-                "appending the directory to your $LD_LIBRARY_PATH environment variable."
-            );
-        }
-
-        cudartHandle = dlopen("libcudart.so", RTLD_NOW);
-
-        if (!cudartHandle) {
-            throw std::runtime_error(
-                "Failed to load libcudart.so. Try running \"find /usr -name libcudart.so\" and "
-                "appending the directory to your $LD_LIBRARY_PATH environment variable."
-            );
-        }
-
-        nvrtcHandle = dlopen("libnvrtc.so", RTLD_NOW);
-
-        if (!nvrtcHandle) {
-            throw std::runtime_error(
-                "Failed to load libnvrtc.so. Try running \"find /usr -name libnvrtc.so\" and "
                 "appending the directory to your $LD_LIBRARY_PATH environment variable."
             );
         }
@@ -220,20 +219,61 @@ class DynamicCUDA {
         cuGetErrorName = load<cuGetErrorName_t>(cudaHandle, "cuGetErrorName");
         cuCtxPushCurrent = load<cuCtxPushCurrent_t>(cudaHandle, "cuCtxPushCurrent");
         cuPointerGetAttribute = load<cuPointerGetAttribute_t>(cudaHandle, "cuPointerGetAttribute");
+    }
 
-        // load cudart function pointers using template
-        cudaGetDeviceCount = load<cudaGetDeviceCount_t>(cudartHandle, "cudaGetDeviceCount");
-        cudaGetDevice = load<cudaGetDevice_t>(cudartHandle, "cudaGetDevice");
-        cudaSetDevice = load<cudaSetDevice_t>(cudartHandle, "cudaSetDevice");
-        cudaMalloc = load<cudaMalloc_t>(cudartHandle, "cudaMalloc");
-        cudaMemcpy = load<cudaMemcpy_t>(cudartHandle, "cudaMemcpy");
-        cudaGetErrorName = load<cudaGetErrorName_t>(cudartHandle, "cudaGetErrorName");
-        cudaGetErrorString = load<cudaGetErrorString_t>(cudartHandle, "cudaGetErrorString");
-        cudaDeviceSynchronize = load<cudaDeviceSynchronize_t>(cudartHandle, "cudaDeviceSynchronize");
-        cudaPointerGetAttributes =
-            load<cudaPointerGetAttributes_t>(cudartHandle, "cudaPointerGetAttributes");
-        cudaFree = load<cudaFree_t>(cudartHandle, "cudaFree");
-        cudaInitDevice = load<cudaInitDevice_t>(cudartHandle, "cudaInitDevice");
+    ~CUDADriver() {
+        if (cudaHandle) {
+            dlclose(cudaHandle);
+        }
+    }
+
+    // Prevent copying
+    CUDADriver(const CUDADriver&) = delete;
+    CUDADriver& operator=(const CUDADriver&) = delete;
+
+    void* cudaHandle = nullptr;
+};
+
+class NVRTC {
+  public:
+    static NVRTC& instance() {
+        static NVRTC instance;
+        return instance;
+    }
+
+    using nvrtcCreateProgram_t =
+        nvrtcResult (*)(nvrtcProgram*, const char*, const char*, int, const char*[], const char*[]);
+    using nvrtcCompileProgram_t = nvrtcResult (*)(nvrtcProgram, int, const char*[]);
+    using nvrtcGetPTX_t = nvrtcResult (*)(nvrtcProgram, char*);
+    using nvrtcGetPTXSize_t = nvrtcResult (*)(nvrtcProgram, size_t*);
+    using nvrtcGetProgramLog_t = nvrtcResult (*)(nvrtcProgram, char*);
+    using nvrtcGetProgramLogSize_t = nvrtcResult (*)(nvrtcProgram, size_t*);
+    using nvrtcAddNameExpression_t = nvrtcResult (*)(nvrtcProgram, const char* const);
+    using nvrtcGetLoweredName_t = nvrtcResult (*)(nvrtcProgram, const char*, const char**);
+    using nvrtcDestroyProgram_t = nvrtcResult (*)(nvrtcProgram*);
+    using nvrtcGetErrorString_t = const char* (*)(nvrtcResult);
+
+    nvrtcCreateProgram_t nvrtcCreateProgram;
+    nvrtcCompileProgram_t nvrtcCompileProgram;
+    nvrtcGetPTX_t nvrtcGetPTX;
+    nvrtcGetPTXSize_t nvrtcGetPTXSize;
+    nvrtcGetProgramLog_t nvrtcGetProgramLog;
+    nvrtcGetProgramLogSize_t nvrtcGetProgramLogSize;
+    nvrtcGetLoweredName_t nvrtcGetLoweredName;
+    nvrtcAddNameExpression_t nvrtcAddNameExpression;
+    nvrtcDestroyProgram_t nvrtcDestroyProgram;
+    nvrtcGetErrorString_t nvrtcGetErrorString;
+
+  private:
+    NVRTC() {
+        nvrtcHandle = dlopen("libnvrtc.so", RTLD_NOW);
+
+        if (!nvrtcHandle) {
+            throw std::runtime_error(
+                "Failed to load libnvrtc.so. Try running \"find /usr -name libnvrtc.so\" and "
+                "appending the directory to your $LD_LIBRARY_PATH environment variable."
+            );
+        }
 
         // Load NVRTC function pointers using template
         nvrtcCreateProgram = load<nvrtcCreateProgram_t>(nvrtcHandle, "nvrtcCreateProgram");
@@ -250,25 +290,17 @@ class DynamicCUDA {
         nvrtcGetErrorString = load<nvrtcGetErrorString_t>(nvrtcHandle, "nvrtcGetErrorString");
     }
 
-    ~DynamicCUDA() {
-        if (cudaHandle) {
-            dlclose(cudaHandle);
-        }
-        if (cudartHandle) {
-            dlclose(cudartHandle);
-        }
+    ~NVRTC() {
         if (nvrtcHandle) {
             dlclose(nvrtcHandle);
         }
     }
 
     // Prevent copying
-    DynamicCUDA(const DynamicCUDA&) = delete;
-    DynamicCUDA& operator=(const DynamicCUDA&) = delete;
+    NVRTC(const NVRTC&) = delete;
+    NVRTC& operator=(const NVRTC&) = delete;
 
-    void* cudaHandle = nullptr;
     void* nvrtcHandle = nullptr;
-    void* cudartHandle = nullptr;
 };
 
 #endif // DYNAMIC_CUDA_HEADER_HPP
