@@ -74,10 +74,25 @@ std::string load_cuda_source(const std::string& filename) {
 class CachedKernel {
 
   public:
-    CachedKernel(CUmodule m, CUfunction f, CUcontext c) : module(m), function(f), context(c) {}
-    // Default constructor
+    CachedKernel(
+        std::string kernel_name,
+        std::string kernel_code,
+        std::string source_name,
+        std::vector<std::string> options
+    ) {
+        this->kernel_name = kernel_name;
+        this->kernel_code = kernel_code;
+        this->source_name = source_name;
+        this->options = options;
+    }
+
     CachedKernel() = default;
 
+    void set(CUmodule m, CUfunction f, CUcontext c) {
+        this->module = m;
+        this->function = f;
+        this->context = c;
+    }
     // Copy constructor
     CachedKernel(const CachedKernel&) = default;
 
@@ -95,11 +110,62 @@ class CachedKernel {
     }
 
     /*
+    launches the kernel, and additionally synchronizes until control can be passed back to host.
+    */
+    void launch(
+        dim3 grid,
+        dim3 block,
+        size_t shared_mem_size,
+        void* cuda_stream,
+        void** args,
+        size_t nargs,
+        bool synchronize = true
+    ) {
+
+        if (!compiled) {
+            compileKernel(args, nargs);
+        }
+
+        auto& driver = CUDADriver::instance();
+
+        CUcontext currentContext = nullptr;
+        // Get current context
+        CUresult result = driver.cuCtxGetCurrent(&currentContext);
+
+        if (result != CUDA_SUCCESS || !currentContext) {
+            std::cerr << "launch::Error getting current context\n";
+            std::cerr << "launch::result: " << result << '\n';
+            std::cerr << "launch::currentContext: " << currentContext << '\n';
+            exit(1);
+        }
+
+        if (currentContext != context) {
+            CUDADRIVER_SAFE_CALL(driver.cuCtxSetCurrent(context));
+        }
+
+        checkAndAdjustSharedMem(shared_mem_size);
+
+        cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
+
+        CUDADRIVER_SAFE_CALL(driver.cuLaunchKernel(
+            function, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem_size, cstream, args, 0
+        ));
+
+        if (synchronize)
+            CUDADRIVER_SAFE_CALL(driver.cuCtxSynchronize());
+
+        if (currentContext != context) {
+            CUDADRIVER_SAFE_CALL(driver.cuCtxSetCurrent(currentContext));
+        }
+    }
+
+  private:
+    /*
     The default shared memory space on most recent NVIDIA cards is defaulted
-   49152 bytes. This method
-   attempts to adjust the shared memory to fit the requested configuration if
-   the kernel launch parameters exceeds the default 49152 bytes.
-*/
+    49152 bytes. This method
+    attempts to adjust the shared memory to fit the requested configuration if
+    the kernel launch parameters exceeds the default 49152 bytes.
+    */
     void checkAndAdjustSharedMem(int query_shared_mem_size) {
         auto& driver = CUDADriver::instance();
         if (current_smem_size == 0) {
@@ -141,158 +207,12 @@ class CachedKernel {
     }
 
     /*
-    launches the kernel, and additionally synchronizes until control can be passed back to host.
-    */
-    void launch(
-        dim3 grid,
-        dim3 block,
-        size_t shared_mem_size,
-        void* cuda_stream,
-        void** args,
-        bool synchronize = true
-    ) {
-
-        auto& driver = CUDADriver::instance();
-
-        CUcontext currentContext = nullptr;
-        // Get current context
-        CUresult result = driver.cuCtxGetCurrent(&currentContext);
-
-        if (result != CUDA_SUCCESS || !currentContext) {
-            std::cerr << "launch::Error getting current context\n";
-            std::cerr << "launch::result: " << result << '\n';
-            std::cerr << "launch::currentContext: " << currentContext << '\n';
-            exit(1);
-        }
-
-        if (currentContext != context) {
-            CUDADRIVER_SAFE_CALL(driver.cuCtxSetCurrent(context));
-        }
-
-        checkAndAdjustSharedMem(shared_mem_size);
-
-        cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-
-        CUDADRIVER_SAFE_CALL(driver.cuLaunchKernel(
-            function, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem_size, cstream, args, 0
-        ));
-
-        if (synchronize)
-            CUDADRIVER_SAFE_CALL(driver.cuCtxSynchronize());
-
-        if (currentContext != context) {
-            CUDADRIVER_SAFE_CALL(driver.cuCtxSetCurrent(currentContext));
-        }
-    }
-
-  private:
-    int current_smem_size = 0;
-    int max_smem_size_optin = 0;
-    CUmodule module = nullptr;
-    CUfunction function = nullptr;
-    CUcontext context = nullptr;
-};
-
-class CudaCacheManager {
-  public:
-    static CudaCacheManager& instance() {
-        static CudaCacheManager instance;
-        return instance;
-    }
-
-    void cacheKernel(const std::string& kernel_name, CUmodule module, CUfunction fn, CUcontext ctx) {
-        kernel_cache[kernel_name] = std::make_unique<CachedKernel>(module, fn, ctx);
-    }
-
-    bool hasKernel(const std::string& kernel_name) const {
-        return kernel_cache.find(kernel_name) != kernel_cache.end();
-    }
-
-    // TODO - change this to an instantiate. We want to compile the kernel on first call to launch,
-    // because we need to query the input pointers for their CUcontext
-    CachedKernel* getKernel(const std::string& kernel_name) const {
-        auto it = kernel_cache.find(kernel_name);
-        if (it != kernel_cache.end()) {
-            return it->second.get();
-        }
-        throw std::runtime_error("Kernel not found in cache.");
-    }
-
-  private:
-    CudaCacheManager() {}
-    CudaCacheManager(const CudaCacheManager&) = delete;
-    CudaCacheManager& operator=(const CudaCacheManager&) = delete;
-
-    std::unordered_map<std::string, std::unique_ptr<CachedKernel>> kernel_cache;
-};
-
-class KernelFactory {
-
-  public:
-    static KernelFactory& instance() {
-        static KernelFactory instance;
-        return instance;
-    }
-
-    /*
-    Tries to retrieve the kernel "kernel_name". If not found, compile it and save to cache.
-    */
-    CachedKernel* getOrCreateKernelFromSrcFile(
-        const std::string& kernel_name,
-        const std::string& source_path,
-        const std::string& source_name,
-        const std::vector<std::string>& options,
-        void** kernel_args,
-        size_t kernel_nargs
-    ) {
-        if (!cacheManager.hasKernel(kernel_name)) {
-            std::string kernel_code = load_cuda_source(source_path);
-            compileAndCacheKernel(
-                kernel_name, kernel_code, source_name, options, kernel_args, kernel_nargs
-            );
-        }
-        return cacheManager.getKernel(kernel_name);
-    }
-
-    /*
-    Tries to retrieve the kernel "kernel_name". If not found, compile it and save to cache.
-    */
-    CachedKernel* getOrCreateKernel(
-        const std::string& kernel_name,
-        const std::string& source_variable,
-        const std::string& source_name,
-        const std::vector<std::string>& options,
-        void** kernel_args,
-        size_t kernel_nargs
-    ) {
-
-        if (!cacheManager.hasKernel(kernel_name)) {
-            compileAndCacheKernel(
-                kernel_name, source_variable, source_name, options, kernel_args, kernel_nargs
-            );
-        }
-        return cacheManager.getKernel(kernel_name);
-    }
-
-  private:
-    KernelFactory() : cacheManager(CudaCacheManager::instance()) {}
-
-    // Reference to the singleton instance of CudaCacheManager
-    CudaCacheManager& cacheManager;
-
-    /*
-    Compiles the kernel "kernel_name" located in source file "kernel_code", which additional
-    parameters "options" passed to nvrtc. Will auto-detect the compute capability of the available card.
-    args for the launch need to be queried as we need to grab the CUcontext in which these ptrs exist.
-    */
-    void compileAndCacheKernel(
-        const std::string& kernel_name,
-        const std::string& kernel_code,
-        const std::string& source_name,
-        const std::vector<std::string>& options,
-        void** kernel_args,
-        size_t nargs
-    ) {
+        Compiles the kernel "kernel_name" located in source file "kernel_code", which additional
+        parameters "options" passed to nvrtc. Will auto-detect the compute capability of the
+       available card. args for the launch need to be queried as we need to grab the CUcontext in
+       which these ptrs exist.
+        */
+    void compileKernel(void** kernel_args, size_t nargs) {
 
         initCudaDriver();
 
@@ -332,14 +252,14 @@ class KernelFactory {
         nvrtcProgram prog;
 
         NVRTC_SAFE_CALL(nvrtc.nvrtcCreateProgram(
-            &prog, kernel_code.c_str(), source_name.c_str(), 0, nullptr, nullptr
+            &prog, this->kernel_code.c_str(), this->source_name.c_str(), 0, nullptr, nullptr
         ));
 
-        NVRTC_SAFE_CALL(nvrtc.nvrtcAddNameExpression(prog, kernel_name.c_str()));
+        NVRTC_SAFE_CALL(nvrtc.nvrtcAddNameExpression(prog, this->kernel_name.c_str()));
 
         std::vector<const char*> c_options;
-        c_options.reserve(options.size());
-        for (const auto& option : options) {
+        c_options.reserve(this->options.size());
+        for (const auto& option : this->options) {
             c_options.push_back(option.c_str());
         }
 
@@ -388,11 +308,12 @@ class KernelFactory {
         }
 
         const char* lowered_name;
-        NVRTC_SAFE_CALL(nvrtc.nvrtcGetLoweredName(prog, kernel_name.c_str(), &lowered_name));
+        NVRTC_SAFE_CALL(nvrtc.nvrtcGetLoweredName(prog, this->kernel_name.c_str(), &lowered_name));
         CUfunction kernel;
         CUDADRIVER_SAFE_CALL(driver.cuModuleGetFunction(&kernel, module, lowered_name));
 
-        cacheManager.cacheKernel(kernel_name, module, kernel, currentContext);
+        this->set(module, kernel, currentContext);
+        this->compiled = true;
 
         NVRTC_SAFE_CALL(nvrtc.nvrtcDestroyProgram(&prog));
     }
@@ -415,6 +336,103 @@ class KernelFactory {
             }
         }
     }
+
+    int current_smem_size = 0;
+    int max_smem_size_optin = 0;
+    CUmodule module = nullptr;
+    CUfunction function = nullptr;
+    CUcontext context = nullptr;
+    bool compiled = false;
+
+    std::string kernel_name;
+    std::string kernel_code;
+    std::string source_name;
+    std::vector<std::string> options;
+};
+
+class CudaCacheManager {
+  public:
+    static CudaCacheManager& instance() {
+        static CudaCacheManager instance;
+        return instance;
+    }
+
+    void cacheKernel(
+        const std::string& kernel_name,
+        const std::string& source_path,
+        const std::string& source_name,
+        const std::vector<std::string>& options
+    ) {
+        kernel_cache[kernel_name] =
+            std::make_unique<CachedKernel>(kernel_name, source_path, source_name, options);
+    }
+
+    bool hasKernel(const std::string& kernel_name) const {
+        return kernel_cache.find(kernel_name) != kernel_cache.end();
+    }
+
+    CachedKernel* getKernel(const std::string& kernel_name) const {
+        auto it = kernel_cache.find(kernel_name);
+        if (it != kernel_cache.end()) {
+            return it->second.get();
+        }
+        throw std::runtime_error("Kernel not found in cache.");
+    }
+
+  private:
+    CudaCacheManager() {}
+    CudaCacheManager(const CudaCacheManager&) = delete;
+    CudaCacheManager& operator=(const CudaCacheManager&) = delete;
+
+    std::unordered_map<std::string, std::unique_ptr<CachedKernel>> kernel_cache;
+};
+
+class KernelFactory {
+
+  public:
+    static KernelFactory& instance() {
+        static KernelFactory instance;
+        return instance;
+    }
+
+    /*
+    Tries to retrieve the kernel "kernel_name". If not found, instantiate it and save to cache.
+    */
+    CachedKernel* createFromSource(
+        const std::string& kernel_name,
+        const std::string& source_path,
+        const std::string& source_name,
+        const std::vector<std::string>& options
+    ) {
+        if (!cacheManager.hasKernel(kernel_name)) {
+            std::string kernel_code = load_cuda_source(source_path);
+            cacheManager.cacheKernel(kernel_name, kernel_code, source_name, options);
+        }
+        return cacheManager.getKernel(kernel_name);
+    }
+
+    /*
+    Tries to retrieve the kernel "kernel_name". If not found, instantiate it and save to cache.
+    */
+    CachedKernel* create(
+        const std::string& kernel_name,
+        const std::string& source_variable,
+        const std::string& source_name,
+        const std::vector<std::string>& options
+    ) {
+
+        if (!cacheManager.hasKernel(kernel_name)) {
+            cacheManager.cacheKernel(kernel_name, source_variable, source_name, options);
+        }
+
+        return cacheManager.getKernel(kernel_name);
+    }
+
+  private:
+    KernelFactory() : cacheManager(CudaCacheManager::instance()) {}
+
+    // Reference to the singleton instance of CudaCacheManager
+    CudaCacheManager& cacheManager;
 
     KernelFactory(const KernelFactory&) = delete;
     KernelFactory& operator=(const KernelFactory&) = delete;
