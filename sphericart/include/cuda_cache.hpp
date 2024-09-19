@@ -117,13 +117,12 @@ class CachedKernel {
         dim3 block,
         size_t shared_mem_size,
         void* cuda_stream,
-        void** args,
-        size_t nargs,
+        std::vector<void*> args,
         bool synchronize = true
     ) {
 
         if (!compiled) {
-            compileKernel(args, nargs);
+            compileKernel(args);
         }
 
         auto& driver = CUDADriver::instance();
@@ -148,7 +147,17 @@ class CachedKernel {
         cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
         CUDADRIVER_SAFE_CALL(driver.cuLaunchKernel(
-            function, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem_size, cstream, args, 0
+            function,
+            grid.x,
+            grid.y,
+            grid.z,
+            block.x,
+            block.y,
+            block.z,
+            shared_mem_size,
+            cstream,
+            args.data(),
+            0
         ));
 
         if (synchronize)
@@ -212,7 +221,7 @@ class CachedKernel {
        available card. args for the launch need to be queried as we need to grab the CUcontext in
        which these ptrs exist.
         */
-    void compileKernel(void** kernel_args, size_t nargs) {
+    void compileKernel(std::vector<void*>& kernel_args) {
 
         initCudaDriver();
 
@@ -221,7 +230,7 @@ class CachedKernel {
 
         CUcontext currentContext = nullptr;
 
-        for (size_t ptr_id = 0; ptr_id < nargs; ptr_id++) {
+        for (size_t ptr_id = 0; ptr_id < kernel_args.size(); ptr_id++) {
             unsigned int memtype = 0;
             CUdeviceptr device_ptr = *reinterpret_cast<CUdeviceptr*>(kernel_args[ptr_id]);
 

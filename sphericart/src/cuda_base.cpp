@@ -149,7 +149,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     bool _hessian = hessian;
     bool _normalize = normalize;
 
-    void* args[] = {
+    std::vector<void*> args = {
         &xyz,
         &_nedges,
         &prefactors,
@@ -174,7 +174,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         {"--define-macro=CUDA_DEVICE_PREFIX=__device__"}
     );
 
-    kernel->launch(grid_dim, block_dim, smem_size, cstream, args, 12);
+    kernel->launch(grid_dim, block_dim, smem_size, cstream, args);
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
@@ -236,7 +236,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     int _n_total = ntotal;
     int _nedges = nedges;
 
-    void* args[] = {&dsph, &sph_grad, &_nedges, &_n_total, &xyz_grad};
+    std::vector<void*> args = {&dsph, &sph_grad, &_nedges, &_n_total, &xyz_grad};
 
     CachedKernel* kernel = kernel_factory.create(
         kernel_name,
@@ -245,7 +245,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
         {"--define-macro=CUDA_DEVICE_PREFIX=__device__"}
     );
 
-    kernel->launch(grid_dim, block_dim, 0, cstream, args, 5);
+    kernel->launch(grid_dim, block_dim, 0, cstream, args);
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
