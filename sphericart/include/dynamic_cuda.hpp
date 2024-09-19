@@ -5,10 +5,13 @@
 #include <dlfcn.h>
 #include <stdexcept>
 #include <string>
-
+#include <iostream>
+#include <functional>
+#include <unordered_map>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <nvrtc.h>
+#include <any>
 
 #define NVRTC_SAFE_CALL(x)                                                                         \
     do {                                                                                           \
@@ -55,6 +58,58 @@ template <typename FuncType> FuncType load(void* handle, const char* functionNam
     }
     return func;
 }
+
+/*
+Possible idea is to provide the ability for end-users to dynamically load symbols that aren't
+contained in their respective classes here. Might use this class later, not sure.
+
+Example
+
+CUDADriver& driver = CUDADriver::instance();
+
+// Load cuInit
+driver.loadSymbol<CUresult(unsigned int)>("cuInit");
+
+// Retrieve the cuInit function as std::function
+std::function<CUresult(unsigned int)> cuInit = driver.getFunction<CUresult(unsigned int)>("cuInit");
+
+// Call the function
+CUresult result = cuInit(0);
+*/
+class DynamicLoader {
+
+  public:
+    // Load a CUDA function symbol dynamically
+    template <typename FuncType> void loadSymbol(const std::string& symbolName) {
+        if (symbolRegistry.find(symbolName) == symbolRegistry.end()) {
+
+            void* symbolPtr = dlsym(handle, symbolName.c_str());
+            if (!symbolPtr) {
+                throw std::runtime_error("Failed to load symbol: " + symbolName);
+            }
+
+            symbolRegistry[symbolName] =
+                std::function<FuncType>(reinterpret_cast<FuncType*>(symbolPtr));
+        } else {
+            std::cerr << "Symbol " << symbolName << " already loaded." << std::endl;
+        }
+    }
+
+    // Retrieve a function pointer by name
+    template <typename FuncType>
+    std::function<FuncType> getFunction(const std::string& symbolName) {
+        auto it = symbolRegistry.find(symbolName);
+        if (it != symbolRegistry.end()) {
+            return std::any_cast<std::function<FuncType>>(it->second);
+        } else {
+            throw std::runtime_error("Symbol not loaded: " + symbolName);
+        }
+    }
+
+  private:
+    std::unordered_map<std::string, std::any> symbolRegistry;
+    void* handle;
+};
 
 class CUDART {
   public:
