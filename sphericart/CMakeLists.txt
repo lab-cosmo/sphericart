@@ -121,7 +121,6 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
         "include/sphericart_impl.cuh"
     )
 
-    message ("sphericart CUDA headers: ${SPHERICART_CUDA_HEADERS}")
     # Prepend headers to the source file
     prepend_headers_to_source(
         "${CMAKE_CURRENT_SOURCE_DIR}/src/sphericart_impl.cu"
