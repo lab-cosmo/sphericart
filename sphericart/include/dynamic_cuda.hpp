@@ -110,7 +110,6 @@ class CUDART {
         cudaPointerGetAttributes =
             load<cudaPointerGetAttributes_t>(cudartHandle, "cudaPointerGetAttributes");
         cudaFree = load<cudaFree_t>(cudartHandle, "cudaFree");
-        // cudaInitDevice = load<cudaInitDevice_t>(cudartHandle, "cudaInitDevice");
     }
 
     ~CUDART() {
