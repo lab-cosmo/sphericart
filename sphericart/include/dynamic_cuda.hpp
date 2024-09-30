@@ -76,7 +76,6 @@ class CUDART {
     using cudaDeviceSynchronize_t = cudaError_t (*)(void);
     using cudaPointerGetAttributes_t = cudaError_t (*)(cudaPointerAttributes*, const void*);
     using cudaFree_t = cudaError_t (*)(void*);
-    // using cudaInitDevice_t = cudaError_t (*)(int, unsigned int, unsigned int);
 
     cudaGetDeviceCount_t cudaGetDeviceCount;
     cudaGetDevice_t cudaGetDevice;
@@ -88,7 +87,6 @@ class CUDART {
     cudaDeviceSynchronize_t cudaDeviceSynchronize;
     cudaPointerGetAttributes_t cudaPointerGetAttributes;
     cudaFree_t cudaFree;
-    // cudaInitDevice_t cudaInitDevice;
 
   private:
     CUDART() {
