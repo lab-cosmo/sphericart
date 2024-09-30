@@ -9,18 +9,7 @@ from setuptools.command.build_ext import build_ext
 
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
-SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
-
-
-def get_arch_native():
-    # may not want to build processor-specific instructions
-    SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
-    if SPHERICART_ARCH_NATIVE == "ON" and (
-        "bdist_wheel" in sys.argv or "wheel" in sys.argv
-    ):
-        return "OFF"
-    else:
-        return SPHERICART_ARCH_NATIVE
+SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "OFF")
 
 
 class cmake_ext(build_ext):
@@ -38,7 +27,7 @@ class cmake_ext(build_ext):
         cmake_options = [
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
-            f"-DSPHERICART_ARCH_NATIVE={get_arch_native()}",
+            f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
             f"-DCMAKE_PREFIX_PATH={';'.join(cmake_prefix_path)}",
         ]
 
