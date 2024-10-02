@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(sphericart LANGUAGES C CXX)
-#R"======(, )======"
 
 function(make_includeable INPUT_FILE OUTPUT_FILE)
     if(NOT EXISTS ${INPUT_FILE})
@@ -15,7 +14,6 @@ function(make_includeable INPUT_FILE OUTPUT_FILE)
 endfunction()
 
 function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
-    message ("Headers to include: ${HEADERS}")
     # Read the current content of the source file
     if(NOT EXISTS ${INPUT_FILE})
         message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
@@ -28,14 +26,12 @@ function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
         if(NOT EXISTS ${INPUT_FILE})
             message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
         endif()
-        message ("Prepending ${HEADER} to ${INPUT_FILE}")
         file(READ ${HEADER} SINGLE_HEADER_CONTENT)
         set(HEADER_CONTENTS "${HEADER_CONTENTS}\n${SINGLE_HEADER_CONTENT}")
     endforeach()
     # Prepend the accumulated headers to the original source file content
     set(NEW_CONTENTS "${HEADER_CONTENTS}\n${CONTENTS}")
     # Write the new contents back to the source file
-    message(INFO "writing contents to ${OUTPUT_FILE}")
     file(WRITE ${OUTPUT_FILE} "${NEW_CONTENTS}")
 endfunction()
 
