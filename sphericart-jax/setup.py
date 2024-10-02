@@ -9,7 +9,7 @@ from setuptools.command.build_ext import build_ext
 
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
-SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "OFF")
+SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
 
 
 class cmake_ext(build_ext):

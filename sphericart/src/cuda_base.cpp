@@ -167,12 +167,8 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
 
-    CachedKernel* kernel = kernel_factory.create(
-        kernel_name,
-        std::string(CUDA_CODE),
-        "sphericart_impl.cu",
-        {}
-    );
+    CachedKernel* kernel =
+        kernel_factory.create(kernel_name, std::string(CUDA_CODE), "sphericart_impl.cu", {});
 
     kernel->launch(grid_dim, block_dim, smem_size, cstream, args);
 }
@@ -238,12 +234,8 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     std::vector<void*> args = {&dsph, &sph_grad, &_nedges, &_n_total, &xyz_grad};
 
-    CachedKernel* kernel = kernel_factory.create(
-        kernel_name,
-        std::string(CUDA_CODE),
-        "sphericart_impl.cu",
-        {}
-    );
+    CachedKernel* kernel =
+        kernel_factory.create(kernel_name, std::string(CUDA_CODE), "sphericart_impl.cu", {});
 
     kernel->launch(grid_dim, block_dim, 0, cstream, args);
 }
