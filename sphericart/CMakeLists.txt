@@ -115,10 +115,10 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     target_link_libraries(sphericart PRIVATE dl) # libdl
 
     set(SPHERICART_CUDA_HEADERS
-        "include/sphericart_impl_i.cuh"
+        "include/sphericart_impl.cuh"
         "include/templates_core.hpp"
         "include/macros.hpp"
-        "include/sphericart_impl.cuh"
+        
     )
 
     # Prepend headers to the source file
