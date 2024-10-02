@@ -34,7 +34,6 @@ function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
     # Prepend the accumulated headers to the original source file content
     set(NEW_CONTENTS "${HEADER_CONTENTS}\n${CONTENTS}")
     # Write the new contents back to the source file
-    message(INFO "writing contents to ${OUTPUT_FILE}")
     file(WRITE ${OUTPUT_FILE} "${NEW_CONTENTS}")
 endfunction()
 
