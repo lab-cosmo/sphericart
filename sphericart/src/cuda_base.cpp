@@ -171,7 +171,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         kernel_name,
         std::string(CUDA_CODE),
         "sphericart_impl.cu",
-        {"--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+        {}
     );
 
     kernel->launch(grid_dim, block_dim, smem_size, cstream, args);
@@ -242,7 +242,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
         kernel_name,
         std::string(CUDA_CODE),
         "sphericart_impl.cu",
-        {"--define-macro=CUDA_DEVICE_PREFIX=__device__"}
+        {}
     );
 
     kernel->launch(grid_dim, block_dim, 0, cstream, args);
