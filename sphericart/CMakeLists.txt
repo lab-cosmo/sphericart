@@ -14,7 +14,6 @@ function(make_includeable INPUT_FILE OUTPUT_FILE)
 endfunction()
 
 function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
-    message ("Headers to include: ${HEADERS}")
     # Read the current content of the source file
     if(NOT EXISTS ${INPUT_FILE})
         message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
