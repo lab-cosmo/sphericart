@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(sphericart LANGUAGES C CXX)
-#R"======(, )======"
 
 function(make_includeable INPUT_FILE OUTPUT_FILE)
     if(NOT EXISTS ${INPUT_FILE})
