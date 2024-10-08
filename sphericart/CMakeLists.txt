@@ -118,14 +118,14 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     # Prepend headers to the source file
     prepend_headers_to_source(
         "${CMAKE_CURRENT_SOURCE_DIR}/src/sphericart_impl.cu"
-        "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cuh" 
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cu" 
         "${SPHERICART_CUDA_HEADERS}"
         )
 
     # Make the source file includeable by converting it to a string literal
     make_includeable(
-        "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cuh"
-        "${CMAKE_CURRENT_BINARY_DIR}/generated/wrapped_sphericart_impl.cuh"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cu"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/wrapped_sphericart_impl.cu"
     )
 
     file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cuh")
