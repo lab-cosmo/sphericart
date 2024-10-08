@@ -92,7 +92,7 @@ class CachedKernel {
     }
 
     /*
-    launches the kernel, and additionally synchronizes until control can be passed back to host.
+    launches the kernel, and optionally synchronizes until control can be passed back to host.
     */
     void launch(
         dim3 grid,
