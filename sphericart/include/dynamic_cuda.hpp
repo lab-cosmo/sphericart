@@ -5,7 +5,6 @@
 #include <dlfcn.h>
 #include <stdexcept>
 #include <string>
-#include <iostream>
 #include <functional>
 #include <unordered_map>
 #include <cuda.h>
@@ -94,8 +93,7 @@ class CUDART {
 
         if (!cudartHandle) {
             throw std::runtime_error(
-                "Failed to load libcudart.so. Try running \"find /usr -name libcudart.so\" and "
-                "appending the directory to your $LD_LIBRARY_PATH environment variable."
+                "Failed to load libcudart.so. Make sure it is available in your $LD_LIBRARY_PATH environment variable."
             );
         }
         // load cudart function pointers using template
@@ -188,8 +186,7 @@ class CUDADriver {
 
         if (!cudaHandle) {
             throw std::runtime_error(
-                "Failed to load libcuda.so. Try running \"find /usr -name libcuda.so\" and "
-                "appending the directory to your $LD_LIBRARY_PATH environment variable."
+                "Failed to load libcuda.so. Make sure it is available in your $LD_LIBRARY_PATH environment variable."
             );
         }
 
@@ -270,8 +267,7 @@ class NVRTC {
 
         if (!nvrtcHandle) {
             throw std::runtime_error(
-                "Failed to load libnvrtc.so. Try running \"find /usr -name libnvrtc.so\" and "
-                "appending the directory to your $LD_LIBRARY_PATH environment variable."
+                "Failed to load libnvrtc.so. Make sure it is available in your $LD_LIBRARY_PATH environment variable."
             );
         }
 
