@@ -104,7 +104,7 @@ class CachedKernel {
     ) {
 
         if (!compiled) {
-            compileKernel(args);
+            this->compileKernel(args);
         }
 
         auto& driver = CUDADriver::instance();
