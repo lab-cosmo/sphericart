@@ -93,8 +93,7 @@ class CUDART {
 
         if (!cudartHandle) {
             throw std::runtime_error(
-                "Failed to load libcudart.so. Try running \"find /usr -name libcudart.so\" and "
-                "appending the directory to your $LD_LIBRARY_PATH environment variable."
+                "Failed to load libcudart.so. Make sure it is available in your $LD_LIBRARY_PATH environment variable."
             );
         }
         // load cudart function pointers using template
