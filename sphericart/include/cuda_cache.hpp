@@ -205,7 +205,7 @@ class CachedKernel {
         */
     void compileKernel(std::vector<void*>& kernel_args) {
 
-        initCudaDriver();
+        this->initCudaDriver();
 
         auto& driver = CUDADriver::instance();
         auto& nvrtc = NVRTC::instance();
