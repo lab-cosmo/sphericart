@@ -186,8 +186,7 @@ class CUDADriver {
 
         if (!cudaHandle) {
             throw std::runtime_error(
-                "Failed to load libcuda.so. Try running \"find /usr -name libcuda.so\" and "
-                "appending the directory to your $LD_LIBRARY_PATH environment variable."
+                "Failed to load libcuda.so. Make sure it is available in your $LD_LIBRARY_PATH environment variable."
             );
         }
 
