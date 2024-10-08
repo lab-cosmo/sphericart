@@ -267,8 +267,7 @@ class NVRTC {
 
         if (!nvrtcHandle) {
             throw std::runtime_error(
-                "Failed to load libnvrtc.so. Try running \"find /usr -name libnvrtc.so\" and "
-                "appending the directory to your $LD_LIBRARY_PATH environment variable."
+                "Failed to load libnvrtc.so. Make sure it is available in your $LD_LIBRARY_PATH environment variable."
             );
         }
 
