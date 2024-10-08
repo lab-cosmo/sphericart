@@ -273,9 +273,8 @@ class CachedKernel {
             NVRTC_SAFE_CALL(nvrtc.nvrtcGetProgramLogSize(prog, &logSize));
             std::string log(logSize, '\0');
             NVRTC_SAFE_CALL(nvrtc.nvrtcGetProgramLog(prog, &log[0]));
-            std::cerr << log << std::endl;
             throw std::runtime_error(
-                "KernelFactory::compileAndCacheKernel: Failed to compile CUDA program."
+                "KernelFactory::compileAndCacheKernel: Failed to compile CUDA program:\n" + log
             );
         }
 
