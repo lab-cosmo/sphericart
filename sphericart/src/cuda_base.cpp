@@ -64,38 +64,6 @@ static size_t total_buffer_size(
 }
 
 /*
-hack to obtain sphericart base directory from
-sphericart.so/sphericart_jax.so/sphericart_torch.so path
-linux only - windows can be done as well
-*/
-
-/// home/nick/miniconda3/envs/sphericart/lib/python3.12/site-packages/sphericart/torch/lib/sphericart/package_data/sphericart_impl.cu
-std::string getDirRelativeToLib(std::string directoryName) {
-    Dl_info dl_info;
-    if (dladdr((void*)getDirRelativeToLib, &dl_info) && dl_info.dli_fname) {
-        std::string libpath = std::string(dl_info.dli_fname);
-        // Find the last occurrence of 'sphericart' in the path
-        std::string base_name = directoryName + "/";
-        size_t start_pos =
-            libpath.rfind(base_name); // Use rfind to start from the end of the string
-
-        if (start_pos == std::string::npos) {
-            return ""; // 'sphericart' not found
-        }
-
-        // Find the last directory separator before the 'sphericart' occurrence
-        size_t end_pos = libpath.find_last_of("/\\", start_pos);
-        if (end_pos == std::string::npos) {
-            return ""; // No directory separator found
-        }
-
-        // Extract the base directory path
-        return libpath.substr(0, end_pos + 1) + directoryName;
-    }
-    return "";
-}
-
-/*
     Wrapper to compile and launch the CUDA kernel. outputs a vector containing the spherical
    harmonics and their gradients if required to sph, dsph and ddsph pointers.
 
@@ -112,9 +80,9 @@ std::string getDirRelativeToLib(std::string directoryName) {
 */
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
-    scalar_t* xyz,
+    const scalar_t* xyz,
     const int nedges,
-    scalar_t* prefactors,
+    const scalar_t* prefactors,
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,
@@ -141,6 +109,8 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     size_t smem_size =
         total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
 
+    scalar_t* _xyz = const_cast<scalar_t*>(xyz);
+    scalar_t* _prefactors = const_cast<scalar_t*>(prefactors);
     int _nprefactors = nprefactors;
     int _lmax = l_max;
     int _n_total = n_total;
@@ -150,9 +120,9 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     bool _normalize = normalize;
 
     std::vector<void*> args = {
-        &xyz,
+        &_xyz,
         &_nedges,
-        &prefactors,
+        &_prefactors,
         &_nprefactors,
         &_lmax,
         &_n_total,
@@ -174,9 +144,9 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
-    float* xyz,
+    const float* xyz,
     const int nedges,
-    float* prefactors,
+    const float* prefactors,
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,
@@ -191,9 +161,9 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
 );
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
-    double* xyz,
+    const double* xyz,
     const int nedges,
-    double* prefactors,
+    const double* prefactors,
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,

@@ -3,8 +3,5 @@ dist/
 *.egg-info
 .tox/
 tests/
-*.pyc
-*.py
-!setup.py
 .vscode
 Manifest.toml

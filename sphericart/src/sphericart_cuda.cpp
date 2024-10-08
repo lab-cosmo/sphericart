@@ -135,7 +135,7 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
 
 template <typename T>
 void SphericalHarmonics<T>::compute_internal(
-    T* xyz,
+    const T* xyz,
     const size_t n_samples,
     bool compute_with_gradients,
     bool compute_with_hessian,
@@ -200,7 +200,7 @@ void SphericalHarmonics<T>::compute_internal(
     CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(current_device));
 }
 template <typename T>
-void SphericalHarmonics<T>::compute(T* xyz, const size_t n_samples, T* sph, void* cuda_stream) {
+void SphericalHarmonics<T>::compute(const T* xyz, const size_t n_samples, T* sph, void* cuda_stream) {
     SphericalHarmonics<T>::compute_internal(
         xyz, n_samples, false, false, sph, nullptr, nullptr, cuda_stream
     );
@@ -208,7 +208,7 @@ void SphericalHarmonics<T>::compute(T* xyz, const size_t n_samples, T* sph, void
 
 template <typename T>
 void SphericalHarmonics<T>::compute_with_gradients(
-    T* xyz, const size_t n_samples, T* sph, T* dsph, void* cuda_stream
+    const T* xyz, const size_t n_samples, T* sph, T* dsph, void* cuda_stream
 ) {
     SphericalHarmonics<T>::compute_internal(
         xyz, n_samples, true, false, sph, dsph, nullptr, cuda_stream
@@ -217,7 +217,7 @@ void SphericalHarmonics<T>::compute_with_gradients(
 
 template <typename T>
 void SphericalHarmonics<T>::compute_with_hessians(
-    T* xyz, const size_t n_samples, T* sph, T* dsph, T* ddsph, void* cuda_stream
+    const T* xyz, const size_t n_samples, T* sph, T* dsph, T* ddsph, void* cuda_stream
 ) {
     SphericalHarmonics<T>::compute_internal(
         xyz, n_samples, true, true, sph, dsph, ddsph, cuda_stream

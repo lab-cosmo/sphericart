@@ -48,7 +48,6 @@ OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 OPTION(SPHERICART_ARCH_NATIVE "Try to use -march=native when compiling Sphericart" ON)
 OPTION(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" ON)
 
-set(PACKAGE_DATA_INSTALL_DIR "package_data" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to additional files")
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install DLL/binaries")
 set(INCLUDE_INSTALL_DIR "include" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install headers")
@@ -105,10 +104,9 @@ add_library(sphericart ${COMMON_SOURCES})
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     #include the build/generated folder for compilation
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
+    target_include_directories(sphericart PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_include_directories(sphericart PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    target_link_libraries(sphericart PRIVATE dl) # libdl
+    target_link_libraries(sphericart PRIVATE ${CMAKE_DL_LIBS})
 
     set(SPHERICART_CUDA_HEADERS
         "include/sphericart_impl.cuh"
@@ -254,8 +252,3 @@ install(FILES "${PROJECT_BINARY_DIR}/sphericart-config-version.cmake"
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${INCLUDE_INSTALL_DIR})
 install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION ${INCLUDE_INSTALL_DIR})
-
-#include directory is already part of install, so don't need sphericart_impl dependencies
-install(FILES
-    ${PROJECT_SOURCE_DIR}/src/sphericart_impl.cu
-    DESTINATION ${PACKAGE_DATA_INSTALL_DIR})
