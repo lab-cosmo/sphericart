@@ -14,29 +14,12 @@
 
 #include "dynamic_cuda.hpp"
 
-// TODO demangling below only works for Itanium C++ ABI on Unix-like systems (GNUC or clang)
-// Helper function to demangle the type name if necessary
-std::string demangleTypeName(const std::string& name) {
-#if defined(__GNUC__) || defined(__clang__)
-    int status = 0;
-    std::unique_ptr<char, void (*)(void*)> demangled_name(
-        abi::__cxa_demangle(name.c_str(), nullptr, nullptr, &status), std::free
-    );
-    return (status == 0) ? demangled_name.get() : name;
-#else
-    throw std::runtime_error("demangling not supported using this toolchain.");
-#endif
-}
-
 // Base case: No template arguments, return function name without any type information
 std::string getKernelName(const std::string& fn_name) { return fn_name; }
 
-// Function to get type name of a single type
-template <typename T> std::string typeName() { return demangleTypeName(typeid(T).name()); }
-
 // Variadic template function to build type list
 template <typename T, typename... Ts> void buildTemplateTypes(std::string& base) {
-    base += typeName<T>(); // Add the first type
+    base += typeid(T).name(); // Add the first type
     // If there are more types, add a comma and recursively call for the remaining types
     if constexpr (sizeof...(Ts) > 0) {
         base += ", ";
