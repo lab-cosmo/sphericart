@@ -5,7 +5,6 @@
 #include <dlfcn.h>
 #include <stdexcept>
 #include <string>
-#include <iostream>
 #include <functional>
 #include <unordered_map>
 #include <cuda.h>
