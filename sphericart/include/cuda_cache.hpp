@@ -1,6 +1,6 @@
 // Cache Manager Header
-#ifndef CUDA_CACHE_HPP
-#define CUDA_CACHE_HPP
+#ifndef SPHERICART_CUDA_CACHE_HPP
+#define SPHERICART_CUDA_CACHE_HPP
 
 #include <vector>
 #include <unordered_map>
