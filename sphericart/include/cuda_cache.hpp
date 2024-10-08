@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
-#include <iostream>
 #include <typeinfo>
 
 #include <nvrtc.h>
