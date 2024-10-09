@@ -10,12 +10,7 @@
 
 #include <nvrtc.h>
 #include <cuda.h>
-
-#if defined(__GNUC__) || defined(__clang__)
 #include <cxxabi.h>
-#else
-#error "compiler not supported"
-#endif
 
 #include "dynamic_cuda.hpp"
 
