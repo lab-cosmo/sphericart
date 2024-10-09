@@ -10,54 +10,30 @@
 
 using namespace sphericart::cuda;
 
-struct CudaError {
-    bool success;
-    std::string errorMessage;
-};
-
 /*
     This code checks whether the cuda libraries we'd need to dynamically load are available on the host
 */
-CudaError isCudaAvailable() {
-    void* cudaHandle = dlopen("libcuda.so", RTLD_NOW);
-    void* nvrtcHandle = dlopen("libnvrtc.so", RTLD_NOW);
-    void* cudartHandle = dlopen("libcudart.so", RTLD_NOW);
-
-    CudaError result;
-    result.success = true;
-
-    if (!cudaHandle) {
-        result.success = false;
-        result.errorMessage =
-            "Failed to load libcuda.so. Try running \"find /usr -name libcuda.so\" and "
-            "appending the directory to your $LD_LIBRARY_PATH environment variable.";
-    } else if (!cudartHandle) {
-        result.success = false;
-        result.errorMessage =
-            "Failed to load libcudart.so. Try running \"find /usr -name libcudart.so\" and "
-            "appending the directory to your $LD_LIBRARY_PATH environment variable.";
-    } else if (!nvrtcHandle) {
-        result.success = false;
-        result.errorMessage =
-            "Failed to load libnvrtc.so. Try running \"find /usr -name libnvrtc.so\" and "
-            "appending the directory to your $LD_LIBRARY_PATH environment variable.";
-    }
-
-    // Close libraries if they were opened
-    if (cudaHandle)
-        dlclose(cudaHandle);
-    if (cudartHandle)
-        dlclose(cudartHandle);
-    if (nvrtcHandle)
-        dlclose(nvrtcHandle);
-
-    return result;
-}
 
 void checkCuda() {
-    CudaError cudaCheck = isCudaAvailable();
-    if (!cudaCheck.success) {
-        throw std::runtime_error(cudaCheck.errorMessage);
+    if (!CUDADriver::instance().loaded()) {
+        throw std::runtime_error(
+            "Failed to load libcuda.so. Try running \"find /usr -name libcuda.so\" and "
+            "appending the directory to your $LD_LIBRARY_PATH environment variable."
+        );
+    }
+
+    if (!CUDART::instance().loaded()) {
+        throw std::runtime_error(
+            "Failed to load libcudart.so. Try running \"find /usr -name libcudart.so\" and "
+            "appending the directory to your $LD_LIBRARY_PATH environment variable."
+        );
+    }
+
+    if (!NVRTC::instance().loaded()) {
+        throw std::runtime_error(
+            "Failed to load libnvrtc.so. Try running \"find /usr -name libnvrtc.so\" and "
+            "appending the directory to your $LD_LIBRARY_PATH environment variable."
+        );
     }
 }
 

@@ -97,7 +97,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 ) {
 
     static const char* CUDA_CODE =
-#include "generated/wrapped_sphericart_impl.cuh"
+#include "generated/wrapped_sphericart_impl.cu"
         ;
 
     int n_total = (l_max + 1) * (l_max + 1);
@@ -186,10 +186,10 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     scalar_t* xyz_grad,
     void* cuda_stream
 ) {
-
     static const char* CUDA_CODE =
-#include "generated/wrapped_sphericart_impl.cuh"
+#include "generated/wrapped_sphericart_impl.cu"
         ;
+
     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 
     auto& kernel_factory = KernelFactory::instance();

@@ -10,7 +10,12 @@
 
 #include <nvrtc.h>
 #include <cuda.h>
+
+#if defined(__GNUC__) || defined(__clang__)
 #include <cxxabi.h>
+#else
+#error "compiler not supported"
+#endif
 
 #include "dynamic_cuda.hpp"
 
@@ -53,6 +58,11 @@ std::string load_cuda_source(const std::string& filename) {
     return ss.str();
 }
 
+/*
+Container class for the cached kernels. Provides functionality for launching compiled kernels as
+well as automatically resizing dynamic shared memory allocations, when needed. Kernels are compiled
+on first launch.
+*/
 class CachedKernel {
 
   public:
@@ -114,10 +124,7 @@ class CachedKernel {
         CUresult result = driver.cuCtxGetCurrent(&currentContext);
 
         if (result != CUDA_SUCCESS || !currentContext) {
-            std::cerr << "launch::Error getting current context\n";
-            std::cerr << "launch::result: " << result << '\n';
-            std::cerr << "launch::currentContext: " << currentContext << '\n';
-            exit(1);
+            throw std::runtime_error("CachedKernel::launch error getting current context.");
         }
 
         if (currentContext != context) {
@@ -340,10 +347,15 @@ class CachedKernel {
     std::vector<std::string> options;
 };
 
-class CudaCacheManager {
+/*
+Factory class to create and store compiled cuda kernels for caching as a simple name-based hashmap.
+ALlows both compi.ing from a source file, or for compiling from a variable containing CUDA code.
+*/
+class KernelFactory {
+
   public:
-    static CudaCacheManager& instance() {
-        static CudaCacheManager instance;
+    static KernelFactory& instance() {
+        static KernelFactory instance;
         return instance;
     }
 
@@ -369,22 +381,6 @@ class CudaCacheManager {
         throw std::runtime_error("Kernel not found in cache.");
     }
 
-  private:
-    CudaCacheManager() {}
-    CudaCacheManager(const CudaCacheManager&) = delete;
-    CudaCacheManager& operator=(const CudaCacheManager&) = delete;
-
-    std::unordered_map<std::string, std::unique_ptr<CachedKernel>> kernel_cache;
-};
-
-class KernelFactory {
-
-  public:
-    static KernelFactory& instance() {
-        static KernelFactory instance;
-        return instance;
-    }
-
     /*
     Tries to retrieve the kernel "kernel_name". If not found, instantiate it and save to cache.
     */
@@ -394,11 +390,11 @@ class KernelFactory {
         const std::string& source_name,
         const std::vector<std::string>& options
     ) {
-        if (!cacheManager.hasKernel(kernel_name)) {
+        if (!this->hasKernel(kernel_name)) {
             std::string kernel_code = load_cuda_source(source_path);
-            cacheManager.cacheKernel(kernel_name, kernel_code, source_name, options);
+            this->cacheKernel(kernel_name, kernel_code, source_name, options);
         }
-        return cacheManager.getKernel(kernel_name);
+        return this->getKernel(kernel_name);
     }
 
     /*
@@ -410,19 +406,16 @@ class KernelFactory {
         const std::string& source_name,
         const std::vector<std::string>& options
     ) {
-
-        if (!cacheManager.hasKernel(kernel_name)) {
-            cacheManager.cacheKernel(kernel_name, source_variable, source_name, options);
+        if (!this->hasKernel(kernel_name)) {
+            this->cacheKernel(kernel_name, source_variable, source_name, options);
         }
 
-        return cacheManager.getKernel(kernel_name);
+        return this->getKernel(kernel_name);
     }
 
   private:
-    KernelFactory() : cacheManager(CudaCacheManager::instance()) {}
-
-    // Reference to the singleton instance of CudaCacheManager
-    CudaCacheManager& cacheManager;
+    KernelFactory() {}
+    std::unordered_map<std::string, std::unique_ptr<CachedKernel>> kernel_cache;
 
     KernelFactory(const KernelFactory&) = delete;
     KernelFactory& operator=(const KernelFactory&) = delete;

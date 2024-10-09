@@ -2,7 +2,11 @@
 #ifndef DYNAMIC_CUDA_HEADER_HPP
 #define DYNAMIC_CUDA_HEADER_HPP
 
+#ifdef __linux__
 #include <dlfcn.h>
+#else
+#error "Platform not supported"
+#endif
 #include <stdexcept>
 #include <string>
 #include <functional>
@@ -11,16 +15,18 @@
 #include <cuda_runtime.h>
 #include <nvrtc.h>
 #include <any>
+#include <sstream>
 
 #define NVRTC_SAFE_CALL(x)                                                                         \
     do {                                                                                           \
         nvrtcResult result = x;                                                                    \
         if (result != NVRTC_SUCCESS) {                                                             \
-            std::cerr << "\nerror: " #x " failed with error "                                      \
-                      << NVRTC::instance().nvrtcGetErrorString(result) << '\n'                     \
-                      << "File: " << __FILE__ << '\n'                                              \
-                      << "Line: " << __LINE__ << '\n';                                             \
-            exit(1);                                                                               \
+            std::ostringstream errorMsg;                                                           \
+            errorMsg << "\nerror: " #x " failed with error "                                       \
+                     << NVRTC::instance().nvrtcGetErrorString(result) << '\n'                      \
+                     << "File: " << __FILE__ << '\n'                                               \
+                     << "Line: " << static_cast<int>(__LINE__) << '\n';                            \
+            throw std::runtime_error(errorMsg.str());                                              \
         }                                                                                          \
     } while (0)
 
@@ -30,10 +36,12 @@
         if (result != CUDA_SUCCESS) {                                                              \
             const char* msg;                                                                       \
             CUDADriver::instance().cuGetErrorName(result, &msg);                                   \
-            std::cerr << "\nerror: " #x " failed with error " << msg << '\n'                       \
-                      << "File: " << __FILE__ << '\n'                                              \
-                      << "Line: " << __LINE__ << '\n';                                             \
-            exit(1);                                                                               \
+            std::ostringstream errorMsg;                                                           \
+            errorMsg << "\nerror: " #x " failed with error " << (msg ? msg : "Unknown error")      \
+                     << '\n'                                                                       \
+                     << "File: " << __FILE__ << '\n'                                               \
+                     << "Line: " << static_cast<int>(__LINE__) << '\n';                            \
+            throw std::runtime_error(errorMsg.str());                                              \
         }                                                                                          \
     } while (0)
 
@@ -41,10 +49,11 @@
     do {                                                                                           \
         cudaError_t cudaStatus = (call);                                                           \
         if (cudaStatus != cudaSuccess) {                                                           \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
-                      << CUDART::instance().cudaGetErrorString(cudaStatus) << '\n'                 \
-                      << "File: " << __FILE__ << '\n'                                              \
-                      << "Line: " << __LINE__ << '\n';                                             \
+            std::ostringstream errorMsg;                                                           \
+            const char* error = CUDART::instance().cudaGetErrorString(cudaStatus);                 \
+            errorMsg << "\nfailed with error " << (error ? error : "Unknown error") << '\n'        \
+                     << "File: " << __FILE__ << '\n'                                               \
+                     << "Line: " << static_cast<int>(__LINE__) << '\n';                            \
             exit(1);                                                                               \
         }                                                                                          \
     } while (0)
@@ -64,6 +73,8 @@ class CUDART {
         static CUDART instance;
         return instance;
     }
+
+    bool loaded() { return cudartHandle != nullptr; }
 
     using cudaGetDeviceCount_t = cudaError_t (*)(int*);
     using cudaGetDevice_t = cudaError_t (*)(int*);
@@ -89,12 +100,14 @@ class CUDART {
 
   private:
     CUDART() {
+#ifdef __linux__
         cudartHandle = dlopen("libcudart.so", RTLD_NOW);
-
+#else
+#error "Platform not supported"
+#endif
         if (!cudartHandle) {
-            throw std::runtime_error(
-                "Failed to load libcudart.so. Make sure it is available in your $LD_LIBRARY_PATH environment variable."
-            );
+            throw std::runtime_error("Failed to load libcudart.so. Make sure it is available in "
+                                     "your $LD_LIBRARY_PATH environment variable.");
         }
         // load cudart function pointers using template
         cudaGetDeviceCount = load<cudaGetDeviceCount_t>(cudartHandle, "cudaGetDeviceCount");
@@ -111,9 +124,13 @@ class CUDART {
     }
 
     ~CUDART() {
+#ifdef __linux__
         if (cudartHandle) {
             dlclose(cudartHandle);
         }
+#else
+#error "Platform not supported"
+#endif
     }
 
     // Prevent copying
@@ -129,6 +146,8 @@ class CUDADriver {
         static CUDADriver instance;
         return instance;
     }
+
+    bool loaded() { return cudaHandle != nullptr; }
 
     using cuInit_t = CUresult (*)(unsigned int);
     using cuDeviceGetCount_t = CUresult (*)(int*);
@@ -181,13 +200,14 @@ class CUDADriver {
 
   private:
     CUDADriver() {
-        // Load CUDA driver, cuda runtime and NVRTC libraries
+#ifdef __linux__
         cudaHandle = dlopen("libcuda.so", RTLD_NOW);
-
+#else
+#error "Platform not supported"
+#endif
         if (!cudaHandle) {
-            throw std::runtime_error(
-                "Failed to load libcuda.so. Make sure it is available in your $LD_LIBRARY_PATH environment variable."
-            );
+            throw std::runtime_error("Failed to load libcuda.so. Make sure it is available in your "
+                                     "$LD_LIBRARY_PATH environment variable.");
         }
 
         // Load CUDA driver function pointers using template
@@ -219,9 +239,13 @@ class CUDADriver {
     }
 
     ~CUDADriver() {
+#ifdef __linux__
         if (cudaHandle) {
             dlclose(cudaHandle);
         }
+#else
+#error "Platform not supported"
+#endif
     }
 
     // Prevent copying
@@ -237,6 +261,8 @@ class NVRTC {
         static NVRTC instance;
         return instance;
     }
+
+    bool loaded() { return nvrtcHandle != nullptr; }
 
     using nvrtcCreateProgram_t =
         nvrtcResult (*)(nvrtcProgram*, const char*, const char*, int, const char*[], const char*[]);
@@ -263,12 +289,15 @@ class NVRTC {
 
   private:
     NVRTC() {
+#ifdef __linux__
         nvrtcHandle = dlopen("libnvrtc.so", RTLD_NOW);
+#else
+#error "Platform not supported"
+#endif
 
         if (!nvrtcHandle) {
-            throw std::runtime_error(
-                "Failed to load libnvrtc.so. Make sure it is available in your $LD_LIBRARY_PATH environment variable."
-            );
+            throw std::runtime_error("Failed to load libnvrtc.so. Make sure it is available in "
+                                     "your $LD_LIBRARY_PATH environment variable.");
         }
 
         // Load NVRTC function pointers using template
@@ -287,9 +316,13 @@ class NVRTC {
     }
 
     ~NVRTC() {
+#ifdef __linux__
         if (nvrtcHandle) {
             dlclose(nvrtcHandle);
         }
+#else
+#error "Platform not supported"
+#endif
     }
 
     // Prevent copying
