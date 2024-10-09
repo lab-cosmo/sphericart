@@ -6,7 +6,7 @@ template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_cuda_base(
     const scalar_t* /*xyz*/,
     const int /*nedges*/,
-    scalar_t* /*prefactors*/,
+    const scalar_t* /*prefactors*/,
     const int /*nprefactors*/,
     const int64_t /*l_max*/,
     const bool /*normalize*/,
@@ -26,7 +26,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
 template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
     const double* xyz,
     const int nedges,
-    double* prefactors,
+    const double* prefactors,
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,
@@ -43,7 +43,7 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
     const float* xyz,
     const int nedges,
-    float* prefactors,
+    const float* prefactors,
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,
