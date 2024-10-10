@@ -14,13 +14,12 @@
 
 #include "dynamic_cuda.hpp"
 
-// TODO demangling below only works for Itanium C++ ABI on Unix-like systems (GNUC or clang)
 // Helper function to demangle the type name if necessary
 std::string demangleTypeName(const std::string& name) {
 #if defined(__GNUC__) || defined(__clang__)
     int status = 0;
-    std::unique_ptr<char, void (*)(void*)> demangled_name(
-        abi::__cxa_demangle(name.c_str(), nullptr, nullptr, &status), std::free
+    char* undecorated_name std::unique_ptr<char, void (*)(void*)> demangled_name(
+        abi::__cxa_demangle(name.c_str(), 0, 0, &status), std::free
     );
     return (status == 0) ? demangled_name.get() : name;
 #else
