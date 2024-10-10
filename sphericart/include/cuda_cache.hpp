@@ -2,6 +2,7 @@
 #ifndef SPHERICART_CUDA_CACHE_HPP
 #define SPHERICART_CUDA_CACHE_HPP
 
+#include <fstream>
 #include <vector>
 #include <unordered_map>
 #include <string>

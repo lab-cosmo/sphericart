@@ -1,22 +1,6 @@
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
 #include <cmath>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-
-#include <string>
-#include <typeinfo>
-
-#include <dlfcn.h>
-#include <cstring>
-
-#include <cstdlib> //std::getenv
-
-#if defined(__GNUC__) || defined(__clang__)
-#include <cxxabi.h>
-#endif
-
 #include "cuda_cache.hpp"
 #include "cuda_base.hpp"
 
