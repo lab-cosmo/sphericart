@@ -18,8 +18,8 @@ def test_autograd_cartesian(xyz):
         l_max=4, backward_second_derivatives=True
     )
 
-    def compute(xyz):
-        sph = calculator.compute(xyz=xyz)
+    def compute(xyz_in):
+        sph = calculator.compute(xyz=xyz_in)
         assert torch.linalg.norm(sph) != 0.0
         return sph
 
@@ -27,9 +27,9 @@ def test_autograd_cartesian(xyz):
     assert torch.autograd.gradgradcheck(compute, xyz, fast_mode=True)
 
     if torch.cuda.is_available():
-        xyz = xyz.to(device="cuda")
-        assert torch.autograd.gradcheck(compute, xyz, fast_mode=True)
-        assert torch.autograd.gradgradcheck(compute, xyz, fast_mode=True)
+        xyz_cuda = xyz.detach().cuda().requires_grad_(True)
+        assert torch.autograd.gradcheck(compute, xyz_cuda, fast_mode=True)
+        assert torch.autograd.gradgradcheck(compute, xyz_cuda, fast_mode=True)
 
 
 def test_autograd_normalized(xyz):
@@ -37,8 +37,8 @@ def test_autograd_normalized(xyz):
         l_max=4, backward_second_derivatives=True
     )
 
-    def compute(xyz):
-        sph = calculator.compute(xyz=xyz)
+    def compute(xyz_in):
+        sph = calculator.compute(xyz=xyz_in)
         assert torch.linalg.norm(sph) != 0.0
         return sph
 
@@ -46,9 +46,9 @@ def test_autograd_normalized(xyz):
     assert torch.autograd.gradgradcheck(compute, xyz, fast_mode=True)
 
     if torch.cuda.is_available():
-        xyz = xyz.to(device="cuda")
-        assert torch.autograd.gradcheck(compute, xyz, fast_mode=True)
-        assert torch.autograd.gradgradcheck(compute, xyz, fast_mode=True)
+        xyz_cuda = xyz.detach().cuda().requires_grad_(True)
+        assert torch.autograd.gradcheck(compute, xyz_cuda, fast_mode=True)
+        assert torch.autograd.gradgradcheck(compute, xyz_cuda, fast_mode=True)
 
 
 def test_autograd_hessian(xyz):

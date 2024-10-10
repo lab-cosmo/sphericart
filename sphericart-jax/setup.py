@@ -93,6 +93,6 @@ if __name__ == "__main__":
             "sphericart-jax": [
                 "sphericart/jax/lib/*",
                 "sphericart/jax/include/*",
-            ]
+            ],
         },
     )

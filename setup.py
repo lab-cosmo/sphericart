@@ -139,7 +139,7 @@ if __name__ == "__main__":
             "sphericart": [
                 "sphericart/lib/*",
                 "sphericart/include/*",
-            ]
+            ],
         },
         extras_require=extras_require,
     )

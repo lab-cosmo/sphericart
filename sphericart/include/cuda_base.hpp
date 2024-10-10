@@ -1,19 +1,6 @@
 #ifndef SPHERICART_CUDA_BASE_HPP
 #define SPHERICART_CUDA_BASE_HPP
 
-#include "sphericart.hpp"
-
-#define CUDA_CHECK(call)                                                                           \
-    do {                                                                                           \
-        cudaError_t cudaStatus = (call);                                                           \
-        if (cudaStatus != cudaSuccess) {                                                           \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
-                      << cudaGetErrorString(cudaStatus) << std::endl;                              \
-            cudaDeviceReset();                                                                     \
-            exit(EXIT_FAILURE);                                                                    \
-        }                                                                                          \
-    } while (0)
-
 namespace sphericart {
 
 namespace cuda {
@@ -66,9 +53,9 @@ namespace cuda {
  */
 template <typename scalar_t>
 void spherical_harmonics_cuda_base(
-    const scalar_t* __restrict__ xyz,
+    const scalar_t* xyz,
     const int nedges,
-    const scalar_t* __restrict__ prefactors,
+    const scalar_t* prefactors,
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,
@@ -76,19 +63,19 @@ void spherical_harmonics_cuda_base(
     const int64_t GRID_DIM_Y,
     const bool gradients,
     const bool hessian,
-    scalar_t* __restrict__ sph,
-    scalar_t* __restrict__ dsph,
-    scalar_t* __restrict__ ddsph,
+    scalar_t* sph,
+    scalar_t* dsph,
+    scalar_t* ddsph,
     void* cuda_stream = nullptr
 );
 
 template <typename scalar_t>
 void spherical_harmonics_backward_cuda_base(
-    const scalar_t* __restrict__ dsph,
-    const scalar_t* __restrict__ sph_grad,
+    scalar_t* dsph,
+    scalar_t* sph_grad,
     const int nedges,
     const int ntotal,
-    scalar_t* __restrict__ xyz_grad,
+    scalar_t* xyz_grad,
     void* cuda_stream = nullptr
 );
 
