@@ -117,9 +117,9 @@ void SphericalHarmonics<T>::compute_internal(
     }
 
     if (!this->prefactors_cuda) {
-        CUDART_SAFE_CALL(cudart.cudaMalloc(
-            (void**)&this->prefactors_cuda, this->nprefactors * sizeof(T)
-        ));
+        CUDART_SAFE_CALL(
+            cudart.cudaMalloc((void**)&this->prefactors_cuda, this->nprefactors * sizeof(T))
+        );
 
         CUDART_SAFE_CALL(cudart.cudaMemcpy(
             this->prefactors_cuda,
