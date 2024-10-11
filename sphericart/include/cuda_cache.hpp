@@ -104,12 +104,12 @@ class CachedKernel {
     CachedKernel& operator=(const CachedKernel&) = default;
 
     inline void setFuncAttribute(CUfunction_attribute attribute, int value) const {
-        CUDADRIVER_SAFE_CALL(CUDADriver::instance().cuFuncSetAttribute(function, attribute, value));
+        CUDADRIVER_SAFE_CALL(cudadriver.cuFuncSetAttribute(function, attribute, value));
     }
 
     int getFuncAttribute(CUfunction_attribute attribute) const {
         int value;
-        CUDADRIVER_SAFE_CALL(CUDADriver::instance().cuFuncGetAttribute(&value, attribute, function));
+        CUDADRIVER_SAFE_CALL(cudadriver.cuFuncGetAttribute(&value, attribute, function));
         return value;
     }
 
@@ -129,7 +129,7 @@ class CachedKernel {
             this->compileKernel(args);
         }
 
-        auto& driver = CUDADriver::instance();
+        auto& driver = cudadriver;
 
         CUcontext currentContext = nullptr;
         // Get current context
@@ -177,7 +177,7 @@ class CachedKernel {
     the kernel launch parameters exceeds the default 49152 bytes.
     */
     void checkAndAdjustSharedMem(int query_shared_mem_size) {
-        auto& driver = CUDADriver::instance();
+        auto& driver = cudadriver;
         if (current_smem_size == 0) {
             CUdevice cuDevice;
             CUDADRIVER_SAFE_CALL(driver.cuCtxGetDevice(&cuDevice));
@@ -226,20 +226,18 @@ class CachedKernel {
 
         this->initCudaDriver();
 
-        auto& driver = CUDADriver::instance();
-        auto& nvrtc = NVRTC::instance();
-
         CUcontext currentContext = nullptr;
 
         for (size_t ptr_id = 0; ptr_id < kernel_args.size(); ptr_id++) {
             unsigned int memtype = 0;
             CUdeviceptr device_ptr = *reinterpret_cast<CUdeviceptr*>(kernel_args[ptr_id]);
 
-            CUresult res =
-                driver.cuPointerGetAttribute(&memtype, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, device_ptr);
+            CUresult res = cudadriver.cuPointerGetAttribute(
+                &memtype, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, device_ptr
+            );
 
             if (res == CUDA_SUCCESS && memtype == CU_MEMORYTYPE_DEVICE) {
-                CUDADRIVER_SAFE_CALL(driver.cuPointerGetAttribute(
+                CUDADRIVER_SAFE_CALL(cudadriver.cuPointerGetAttribute(
                     &currentContext, CU_POINTER_ATTRIBUTE_CONTEXT, device_ptr
                 ));
 
@@ -250,14 +248,14 @@ class CachedKernel {
         }
 
         CUcontext query = nullptr;
-        CUDADRIVER_SAFE_CALL(driver.cuCtxGetCurrent(&query));
+        CUDADRIVER_SAFE_CALL(cudadriver.cuCtxGetCurrent(&query));
 
         if (query != currentContext) {
-            CUDADRIVER_SAFE_CALL(driver.cuCtxSetCurrent(currentContext));
+            CUDADRIVER_SAFE_CALL(cudadriver.cuCtxSetCurrent(currentContext));
         }
 
         CUdevice cuDevice;
-        CUDADRIVER_SAFE_CALL(driver.cuCtxGetDevice(&cuDevice));
+        CUDADRIVER_SAFE_CALL(cudadriver.cuCtxGetDevice(&cuDevice));
 
         nvrtcProgram prog;
 
@@ -275,10 +273,10 @@ class CachedKernel {
 
         int major = 0;
         int minor = 0;
-        CUDADRIVER_SAFE_CALL(driver.cuDeviceGetAttribute(
+        CUDADRIVER_SAFE_CALL(cudadriver.cuDeviceGetAttribute(
             &major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, cuDevice
         ));
-        CUDADRIVER_SAFE_CALL(driver.cuDeviceGetAttribute(
+        CUDADRIVER_SAFE_CALL(cudadriver.cuDeviceGetAttribute(
             &minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, cuDevice
         ));
         int arch = major * 10 + minor;
@@ -305,7 +303,7 @@ class CachedKernel {
 
         CUmodule module;
 
-        CUresult cuResult = driver.cuModuleLoadDataEx(&module, ptxCode.data(), 0, 0, 0);
+        CUresult cuResult = cudadriver.cuModuleLoadDataEx(&module, ptxCode.data(), 0, 0, 0);
 
         if (cuResult != CUDA_SUCCESS) {
             throw std::runtime_error(
@@ -319,7 +317,7 @@ class CachedKernel {
         const char* lowered_name;
         NVRTC_SAFE_CALL(nvrtc.nvrtcGetLoweredName(prog, this->kernel_name.c_str(), &lowered_name));
         CUfunction kernel;
-        CUDADRIVER_SAFE_CALL(driver.cuModuleGetFunction(&kernel, module, lowered_name));
+        CUDADRIVER_SAFE_CALL(cudadriver.cuModuleGetFunction(&kernel, module, lowered_name));
 
         this->set(module, kernel, currentContext);
         this->compiled = true;
@@ -329,14 +327,12 @@ class CachedKernel {
 
     void initCudaDriver() {
 
-        auto& driver = CUDADriver::instance();
-
         int deviceCount = 0;
         // Check if CUDA has already been initialized
-        CUresult res = driver.cuDeviceGetCount(&deviceCount);
+        CUresult res = cudadriver.cuDeviceGetCount(&deviceCount);
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
             // CUDA hasn't been initialized, so we initialize it now
-            res = driver.cuInit(0);
+            res = cudadriver.cuInit(0);
             if (res != CUDA_SUCCESS) {
                 throw std::runtime_error(
                     "KernelFactory::initCudaDriver: Failed to initialize CUDA driver."

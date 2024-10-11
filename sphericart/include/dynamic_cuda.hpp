@@ -22,8 +22,8 @@
         nvrtcResult result = x;                                                                    \
         if (result != NVRTC_SUCCESS) {                                                             \
             std::ostringstream errorMsg;                                                           \
-            errorMsg << "\nerror: " #x " failed with error "                                       \
-                     << NVRTC::instance().nvrtcGetErrorString(result) << '\n'                      \
+            errorMsg << "\nerror: " #x " failed with error " << nvrtc.nvrtcGetErrorString(result)  \
+                     << '\n'                                                                       \
                      << "File: " << __FILE__ << '\n'                                               \
                      << "Line: " << static_cast<int>(__LINE__) << '\n';                            \
             throw std::runtime_error(errorMsg.str());                                              \
@@ -35,7 +35,7 @@
         CUresult result = x;                                                                       \
         if (result != CUDA_SUCCESS) {                                                              \
             const char* msg;                                                                       \
-            CUDADriver::instance().cuGetErrorName(result, &msg);                                   \
+            cudadriver.cuGetErrorName(result, &msg);                                               \
             std::ostringstream errorMsg;                                                           \
             errorMsg << "\nerror: " #x " failed with error " << (msg ? msg : "Unknown error")      \
                      << '\n'                                                                       \
@@ -50,11 +50,11 @@
         cudaError_t cudaStatus = (call);                                                           \
         if (cudaStatus != cudaSuccess) {                                                           \
             std::ostringstream errorMsg;                                                           \
-            const char* error = CUDART::instance().cudaGetErrorString(cudaStatus);                 \
+            const char* error = cudart.cudaGetErrorString(cudaStatus);                             \
             errorMsg << "\nfailed with error " << (error ? error : "Unknown error") << '\n'        \
                      << "File: " << __FILE__ << '\n'                                               \
                      << "Line: " << static_cast<int>(__LINE__) << '\n';                            \
-            exit(1);                                                                               \
+            throw std::runtime_error(errorMsg.str());                                              \
         }                                                                                          \
     } while (0)
 
@@ -69,11 +69,6 @@ template <typename FuncType> FuncType load(void* handle, const char* functionNam
 
 class CUDART {
   public:
-    static CUDART& instance() {
-        static CUDART instance;
-        return instance;
-    }
-
     bool loaded() { return cudartHandle != nullptr; }
 
     using cudaGetDeviceCount_t = cudaError_t (*)(int*);
@@ -98,7 +93,6 @@ class CUDART {
     cudaPointerGetAttributes_t cudaPointerGetAttributes;
     cudaFree_t cudaFree;
 
-  private:
     CUDART() {
 #ifdef __linux__
         cudartHandle = dlopen("libcudart.so", RTLD_NOW);
@@ -142,12 +136,8 @@ class CUDART {
 };
 
 class CUDADriver {
-  public:
-    static CUDADriver& instance() {
-        static CUDADriver instance;
-        return instance;
-    }
 
+  public:
     bool loaded() { return cudaHandle != nullptr; }
 
     using cuInit_t = CUresult (*)(unsigned int);
@@ -199,7 +189,6 @@ class CUDADriver {
     cuCtxPushCurrent_t cuCtxPushCurrent;
     cuPointerGetAttribute_t cuPointerGetAttribute;
 
-  private:
     CUDADriver() {
 #ifdef __linux__
         cudaHandle = dlopen("libcuda.so", RTLD_NOW);
@@ -258,12 +247,8 @@ class CUDADriver {
 };
 
 class NVRTC {
-  public:
-    static NVRTC& instance() {
-        static NVRTC instance;
-        return instance;
-    }
 
+  public:
     bool loaded() { return nvrtcHandle != nullptr; }
 
     using nvrtcCreateProgram_t =
@@ -289,7 +274,6 @@ class NVRTC {
     nvrtcDestroyProgram_t nvrtcDestroyProgram;
     nvrtcGetErrorString_t nvrtcGetErrorString;
 
-  private:
     NVRTC() {
 #ifdef __linux__
         nvrtcHandle = dlopen("libnvrtc.so", RTLD_NOW);
@@ -334,5 +318,42 @@ class NVRTC {
 
     void* nvrtcHandle = nullptr;
 };
+
+/*This implements the Schawrz counter idiom to ensure propper constructor/destructor ordering*/
+
+// Static memory buffer for each class
+static std::aligned_storage<sizeof(CUDART), alignof(CUDART)>::type cudartBuffer;
+static std::aligned_storage<sizeof(CUDADriver), alignof(CUDADriver)>::type cudaDriverBuffer;
+static std::aligned_storage<sizeof(NVRTC), alignof(NVRTC)>::type nvrtcBuffer;
+
+// global references
+inline CUDART& cudart = reinterpret_cast<CUDART&>(cudartBuffer);
+inline CUDADriver& cudadriver = reinterpret_cast<CUDADriver&>(cudaDriverBuffer);
+inline NVRTC& nvrtc = reinterpret_cast<NVRTC&>(nvrtcBuffer);
+
+static int nifty_counter = 0;
+
+// Counter class for initializing and destroying static objects
+static struct CUDAInitializer {
+
+    CUDAInitializer() {
+        nifty_counter++;
+        if (nifty_counter == 1) {
+            new (&cudart) CUDART();
+            new (&cudadriver) CUDADriver();
+            new (&nvrtc) NVRTC();
+        }
+    }
+
+    ~CUDAInitializer() {
+        nifty_counter--;
+        if (nifty_counter == 0) {
+            cudart.~CUDART();
+            cudadriver.~CUDADriver();
+            nvrtc.~NVRTC();
+        }
+    }
+
+} cudaInitializer;
 
 #endif // DYNAMIC_CUDA_HEADER_HPP
