@@ -59,8 +59,8 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_backward_cuda_base(
-    scalar_t* /*dsph*/,
-    scalar_t* /*sph_grad*/,
+    const scalar_t* /*dsph*/,
+    const scalar_t* /*sph_grad*/,
     const int /*nedges*/,
     const int /*ntotal*/,
     scalar_t* /*xyz_grad*/,
@@ -70,8 +70,8 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
-    float* dsph,
-    float* sph_grad,
+    const float* dsph,
+    const float* sph_grad,
     const int nedges,
     const int ntotal,
     float* __restrict__ xyz_grad,
@@ -79,15 +79,10 @@ template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
 );
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
-    double* dsph,
-    double* sph_grad,
+    const double* dsph,
+    const double* sph_grad,
     const int nedges,
     const int ntotal,
     double* __restrict__ xyz_grad,
     void* cuda_stream
 );
-
-int sphericart::cuda::adjust_shared_memory(size_t, int64_t, int64_t, int64_t, bool, bool, int64_t) {
-    throw std::runtime_error("sphericart was not compiled with CUDA support");
-    return -1;
-}
