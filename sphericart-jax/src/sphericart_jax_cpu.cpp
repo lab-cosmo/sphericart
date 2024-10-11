@@ -21,9 +21,11 @@ template <template <typename> class C, typename T>
 using CacheMapCPU = std::map<size_t, std::unique_ptr<C<T>>>;
 
 template <template <typename> class C, typename T>
-std::unique_ptr<C<T>>& _get_or_create_sph_cpu(
-    CacheMapCPU<C, T>& sph_cache, std::mutex& cache_mutex, size_t l_max
-) {
+std::unique_ptr<C<T>>& _get_or_create_sph_cpu(size_t l_max) {
+    // Static map to cache instances based on parameters
+    static CacheMapCPU<C, T> sph_cache;
+    static std::mutex cache_mutex;
+
     // Check if instance exists in cache, if not create and store it
     std::lock_guard<std::mutex> lock(cache_mutex);
     auto it = sph_cache.find(l_max);
@@ -43,11 +45,7 @@ template <template <typename> class C, typename T> void cpu_sph(void* out, const
     // The output is stored as a single pointer since there is only one output
     T* sph = reinterpret_cast<T*>(out);
 
-    // Static map to cache instances based on parameters
-    static CacheMapCPU<C, T> sph_cache;
-    static std::mutex cache_mutex;
-
-    auto& calculator = _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max);
+    auto& calculator = _get_or_create_sph_cpu<C, T>(l_max);
     calculator->compute_array(xyz, xyz_length, sph, sph_len);
 }
 
@@ -65,11 +63,7 @@ void cpu_sph_with_gradients(void* out_tuple, const void** in) {
     T* sph = reinterpret_cast<T*>(out[0]);
     T* dsph = reinterpret_cast<T*>(out[1]);
 
-    // Static map to cache instances based on parameters
-    static CacheMapCPU<C, T> sph_cache;
-    static std::mutex cache_mutex;
-
-    auto& calculator = _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max);
+    auto& calculator = _get_or_create_sph_cpu<C, T>(l_max);
     calculator->compute_array_with_gradients(xyz, xyz_length, sph, sph_len, dsph, dsph_len);
 }
 
@@ -89,11 +83,7 @@ void cpu_sph_with_hessians(void* out_tuple, const void** in) {
     T* dsph = reinterpret_cast<T*>(out[1]);
     T* ddsph = reinterpret_cast<T*>(out[2]);
 
-    // Static map to cache instances based on parameters
-    static CacheMapCPU<C, T> sph_cache;
-    static std::mutex cache_mutex;
-
-    auto& calculator = _get_or_create_sph_cpu(sph_cache, cache_mutex, l_max);
+    auto& calculator = _get_or_create_sph_cpu<C, T>(l_max);
     calculator->compute_array_with_hessians(
         xyz, xyz_length, sph, sph_len, dsph, dsph_len, ddsph, ddsph_len
     );

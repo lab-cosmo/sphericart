@@ -22,9 +22,11 @@ template <template <typename> class C, typename T>
 using CacheMapCUDA = std::map<size_t, std::unique_ptr<C<T>>>;
 
 template <template <typename> class C, typename T>
-std::unique_ptr<C<T>>& _get_or_create_sph_cuda(
-    CacheMapCUDA<C, T>& sph_cache, std::mutex& cache_mutex, size_t l_max
-) {
+std::unique_ptr<C<T>>& _get_or_create_sph_cuda(size_t l_max) {
+    // Static map to cache instances based on parameters
+    static CacheMapCUDA<C, T> sph_cache;
+    static std::mutex cache_mutex;
+
     // Check if instance exists in cache, if not create and store it
     std::lock_guard<std::mutex> lock(cache_mutex);
     auto it = sph_cache.find(l_max);
@@ -40,15 +42,11 @@ inline void cuda_sph(cudaStream_t stream, void** in, const char* opaque, std::si
     const T* xyz = reinterpret_cast<const T*>(in[0]);
     T* sph = reinterpret_cast<T*>(in[1]);
 
-    // Static map to cache instances based on parameters
-    static CacheMapCUDA<C, T> sph_cache;
-    static std::mutex cache_mutex;
-
     const SphDescriptor& d = *UnpackDescriptor<SphDescriptor>(opaque, opaque_len);
     const std::int64_t n_samples = d.n_samples;
     const std::int64_t lmax = d.lmax;
 
-    auto& calculator = _get_or_create_sph_cuda(sph_cache, cache_mutex, lmax);
+    auto& calculator = _get_or_create_sph_cuda<C, T>(lmax);
 
     calculator->compute(xyz, n_samples, sph, reinterpret_cast<void*>(stream));
 }
@@ -62,15 +60,11 @@ inline void cuda_sph_with_gradients(
     T* sph = reinterpret_cast<T*>(in[1]);
     T* dsph = reinterpret_cast<T*>(in[2]);
 
-    // Static map to cache instances based on parameters
-    static CacheMapCUDA<C, T> sph_cache;
-    static std::mutex cache_mutex;
-
     const SphDescriptor& d = *UnpackDescriptor<SphDescriptor>(opaque, opaque_len);
     const std::int64_t n_samples = d.n_samples;
     const std::int64_t lmax = d.lmax;
 
-    auto& calculator = _get_or_create_sph_cuda(sph_cache, cache_mutex, lmax);
+    auto& calculator = _get_or_create_sph_cuda<C, T>(lmax);
     calculator->compute_with_gradients(xyz, n_samples, sph, dsph, reinterpret_cast<void*>(stream));
 }
 
@@ -84,15 +78,11 @@ inline void cuda_sph_with_hessians(
     T* dsph = reinterpret_cast<T*>(in[2]);
     T* ddsph = reinterpret_cast<T*>(in[3]);
 
-    // Static map to cache instances based on parameters
-    static CacheMapCUDA<C, T> sph_cache;
-    static std::mutex cache_mutex;
-
     const SphDescriptor& d = *UnpackDescriptor<SphDescriptor>(opaque, opaque_len);
     const std::int64_t n_samples = d.n_samples;
     const std::int64_t lmax = d.lmax;
 
-    auto& calculator = _get_or_create_sph_cuda(sph_cache, cache_mutex, lmax);
+    auto& calculator = _get_or_create_sph_cuda<C, T>(lmax);
     calculator->compute_with_hessians(
         xyz, n_samples, sph, dsph, ddsph, reinterpret_cast<void*>(stream)
     );
