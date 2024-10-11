@@ -126,7 +126,8 @@ class CUDART {
     ~CUDART() {
 #ifdef __linux__
         if (cudartHandle) {
-            dlclose(cudartHandle);
+            // Do not close - leak these for OS cleanup to avoid Static Initialization Order Fiasco
+            // dlclose(cudartHandle);
         }
 #else
 #error "Platform not supported"
@@ -241,7 +242,8 @@ class CUDADriver {
     ~CUDADriver() {
 #ifdef __linux__
         if (cudaHandle) {
-            dlclose(cudaHandle);
+            // Do not close - leak these for OS cleanup to avoid Static Initialization Order Fiasco
+            // dlclose(cudaHandle);
         }
 #else
 #error "Platform not supported"
@@ -318,7 +320,8 @@ class NVRTC {
     ~NVRTC() {
 #ifdef __linux__
         if (nvrtcHandle) {
-            dlclose(nvrtcHandle);
+            // Do not close - leak these for OS cleanup to avoid Static Initialization Order Fiasco
+            // dlclose(nvrtcHandle);
         }
 #else
 #error "Platform not supported"

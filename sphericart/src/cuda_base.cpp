@@ -4,9 +4,6 @@
 #include "cuda_cache.hpp"
 #include "cuda_base.hpp"
 
-/* MASK used for warp reductions */
-#define FULL_MASK 0xffffffff
-
 #define HARDCODED_LMAX 1
 
 /*
