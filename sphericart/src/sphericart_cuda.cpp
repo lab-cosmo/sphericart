@@ -55,31 +55,31 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max) {
 
     // compute prefactors on host first
     compute_sph_prefactors<T>((int)l_max, this->prefactors_cpu);
+    /*
+        if (this->device_count) {
+            int current_device;
 
-    if (this->device_count) {
-        int current_device;
+            CUDART_SAFE_CALL(CUDART::instance().cudaGetDevice(&current_device));
 
-        CUDART_SAFE_CALL(CUDART::instance().cudaGetDevice(&current_device));
+            // allocate prefactorts on every visible device and copy from host
+            this->prefactors_cuda = new T*[this->device_count];
 
-        // allocate prefactorts on every visible device and copy from host
-        this->prefactors_cuda = new T*[this->device_count];
+            for (int device = 0; device < this->device_count; device++) {
+                CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(device));
+                CUDART_SAFE_CALL(CUDART::instance().cudaMalloc(
+                    (void**)&this->prefactors_cuda[device], this->nprefactors * sizeof(T)
+                ));
+                CUDART_SAFE_CALL(CUDART::instance().cudaMemcpy(
+                    this->prefactors_cuda[device],
+                    this->prefactors_cpu,
+                    this->nprefactors * sizeof(T),
+                    cudaMemcpyHostToDevice
+                ));
+            }
 
-        for (int device = 0; device < this->device_count; device++) {
-            CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(device));
-            CUDART_SAFE_CALL(CUDART::instance().cudaMalloc(
-                (void**)&this->prefactors_cuda[device], this->nprefactors * sizeof(T)
-            ));
-            CUDART_SAFE_CALL(CUDART::instance().cudaMemcpy(
-                this->prefactors_cuda[device],
-                this->prefactors_cpu,
-                this->nprefactors * sizeof(T),
-                cudaMemcpyHostToDevice
-            ));
-        }
-
-        // set the context back to the current device
-        CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(current_device));
-    }
+            // set the context back to the current device
+            CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(current_device));
+        } */
 }
 
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
@@ -89,23 +89,28 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
         this->prefactors_cpu = nullptr;
     }
 
+    if (this->prefactors_cuda) {
+        CUDART_SAFE_CALL(CUDART::instance().cudaDeviceSynchronize());
+        CUDART_SAFE_CALL(CUDART::instance().cudaFree(this->prefactors_cuda));
+    }
+
     if (this->device_count > 0) {
 
         int current_device;
 
-        CUDART_SAFE_CALL(CUDART::instance().cudaGetDevice(&current_device));
+        // CUDART_SAFE_CALL(CUDART::instance().cudaGetDevice(&current_device));
 
         for (int device = 0; device < this->device_count; device++) {
-            CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(device));
-            CUDART_SAFE_CALL(CUDART::instance().cudaDeviceSynchronize());
-            if (this->prefactors_cuda != nullptr && this->prefactors_cuda[device] != nullptr) {
-                CUDART_SAFE_CALL(CUDART::instance().cudaFree(this->prefactors_cuda[device]));
-                this->prefactors_cuda[device] = nullptr;
-            }
+            // CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(device));
+            //  CUDART_SAFE_CALL(CUDART::instance().cudaDeviceSynchronize());
+            // if (this->prefactors_cuda != nullptr && this->prefactors_cuda[device] != nullptr) {
+            //  CUDART_SAFE_CALL(CUDART::instance().cudaFree(this->prefactors_cuda[device]));
+            //  this->prefactors_cuda[device] = nullptr;
+            //}
         }
-        this->prefactors_cuda = nullptr;
+        // this->prefactors_cuda = nullptr;
 
-        CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(current_device));
+        // CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(current_device));
     }
 }
 
@@ -156,10 +161,25 @@ void SphericalHarmonics<T>::compute_internal(
         CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(attributes.device));
     }
 
+    if (!this->prefactors_cuda) {
+        CUDART_SAFE_CALL(CUDART::instance().cudaMalloc(
+            (void**)&this->prefactors_cuda, this->nprefactors * sizeof(T)
+        ));
+
+        CUDART_SAFE_CALL(CUDART::instance().cudaMemcpy(
+            this->prefactors_cuda,
+            this->prefactors_cpu,
+            this->nprefactors * sizeof(T),
+            cudaMemcpyHostToDevice
+        ));
+
+        CUDART_SAFE_CALL(CUDART::instance().cudaDeviceSynchronize());
+    }
+
     sphericart::cuda::spherical_harmonics_cuda_base<T>(
         xyz,
         n_samples,
-        this->prefactors_cuda[attributes.device],
+        this->prefactors_cuda,
         this->nprefactors,
         this->l_max,
         this->normalized,
@@ -172,8 +192,9 @@ void SphericalHarmonics<T>::compute_internal(
         ddsph,
         cuda_stream
     );
-
-    CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(current_device));
+    if (current_device != attributes.device) {
+        CUDART_SAFE_CALL(CUDART::instance().cudaSetDevice(current_device));
+    }
 }
 template <typename T>
 void SphericalHarmonics<T>::compute(const T* xyz, const size_t n_samples, T* sph, void* cuda_stream) {

@@ -148,7 +148,7 @@ template <typename T> class SphericalHarmonics {
     size_t nprefactors;
     bool normalized;               // should we normalize the input vectors?
     T* prefactors_cpu = nullptr;   // host prefactors buffer
-    T** prefactors_cuda = nullptr; // storage space for prefactors
+    T* prefactors_cuda = nullptr; // storage space for prefactors
     int device_count = 0;          // number of visible GPU devices
     int64_t CUDA_GRID_DIM_X_ = 8;
     int64_t CUDA_GRID_DIM_Y_ = 8;
