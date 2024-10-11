@@ -106,7 +106,8 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         &_normalize,
         &sph,
         &dsph,
-        &ddsph};
+        &ddsph
+    };
 
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
