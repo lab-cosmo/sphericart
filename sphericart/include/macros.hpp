@@ -35,13 +35,9 @@
 // double precision, as that slows down greatly floating-point execution.
 // basically this static casts the constant to the type of the target
 // pointer
-template <typename T> struct remove_pointer {
-    using type = T;
-};
+template <typename T> struct remove_pointer { using type = T; };
 
-template <typename T> struct remove_pointer<T*> {
-    using type = T;
-};
+template <typename T> struct remove_pointer<T*> { using type = T; };
 
 template <typename T> using remove_pointer_t = typename remove_pointer<T>::type;
 

@@ -180,7 +180,7 @@ class CachedKernel {
         auto& driver = CUDADriver::instance();
         if (current_smem_size == 0) {
             CUdevice cuDevice;
-            CUresult res = driver.cuCtxGetDevice(&cuDevice);
+            CUDADRIVER_SAFE_CALL(driver.cuCtxGetDevice(&cuDevice));
 
             CUDADRIVER_SAFE_CALL(driver.cuDeviceGetAttribute(
                 &max_smem_size_optin, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, cuDevice

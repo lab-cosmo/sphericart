@@ -15,12 +15,7 @@
    each spherical harmonics vector per sample in shared memory.
 */
 static size_t total_buffer_size(
-    size_t l_max,
-    size_t GRID_DIM_X,
-    size_t GRID_DIM_Y,
-    size_t dtype_size,
-    bool requires_grad,
-    bool requires_hessian
+    size_t l_max, size_t GRID_DIM_Y, size_t dtype_size, bool requires_grad, bool requires_hessian
 ) {
     int nl =
         std::max(static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)), 2 * l_max + 1);
@@ -87,8 +82,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
     dim3 grid_dim(find_num_blocks(nedges, GRID_DIM_Y));
 
-    size_t smem_size =
-        total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
+    size_t smem_size = total_buffer_size(l_max, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
 
     scalar_t* _xyz = const_cast<scalar_t*>(xyz);
     scalar_t* _prefactors = const_cast<scalar_t*>(prefactors);
@@ -112,8 +106,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         &_normalize,
         &sph,
         &dsph,
-        &ddsph
-    };
+        &ddsph};
 
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
     auto& kernel_factory = KernelFactory::instance();
