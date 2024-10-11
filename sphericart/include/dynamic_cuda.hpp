@@ -337,8 +337,7 @@ static int nifty_counter = 0;
 static struct CUDAInitializer {
 
     CUDAInitializer() {
-        nifty_counter++;
-        if (nifty_counter == 1) {
+        if (nifty_counter++ == 0) {
             new (&cudart) CUDART();
             new (&cudadriver) CUDADriver();
             new (&nvrtc) NVRTC();
@@ -346,8 +345,7 @@ static struct CUDAInitializer {
     }
 
     ~CUDAInitializer() {
-        nifty_counter--;
-        if (nifty_counter == 0) {
+        if (--nifty_counter == 0) {
             cudart.~CUDART();
             cudadriver.~CUDADriver();
             nvrtc.~NVRTC();
