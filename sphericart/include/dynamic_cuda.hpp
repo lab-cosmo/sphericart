@@ -319,14 +319,17 @@ class NVRTC {
     void* nvrtcHandle = nullptr;
 };
 
-/*This implements the Schawrz counter idiom to ensure propper constructor/destructor ordering*/
+/*
+This implements the Schawrz counter idiom to ensure propper constructor/destructor ordering - we
+don't want these classes destroyed before jax or pytorch classes/objects are.
+*/
 
 // Static memory buffer for each class
 static std::aligned_storage<sizeof(CUDART), alignof(CUDART)>::type cudartBuffer;
 static std::aligned_storage<sizeof(CUDADriver), alignof(CUDADriver)>::type cudaDriverBuffer;
 static std::aligned_storage<sizeof(NVRTC), alignof(NVRTC)>::type nvrtcBuffer;
 
-// global references
+// global references, use inline instead of extern as we want to define the implementation here
 inline CUDART& cudart = reinterpret_cast<CUDART&>(cudartBuffer);
 inline CUDADriver& cudadriver = reinterpret_cast<CUDADriver&>(cudaDriverBuffer);
 inline NVRTC& nvrtc = reinterpret_cast<NVRTC&>(nvrtcBuffer);
