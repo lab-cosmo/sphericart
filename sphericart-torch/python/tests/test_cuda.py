@@ -9,7 +9,7 @@ torch.manual_seed(0)
 
 @pytest.fixture
 def xyz():
-    return 6 * torch.randn(10, 3, dtype=torch.float64, requires_grad=True)
+    return 6 * torch.randn(100, 3, dtype=torch.float64, requires_grad=True)
 
 
 def test_cpu_vs_cuda(xyz):

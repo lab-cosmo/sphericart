@@ -155,8 +155,8 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
 
 template <typename scalar_t>
 void sphericart::cuda::spherical_harmonics_backward_cuda_base(
-    scalar_t* dsph,
-    scalar_t* sph_grad,
+    const scalar_t* dsph,
+    const scalar_t* sph_grad,
     const int nedges,
     const int ntotal,
     scalar_t* xyz_grad,
@@ -188,9 +188,19 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
-    float* dsph, float* sph_grad, const int nedges, const int ntotal, float* xyz_grad, void* cuda_stream
+    const float* dsph,
+    const float* sph_grad,
+    const int nedges,
+    const int ntotal,
+    float* xyz_grad,
+    void* cuda_stream
 );
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
-    double* dsph, double* sph_grad, const int nedges, const int ntotal, double* xyz_grad, void* cuda_stream
+    const double* dsph,
+    const double* sph_grad,
+    const int nedges,
+    const int ntotal,
+    double* xyz_grad,
+    void* cuda_stream
 );
