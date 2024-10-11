@@ -120,7 +120,6 @@ class CUDART {
     ~CUDART() {
 #ifdef __linux__
         if (cudartHandle) {
-            // Do not close - leak these for OS cleanup to avoid Static Initialization Order Fiasco
             dlclose(cudartHandle);
         }
 #else
@@ -231,7 +230,6 @@ class CUDADriver {
     ~CUDADriver() {
 #ifdef __linux__
         if (cudaHandle) {
-            // Do not close - leak these for OS cleanup to avoid Static Initialization Order Fiasco
             dlclose(cudaHandle);
         }
 #else
@@ -304,7 +302,6 @@ class NVRTC {
     ~NVRTC() {
 #ifdef __linux__
         if (nvrtcHandle) {
-            // Do not close - leak these for OS cleanup to avoid Static Initialization Order Fiasco
             dlclose(nvrtcHandle);
         }
 #else
