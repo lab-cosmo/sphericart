@@ -337,7 +337,7 @@ static std::aligned_storage<sizeof(NVRTC), alignof(NVRTC)>::type nvrtcBuffer;
 
 /*
 global references that should be used by any dependent code. Use inline instead of extern as we want
-to define the implementation in single-header.
+to define the implementation in a single-header.
 */
 inline CUDART& CUDART_INSTANCE = reinterpret_cast<CUDART&>(cudartBuffer);
 inline CUDADriver& CUDA_DRIVER_INSTANCE = reinterpret_cast<CUDADriver&>(cudaDriverBuffer);
