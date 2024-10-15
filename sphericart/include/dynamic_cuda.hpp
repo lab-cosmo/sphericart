@@ -68,6 +68,11 @@ template <typename FuncType> FuncType load(void* handle, const char* functionNam
     return func;
 }
 
+/*
+This class allows us to dynamically load the CUDA runtime and reference the functions contained
+within the libcudart.so library (see CUDA Runtime API:
+https://docs.nvidia.com/cuda/cuda-runtime-api/index.html).
+*/
 class CUDART {
   public:
     bool loaded() { return cudartHandle != nullptr; }
@@ -134,6 +139,11 @@ class CUDART {
     void* cudartHandle = nullptr;
 };
 
+/*
+This class allows us to dynamically load the CUDA Driver and reference the functions contained
+within the libcuda.so library (CUDA Driver API:
+https://docs.nvidia.com/cuda/cuda-driver-api/index.html).
+*/
 class CUDADriver {
 
   public:
@@ -244,7 +254,7 @@ class CUDADriver {
 
 /*
 This class allows us to dynamically load NVRTC and reference the functions contained within the
-libnvrtc.so library that we need.
+libnvrtc.so library (see NVRTC API: https://docs.nvidia.com/cuda/nvrtc/index.html).
 */
 class NVRTC {
 
