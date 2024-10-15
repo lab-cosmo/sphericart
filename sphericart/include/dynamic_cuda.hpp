@@ -335,7 +335,10 @@ static std::aligned_storage<sizeof(CUDART), alignof(CUDART)>::type cudartBuffer;
 static std::aligned_storage<sizeof(CUDADriver), alignof(CUDADriver)>::type cudaDriverBuffer;
 static std::aligned_storage<sizeof(NVRTC), alignof(NVRTC)>::type nvrtcBuffer;
 
-// global references, use inline instead of extern as we want to define the implementation here
+/*
+global references that should be used by any dependent code. Use inline instead of extern as we want
+to define the implementation in single-header.
+*/
 inline CUDART& CUDART_INSTANCE = reinterpret_cast<CUDART&>(cudartBuffer);
 inline CUDADriver& CUDA_DRIVER_INSTANCE = reinterpret_cast<CUDADriver&>(cudaDriverBuffer);
 inline NVRTC& NVRTC_INSTANCE = reinterpret_cast<NVRTC&>(nvrtcBuffer);
