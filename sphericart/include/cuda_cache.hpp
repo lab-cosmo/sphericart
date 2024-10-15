@@ -92,11 +92,6 @@ class CachedKernel {
 
     CachedKernel() = default;
 
-    void set(CUmodule m, CUfunction f, CUcontext c) {
-        this->module = m;
-        this->function = f;
-        this->context = c;
-    }
     // Copy constructor
     CachedKernel(const CachedKernel&) = default;
 
@@ -161,8 +156,9 @@ class CachedKernel {
             0
         ));
 
-        if (synchronize)
+        if (synchronize) {
             CUDADRIVER_SAFE_CALL(driver.cuCtxSynchronize());
+        }
 
         if (currentContext != context) {
             CUDADRIVER_SAFE_CALL(driver.cuCtxSetCurrent(currentContext));
@@ -319,7 +315,9 @@ class CachedKernel {
         CUfunction kernel;
         CUDADRIVER_SAFE_CALL(cudadriver.cuModuleGetFunction(&kernel, module, lowered_name));
 
-        this->set(module, kernel, currentContext);
+        this->module = module;
+        this->function = kernel;
+        this->context = currentContext;
         this->compiled = true;
 
         NVRTC_SAFE_CALL(nvrtc.nvrtcDestroyProgram(&prog));

@@ -99,22 +99,21 @@ class CUDART {
 #else
 #error "Platform not supported"
 #endif
-        if (!cudartHandle) {
-            throw std::runtime_error("Failed to load libcudart.so. Make sure it is available in "
-                                     "your $LD_LIBRARY_PATH environment variable.");
+        if (cudartHandle) {
+            // load cudart function pointers using template
+            cudaGetDeviceCount = load<cudaGetDeviceCount_t>(cudartHandle, "cudaGetDeviceCount");
+            cudaGetDevice = load<cudaGetDevice_t>(cudartHandle, "cudaGetDevice");
+            cudaSetDevice = load<cudaSetDevice_t>(cudartHandle, "cudaSetDevice");
+            cudaMalloc = load<cudaMalloc_t>(cudartHandle, "cudaMalloc");
+            cudaMemcpy = load<cudaMemcpy_t>(cudartHandle, "cudaMemcpy");
+            cudaGetErrorName = load<cudaGetErrorName_t>(cudartHandle, "cudaGetErrorName");
+            cudaGetErrorString = load<cudaGetErrorString_t>(cudartHandle, "cudaGetErrorString");
+            cudaDeviceSynchronize =
+                load<cudaDeviceSynchronize_t>(cudartHandle, "cudaDeviceSynchronize");
+            cudaPointerGetAttributes =
+                load<cudaPointerGetAttributes_t>(cudartHandle, "cudaPointerGetAttributes");
+            cudaFree = load<cudaFree_t>(cudartHandle, "cudaFree");
         }
-        // load cudart function pointers using template
-        cudaGetDeviceCount = load<cudaGetDeviceCount_t>(cudartHandle, "cudaGetDeviceCount");
-        cudaGetDevice = load<cudaGetDevice_t>(cudartHandle, "cudaGetDevice");
-        cudaSetDevice = load<cudaSetDevice_t>(cudartHandle, "cudaSetDevice");
-        cudaMalloc = load<cudaMalloc_t>(cudartHandle, "cudaMalloc");
-        cudaMemcpy = load<cudaMemcpy_t>(cudartHandle, "cudaMemcpy");
-        cudaGetErrorName = load<cudaGetErrorName_t>(cudartHandle, "cudaGetErrorName");
-        cudaGetErrorString = load<cudaGetErrorString_t>(cudartHandle, "cudaGetErrorString");
-        cudaDeviceSynchronize = load<cudaDeviceSynchronize_t>(cudartHandle, "cudaDeviceSynchronize");
-        cudaPointerGetAttributes =
-            load<cudaPointerGetAttributes_t>(cudartHandle, "cudaPointerGetAttributes");
-        cudaFree = load<cudaFree_t>(cudartHandle, "cudaFree");
     }
 
     ~CUDART() {
@@ -194,37 +193,35 @@ class CUDADriver {
 #else
 #error "Platform not supported"
 #endif
-        if (!cudaHandle) {
-            throw std::runtime_error("Failed to load libcuda.so. Make sure it is available in your "
-                                     "$LD_LIBRARY_PATH environment variable.");
+        if (cudaHandle) {
+            // Load CUDA driver function pointers using template
+            cuInit = load<cuInit_t>(cudaHandle, "cuInit");
+            cuDeviceGetCount = load<cuDeviceGetCount_t>(cudaHandle, "cuDeviceGetCount");
+            cuCtxCreate = load<cuCtxCreate_t>(cudaHandle, "cuCtxCreate");
+            cuCtxDestroy = load<cuCtxDestroy_t>(cudaHandle, "cuCtxDestroy");
+            cuDevicePrimaryCtxRetain =
+                load<cuDevicePrimaryCtxRetain_t>(cudaHandle, "cuDevicePrimaryCtxRetain");
+            cuDevicePrimaryCtxRelease =
+                load<cuDevicePrimaryCtxRelease_t>(cudaHandle, "cuDevicePrimaryCtxRelease");
+            cuCtxGetCurrent = load<cuCtxGetCurrent_t>(cudaHandle, "cuCtxGetCurrent");
+            cuCtxSetCurrent = load<cuCtxSetCurrent_t>(cudaHandle, "cuCtxSetCurrent");
+            cuModuleLoadDataEx = load<cuModuleLoadDataEx_t>(cudaHandle, "cuModuleLoadDataEx");
+            cuModuleGetFunction = load<cuModuleGetFunction_t>(cudaHandle, "cuModuleGetFunction");
+            cuFuncSetAttribute = load<cuFuncSetAttribute_t>(cudaHandle, "cuFuncSetAttribute");
+            cuFuncGetAttribute = load<cuFuncGetAttribute_t>(cudaHandle, "cuFuncGetAttribute");
+            cuCtxGetDevice = load<cuCtxGetDevice_t>(cudaHandle, "cuCtxGetDevice");
+            cuDeviceGetAttribute = load<cuDeviceGetAttribute_t>(cudaHandle, "cuDeviceGetAttribute");
+            cuDeviceGetName = load<cuDeviceGetName_t>(cudaHandle, "cuDeviceGetName");
+            cuDeviceTotalMem = load<cuDeviceTotalMem_t>(cudaHandle, "cuDeviceTotalMem");
+            cuLaunchKernel = load<cuLaunchKernel_t>(cudaHandle, "cuLaunchKernel");
+            cuStreamCreate = load<cuStreamCreate_t>(cudaHandle, "cuStreamCreate");
+            cuStreamDestroy = load<cuStreamDestroy_t>(cudaHandle, "cuStreamDestroy");
+            cuCtxSynchronize = load<cuCtxSynchronize_t>(cudaHandle, "cuCtxSynchronize");
+            cuGetErrorName = load<cuGetErrorName_t>(cudaHandle, "cuGetErrorName");
+            cuCtxPushCurrent = load<cuCtxPushCurrent_t>(cudaHandle, "cuCtxPushCurrent");
+            cuPointerGetAttribute =
+                load<cuPointerGetAttribute_t>(cudaHandle, "cuPointerGetAttribute");
         }
-
-        // Load CUDA driver function pointers using template
-        cuInit = load<cuInit_t>(cudaHandle, "cuInit");
-        cuDeviceGetCount = load<cuDeviceGetCount_t>(cudaHandle, "cuDeviceGetCount");
-        cuCtxCreate = load<cuCtxCreate_t>(cudaHandle, "cuCtxCreate");
-        cuCtxDestroy = load<cuCtxDestroy_t>(cudaHandle, "cuCtxDestroy");
-        cuDevicePrimaryCtxRetain =
-            load<cuDevicePrimaryCtxRetain_t>(cudaHandle, "cuDevicePrimaryCtxRetain");
-        cuDevicePrimaryCtxRelease =
-            load<cuDevicePrimaryCtxRelease_t>(cudaHandle, "cuDevicePrimaryCtxRelease");
-        cuCtxGetCurrent = load<cuCtxGetCurrent_t>(cudaHandle, "cuCtxGetCurrent");
-        cuCtxSetCurrent = load<cuCtxSetCurrent_t>(cudaHandle, "cuCtxSetCurrent");
-        cuModuleLoadDataEx = load<cuModuleLoadDataEx_t>(cudaHandle, "cuModuleLoadDataEx");
-        cuModuleGetFunction = load<cuModuleGetFunction_t>(cudaHandle, "cuModuleGetFunction");
-        cuFuncSetAttribute = load<cuFuncSetAttribute_t>(cudaHandle, "cuFuncSetAttribute");
-        cuFuncGetAttribute = load<cuFuncGetAttribute_t>(cudaHandle, "cuFuncGetAttribute");
-        cuCtxGetDevice = load<cuCtxGetDevice_t>(cudaHandle, "cuCtxGetDevice");
-        cuDeviceGetAttribute = load<cuDeviceGetAttribute_t>(cudaHandle, "cuDeviceGetAttribute");
-        cuDeviceGetName = load<cuDeviceGetName_t>(cudaHandle, "cuDeviceGetName");
-        cuDeviceTotalMem = load<cuDeviceTotalMem_t>(cudaHandle, "cuDeviceTotalMem");
-        cuLaunchKernel = load<cuLaunchKernel_t>(cudaHandle, "cuLaunchKernel");
-        cuStreamCreate = load<cuStreamCreate_t>(cudaHandle, "cuStreamCreate");
-        cuStreamDestroy = load<cuStreamDestroy_t>(cudaHandle, "cuStreamDestroy");
-        cuCtxSynchronize = load<cuCtxSynchronize_t>(cudaHandle, "cuCtxSynchronize");
-        cuGetErrorName = load<cuGetErrorName_t>(cudaHandle, "cuGetErrorName");
-        cuCtxPushCurrent = load<cuCtxPushCurrent_t>(cudaHandle, "cuCtxPushCurrent");
-        cuPointerGetAttribute = load<cuPointerGetAttribute_t>(cudaHandle, "cuPointerGetAttribute");
     }
 
     ~CUDADriver() {
@@ -244,6 +241,10 @@ class CUDADriver {
     void* cudaHandle = nullptr;
 };
 
+/*
+This class allows us to dynamically load NVRTC and reference the functions contained within the
+libnvrtc.so library that we need.
+*/
 class NVRTC {
 
   public:
@@ -279,24 +280,21 @@ class NVRTC {
 #error "Platform not supported"
 #endif
 
-        if (!nvrtcHandle) {
-            throw std::runtime_error("Failed to load libnvrtc.so. Make sure it is available in "
-                                     "your $LD_LIBRARY_PATH environment variable.");
+        if (nvrtcHandle) {
+            // Load NVRTC function pointers using template
+            nvrtcCreateProgram = load<nvrtcCreateProgram_t>(nvrtcHandle, "nvrtcCreateProgram");
+            nvrtcCompileProgram = load<nvrtcCompileProgram_t>(nvrtcHandle, "nvrtcCompileProgram");
+            nvrtcGetPTX = load<nvrtcGetPTX_t>(nvrtcHandle, "nvrtcGetPTX");
+            nvrtcGetPTXSize = load<nvrtcGetPTXSize_t>(nvrtcHandle, "nvrtcGetPTXSize");
+            nvrtcGetProgramLog = load<nvrtcGetProgramLog_t>(nvrtcHandle, "nvrtcGetProgramLog");
+            nvrtcGetProgramLogSize =
+                load<nvrtcGetProgramLogSize_t>(nvrtcHandle, "nvrtcGetProgramLogSize");
+            nvrtcGetLoweredName = load<nvrtcGetLoweredName_t>(nvrtcHandle, "nvrtcGetLoweredName");
+            nvrtcAddNameExpression =
+                load<nvrtcAddNameExpression_t>(nvrtcHandle, "nvrtcAddNameExpression");
+            nvrtcDestroyProgram = load<nvrtcDestroyProgram_t>(nvrtcHandle, "nvrtcDestroyProgram");
+            nvrtcGetErrorString = load<nvrtcGetErrorString_t>(nvrtcHandle, "nvrtcGetErrorString");
         }
-
-        // Load NVRTC function pointers using template
-        nvrtcCreateProgram = load<nvrtcCreateProgram_t>(nvrtcHandle, "nvrtcCreateProgram");
-        nvrtcCompileProgram = load<nvrtcCompileProgram_t>(nvrtcHandle, "nvrtcCompileProgram");
-        nvrtcGetPTX = load<nvrtcGetPTX_t>(nvrtcHandle, "nvrtcGetPTX");
-        nvrtcGetPTXSize = load<nvrtcGetPTXSize_t>(nvrtcHandle, "nvrtcGetPTXSize");
-        nvrtcGetProgramLog = load<nvrtcGetProgramLog_t>(nvrtcHandle, "nvrtcGetProgramLog");
-        nvrtcGetProgramLogSize =
-            load<nvrtcGetProgramLogSize_t>(nvrtcHandle, "nvrtcGetProgramLogSize");
-        nvrtcGetLoweredName = load<nvrtcGetLoweredName_t>(nvrtcHandle, "nvrtcGetLoweredName");
-        nvrtcAddNameExpression =
-            load<nvrtcAddNameExpression_t>(nvrtcHandle, "nvrtcAddNameExpression");
-        nvrtcDestroyProgram = load<nvrtcDestroyProgram_t>(nvrtcHandle, "nvrtcDestroyProgram");
-        nvrtcGetErrorString = load<nvrtcGetErrorString_t>(nvrtcHandle, "nvrtcGetErrorString");
     }
 
     ~NVRTC() {

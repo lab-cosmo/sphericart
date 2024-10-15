@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.10)
 
 project(sphericart LANGUAGES C CXX)
 
+#[[
+ This function wraps the input file with the appropriate string to allow us to 
+ static-initialize string variables, for example:
+     static const char* CUDA_CODE =
+#include "generated/wrapped_sphericart_impl.cu"
+        ;
+]]
 function(make_includeable INPUT_FILE OUTPUT_FILE)
     if(NOT EXISTS ${INPUT_FILE})
         message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
@@ -13,6 +20,10 @@ function(make_includeable INPUT_FILE OUTPUT_FILE)
     file(WRITE ${OUTPUT_FILE} "${content}")
 endfunction()
 
+#[[
+ This function wraps prepends a list of headers to an input file. Used as a preprocessing
+ step to prepare the sphericart_impl.cu file for NVRTC JIT compilation.
+]]
 function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
     # Read the current content of the source file
     if(NOT EXISTS ${INPUT_FILE})
