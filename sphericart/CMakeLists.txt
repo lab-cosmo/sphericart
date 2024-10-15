@@ -123,7 +123,6 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
         "include/sphericart_impl.cuh"
         "include/templates_core.hpp"
         "include/macros.hpp"
-        
     )
 
     # Prepend headers to the source file

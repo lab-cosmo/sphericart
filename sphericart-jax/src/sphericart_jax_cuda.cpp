@@ -2,8 +2,6 @@
 // devices. It is exposed as a standard pybind11 module defining "capsule"
 // objects containing our methods. For simplicity, we export a separate capsule
 // for each supported dtype.
-// This file is separated from `sphericart_jax_cuda.cu` because pybind11 does
-// not accept cuda files.
 
 #include <cstdlib>
 #include <map>
@@ -12,7 +10,11 @@
 
 #include "sphericart_cuda.hpp"
 #include "sphericart/pybind11_kernel_helpers.hpp"
-#include "sphericart/sphericart_jax_cuda.hpp"
+
+struct SphDescriptor {
+    std::int64_t n_samples;
+    std::int64_t lmax;
+};
 
 namespace sphericart_jax {
 namespace cuda {
@@ -85,78 +87,31 @@ inline void cuda_sph_with_hessians(
     calculator->compute_with_hessians(xyz, n_samples, sph, dsph, ddsph, stream);
 }
 
-void cuda_spherical_f32(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph<sphericart::cuda::SphericalHarmonics, float>(stream, in, opaque, opaque_len);
-}
-
-void cuda_spherical_f64(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph<sphericart::cuda::SphericalHarmonics, double>(stream, in, opaque, opaque_len);
-}
-
-void cuda_dspherical_f32(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph_with_gradients<sphericart::cuda::SphericalHarmonics, float>(
-        stream, in, opaque, opaque_len
-    );
-}
-
-void cuda_dspherical_f64(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph_with_gradients<sphericart::cuda::SphericalHarmonics, double>(
-        stream, in, opaque, opaque_len
-    );
-}
-
-void cuda_ddspherical_f32(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph_with_hessians<sphericart::cuda::SphericalHarmonics, float>(
-        stream, in, opaque, opaque_len
-    );
-}
-
-void cuda_ddspherical_f64(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph_with_hessians<sphericart::cuda::SphericalHarmonics, double>(
-        stream, in, opaque, opaque_len
-    );
-}
-
-void cuda_solid_f32(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph<sphericart::cuda::SolidHarmonics, float>(stream, in, opaque, opaque_len);
-}
-
-void cuda_solid_f64(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph<sphericart::cuda::SolidHarmonics, double>(stream, in, opaque, opaque_len);
-}
-
-void cuda_dsolid_f32(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph_with_gradients<sphericart::cuda::SolidHarmonics, float>(stream, in, opaque, opaque_len);
-}
-
-void cuda_dsolid_f64(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph_with_gradients<sphericart::cuda::SolidHarmonics, double>(stream, in, opaque, opaque_len);
-}
-
-void cuda_ddsolid_f32(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph_with_hessians<sphericart::cuda::SolidHarmonics, float>(stream, in, opaque, opaque_len);
-}
-
-void cuda_ddsolid_f64(void* stream, void** in, const char* opaque, std::size_t opaque_len) {
-    cuda_sph_with_hessians<sphericart::cuda::SolidHarmonics, double>(stream, in, opaque, opaque_len);
-}
-
 // Registration of the custom calls with pybind11
-
 pybind11::dict Registrations() {
     pybind11::dict dict;
-    dict["cuda_spherical_f32"] = EncapsulateFunction(cuda_spherical_f32);
-    dict["cuda_spherical_f64"] = EncapsulateFunction(cuda_spherical_f64);
-    dict["cuda_dspherical_f32"] = EncapsulateFunction(cuda_dspherical_f32);
-    dict["cuda_dspherical_f64"] = EncapsulateFunction(cuda_dspherical_f64);
-    dict["cuda_ddspherical_f32"] = EncapsulateFunction(cuda_ddspherical_f32);
-    dict["cuda_ddspherical_f64"] = EncapsulateFunction(cuda_ddspherical_f64);
-    dict["cuda_solid_f32"] = EncapsulateFunction(cuda_solid_f32);
-    dict["cuda_solid_f64"] = EncapsulateFunction(cuda_solid_f64);
-    dict["cuda_dsolid_f32"] = EncapsulateFunction(cuda_dsolid_f32);
-    dict["cuda_dsolid_f64"] = EncapsulateFunction(cuda_dsolid_f64);
-    dict["cuda_ddsolid_f32"] = EncapsulateFunction(cuda_ddsolid_f32);
-    dict["cuda_ddsolid_f64"] = EncapsulateFunction(cuda_ddsolid_f64);
+    dict["cuda_spherical_f32"] =
+        EncapsulateFunction(cuda_sph<sphericart::cuda::SphericalHarmonics, float>);
+    dict["cuda_spherical_f64"] =
+        EncapsulateFunction(cuda_sph<sphericart::cuda::SphericalHarmonics, double>);
+    dict["cuda_dspherical_f32"] =
+        EncapsulateFunction(cuda_sph_with_gradients<sphericart::cuda::SphericalHarmonics, float>);
+    dict["cuda_dspherical_f64"] =
+        EncapsulateFunction(cuda_sph_with_gradients<sphericart::cuda::SphericalHarmonics, double>);
+    dict["cuda_ddspherical_f32"] =
+        EncapsulateFunction(cuda_sph_with_hessians<sphericart::cuda::SphericalHarmonics, float>);
+    dict["cuda_ddspherical_f64"] =
+        EncapsulateFunction(cuda_sph_with_hessians<sphericart::cuda::SphericalHarmonics, double>);
+    dict["cuda_solid_f32"] = EncapsulateFunction(cuda_sph<sphericart::cuda::SolidHarmonics, float>);
+    dict["cuda_solid_f64"] = EncapsulateFunction(cuda_sph<sphericart::cuda::SolidHarmonics, double>);
+    dict["cuda_dsolid_f32"] =
+        EncapsulateFunction(cuda_sph_with_gradients<sphericart::cuda::SolidHarmonics, float>);
+    dict["cuda_dsolid_f64"] =
+        EncapsulateFunction(cuda_sph_with_gradients<sphericart::cuda::SolidHarmonics, double>);
+    dict["cuda_ddsolid_f32"] =
+        EncapsulateFunction(cuda_sph_with_hessians<sphericart::cuda::SolidHarmonics, float>);
+    dict["cuda_ddsolid_f64"] =
+        EncapsulateFunction(cuda_sph_with_hessians<sphericart::cuda::SolidHarmonics, double>);
     return dict;
 }
 

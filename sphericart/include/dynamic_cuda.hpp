@@ -11,11 +11,12 @@
 #include <string>
 #include <functional>
 #include <unordered_map>
+#include <any>
+#include <sstream>
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <nvrtc.h>
-#include <any>
-#include <sstream>
 
 #define NVRTC_SAFE_CALL(x)                                                                         \
     do {                                                                                           \

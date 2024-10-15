@@ -355,7 +355,7 @@ class CachedKernel {
 
 /*
 Factory class to create and store compiled cuda kernels for caching as a simple name-based hashmap.
-ALlows both compi.ing from a source file, or for compiling from a variable containing CUDA code.
+Allows both compiling from a source file, or for compiling from a variable containing CUDA code.
 */
 class KernelFactory {
 

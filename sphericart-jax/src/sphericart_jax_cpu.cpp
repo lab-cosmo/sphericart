@@ -90,7 +90,6 @@ void cpu_sph_with_hessians(void* out_tuple, const void** in) {
 }
 
 // Registration of the custom calls with pybind11
-
 pybind11::dict Registrations() {
     pybind11::dict dict;
     dict["cpu_spherical_f32"] = EncapsulateFunction(cpu_sph<sphericart::SphericalHarmonics, float>);
