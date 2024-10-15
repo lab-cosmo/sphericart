@@ -23,8 +23,8 @@
         nvrtcResult result = x;                                                                    \
         if (result != NVRTC_SUCCESS) {                                                             \
             std::ostringstream errorMsg;                                                           \
-            errorMsg << "\nerror: " #x " failed with error " << nvrtc.nvrtcGetErrorString(result)  \
-                     << '\n'                                                                       \
+            errorMsg << "\nerror: " #x " failed with error "                                       \
+                     << NVRTC_INSTANCE.nvrtcGetErrorString(result) << '\n'                         \
                      << "File: " << __FILE__ << '\n'                                               \
                      << "Line: " << static_cast<int>(__LINE__) << '\n';                            \
             throw std::runtime_error(errorMsg.str());                                              \
@@ -36,7 +36,7 @@
         CUresult result = x;                                                                       \
         if (result != CUDA_SUCCESS) {                                                              \
             const char* msg;                                                                       \
-            cudadriver.cuGetErrorName(result, &msg);                                               \
+            CUDA_DRIVER_INSTANCE.cuGetErrorName(result, &msg);                                     \
             std::ostringstream errorMsg;                                                           \
             errorMsg << "\nerror: " #x " failed with error " << (msg ? msg : "Unknown error")      \
                      << '\n'                                                                       \
@@ -51,7 +51,7 @@
         cudaError_t cudaStatus = (call);                                                           \
         if (cudaStatus != cudaSuccess) {                                                           \
             std::ostringstream errorMsg;                                                           \
-            const char* error = cudart.cudaGetErrorString(cudaStatus);                             \
+            const char* error = CUDART_INSTANCE.cudaGetErrorString(cudaStatus);                    \
             errorMsg << "\nfailed with error " << (error ? error : "Unknown error") << '\n'        \
                      << "File: " << __FILE__ << '\n'                                               \
                      << "Line: " << static_cast<int>(__LINE__) << '\n';                            \
@@ -336,9 +336,9 @@ static std::aligned_storage<sizeof(CUDADriver), alignof(CUDADriver)>::type cudaD
 static std::aligned_storage<sizeof(NVRTC), alignof(NVRTC)>::type nvrtcBuffer;
 
 // global references, use inline instead of extern as we want to define the implementation here
-inline CUDART& cudart = reinterpret_cast<CUDART&>(cudartBuffer);
-inline CUDADriver& cudadriver = reinterpret_cast<CUDADriver&>(cudaDriverBuffer);
-inline NVRTC& nvrtc = reinterpret_cast<NVRTC&>(nvrtcBuffer);
+inline CUDART& CUDART_INSTANCE = reinterpret_cast<CUDART&>(cudartBuffer);
+inline CUDADriver& CUDA_DRIVER_INSTANCE = reinterpret_cast<CUDADriver&>(cudaDriverBuffer);
+inline NVRTC& NVRTC_INSTANCE = reinterpret_cast<NVRTC&>(nvrtcBuffer);
 
 static int nifty_counter = 0;
 
@@ -347,17 +347,17 @@ static struct CUDAInitializer {
 
     CUDAInitializer() {
         if (nifty_counter++ == 0) {
-            new (&cudart) CUDART();
-            new (&cudadriver) CUDADriver();
-            new (&nvrtc) NVRTC();
+            new (&CUDART_INSTANCE) CUDART();
+            new (&CUDA_DRIVER_INSTANCE) CUDADriver();
+            new (&NVRTC_INSTANCE) NVRTC();
         }
     }
 
     ~CUDAInitializer() {
         if (--nifty_counter == 0) {
-            cudart.~CUDART();
-            cudadriver.~CUDADriver();
-            nvrtc.~NVRTC();
+            CUDART_INSTANCE.~CUDART();
+            CUDA_DRIVER_INSTANCE.~CUDADriver();
+            NVRTC_INSTANCE.~NVRTC();
         }
     }
 

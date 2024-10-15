@@ -15,21 +15,21 @@ using namespace sphericart::cuda;
 */
 
 void checkCuda() {
-    if (!cudadriver.loaded()) {
+    if (!CUDA_DRIVER_INSTANCE.loaded()) {
         throw std::runtime_error(
             "Failed to load libcuda.so. Try running \"find /usr -name libcuda.so\" and "
             "appending the directory to your $LD_LIBRARY_PATH environment variable."
         );
     }
 
-    if (!cudart.loaded()) {
+    if (!CUDART_INSTANCE.loaded()) {
         throw std::runtime_error(
             "Failed to load libcudart.so. Try running \"find /usr -name libcudart.so\" and "
             "appending the directory to your $LD_LIBRARY_PATH environment variable."
         );
     }
 
-    if (!nvrtc.loaded()) {
+    if (!NVRTC_INSTANCE.loaded()) {
         throw std::runtime_error(
             "Failed to load libnvrtc.so. Try running \"find /usr -name libnvrtc.so\" and "
             "appending the directory to your $LD_LIBRARY_PATH environment variable."
@@ -51,7 +51,7 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max) {
     this->normalized = true; // SphericalHarmonics class
     this->prefactors_cpu = new T[this->nprefactors];
 
-    CUDART_SAFE_CALL(cudart.cudaGetDeviceCount(&this->device_count));
+    CUDART_SAFE_CALL(CUDART_INSTANCE.cudaGetDeviceCount(&this->device_count));
 
     // compute prefactors on host
     compute_sph_prefactors<T>((int)l_max, this->prefactors_cpu);
@@ -65,7 +65,7 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
     }
 
     if (this->prefactors_cuda) {
-        CUDART_SAFE_CALL(cudart.cudaFree(this->prefactors_cuda));
+        CUDART_SAFE_CALL(CUDART_INSTANCE.cudaFree(this->prefactors_cuda));
     }
 }
 
@@ -106,22 +106,22 @@ void SphericalHarmonics<T>::compute_internal(
 
     cudaPointerAttributes attributes;
 
-    CUDART_SAFE_CALL(cudart.cudaPointerGetAttributes(&attributes, xyz));
+    CUDART_SAFE_CALL(CUDART_INSTANCE.cudaPointerGetAttributes(&attributes, xyz));
 
     int current_device;
 
-    CUDART_SAFE_CALL(cudart.cudaGetDevice(&current_device));
+    CUDART_SAFE_CALL(CUDART_INSTANCE.cudaGetDevice(&current_device));
 
     if (current_device != attributes.device) {
-        CUDART_SAFE_CALL(cudart.cudaSetDevice(attributes.device));
+        CUDART_SAFE_CALL(CUDART_INSTANCE.cudaSetDevice(attributes.device));
     }
 
     if (!this->prefactors_cuda) {
         CUDART_SAFE_CALL(
-            cudart.cudaMalloc((void**)&this->prefactors_cuda, this->nprefactors * sizeof(T))
+            CUDART_INSTANCE.cudaMalloc((void**)&this->prefactors_cuda, this->nprefactors * sizeof(T))
         );
 
-        CUDART_SAFE_CALL(cudart.cudaMemcpy(
+        CUDART_SAFE_CALL(CUDART_INSTANCE.cudaMemcpy(
             this->prefactors_cuda,
             this->prefactors_cpu,
             this->nprefactors * sizeof(T),
@@ -147,7 +147,7 @@ void SphericalHarmonics<T>::compute_internal(
     );
 
     if (current_device != attributes.device) {
-        CUDART_SAFE_CALL(cudart.cudaSetDevice(current_device));
+        CUDART_SAFE_CALL(CUDART_INSTANCE.cudaSetDevice(current_device));
     }
 }
 template <typename T>
