@@ -17,22 +17,22 @@ using namespace sphericart::cuda;
 void checkCuda() {
     if (!CUDA_DRIVER_INSTANCE.loaded()) {
         throw std::runtime_error(
-            "Failed to load libcuda.so. Try running \"find /usr -name libcuda.so\" and "
-            "appending the directory to your $LD_LIBRARY_PATH environment variable."
+            "Failed to load libcuda.so. Try appending the directory containing this library to "
+            "your $LD_LIBRARY_PATH environment variable."
         );
     }
 
     if (!CUDART_INSTANCE.loaded()) {
         throw std::runtime_error(
-            "Failed to load libcudart.so. Try running \"find /usr -name libcudart.so\" and "
-            "appending the directory to your $LD_LIBRARY_PATH environment variable."
+            "Failed to load libcudart.so. Try appending the directory containing this library to "
+            "your $LD_LIBRARY_PATH environment variable."
         );
     }
 
     if (!NVRTC_INSTANCE.loaded()) {
         throw std::runtime_error(
-            "Failed to load libnvrtc.so. Try running \"find /usr -name libnvrtc.so\" and "
-            "appending the directory to your $LD_LIBRARY_PATH environment variable."
+            "Failed to load libnvrtc.so. Try appending the directory containing this library to "
+            "your $LD_LIBRARY_PATH environment variable."
         );
     }
 }
