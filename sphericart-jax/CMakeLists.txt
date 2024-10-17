@@ -60,7 +60,7 @@ if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     
     enable_language(CUDA)
     include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    set(CUDA_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cu ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
+    set(CUDA_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
     pybind11_add_module(sphericart_jax_cuda ${CUDA_SOURCES})
     set_target_properties(sphericart_jax_cuda PROPERTIES CUDA_ARCHITECTURES native)
     install(TARGETS sphericart_jax_cuda DESTINATION sphericart_jax_cuda)
