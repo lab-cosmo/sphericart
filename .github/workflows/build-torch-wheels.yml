@@ -76,6 +76,16 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libmetatensor.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
 
+      - name: Configure PyTorch
+        run: |
+          pip install torch==${{ matrix.torch-version }}.*
+        env:
+          PIP_INDEX_URL: https://download.pytorch.org/whl/cu124
+      
+      - name: Install remaining dependencies from pyproject.toml
+        run: |
+          pip install . --no-deps
+      
       - name: Build sphericart-torch wheels
         run: |
           # ensure we build the wheel from the sdist, not the checkout
@@ -95,7 +105,6 @@ jobs:
             TORCH_CUDA_ARCH_LIST=All 
             CUDAARCHS=all 
             SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.torch-version }}.*
-            PIP_INDEX_URL=https://download.pytorch.org/whl/cu124
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10.so --exclude libc10_cuda.so -w {dest_dir} {wheel}
 
