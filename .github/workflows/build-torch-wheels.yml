@@ -29,7 +29,7 @@ jobs:
             os: ubuntu-22.04
             arch: x86_64
             cibw-arch: x86_64
-          - {torch-version: '2.4',  python-version: '3.12', cibw-python: 'cp312-*'}
+          - {torch-version: '2.4.0',  python-version: '3.12', cibw-python: 'cp312-*'}
 
     steps:
       - name: Prepare cuda_no_point variable
