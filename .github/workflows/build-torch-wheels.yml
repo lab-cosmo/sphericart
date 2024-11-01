@@ -1,6 +1,6 @@
 # inspired by https://github.com/AutoGPTQ/AutoGPTQ/blob/main/.github/workflows/build_wheels_cuda.yml
 
-name: Build Python wheels with CUDA
+name: Build Torch Wheels
 
 on:
   push:
