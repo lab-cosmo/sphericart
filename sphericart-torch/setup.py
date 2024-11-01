@@ -89,6 +89,6 @@ if __name__ == "__main__":
             "sphericart-torch": [
                 "sphericart/torch/lib/*",
                 "sphericart/torch/include/*",
-            ]
+            ],
         },
     )
