@@ -60,7 +60,7 @@ jobs:
 
       - name: build manylinux docker image
         if: matrix.os == 'ubuntu-22.04'
-        run: docker build -t manylinux2014_${{ matrix.cibw-arch }} /host/home/runner/work/sphericart/scripts/manylinux2014_${{ matrix.cibw-arch }}
+        run: docker build -t manylinux2014_${{ matrix.cibw-arch }} scripts/manylinux2014_${{ matrix.cibw-arch }}
 
       - name: Build sphericart wheels
         run: |
