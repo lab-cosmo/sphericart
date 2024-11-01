@@ -10,7 +10,8 @@ RUN dpkg -i cuda-keyring_1.1-1_all.deb
 RUN apt-get install -y cuda-toolkit
 
 # Configure dynamic linker run-time bindings
-echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/999_nvidia_cuda.conf
+RUN echo "/usr/local/cuda/lib64" > /etc/ld.so.conf.d/999_nvidia_cuda.conf && \
+    ldconfig
 
 # Set environment variables
 ENV PATH="/usr/local/cuda/bin:${PATH}"
