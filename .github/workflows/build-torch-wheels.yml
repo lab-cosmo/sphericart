@@ -20,7 +20,7 @@ jobs:
       matrix:
         os: ['ubuntu-22.04']
         torch: ["2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0"]
-        arch: ['arm64', 'x86_64']
+        arch: ['aarch64', 'x86_64']
         cuda: ["11.8"]
         include:
           - name: x86_64 Linux
@@ -29,8 +29,8 @@ jobs:
             cibw-arch: x86_64
           - name: arm64 Linux
             os: ubuntu-22.04
-            arch: arm64
-            cibw-arch: arm64
+            arch: aarch64
+            cibw-arch: aarch64
           # add the right python version for each torch version
           - {torch-version: '2.0',  python-version: '3.11', cibw-python: 'cp311-*'}
           - {torch-version: '2.1',  python-version: '3.11', cibw-python: 'cp311-*'}
@@ -117,7 +117,7 @@ jobs:
             arch: x86_64
           - name: arm64 Linux
             os: ubuntu-22.04
-            arch: arm64
+            arch: aarch64
     steps:
       - uses: actions/checkout@v4
 
