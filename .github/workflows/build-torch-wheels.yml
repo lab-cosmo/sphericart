@@ -78,11 +78,11 @@ jobs:
 
       - name: Configure PyTorch
         run: |
-          pip install torch==${{ matrix.torch-version }}.*
+          pip install torch==${{ matrix.torch-version }}.* --index-url https://download.pytorch.org/whl/cu124
           pip install wheel
           pip install cmake
         env:
-          PIP_INDEX_URL: https://download.pytorch.org/whl/cu124
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cu124
       
       - name: Install remaining dependencies from pyproject.toml
         run: |
