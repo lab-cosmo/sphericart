@@ -89,7 +89,7 @@ jobs:
       - name: Build sphericart-torch wheels
         run: |
           # ensure we build the wheel from the sdist, not the checkout
-          python -m build --sdist sphericart-torch --outdir sphericart-torch/dist
+          python -m build --sdist sphericart-torch --outdir sphericart-torch/dist --no-isolation
           python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
         env:
           #CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-cuda-setup.sh ${{ matrix.arch }} ${{ matrix.os }}
