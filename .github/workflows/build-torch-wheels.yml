@@ -12,7 +12,7 @@ env:
 
 jobs:
   build-torch-wheels:
-    name: ${{ matrix.os }}, torch ${{ matrix.torch }}, cuda ${{ matrix.cuda }}
+    name: ${{ matrix.os }}, torch ${{ matrix.torch }}, cuda ${{ matrix.cuda }}, arch ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -21,14 +21,14 @@ jobs:
         arch: ['aarch64', 'x86_64']
         cuda: ["12.4"]
         include:
-          - name: x86_64 Linux
-            os: ubuntu-22.04
-            arch: x86_64
-            cibw-arch: x86_64
           - name: arm64 Linux
             os: ubuntu-22.04
             arch: aarch64
             cibw-arch: aarch64
+          - name: x86_64 Linux
+            os: ubuntu-22.04
+            arch: x86_64
+            cibw-arch: x86_64
           - {torch-version: '2.4',  python-version: '3.12', cibw-python: 'cp312-*'}
 
     steps:
@@ -95,7 +95,7 @@ jobs:
             TORCH_CUDA_ARCH_LIST=All 
             CUDAARCHS=all 
             SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.torch-version }}.*
-            PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu124
+            PIP_INDEX_URL=https://download.pytorch.org/whl/cu124
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10.so --exclude libc10_cuda.so -w {dest_dir} {wheel}
 
