@@ -4,7 +4,7 @@ FROM quay.io/pypa/manylinux2014_aarch64
 sudo apt-get update
 sudo apt-key del 7fa2af80
 
-wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/aarch64/cuda-keyring_1.1-1_all.deb
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.1-1_all.deb
 sudo dpkg -i cuda-keyring_1.1-1_all.deb
 
 sudo apt-get install -y cuda-toolkit
