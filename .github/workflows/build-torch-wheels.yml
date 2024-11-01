@@ -1,5 +1,3 @@
-# inspired by https://github.com/AutoGPTQ/AutoGPTQ/blob/main/.github/workflows/build_wheels_cuda.yml
-
 name: Build Torch Wheels
 
 on:
@@ -19,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-22.04']
-        torch: ["2.2.0", "2.3.0", "2.4.0"]
+        torch: ["2.4.0"]
         arch: ['aarch64', 'x86_64']
         cuda: ["12.4"]
         include:
@@ -31,9 +29,6 @@ jobs:
             os: ubuntu-22.04
             arch: aarch64
             cibw-arch: aarch64
-          # add the right python version for each torch version
-          - {torch-version: '2.2',  python-version: '3.12', cibw-python: 'cp312-*'}
-          - {torch-version: '2.3',  python-version: '3.12', cibw-python: 'cp312-*'}
           - {torch-version: '2.4',  python-version: '3.12', cibw-python: 'cp312-*'}
 
     steps:
@@ -71,18 +66,13 @@ jobs:
           python -m cibuildwheel dist/*.tar.gz --output-dir dist
         env:
           CIBW_BUILD_VERBOSITY: 3
-          # build wheels on CPython 3.10
-          CIBW_BUILD: ${{ matrix.cibw-python}}
-          # skip musl and 32-bit builds
+          CIBW_BUILD: ${{ matrix.cibw-python }}
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
-          # on macOS, build both Intel & Apple Silicon versions
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
-          # do not build wheels with -march=native
           CIBW_ENVIRONMENT: >
             SPHERICART_ARCH_NATIVE=OFF
-          # do not complain for missing libtorch.so or libmetatensor.so
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libmetatensor.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
 
@@ -93,21 +83,19 @@ jobs:
           python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
         env:
           CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-cuda-setup.sh ${{ matrix.arch }} ${{ matrix.os }}
-          CIBW_BUILD: ${{ matrix.cibw-python}}
+          CIBW_BUILD: ${{ matrix.cibw-python }}
           CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
-          # set environment variables for sphericart-torch build
           CIBW_ENVIRONMENT: >
             SPHERICART_ARCH_NATIVE=OFF
             CUDA_HOME=/usr/local/cuda
             TORCH_CUDA_ARCH_LIST=All 
             CUDAARCHS=all 
             SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.torch-version }}.*
-            PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu${{ steps.prepare_cuda_no_point.outputs.cuda_no_point }}
-          # do not complain for missing libtorch.so in sphericart-torch wheel
+            PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu124
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10.so --exclude libc10_cuda.so -w {dest_dir} {wheel}
 
