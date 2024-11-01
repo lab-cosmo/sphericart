@@ -19,9 +19,9 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-22.04']
-        torch: ["2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0"]
+        torch: ["2.2.0", "2.3.0", "2.4.0"]
         arch: ['aarch64', 'x86_64']
-        cuda: ["11.8"]
+        cuda: ["12.4"]
         include:
           - name: x86_64 Linux
             os: ubuntu-22.04
@@ -61,7 +61,7 @@ jobs:
       - name: Set up QEMU for docker
         if: matrix.os == 'ubuntu-22.04'
         uses: docker/setup-qemu-action@v3
-        
+
       - name: build manylinux docker image
         if: matrix.os == 'ubuntu-22.04'
         run: docker build -t manylinux2014_${{ matrix.cibw-arch }} scripts/manylinux2014_${{ matrix.cibw-arch }}
