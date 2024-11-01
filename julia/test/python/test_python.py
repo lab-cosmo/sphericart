@@ -29,7 +29,7 @@ def test_consistency_solid_harmonics():
     compute_solid_harmonics_from_array = jl.eval("compute_solid_harmonics_from_array")
     julia_results = compute_solid_harmonics_from_array(xyz, L_MAX)
 
-    python_results = sphericart.SphericalHarmonics(L_MAX, normalized=False).compute(xyz)
+    python_results = sphericart.SolidHarmonics(L_MAX).compute(xyz)
     assert np.allclose(julia_results, python_results)
 
 
@@ -55,5 +55,5 @@ def test_consistency_spherical_harmonics():
     compute_solid_harmonics_from_array = jl.eval("compute_solid_harmonics_from_array")
     julia_results = compute_solid_harmonics_from_array(xyz, L_MAX)
 
-    python_results = sphericart.SphericalHarmonics(L_MAX, normalized=True).compute(xyz)
+    python_results = sphericart.SphericalHarmonics(L_MAX).compute(xyz)
     assert np.allclose(julia_results, python_results)

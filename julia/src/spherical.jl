@@ -42,12 +42,10 @@ See documentation for more details.
 struct SphericalHarmonics{L, NORM, STATIC, T1}
    solids::SolidHarmonics{L, NORM, STATIC, T1}
    # Flm::OffsetMatrix{T1, Matrix{T1}}
-   cache::TSafe{ArrayPool{FlexArrayCache}}
 end
 
 SphericalHarmonics(L::Integer; kwargs...) = 
-      SphericalHarmonics(SolidHarmonics(L; kwargs...), 
-                         TSafe(ArrayPool(FlexArrayCache)))
+      SphericalHarmonics(SolidHarmonics(L; kwargs...))
 
 
 @inline (basis::SphericalHarmonics)(args...) = compute(basis, args...)
@@ -75,16 +73,16 @@ end
 # --------------------- 
 #  batched api 
 
-function _normalise_Rs!(basis::SphericalHarmonics, 
+function _normalise_Rs!(rs, Rs_norm, 
+                        basis::SphericalHarmonics, 
                         Rs::AbstractVector{SVector{3, T1}}) where {T1}
    nX = length(Rs) 
-   rs = acquire!(basis.cache, :rs, (nX, ), T1)
-   Rs_norm = acquire!(basis.cache, :Rs_norm, (nX, ), SVector{3, T1})
+   @assert length(rs) == length(Rs_norm) == nX
    @inbounds @simd ivdep for i = 1:nX
       rs[i] = norm(Rs[i])
       Rs_norm[i] = Rs[i] / rs[i]
    end
-   return rs, Rs_norm 
+   return nothing 
 end
 
 function _rescale_∇Z2∇Y!(∇Z::AbstractMatrix, Rs_norm, rs)
@@ -99,44 +97,59 @@ function _rescale_∇Z2∇Y!(∇Z::AbstractMatrix, Rs_norm, rs)
 end
 
 function compute(basis::SphericalHarmonics, 
-                         Rs::AbstractVector{<: SVector{3}})
-   rs, Rs_norm = _normalise_Rs!(basis, Rs)
-   Y = compute(basis.solids, Rs_norm)
-   release!(Rs_norm)
-   release!(rs)
+                  Rs::AbstractVector{<: SVector{3, T1}}
+                  ) where {T1}  
+   @no_escape begin     
+      nX = length(Rs)              
+      rs = @alloc(T1, nX)
+      Rs_norm = @alloc(SVector{3, T1}, nX)
+      _normalise_Rs!(rs, Rs_norm, basis, Rs)
+      Y = compute(basis.solids, Rs_norm)
+   end
    return Y
 end
 
 function compute!(Y, basis::SphericalHarmonics, 
-                     Rs::AbstractVector{<: SVector{3}})
-   rs, Rs_norm = _normalise_Rs!(basis, Rs)
-   compute!(Y, basis.solids, Rs_norm)
-   release!(Rs_norm)
-   release!(rs)
+                  Rs::AbstractVector{<: SVector{3, T1}}
+                  ) where {T1}
+   @no_escape begin       
+      nX = length(Rs)            
+      rs = @alloc(T1, nX)
+      Rs_norm = @alloc(SVector{3, T1}, nX)
+      _normalise_Rs!(rs, Rs_norm, basis, Rs)
+      compute!(Y, basis.solids, Rs_norm)
+      nothing 
+   end
    return Y
 end
 
 
 function compute_with_gradients(basis::SphericalHarmonics, 
-                           Rs::AbstractVector{<: SVector{3}})
-   rs, Rs_norm = _normalise_Rs!(basis, Rs)
-   Y, ∇Z = compute_with_gradients(basis.solids, Rs_norm)
-   _rescale_∇Z2∇Y!(∇Z, Rs_norm, rs)
-
-   release!(Rs_norm)
-   release!(rs)
-
+                  Rs::AbstractVector{<: SVector{3, T1}}
+                  ) where {T1} 
+   @no_escape begin     
+      nX = length(Rs)              
+      rs = @alloc(T1, nX)
+      Rs_norm = @alloc(SVector{3, T1}, nX)
+      _normalise_Rs!(rs, Rs_norm, basis, Rs)
+      Y, ∇Z = compute_with_gradients(basis.solids, Rs_norm)
+      _rescale_∇Z2∇Y!(∇Z, Rs_norm, rs)
+      nothing 
+   end 
    return Y, ∇Z
 end 
 
 function compute_with_gradients!(Y, ∇Y, basis::SphericalHarmonics, 
-                                 Rs::AbstractVector{<: SVector{3}})
-   rs, Rs_norm = _normalise_Rs!(basis, Rs)
-   compute_with_gradients!(Y, ∇Y, basis.solids, Rs_norm)
-   _rescale_∇Z2∇Y!(∇Y, Rs_norm, rs)
-
-   release!(Rs_norm)
-   release!(rs)
-
+                        Rs::AbstractVector{<: SVector{3, T1}}
+                        ) where {T1}
+   @no_escape begin      
+      nX = length(Rs)             
+      rs = @alloc(T1, nX)
+      Rs_norm = @alloc(SVector{3, T1}, nX)
+      _normalise_Rs!(rs, Rs_norm, basis, Rs)
+      compute_with_gradients!(Y, ∇Y, basis.solids, Rs_norm)
+      _rescale_∇Z2∇Y!(∇Y, Rs_norm, rs)
+      nothing 
+   end 
    return Y, ∇Y
 end 

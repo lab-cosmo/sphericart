@@ -18,20 +18,20 @@ class SHModule(torch.nn.Module):
     """Example of how to use SphericalHarmonics from within a
     `torch.nn.Module`"""
 
-    def __init__(self, l_max, normalized=False):
-        self._sph = sphericart.torch.SphericalHarmonics(l_max, normalized)
+    def __init__(self, l_max):
         super().__init__()
+        self.spherical_harmonics = sphericart.torch.SphericalHarmonics(l_max)
+        # or SolidHarmonics if we wanted to compute solid harmonics
 
     def forward(self, xyz):
-        sph = self._sph.compute(xyz)
-        return sph
+        sh = self.spherical_harmonics(xyz)  # or self.spherical_harmonics.compute(xyz)
+        return sh
 
 
-def sphericart_example(l_max=10, n_samples=10000, normalized=False):
+def sphericart_example(l_max=10, n_samples=10000):
     # `sphericart` provides a SphericalHarmonics object that initializes the
     # calculation and then can be called on any n x 3 arrays of Cartesian
-    # coordinates. It computes _all_ SPH up to a given l_max, and can compute
-    # scaled (default) and normalized (standard Ylm) harmonics.
+    # coordinates. It computes _all_ SPH up to a given l_max.
 
     # ===== set up the calculation =====
 
@@ -43,11 +43,11 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # ===== API calls =====
 
-    sh_calculator = sphericart.torch.SphericalHarmonics(l_max, normalized=normalized)
+    sh_calculator = sphericart.torch.SphericalHarmonics(l_max)
 
-    # the interface allows to return directly the forward derivatives (up to second order),
-    # similar to the Python version
-    sh_sphericart = sh_calculator.compute(xyz)
+    # the interface allows to return directly the forward derivatives (up to second
+    # order), similar to the Python version
+    sh_sphericart = sh_calculator(xyz)  # same as sh_calculator.compute(xyz)
     sh_sphericart, dsh_sphericart = sh_calculator.compute_with_gradients(xyz)
     (
         sh_sphericart,
@@ -69,10 +69,10 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
 
     # ===== autograd integration =====
 
-    # the implementation also supports backpropagation.
+    # the implementation also supports back-propagation.
     # the input tensor must be tagged to have `requires_grad`
     xyz_ag = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
-    sh_sphericart = sh_calculator.compute(xyz_ag)
+    sh_sphericart = sh_calculator(xyz_ag)
 
     # then the spherical harmonics **but not their derivatives**
     # can be used with the usual PyTorch backward() workflow
@@ -89,15 +89,15 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     ) / torch.norm(xyz_ag.grad)
     print(f"Check derivative difference (FW vs BW): {delta}")
 
-    # double derivatives. In order to access them via backpropagation, an additional
+    # double derivatives. In order to access them via back-propagation, an additional
     # flag must be specified at class instantiation:
     sh_calculator_2 = sphericart.torch.SphericalHarmonics(
-        l_max, normalized=normalized, backward_second_derivatives=True
+        l_max, backward_second_derivatives=True
     )
 
     # double grad() call:
     xyz_ag2 = xyz[:5].clone().detach().type(torch.float64).to("cpu").requires_grad_()
-    sh_sphericart_2 = sh_calculator_2.compute(xyz_ag2)
+    sh_sphericart_2 = sh_calculator_2(xyz_ag2)
     sph_norm = torch.sum(sh_sphericart_2[:, ::2] ** 2)
     grad = torch.autograd.grad(sph_norm, xyz_ag2, retain_graph=True, create_graph=True)[
         0
@@ -108,7 +108,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     xyz_ag2 = xyz[:5].clone().detach().type(torch.float64).to("cpu").requires_grad_()
 
     def func(xyz):
-        sh_sphericart_2 = sh_calculator_2.compute(xyz)
+        sh_sphericart_2 = sh_calculator_2(xyz)
         return torch.sum(sh_sphericart_2[:, ::2] ** 2)
 
     hessian = torch.autograd.functional.hessian(func, xyz_ag2)
@@ -116,7 +116,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     # ===== torchscript integration =====
     xyz_jit = xyz.clone().detach().type(torch.float64).to("cpu").requires_grad_()
 
-    module = SHModule(l_max, normalized)
+    module = SHModule(l_max)
 
     # JIT compilation of the module
     script = torch.jit.script(module)
@@ -139,7 +139,7 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
         xyz_cuda_bw = (
             xyz.clone().detach().type(torch.float64).to("cuda").requires_grad_()
         )
-        sh_sphericart_cuda_bw = sh_calculator.compute(xyz_cuda_bw)
+        sh_sphericart_cuda_bw = sh_calculator(xyz_cuda_bw)
 
         # then the spherical harmonics **but not their derivatives**
         # can be used with the usual PyTorch backward() workflow
@@ -157,14 +157,8 @@ if __name__ == "__main__":
 
     parser.add_argument("-l", type=int, default=10, help="maximum angular momentum")
     parser.add_argument("-s", type=int, default=1000, help="number of samples")
-    parser.add_argument(
-        "--normalized",
-        action="store_true",
-        default=False,
-        help="compute normalized spherical harmonics",
-    )
 
     args = parser.parse_args()
 
     # Process everything.
-    sphericart_example(args.l, args.s, args.normalized)
+    sphericart_example(args.l, args.s)

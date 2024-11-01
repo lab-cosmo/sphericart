@@ -13,7 +13,7 @@ def xyz():
 
 
 def test_precision(xyz):
-    calculator = sphericart.torch.SphericalHarmonics(l_max=4, normalized=False)
+    calculator = sphericart.torch.SolidHarmonics(l_max=4)
 
     xyz_64 = xyz.clone().to(dtype=torch.float64).detach().requires_grad_(True)
     xyz_32 = xyz.clone().to(dtype=torch.float32).detach().requires_grad_(True)

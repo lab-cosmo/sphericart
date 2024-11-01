@@ -9,20 +9,20 @@ using namespace sphericart;
 // This macro defines the different possible hardcoded function calls. It is
 // used to initialize the function pointers that are used by the `compute_`
 // calls in the SphericalHarmonics class
-#define _HARCODED_SWITCH_CASE(L_MAX)                                                               \
-    if (this->normalized) {                                                                        \
-        this->_array_no_derivatives = &hardcoded_sph<T, false, false, true, L_MAX>;                \
-        this->_array_with_derivatives = &hardcoded_sph<T, true, false, true, L_MAX>;               \
-        this->_sample_no_derivatives = &hardcoded_sph_sample<T, false, false, true, L_MAX>;        \
-        this->_sample_with_derivatives = &hardcoded_sph_sample<T, true, false, true, L_MAX>;       \
-    } else {                                                                                       \
-        this->_array_no_derivatives = &hardcoded_sph<T, false, false, false, L_MAX>;               \
-        this->_array_with_derivatives = &hardcoded_sph<T, true, false, false, L_MAX>;              \
-        this->_sample_no_derivatives = &hardcoded_sph_sample<T, false, false, false, L_MAX>;       \
-        this->_sample_with_derivatives = &hardcoded_sph_sample<T, true, false, false, L_MAX>;      \
-    }
+#define _HARDCODED_SWITCH_CASE_SPHERICAL_HARMONICS(L_MAX)                                          \
+    this->_array_no_derivatives = &hardcoded_sph<T, false, false, true, L_MAX>;                    \
+    this->_array_with_derivatives = &hardcoded_sph<T, true, false, true, L_MAX>;                   \
+    this->_sample_no_derivatives = &hardcoded_sph_sample<T, false, false, true, L_MAX>;            \
+    this->_sample_with_derivatives = &hardcoded_sph_sample<T, true, false, true, L_MAX>;
 
-template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bool normalized) {
+// Same, but for SolidHarmonics
+#define _HARDCODED_SWITCH_CASE_SOLID_HARMONICS(L_MAX)                                              \
+    this->_array_no_derivatives = &hardcoded_sph<T, false, false, false, L_MAX>;                   \
+    this->_array_with_derivatives = &hardcoded_sph<T, true, false, false, L_MAX>;                  \
+    this->_sample_no_derivatives = &hardcoded_sph_sample<T, false, false, false, L_MAX>;           \
+    this->_sample_with_derivatives = &hardcoded_sph_sample<T, true, false, false, L_MAX>;
+
+template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max) {
     /*
         This is the constructor of the SphericalHarmonics class. It initizlizes
        buffer space, compute prefactors, and sets the function pointers that are
@@ -32,7 +32,6 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
     this->l_max = (int)l_max;
     this->size_y = (int)(l_max + 1) * (l_max + 1);
     this->size_q = (int)(l_max + 1) * (l_max + 2) / 2;
-    this->normalized = normalized;
     this->prefactors = new T[this->size_q * 2];
     this->omp_num_threads = omp_get_max_threads();
 
@@ -48,76 +47,48 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max, bo
         // using a macro to avoid even more code duplication.
         switch (this->l_max) {
         case 0:
-            _HARCODED_SWITCH_CASE(0);
+            _HARDCODED_SWITCH_CASE_SPHERICAL_HARMONICS(0);
             break;
         case 1:
-            _HARCODED_SWITCH_CASE(1);
+            _HARDCODED_SWITCH_CASE_SPHERICAL_HARMONICS(1);
             break;
         case 2:
-            _HARCODED_SWITCH_CASE(2);
+            _HARDCODED_SWITCH_CASE_SPHERICAL_HARMONICS(2);
             break;
         case 3:
-            _HARCODED_SWITCH_CASE(3);
+            _HARDCODED_SWITCH_CASE_SPHERICAL_HARMONICS(3);
             break;
         case 4:
-            _HARCODED_SWITCH_CASE(4);
+            _HARDCODED_SWITCH_CASE_SPHERICAL_HARMONICS(4);
             break;
         case 5:
-            _HARCODED_SWITCH_CASE(5);
+            _HARDCODED_SWITCH_CASE_SPHERICAL_HARMONICS(5);
             break;
         case 6:
-            _HARCODED_SWITCH_CASE(6);
+            _HARDCODED_SWITCH_CASE_SPHERICAL_HARMONICS(6);
             break;
         }
     } else {
-        if (this->normalized) {
-            this->_array_no_derivatives =
-                &generic_sph<T, false, false, true, SPHERICART_LMAX_HARDCODED>;
-            this->_array_with_derivatives =
-                &generic_sph<T, true, false, true, SPHERICART_LMAX_HARDCODED>;
-            this->_sample_no_derivatives =
-                &generic_sph_sample<T, false, false, true, SPHERICART_LMAX_HARDCODED>;
-            this->_sample_with_derivatives =
-                &generic_sph_sample<T, true, false, true, SPHERICART_LMAX_HARDCODED>;
-        } else {
-            this->_array_no_derivatives =
-                &generic_sph<T, false, false, false, SPHERICART_LMAX_HARDCODED>;
-            this->_array_with_derivatives =
-                &generic_sph<T, true, false, false, SPHERICART_LMAX_HARDCODED>;
-            this->_sample_no_derivatives =
-                &generic_sph_sample<T, false, false, false, SPHERICART_LMAX_HARDCODED>;
-            this->_sample_with_derivatives =
-                &generic_sph_sample<T, true, false, false, SPHERICART_LMAX_HARDCODED>;
-        }
+        // if (this->normalized) {
+        this->_array_no_derivatives = &generic_sph<T, false, false, true, SPHERICART_LMAX_HARDCODED>;
+        this->_array_with_derivatives =
+            &generic_sph<T, true, false, true, SPHERICART_LMAX_HARDCODED>;
+        this->_sample_no_derivatives =
+            &generic_sph_sample<T, false, false, true, SPHERICART_LMAX_HARDCODED>;
+        this->_sample_with_derivatives =
+            &generic_sph_sample<T, true, false, true, SPHERICART_LMAX_HARDCODED>;
     }
 
     // set up the second derivative functions
-    if (this->normalized) {
-        if (this->l_max == 0) {
-            this->_array_with_hessians = &hardcoded_sph<T, true, true, true, 0>;
-            this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, true, 0>;
-        } else if (this->l_max == 1) {
-            this->_array_with_hessians = &hardcoded_sph<T, true, true, true, 1>;
-            this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, true, 1>;
-        } else { // second derivatives are not hardcoded past l = 1. Call
-                 // generic
-            // implementations
-            this->_array_with_hessians = &generic_sph<T, true, true, true, 1>;
-            this->_sample_with_hessians = &generic_sph_sample<T, true, true, true, 1>;
-        }
-    } else {
-        if (this->l_max == 0) {
-            this->_array_with_hessians = &hardcoded_sph<T, true, true, false, 0>;
-            this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, false, 0>;
-        } else if (this->l_max == 1) {
-            this->_array_with_hessians = &hardcoded_sph<T, true, true, false, 1>;
-            this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, false, 1>;
-        } else { // second derivatives are not hardcoded past l = 1. Call
-                 // generic
-            // implementations
-            this->_array_with_hessians = &generic_sph<T, true, true, false, 1>;
-            this->_sample_with_hessians = &generic_sph_sample<T, true, true, false, 1>;
-        }
+    if (this->l_max == 0) {
+        this->_array_with_hessians = &hardcoded_sph<T, true, true, true, 0>;
+        this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, true, 0>;
+    } else if (this->l_max == 1) {
+        this->_array_with_hessians = &hardcoded_sph<T, true, true, true, 1>;
+        this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, true, 1>;
+    } else { // second derivatives are not hardcoded past l = 1. Call generic implementations
+        this->_array_with_hessians = &generic_sph<T, true, true, true, 1>;
+        this->_sample_with_hessians = &generic_sph_sample<T, true, true, true, 1>;
     }
 }
 
@@ -206,6 +177,11 @@ void SphericalHarmonics<T>::compute_array(const T* xyz, size_t xyz_length, T* sp
     }
 
     auto n_samples = xyz_length / 3;
+    if (n_samples == 0) {
+        // nothing to compute; we return here because some libraries (e.g. torch)
+        // seem to use nullptrs for tensors with 0 elements
+        return;
+    }
     if (sph == nullptr || sph_length < (n_samples * (l_max + 1) * (l_max + 1))) {
         throw std::runtime_error("SphericalHarmonics::compute_array: expected "
                                  "sph array with `n_samples "
@@ -228,6 +204,11 @@ void SphericalHarmonics<T>::compute_array_with_gradients(
     }
 
     auto n_samples = xyz_length / 3;
+    if (n_samples == 0) {
+        // nothing to compute; we return here because some libraries (e.g. torch)
+        // seem to use nullptrs for tensors with 0 elements
+        return;
+    }
     if (sph == nullptr || sph_length < (n_samples * (l_max + 1) * (l_max + 1))) {
         throw std::runtime_error("SphericalHarmonics::compute_array: expected "
                                  "sph array with `n_samples "
@@ -262,6 +243,11 @@ void SphericalHarmonics<T>::compute_array_with_hessians(
     }
 
     auto n_samples = xyz_length / 3;
+    if (n_samples == 0) {
+        // nothing to compute; we return here because some libraries (e.g. torch)
+        // seem to use nullptrs for tensors with 0 elements
+        return;
+    }
     if (sph == nullptr || sph_length < (n_samples * (l_max + 1) * (l_max + 1))) {
         throw std::runtime_error("SphericalHarmonics::compute_array: expected "
                                  "sph array with `n_samples "
@@ -396,6 +382,68 @@ void SphericalHarmonics<T>::compute_sample_with_hessians(
     );
 }
 
-// instantiates the SphericalHarmonics class for basic floating point types
+template <typename T>
+SolidHarmonics<T>::SolidHarmonics(size_t l_max) : SphericalHarmonics<T>(l_max) {
+    /*
+        This is the constructor of the SolidHarmonics class. It initizlizes
+       buffer space, compute prefactors, and sets the function pointers that are
+       used for the actual calls
+    */
+
+    // Just override the function pointers with the SolidHarmonics versions
+    if (this->l_max <= SPHERICART_LMAX_HARDCODED) {
+        // If we only need hard-coded calls, we set them up at this point
+        // using a macro to avoid even more code duplication.
+        switch (this->l_max) {
+        case 0:
+            _HARDCODED_SWITCH_CASE_SOLID_HARMONICS(0);
+            break;
+        case 1:
+            _HARDCODED_SWITCH_CASE_SOLID_HARMONICS(1);
+            break;
+        case 2:
+            _HARDCODED_SWITCH_CASE_SOLID_HARMONICS(2);
+            break;
+        case 3:
+            _HARDCODED_SWITCH_CASE_SOLID_HARMONICS(3);
+            break;
+        case 4:
+            _HARDCODED_SWITCH_CASE_SOLID_HARMONICS(4);
+            break;
+        case 5:
+            _HARDCODED_SWITCH_CASE_SOLID_HARMONICS(5);
+            break;
+        case 6:
+            _HARDCODED_SWITCH_CASE_SOLID_HARMONICS(6);
+            break;
+        }
+    } else {
+        this->_array_no_derivatives =
+            &generic_sph<T, false, false, false, SPHERICART_LMAX_HARDCODED>;
+        this->_array_with_derivatives =
+            &generic_sph<T, true, false, false, SPHERICART_LMAX_HARDCODED>;
+        this->_sample_no_derivatives =
+            &generic_sph_sample<T, false, false, false, SPHERICART_LMAX_HARDCODED>;
+        this->_sample_with_derivatives =
+            &generic_sph_sample<T, true, false, false, SPHERICART_LMAX_HARDCODED>;
+    }
+
+    // set up the second derivative functions
+    if (this->l_max == 0) {
+        this->_array_with_hessians = &hardcoded_sph<T, true, true, false, 0>;
+        this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, false, 0>;
+    } else if (this->l_max == 1) {
+        this->_array_with_hessians = &hardcoded_sph<T, true, true, false, 1>;
+        this->_sample_with_hessians = &hardcoded_sph_sample<T, true, true, false, 1>;
+    } else { // second derivatives are not hardcoded past l = 1. Call generic implementations
+        this->_array_with_hessians = &generic_sph<T, true, true, false, 1>;
+        this->_sample_with_hessians = &generic_sph_sample<T, true, true, false, 1>;
+    }
+}
+
+// instantiates the SphericalHarmonics and SolidHarmonics classes
+// for basic floating point types
 template class sphericart::SphericalHarmonics<float>;
 template class sphericart::SphericalHarmonics<double>;
+template class sphericart::SolidHarmonics<float>;
+template class sphericart::SolidHarmonics<double>;

@@ -11,14 +11,15 @@ sphericart documentation
 ``sphericart`` is a multi-language library for the efficient calculation of 
 spherical harmonics and their derivatives in Cartesian coordinates. 
 
-The theory behind this efficient implementation is detailed in this 
-`paper <https://arxiv.org/abs/2302.08381>`_. 
+The theory behind this efficient implementation is detailed in 
+`this paper <https://doi.org/10.1063/5.0156307>`_. 
 
 The core library is implemented in C++ (with OpenMP parallelism) and CUDA.
-It provides APIs for C, Python (NumPy), PyTorch and JAX. The torch and JAX
-implementations provide fast spherical harmonics evaluations on GPUs.
+It also provides APIs for C, Python (NumPy), PyTorch and JAX. The torch and JAX
+implementations provide fast spherical harmonics on GPUs.
 
-A native Julia package is also available.
+A native Julia package is also available, contributed by 
+`Christoph Ortner <https://personal.math.ubc.ca/~ortner/>`_.
 
 This documentation contains an installation guide, an API overview, some examples
 of how to use the library, and a brief explanation of the mathematics involved.

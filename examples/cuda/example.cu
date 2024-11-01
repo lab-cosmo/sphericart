@@ -58,6 +58,7 @@ int main() {
     // internal buffers and numerical factors are initalized at construction
     sphericart::cuda::SphericalHarmonics<double> calculator_cuda(l_max);
 
+    // allcate device memory
     double* xyz_cuda;
     CUDA_CHECK(cudaMalloc(&xyz_cuda, n_samples * 3 * sizeof(double)));
     CUDA_CHECK(
@@ -65,9 +66,21 @@ int main() {
     );
     double* sph_cuda;
     CUDA_CHECK(cudaMalloc(&sph_cuda, n_samples * (l_max + 1) * (l_max + 1) * sizeof(double)));
+    double* dsph_cuda;
+    CUDA_CHECK(cudaMalloc(&dsph_cuda, n_samples * 3 * (l_max + 1) * (l_max + 1) * sizeof(double)));
+    double* ddsph_cuda;
+    CUDA_CHECK(
+        cudaMalloc(&ddsph_cuda, n_samples * 3 * 3 * (l_max + 1) * (l_max + 1) * sizeof(double))
+    );
 
-    calculator_cuda.compute(xyz_cuda, n_samples, false, false,
-                            sph_cuda); // no gradients */
+    // calculation examples
+    calculator_cuda.compute(xyz_cuda, n_samples, sph_cuda); // no gradients
+    calculator_cuda.compute_with_gradients(
+        xyz_cuda, n_samples, sph_cuda, dsph_cuda
+    ); // with gradients
+    calculator_cuda.compute_with_hessians(
+        xyz_cuda, n_samples, sph_cuda, dsph_cuda, ddsph_cuda
+    ); // with gradients and hessians
 
     CUDA_CHECK(cudaMemcpy(
         sph.data(), sph_cuda, n_samples * (l_max + 1) * (l_max + 1) * sizeof(double), cudaMemcpyDeviceToHost
@@ -83,9 +96,21 @@ int main() {
     );
     float* sph_cuda_f;
     CUDA_CHECK(cudaMalloc(&sph_cuda_f, n_samples * (l_max + 1) * (l_max + 1) * sizeof(float)));
+    float* dsph_cuda_f;
+    CUDA_CHECK(cudaMalloc(&dsph_cuda_f, n_samples * 3 * (l_max + 1) * (l_max + 1) * sizeof(float)));
+    float* ddsph_cuda_f;
+    CUDA_CHECK(
+        cudaMalloc(&ddsph_cuda_f, n_samples * 3 * 3 * (l_max + 1) * (l_max + 1) * sizeof(float))
+    );
 
-    calculator_cuda_f.compute(xyz_cuda_f, n_samples, false, false,
-                              sph_cuda_f); // no gradients */
+    // calculation examples (float)
+    calculator_cuda_f.compute(xyz_cuda_f, n_samples, sph_cuda_f); // no gradients
+    calculator_cuda_f.compute_with_gradients(
+        xyz_cuda_f, n_samples, sph_cuda_f, dsph_cuda_f
+    ); // with gradients
+    calculator_cuda_f.compute_with_hessians(
+        xyz_cuda_f, n_samples, sph_cuda_f, dsph_cuda_f, ddsph_cuda_f
+    ); // with gradients and hessians
 
     CUDA_CHECK(cudaMemcpy(
         sph_f.data(),
@@ -102,6 +127,16 @@ int main() {
         sph_norm += sph[i] * sph[i];
     }
     printf("Float vs double relative error: %12.8e\n", sqrt(sph_error / sph_norm));
+
+    /* ===== free device memory ===== */
+    CUDA_CHECK(cudaFree(xyz_cuda));
+    CUDA_CHECK(cudaFree(sph_cuda));
+    CUDA_CHECK(cudaFree(dsph_cuda));
+    CUDA_CHECK(cudaFree(ddsph_cuda));
+    CUDA_CHECK(cudaFree(xyz_cuda_f));
+    CUDA_CHECK(cudaFree(sph_cuda_f));
+    CUDA_CHECK(cudaFree(dsph_cuda_f));
+    CUDA_CHECK(cudaFree(ddsph_cuda_f));
 
     return 0;
 }

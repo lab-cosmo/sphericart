@@ -48,10 +48,17 @@ class cmake_ext(build_ext):
             cwd=build_dir,
             check=True,
         )
-        subprocess.run(
-            ["cmake", "--build", build_dir, "--parallel", "--target", "install"],
-            check=True,
-        )
+        build_command = [
+            "cmake",
+            "--build",
+            build_dir,
+            "--parallel",
+            "2",  # only two jobs to avoid OOM, we don't have many files
+            "--target",
+            "install",
+        ]
+
+        subprocess.run(build_command, check=True)
 
 
 class bdist_egg_disabled(bdist_egg):
@@ -64,9 +71,7 @@ class bdist_egg_disabled(bdist_egg):
     def run(self):
         sys.exit(
             "Aborting implicit building of eggs. "
-            + "Use `pip install .` or `python setup.py bdist_wheel && pip "
-            + "uninstall -y sphericart-torch && pip install "
-            + "dist/sphericart-torch-*.whl` to install from source."
+            "Use `pip install .` to install from source."
         )
 
 

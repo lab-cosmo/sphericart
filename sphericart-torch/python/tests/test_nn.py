@@ -16,9 +16,7 @@ def test_nn():
     class NN(torch.nn.Module):
         def __init__(self) -> None:
             super().__init__()
-            self.sh_calculator = sphericart.torch.SphericalHarmonics(
-                l_max=1, normalized=True
-            )
+            self.sh_calculator = sphericart.torch.SphericalHarmonics(l_max=1)
             self.linear_layer = torch.nn.Linear(4, 1, bias=False)
 
         def forward(self, positions):
@@ -61,7 +59,6 @@ def test_nn_consistency():
             super().__init__()
             self.sh_calculator = sphericart.torch.SphericalHarmonics(
                 l_max=1,
-                normalized=True,
                 backward_second_derivatives=backward_second_derivatives,
             )
             self.linear_layer = torch.nn.Linear(4, 1, bias=False)

@@ -700,11 +700,16 @@ int sphericart::cuda::adjust_shared_memory(
     bool requires_hessian,
     int64_t current_shared_mem_alloc
 ) {
-    int device;
-    cudaGetDevice(&device);
+
+    int device_count;
+
+    cudaGetDeviceCount(&device_count);
+
+    int current_device;
+    cudaGetDevice(&current_device);
 
     cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, device);
+    cudaGetDeviceProperties(&deviceProp, current_device);
 
     auto required_buff_size = total_buffer_size(
         l_max, GRID_DIM_X, GRID_DIM_Y, element_size, requires_grad, requires_hessian
@@ -717,22 +722,30 @@ int sphericart::cuda::adjust_shared_memory(
             return -1; // failure - need to adjust parameters
         }
 
-        switch (element_size) {
-        case 8:
-            cudaFuncSetAttribute(
-                spherical_harmonics_kernel<double>,
-                cudaFuncAttributeMaxDynamicSharedMemorySize,
-                required_buff_size
-            );
-            break;
-        case 4:
-            cudaFuncSetAttribute(
-                spherical_harmonics_kernel<float>,
-                cudaFuncAttributeMaxDynamicSharedMemorySize,
-                required_buff_size
-            );
-            break;
+        // broadcast changes to all visible GPUs
+        for (int device = 0; device < device_count; device++) {
+
+            CUDA_CHECK(cudaSetDevice(device));
+
+            switch (element_size) {
+            case 8:
+                cudaFuncSetAttribute(
+                    spherical_harmonics_kernel<double>,
+                    cudaFuncAttributeMaxDynamicSharedMemorySize,
+                    required_buff_size
+                );
+                break;
+            case 4:
+                cudaFuncSetAttribute(
+                    spherical_harmonics_kernel<float>,
+                    cudaFuncAttributeMaxDynamicSharedMemorySize,
+                    required_buff_size
+                );
+                break;
+            }
         }
+
+        CUDA_CHECK(cudaSetDevice(current_device));
 
         return required_buff_size;
 
@@ -887,7 +900,6 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     scalar_t* __restrict__ xyz_grad,
     void* cuda_stream
 ) {
-
     dim3 grid_dim(4, 32);
 
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
