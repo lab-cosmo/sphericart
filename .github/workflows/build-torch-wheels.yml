@@ -82,7 +82,7 @@ jobs:
           python -m build --sdist sphericart-torch --outdir sphericart-torch/dist
           python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
         env:
-          CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-cuda-setup.sh ${{ matrix.arch }} ${{ matrix.os }}
+          #CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-cuda-setup.sh ${{ matrix.arch }} ${{ matrix.os }}
           CIBW_BUILD: ${{ matrix.cibw-python }}
           CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
