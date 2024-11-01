@@ -15,14 +15,25 @@ class cmake_ext(build_ext):
     """Build the native library using cmake"""
 
     def run(self):
+        import torch
+
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
-        install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart/torch")
+        install_dir = os.path.join(os.path.realpath(
+            self.build_lib), "sphericart/torch")
 
         os.makedirs(build_dir, exist_ok=True)
 
+        # Install the shared library in a prefix matching the torch version used to
+        # compile the code. This allows having multiple version of this shared library
+        # inside the wheel; and dynamically pick the right one.
+        torch_major, torch_minor, *_ = torch.__version__.split(".")
+        cmake_install_prefix = os.path.join(
+            install_dir, f"torch-{torch_major}.{torch_minor}"
+        )
+
         cmake_options = [
-            f"-DCMAKE_INSTALL_PREFIX={install_dir}",
+            f"-DCMAKE_INSTALL_PREFIX={cmake_install_prefix}",
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
@@ -77,7 +88,8 @@ class bdist_egg_disabled(bdist_egg):
 
 if __name__ == "__main__":
     setup(
-        version=open(os.path.join(ROOT, "sphericart", "VERSION")).readline().strip(),
+        version=open(os.path.join(ROOT, "sphericart",
+                     "VERSION")).readline().strip(),
         ext_modules=[
             Extension(name="sphericart_torch", sources=[]),
         ],
