@@ -78,11 +78,17 @@ jobs:
 
       - name: Configure PyTorch
         run: |
-          pip install --pre torch torch==${{ matrix.torch-version }}.* --index-url https://download.pytorch.org/whl/nightly/cu124
+          pip install --pre torch torch==${{ matrix.torch-version }}.*
           pip install wheel
           pip install cmake
         env:
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/nightly/cu124
+          CIBW_BUILD: ${{ matrix.cibw-python }}
+          CIBW_BUILD_VERBOSITY: 1
+          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+          CIBW_ARCHS: ${{ matrix.cibw-arch }}
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
+          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
       
       - name: Install remaining dependencies from pyproject.toml
         run: |
