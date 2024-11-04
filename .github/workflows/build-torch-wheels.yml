@@ -18,7 +18,7 @@ jobs:
       matrix:
         os: ['ubuntu-22.04']
         torch: ["2.5.0"]
-        arch: ['aarch64', 'x86_64']
+        arch: ['aarch64']
         cuda: ["12.4"]
         include:
           - name: arm64 Linux
