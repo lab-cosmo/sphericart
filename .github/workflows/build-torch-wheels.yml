@@ -18,13 +18,13 @@ jobs:
       matrix:
         include:
           - name: arm64 Linux
-            os: ubuntu-22.04
-            arch: aarch64
-            cibw-arch: aarch64
-            torch-version: 2.5
-            python-version: 3.12
-            python: cp312
-            cuda: 12.4
+            os: "ubuntu-22.04"
+            arch: "aarch64"
+            cibw-arch: "aarch64"
+            torch-version: "2.5"
+            python-version: "3.12"
+            python: "cp312"
+            cuda: "12.4"
           # - name: x86_64 Linux
           #   os: ubuntu-22.04
           #   arch: x86_64
