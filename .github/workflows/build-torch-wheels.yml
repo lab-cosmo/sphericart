@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-22.04']
-        torch: ["2.4.0"]
+        torch: ["2.5.0"]
         arch: ['aarch64', 'x86_64']
         cuda: ["12.4"]
         include:
@@ -29,7 +29,7 @@ jobs:
             os: ubuntu-22.04
             arch: x86_64
             cibw-arch: x86_64
-          - {torch-version: '2.4',  python-version: '3.12', cibw-python: 'cp312-*'}
+          - {torch-version: '2.5',  python-version: '3.12', cibw-python: 'cp312-*'}
 
     steps:
       - name: Prepare cuda_no_point variable
@@ -78,11 +78,11 @@ jobs:
 
       - name: Configure PyTorch
         run: |
-          pip install torch==${{ matrix.torch-version }}.* --index-url https://download.pytorch.org/whl/cu124
+          pip install --pre torch torch==${{ matrix.torch-version }}.* --index-url https://download.pytorch.org/whl/nightly/cu124
           pip install wheel
           pip install cmake
         env:
-          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cu124
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/nightly/cu124
       
       - name: Install remaining dependencies from pyproject.toml
         run: |
