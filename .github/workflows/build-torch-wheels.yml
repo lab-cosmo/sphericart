@@ -16,10 +16,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ['ubuntu-22.04']
-        torch: ["2.5.0"]
-        arch: ['aarch64']
-        cuda: ["12.4"]
         include:
           - name: arm64 Linux
             os: ubuntu-22.04
@@ -28,6 +24,7 @@ jobs:
             torch-version: 2.5
             python-version: 3.12
             python: 312
+            cuda: 12.4
           # - name: x86_64 Linux
           #   os: ubuntu-22.04
           #   arch: x86_64
