@@ -25,11 +25,17 @@ jobs:
             os: ubuntu-22.04
             arch: aarch64
             cibw-arch: aarch64
-          - name: x86_64 Linux
-            os: ubuntu-22.04
-            arch: x86_64
-            cibw-arch: x86_64
-          - {torch-version: '2.5',  python-version: '3.12', cibw-python: 'cp312-*'}
+            torch-version: 2.5
+            python-version: 3.12
+            python: 312
+          # - name: x86_64 Linux
+          #   os: ubuntu-22.04
+          #   arch: x86_64
+          #   cibw-arch: x86_64
+          #   torch-version: 2.5
+          #   python-version: 3.12
+          #   python: 312
+          #- {torch-version: '2.5',  python-version: '3.12', cibw-python: 'cp312-*'}
 
     steps:
       - name: Prepare cuda_no_point variable
@@ -66,7 +72,7 @@ jobs:
           python -m cibuildwheel dist/*.tar.gz --output-dir dist
         env:
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_BUILD: ${{ matrix.cibw-python }}
+          CIBW_BUILD: cp${{ matrix.python }}
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
@@ -83,7 +89,7 @@ jobs:
           pip install cmake
         env:
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/nightly/cu124
-          CIBW_BUILD: ${{ matrix.cibw-python }}
+          CIBW_BUILD: cp${{ matrix.python }}
           CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
@@ -101,7 +107,7 @@ jobs:
           python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
         env:
           #CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-cuda-setup.sh ${{ matrix.arch }} ${{ matrix.os }}
-          CIBW_BUILD: ${{ matrix.cibw-python }}
+          CIBW_BUILD: cp${{ matrix.python }}
           CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}

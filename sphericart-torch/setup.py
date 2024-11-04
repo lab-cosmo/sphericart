@@ -19,8 +19,7 @@ class cmake_ext(build_ext):
 
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
-        install_dir = os.path.join(os.path.realpath(
-            self.build_lib), "sphericart/torch")
+        install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart/torch")
 
         os.makedirs(build_dir, exist_ok=True)
 
@@ -88,8 +87,7 @@ class bdist_egg_disabled(bdist_egg):
 
 if __name__ == "__main__":
     setup(
-        version=open(os.path.join(ROOT, "sphericart",
-                     "VERSION")).readline().strip(),
+        version=open(os.path.join(ROOT, "sphericart", "VERSION")).readline().strip(),
         ext_modules=[
             Extension(name="sphericart_torch", sources=[]),
         ],

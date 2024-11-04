@@ -4,6 +4,7 @@ import os
 import sys
 from types import ModuleType
 from typing import List, Optional, Union, Tuple
+import glob
 
 import torch
 from torch import Tensor
@@ -46,16 +47,13 @@ _HERE = os.path.realpath(os.path.dirname(__file__))
 def _lib_path():
     torch_major, torch_minor, *_ = torch.__version__.split(".")
 
-    install_prefix = os.path.join(
-        _HERE, f"torch-{torch_major}.{torch_minor}"
-    )
+    install_prefix = os.path.join(_HERE, f"torch-{torch_major}.{torch_minor}")
 
     if os.path.exists(install_prefix):
         # check if we are using an externally-provided version of the shared library
         external_path = os.path.join(install_prefix, "_external.py")
         if os.path.exists(external_path):
-            spec = importlib.util.spec_from_file_location(
-                "_external", external_path)
+            spec = importlib.util.spec_from_file_location("_external", external_path)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             return module.EXTERNAL_SPHERICART_TORCH_PATH
@@ -91,8 +89,7 @@ def _lib_path():
             "is not ABI compatible"
         )
     else:
-        all_versions = ", ".join(
-            map(lambda version: f"v{version}", existing_versions))
+        all_versions = ", ".join(map(lambda version: f"v{version}", existing_versions))
         raise ImportError(
             f"Trying to load sphericart-torch with torch v{torch.__version__}, "
             f"we found builds for torch {all_versions}; which are not ABI compatible.\n"
@@ -396,15 +393,13 @@ def e3nn_spherical_harmonics(
     if normalize:
         sh = SphericalHarmonics(l_max)(
             torch.index_select(
-                x, 1, torch.tensor(
-                    [2, 0, 1], dtype=torch.long, device=x.device)
+                x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
             )
         )
     else:
         sh = SolidHarmonics(l_max)(
             torch.index_select(
-                x, 1, torch.tensor(
-                    [2, 0, 1], dtype=torch.long, device=x.device)
+                x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
             )
         )
     assert normalization in ["integral", "norm", "component"]
@@ -414,14 +409,14 @@ def e3nn_spherical_harmonics(
     if not is_range_lmax:
         sh_list = []
         for l in l_list:  # noqa E741
-            shl = sh[:, l * l: (l + 1) * (l + 1)]
+            shl = sh[:, l * l : (l + 1) * (l + 1)]
             if normalization == "norm":
                 shl *= math.sqrt(1 / (2 * l + 1))
             sh_list.append(shl)
         sh = torch.cat(sh_list, dim=-1)
     elif normalization == "norm":
         for l in l_list:  # noqa E741
-            sh[:, l * l: (l + 1) * (l + 1)] *= math.sqrt(1 / (2 * l + 1))
+            sh[:, l * l : (l + 1) * (l + 1)] *= math.sqrt(1 / (2 * l + 1))
 
     return sh
 
