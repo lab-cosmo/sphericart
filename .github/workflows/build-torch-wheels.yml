@@ -55,26 +55,26 @@ jobs:
           python -m pip install cibuildwheel build
       
       # build sphericart wheel
-      - name: Build sphericart wheels
-        run: |
-          # ensure we build the wheel from the sdist, not the checkout
-          python -m build --sdist . --outdir dist
-          python -m cibuildwheel dist/*.tar.gz --output-dir dist
-        env:
-          CIBW_BUILD_VERBOSITY: 3
-          CIBW_BUILD: ${{ matrix.python }}
-          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
-          CIBW_ARCHS: ${{ matrix.cibw-arch }}
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
-          CIBW_BEFORE_BUILD: |
-            pip install wheel
-            pip install cmake
-          CIBW_ENVIRONMENT: |
-            CUDA_HOME=/usr/local/cuda
-            CUDAARCHS=all
-            SPHERICART_ARCH_NATIVE=OFF
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
-            auditwheel repair --exclude libsphericart.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
+#      - name: Build sphericart wheels
+#        run: |
+#          # ensure we build the wheel from the sdist, not the checkout
+#          python -m build --sdist . --outdir dist
+#          python -m cibuildwheel dist/*.tar.gz --output-dir dist
+#        env:
+#          CIBW_BUILD_VERBOSITY: 3
+#          CIBW_BUILD: ${{ matrix.python }}
+#          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+#          CIBW_ARCHS: ${{ matrix.cibw-arch }}
+#          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
+#          CIBW_BEFORE_BUILD: |
+#            pip install wheel
+#            pip install cmake
+#          CIBW_ENVIRONMENT: |
+#            CUDA_HOME=/usr/local/cuda
+#            CUDAARCHS=all
+#            SPHERICART_ARCH_NATIVE=OFF
+#          CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
+#            auditwheel repair --exclude libsphericart.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
       
       # build sphericart-torch wheel
       - name: Build sphericart-torch wheels
@@ -83,8 +83,8 @@ jobs:
           python -m build --sdist sphericart-torch --outdir sphericart-torch/dist --no-isolation
           python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
         env:
+          CIBW_BUILD_VERBOSITY: 3
           CIBW_BUILD: ${{ matrix.python }}
-          CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
