@@ -24,6 +24,7 @@ jobs:
             torch-version: "2.4.1"
             python-version: "3.12"
             cuda-version: "12.4"
+            cuda-version-no-dot: "124"
     steps:
       # Checkout the repository
       - name: Checkout Repository
@@ -52,11 +53,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install cibuildwheel build
-
+      
+      # build sphericart wheel
       - name: Build sphericart wheels
         run: |
-          pip install wheel
-          pip install cmake
           # ensure we build the wheel from the sdist, not the checkout
           python -m build --sdist . --outdir dist
           python -m cibuildwheel dist/*.tar.gz --output-dir dist
@@ -66,29 +66,32 @@ jobs:
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
+          CIBW_BEFORE_BUILD: |
+            pip install wheel
+            pip install cmake
           CIBW_ENVIRONMENT: |
             CUDA_HOME=/usr/local/cuda
             CUDAARCHS=all
             SPHERICART_ARCH_NATIVE=OFF
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libsphericart.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
-
+      
+      # build sphericart-torch wheel
       - name: Build sphericart-torch wheels
         run: |
-          pip install --pre torch torch==${{ matrix.torch-version }}.*
-          pip install wheel
-          pip install cmake
           # ensure we build the wheel from the sdist, not the checkout
           python -m build --sdist sphericart-torch --outdir sphericart-torch/dist --no-isolation
           python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
         env:
-          #CIBW_BEFORE_ALL: bash /host/home/runner/work/sphericart/sphericart/scripts/cibw-cuda-setup.sh ${{ matrix.arch }} ${{ matrix.os }}
           CIBW_BUILD: ${{ matrix.python }}
           CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
-          #CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
+          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
+          CIBW_BEFORE_BUILD: |
+            pip install wheel
+            pip install cmake
+            pip install torch --index-url https://download.pytorch.org/whl/cu${{ matrix.cuda-version-no-dot }}
           CIBW_ENVIRONMENT: |
             CUDA_HOME=/usr/local/cuda
             TORCH_CUDA_ARCH_LIST=All
