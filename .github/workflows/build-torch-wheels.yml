@@ -69,6 +69,7 @@ jobs:
 #          CIBW_BEFORE_BUILD: |
 #            pip install wheel
 #            pip install cmake
+#            pip install setuptools
 #          CIBW_ENVIRONMENT: |
 #            CUDA_HOME=/usr/local/cuda
 #            CUDAARCHS=all
@@ -91,6 +92,7 @@ jobs:
           CIBW_BEFORE_BUILD: |
             pip install wheel
             pip install cmake
+            pip install setuptools
             pip install torch --index-url https://download.pytorch.org/whl/cu${{ matrix.cuda-version-no-dot }}
           CIBW_ENVIRONMENT: |
             CUDA_HOME=/usr/local/cuda

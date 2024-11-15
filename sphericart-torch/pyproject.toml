@@ -43,7 +43,6 @@ requires = [
     "wheel >=0.36",
     "cmake",
 ]
-
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
