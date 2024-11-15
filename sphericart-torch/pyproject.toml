@@ -38,12 +38,12 @@ repository = "https://github.com/lab-cosmo/sphericart"
 ### ======================================================================== ###
 
 [build-system]
+build-backend = "setuptools.build_meta"
 requires = [
     "setuptools >=44",
     "wheel >=0.36",
     "cmake",
 ]
-build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 zip-safe = false
