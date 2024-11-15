@@ -89,7 +89,7 @@ jobs:
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
-          CIBW_BEFORE_BUILD: bash scripts/cibw_setup.sh ${{ matrix.cibw-arch }}
+          CIBW_BEFORE_ALL: bash scripts/cibw_setup.sh ${{ matrix.cibw-arch }}
           CIBW_ENVIRONMENT: |
             CUDA_HOME=/usr/local/cuda
             TORCH_CUDA_ARCH_LIST=All
