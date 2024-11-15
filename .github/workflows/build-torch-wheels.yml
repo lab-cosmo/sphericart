@@ -90,9 +90,11 @@ jobs:
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
           CIBW_BEFORE_BUILD: |
+            echo "Running pre-build commands"
             pip install wheel
             pip install cmake
             pip install setuptools
+            echo "installing torch+cu${{ matrix.cuda-version-no-dot }}"
             pip install torch --index-url https://download.pytorch.org/whl/cu${{ matrix.cuda-version-no-dot }}
           CIBW_ENVIRONMENT: |
             CUDA_HOME=/usr/local/cuda
