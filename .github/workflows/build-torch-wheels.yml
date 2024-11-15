@@ -23,47 +23,40 @@ jobs:
             cibw-arch: "aarch64"
             torch-version: "2.4.1"
             python-version: "3.12"
-            python: "cp312"
-            cuda: "12.4"
-          # - name: x86_64 Linux
-          #   os: ubuntu-22.04
-          #   arch: x86_64
-          #   cibw-arch: x86_64
-          #   torch-version: 2.5
-          #   python-version: 3.12
-          #   python: 312
-          #- {torch-version: '2.5',  python-version: '3.12', cibw-python: 'cp312-*'}
-
+            cuda-version: "12.4"
     steps:
-      - name: Prepare cuda_no_point variable
-        id: prepare_cuda_no_point
+      # Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Set up QEMU for ARM64 emulation
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      # Build the custom Manylinux Docker image
+      - name: Build Manylinux Docker Image
         run: |
-          export cuda_no_point=$(echo ${{ matrix.cuda }} | sed 's/\.//')
-          echo ::set-output name=cuda_no_point::$cuda_no_point
-
-      - name: free disk space
-        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android || true
-
-      - uses: actions/checkout@v4
-
+          docker build -t manylinux2014_${{ matrix.cibw-arch }} \
+            scripts/manylinux2014_${{ matrix.cibw-arch }}
+    
+      # Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install dependencies
-        run: python -m pip install cibuildwheel build
-
-      - name: Set up QEMU for docker
-        if: matrix.os == 'ubuntu-22.04'
-        uses: docker/setup-qemu-action@v3
-
-      - name: build manylinux docker image
-        if: matrix.os == 'ubuntu-22.04'
-        run: docker build -t manylinux2014_${{ matrix.cibw-arch }} scripts/manylinux2014_${{ matrix.cibw-arch }}
+      # Install cibuildwheel and other required tools
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cibuildwheel build
 
       - name: Build sphericart wheels
         run: |
+          pip install wheel
+          pip install cmake
           # ensure we build the wheel from the sdist, not the checkout
           python -m build --sdist . --outdir dist
           python -m cibuildwheel dist/*.tar.gz --output-dir dist
@@ -72,33 +65,19 @@ jobs:
           CIBW_BUILD: ${{ matrix.python }}
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
-          #CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
-          CIBW_ENVIRONMENT: >
+          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
+          CIBW_ENVIRONMENT: |
+            CUDA_HOME=/usr/local/cuda
+            CUDAARCHS=all
             SPHERICART_ARCH_NATIVE=OFF
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libsphericart.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
 
-      - name: Configure PyTorch
+      - name: Build sphericart-torch wheels
         run: |
           pip install --pre torch torch==${{ matrix.torch-version }}.*
           pip install wheel
           pip install cmake
-        env:
-          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cu124
-          CIBW_BUILD: ${{ matrix.python }}
-          CIBW_BUILD_VERBOSITY: 1
-          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
-          CIBW_ARCHS: ${{ matrix.cibw-arch }}
-          #CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
-      
-      - name: Install remaining dependencies from pyproject.toml
-        run: |
-          pip install . --no-deps
-      
-      - name: Build sphericart-torch wheels
-        run: |
           # ensure we build the wheel from the sdist, not the checkout
           python -m build --sdist sphericart-torch --outdir sphericart-torch/dist --no-isolation
           python -m cibuildwheel sphericart-torch/dist/*.tar.gz --output-dir sphericart-torch/dist
@@ -110,11 +89,11 @@ jobs:
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
           #CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
-          CIBW_ENVIRONMENT: >
-            SPHERICART_ARCH_NATIVE=OFF
+          CIBW_ENVIRONMENT: |
             CUDA_HOME=/usr/local/cuda
-            TORCH_CUDA_ARCH_LIST=All 
-            CUDAARCHS=all 
+            TORCH_CUDA_ARCH_LIST=All
+            CUDAARCHS=all
+            SPHERICART_ARCH_NATIVE=OFF
             SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.torch-version }}.*
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10.so --exclude libc10_cuda.so -w {dest_dir} {wheel}
