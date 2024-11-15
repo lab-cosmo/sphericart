@@ -85,7 +85,7 @@ jobs:
           pip install wheel
           pip install cmake
         env:
-          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/nightly/cu124
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cu124
           CIBW_BUILD: ${{ matrix.python }}
           CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
