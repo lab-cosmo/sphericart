@@ -72,7 +72,7 @@ jobs:
           CIBW_BUILD: ${{ matrix.python }}
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
+          #CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
           CIBW_ENVIRONMENT: >
             SPHERICART_ARCH_NATIVE=OFF
@@ -90,7 +90,7 @@ jobs:
           CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
+          #CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
       
       - name: Install remaining dependencies from pyproject.toml
@@ -108,7 +108,7 @@ jobs:
           CIBW_BUILD_VERBOSITY: 1
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
+          #CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_aarch64
           CIBW_ENVIRONMENT: >
             SPHERICART_ARCH_NATIVE=OFF
