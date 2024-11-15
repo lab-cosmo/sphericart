@@ -96,6 +96,8 @@ jobs:
             pip install setuptools
             echo "installing torch+cu${{ matrix.cuda-version-no-dot }}"
             pip install torch --index-url https://download.pytorch.org/whl/cu${{ matrix.cuda-version-no-dot }}
+
+            python -c "import torch; print (torch.__version__);"
           CIBW_ENVIRONMENT: |
             CUDA_HOME=/usr/local/cuda
             TORCH_CUDA_ARCH_LIST=All
