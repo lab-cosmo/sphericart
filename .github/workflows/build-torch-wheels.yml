@@ -35,6 +35,17 @@ jobs:
           #- {torch-version: '2.5',  python-version: '3.12', cibw-python: 'cp312-*'}
 
     steps:
+      - name: Prepare cuda_no_point variable
+        id: prepare_cuda_no_point
+        run: |
+          export cuda_no_point=$(echo ${{ matrix.cuda }} | sed 's/\.//')
+          echo ::set-output name=cuda_no_point::$cuda_no_point
+
+      - name: free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android || true
+
+      - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
