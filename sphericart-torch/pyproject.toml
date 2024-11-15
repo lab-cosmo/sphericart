@@ -44,11 +44,7 @@ requires = [
     "cmake",
 ]
 
-# use a custom build backend to add a dependency on a specific
-# version of torch+cuda
-build-backend = "backend"
-backend-path = ["build-backend"]
-
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 zip-safe = false
