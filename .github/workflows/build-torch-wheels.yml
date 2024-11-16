@@ -25,6 +25,7 @@ jobs:
             python-version: "3.12"
             cuda-version: "12.4"
             cuda-version-no-dot: "124"
+            cibw-python: 'cp312-*'
     steps:
       # Checkout the repository
       - name: Checkout Repository
@@ -82,7 +83,7 @@ jobs:
         run: python -m cibuildwheel sphericart-torch
         env:
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_BUILD: ${{ matrix.python }}
+          CIBW_BUILD: ${{ matrix.cibw-python }}
           CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
           CIBW_ARCHS: ${{ matrix.cibw-arch }}
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
