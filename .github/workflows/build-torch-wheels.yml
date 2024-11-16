@@ -79,8 +79,7 @@ jobs:
       
       # build sphericart-torch wheel
       - name: Build sphericart-torch wheels
-        run: |
-          python -m cibuildwheel sphericart-torch
+        run: python -m cibuildwheel sphericart-torch
         env:
           CIBW_BUILD_VERBOSITY: 3
           CIBW_BUILD: ${{ matrix.python }}
