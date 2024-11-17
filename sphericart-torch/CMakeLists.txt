@@ -140,6 +140,19 @@ target_compile_features(sphericart_torch PUBLIC cxx_std_17)
 
 message (STATUS "DEBUG Torch Include Dirs ${TORCH_INCLUDE_DIRS}")
 
+# Split Torch_INCLUDE_DIRS into a list
+string(REPLACE ";" "\n" DIR_LIST "${TORCH_INCLUDE_DIRS}")
+
+# Iterate through each directory and list its contents
+foreach(DIR ${DIR_LIST})
+    # Use file(GLOB) to capture all files and directories
+    file(GLOB ENTRIES "${DIR}/c10/cuda/impl/*")
+    
+    foreach(ENTRY ${ENTRIES})
+        message(STATUS "file: ${ENTRY}")
+    endforeach()
+endforeach()
+
 target_include_directories(sphericart_torch PRIVATE ${TORCH_INCLUDE_DIRS})
 
 target_include_directories(sphericart_torch PUBLIC
