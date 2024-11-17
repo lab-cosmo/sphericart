@@ -10,7 +10,7 @@ FORCED_TORCH_VERSION = os.environ.get("SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION
 if FORCED_TORCH_VERSION is not None:
     TORCH_DEP = f"torch =={FORCED_TORCH_VERSION}"
 else:
-    TORCH_DEP = "torch >=2.3"
+    TORCH_DEP = "torch >=2.1"
 
 # ==================================================================================== #
 #                   Build backend functions definition                                 #
