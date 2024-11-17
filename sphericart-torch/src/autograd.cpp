@@ -1,5 +1,5 @@
 #ifdef CUDA_AVAILABLE
-#include <c10/cuda/CUDAGuard.h>
+//#include <c10/cuda/CUDAGuard.h>
 #include <c10/cuda/CUDAStream.h>
 #endif
 
@@ -279,7 +279,7 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
 
         void* stream = nullptr;
 #ifdef CUDA_AVAILABLE
-        c10::cuda::CUDAGuard deviceGuard{xyz.device()};
+        //c10::cuda::CUDAGuard deviceGuard{xyz.device()};
         cudaStream_t currstream = c10::cuda::getCurrentCUDAStream();
         stream = reinterpret_cast<void*>(currstream);
 #endif
