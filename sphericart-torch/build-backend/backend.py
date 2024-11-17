@@ -10,7 +10,7 @@ FORCED_TORCH_VERSION = os.environ.get("SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION
 if FORCED_TORCH_VERSION is not None:
     TORCH_DEP = f"torch =={FORCED_TORCH_VERSION}"
 else:
-    TORCH_DEP = "torch >=2.3"
+    TORCH_DEP = "torch >=2.1"
 
 # ==================================================================================== #
 #                   Build backend functions definition                                 #
@@ -25,6 +25,5 @@ build_sdist = build_meta.build_sdist
 
 # Special dependencies to build the wheels
 def get_requires_for_build_wheel(config_settings=None):
-    print (f"TORCH_DEP: {TORCH_DEP}")
     defaults = build_meta.get_requires_for_build_wheel(config_settings)
     return defaults + ["cmake", TORCH_DEP]

@@ -1,10 +1,8 @@
-import importlib
 import math
 import os
 import sys
 from types import ModuleType
 from typing import List, Optional, Union, Tuple
-import glob
 
 import torch
 from torch import Tensor
@@ -45,57 +43,21 @@ _HERE = os.path.realpath(os.path.dirname(__file__))
 
 
 def _lib_path():
-    torch_major, torch_minor, *_ = torch.__version__.split(".")
-
-    install_prefix = os.path.join(_HERE, f"torch-{torch_major}.{torch_minor}")
-
-    if os.path.exists(install_prefix):
-        # check if we are using an externally-provided version of the shared library
-        external_path = os.path.join(install_prefix, "_external.py")
-        if os.path.exists(external_path):
-            spec = importlib.util.spec_from_file_location("_external", external_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            return module.EXTERNAL_SPHERICART_TORCH_PATH
-
-        if sys.platform.startswith("darwin"):
-            name = "libsphericart_torch.dylib"
-        elif sys.platform.startswith("linux"):
-            name = "libsphericart_torch.so"
-        elif sys.platform.startswith("win"):
-            name = "sphericart_torch.dll"
-        else:
-            raise ImportError("Unknown platform. Please edit this file")
-
-        path = os.path.join(os.path.join(_HERE, "lib"), name)
-
-        if os.path.isfile(path):
-            return path
-        else:
-            raise ImportError(
-                "Could not find sphericart_torch shared library at " + path
-            )
-
-    # gather which torch version(s) the current install was built
-    # with to create the error message
-    existing_versions = []
-    for prefix in glob.glob(os.path.join(_HERE, "torch-*")):
-        existing_versions.append(os.path.basename(prefix)[6:])
-
-    if len(existing_versions) == 1:
-        raise ImportError(
-            f"Trying to load sphericart-torch with torch v{torch.__version__}, "
-            f"but it was compiled against torch v{existing_versions[0]}, which "
-            "is not ABI compatible"
-        )
+    if sys.platform.startswith("darwin"):
+        name = "libsphericart_torch.dylib"
+    elif sys.platform.startswith("linux"):
+        name = "libsphericart_torch.so"
+    elif sys.platform.startswith("win"):
+        name = "sphericart_torch.dll"
     else:
-        all_versions = ", ".join(map(lambda version: f"v{version}", existing_versions))
-        raise ImportError(
-            f"Trying to load sphericart-torch with torch v{torch.__version__}, "
-            f"we found builds for torch {all_versions}; which are not ABI compatible.\n"
-            "You can try to re-install from source with "
-            "`pip install .[torch] .`"
-        )
+        raise ImportError("Unknown platform. Please edit this file")
+
+    path = os.path.join(os.path.join(_HERE, "lib"), name)
+
+    if os.path.isfile(path):
+        return path
+
+    raise ImportError("Could not find sphericart_torch shared library at " + path)
 
 
 # load the C++ operators and custom classes
