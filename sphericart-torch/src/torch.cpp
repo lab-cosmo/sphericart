@@ -20,16 +20,16 @@ SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool backward_second_deriv
     }
 }
 
-torch::Tensor SphericalHarmonics::compute(torch::Tensor xyz) {
-    return SphericartAutograd::apply(*this, xyz, false, false)[0];
+torch::Tensor SphericalHarmonics::compute(torch::Tensor xyz, int64_t stream) {
+    return SphericartAutograd::apply(*this, xyz, false, false, stream)[0];
 }
 
-std::vector<torch::Tensor> SphericalHarmonics::compute_with_gradients(torch::Tensor xyz) {
-    return SphericartAutograd::apply(*this, xyz, true, false);
+std::vector<torch::Tensor> SphericalHarmonics::compute_with_gradients(torch::Tensor xyz, int64_t stream) {
+    return SphericartAutograd::apply(*this, xyz, true, false, stream);
 }
 
-std::vector<torch::Tensor> SphericalHarmonics::compute_with_hessians(torch::Tensor xyz) {
-    return SphericartAutograd::apply(*this, xyz, true, true);
+std::vector<torch::Tensor> SphericalHarmonics::compute_with_hessians(torch::Tensor xyz, int64_t stream) {
+    return SphericartAutograd::apply(*this, xyz, true, true, stream);
 }
 
 SolidHarmonics::SolidHarmonics(int64_t l_max, bool backward_second_derivatives)
@@ -46,16 +46,16 @@ SolidHarmonics::SolidHarmonics(int64_t l_max, bool backward_second_derivatives)
     }
 }
 
-torch::Tensor SolidHarmonics::compute(torch::Tensor xyz) {
-    return SphericartAutograd::apply(*this, xyz, false, false)[0];
+torch::Tensor SolidHarmonics::compute(torch::Tensor xyz, int64_t stream) {
+    return SphericartAutograd::apply(*this, xyz, false, false, stream)[0];
 }
 
-std::vector<torch::Tensor> SolidHarmonics::compute_with_gradients(torch::Tensor xyz) {
-    return SphericartAutograd::apply(*this, xyz, true, false);
+std::vector<torch::Tensor> SolidHarmonics::compute_with_gradients(torch::Tensor xyz, int64_t stream) {
+    return SphericartAutograd::apply(*this, xyz, true, false, stream);
 }
 
-std::vector<torch::Tensor> SolidHarmonics::compute_with_hessians(torch::Tensor xyz) {
-    return SphericartAutograd::apply(*this, xyz, true, true);
+std::vector<torch::Tensor> SolidHarmonics::compute_with_hessians(torch::Tensor xyz, int64_t stream) {
+    return SphericartAutograd::apply(*this, xyz, true, true, stream);
 }
 
 TORCH_LIBRARY(sphericart_torch, m) {
@@ -65,18 +65,18 @@ TORCH_LIBRARY(sphericart_torch, m) {
             "",
             {torch::arg("l_max"), torch::arg("backward_second_derivatives") = false}
         )
-        .def("compute", &SphericalHarmonics::compute, "", {torch::arg("xyz")})
+        .def("compute", &SphericalHarmonics::compute, "", {torch::arg("xyz"), torch::arg("stream")})
         .def(
             "compute_with_gradients",
             &SphericalHarmonics::compute_with_gradients,
             "",
-            {torch::arg("xyz")}
+            {torch::arg("xyz"), torch::arg("stream")}
         )
         .def(
             "compute_with_hessians",
             &SphericalHarmonics::compute_with_hessians,
             "",
-            {torch::arg("xyz")}
+            {torch::arg("xyz"), torch::arg("stream")}
         )
         .def("omp_num_threads", &SphericalHarmonics::get_omp_num_threads)
         .def("l_max", &SphericalHarmonics::get_l_max)
@@ -99,11 +99,19 @@ TORCH_LIBRARY(sphericart_torch, m) {
             "",
             {torch::arg("l_max"), torch::arg("backward_second_derivatives") = false}
         )
-        .def("compute", &SolidHarmonics::compute, "", {torch::arg("xyz")})
+        .def("compute", &SolidHarmonics::compute, "", {torch::arg("xyz"), torch::arg("stream")})
         .def(
-            "compute_with_gradients", &SolidHarmonics::compute_with_gradients, "", {torch::arg("xyz")}
+            "compute_with_gradients",
+            &SolidHarmonics::compute_with_gradients,
+            "",
+            {torch::arg("xyz"), torch::arg("stream")}
         )
-        .def("compute_with_hessians", &SolidHarmonics::compute_with_hessians, "", {torch::arg("xyz")})
+        .def(
+            "compute_with_hessians",
+            &SolidHarmonics::compute_with_hessians,
+            "",
+            {torch::arg("xyz"), torch::arg("stream")}
+        )
         .def("omp_num_threads", &SolidHarmonics::get_omp_num_threads)
         .def("l_max", &SolidHarmonics::get_l_max)
         .def_pickle(

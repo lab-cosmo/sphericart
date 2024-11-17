@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.30)
 
 if (POLICY CMP0076)
     #  target_sources() converts relative paths to absolute
@@ -15,7 +15,6 @@ include(CheckLanguage)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
-    find_package(CUDAToolkit REQUIRED)
     set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
 else()
     message(STATUS "Could not find a CUDA compiler")
@@ -105,7 +104,10 @@ else()
     endif()
 endif()
 
-find_package(Torch 1.13 REQUIRED)
+find_package(Torch 2.1 REQUIRED)
+
+message (STATUS "CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}")
+message (STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERSION = '${Torch_VERSION}'")
 
@@ -131,29 +133,14 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 if(CMAKE_CUDA_COMPILER)
-    target_include_directories(sphericart_torch PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    target_link_libraries(sphericart_torch PRIVATE ${CMAKE_DL_LIBS})
+    #target_include_directories(sphericart_torch PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    #target_link_libraries(sphericart_torch PRIVATE ${CMAKE_DL_LIBS})
     target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
 endif()
 
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
 
-message (STATUS "DEBUG Torch Include Dirs ${TORCH_INCLUDE_DIRS}")
-
-# Split Torch_INCLUDE_DIRS into a list
-string(REPLACE ";" "\n" DIR_LIST "${TORCH_INCLUDE_DIRS}")
-
-# Iterate through each directory and list its contents
-foreach(DIR ${DIR_LIST})
-    # Use file(GLOB) to capture all files and directories
-    file(GLOB ENTRIES "${DIR}/c10/cuda/impl/*")
-    
-    foreach(ENTRY ${ENTRIES})
-        message(STATUS "file: ${ENTRY}")
-    endforeach()
-endforeach()
-
-target_include_directories(sphericart_torch PRIVATE ${TORCH_INCLUDE_DIRS})
+#target_include_directories(sphericart_torch PRIVATE ${TORCH_INCLUDE_DIRS})
 
 target_include_directories(sphericart_torch PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

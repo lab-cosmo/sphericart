@@ -1,7 +1,4 @@
-#ifdef CUDA_AVAILABLE
-//#include <c10/cuda/CUDAGuard.h>
-#include <c10/cuda/CUDAStream.h>
-#endif
+#include <cstdint> // For intptr_t
 
 #include "sphericart/autograd.hpp"
 
@@ -77,7 +74,7 @@ std::vector<torch::Tensor> _compute_raw_cuda(
     int64_t l_max,
     bool do_gradients,
     bool do_hessians,
-    void* stream
+    int64_t stream
 ) {
     if (!xyz.is_contiguous()) {
         throw std::runtime_error("this code only runs with contiguous tensors");
@@ -106,7 +103,7 @@ std::vector<torch::Tensor> _compute_raw_cuda(
             sph.data_ptr<scalar_t>(),
             dsph.data_ptr<scalar_t>(),
             ddsph.data_ptr<scalar_t>(),
-            stream
+            reinterpret_cast<void*>(stream)
         );
         return {sph, dsph, ddsph};
     } else if (do_gradients) {
@@ -116,11 +113,16 @@ std::vector<torch::Tensor> _compute_raw_cuda(
             n_samples,
             sph.data_ptr<scalar_t>(),
             dsph.data_ptr<scalar_t>(),
-            stream
+            reinterpret_cast<void*>(stream)
         );
         return {sph, dsph, torch::Tensor()};
     } else {
-        calculator->compute(xyz.data_ptr<scalar_t>(), n_samples, sph.data_ptr<scalar_t>(), stream);
+        calculator->compute(
+            xyz.data_ptr<scalar_t>(),
+            n_samples,
+            sph.data_ptr<scalar_t>(),
+            reinterpret_cast<void*>(stream)
+        );
         return {sph, torch::Tensor(), torch::Tensor()};
     }
 }
@@ -142,7 +144,7 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(
 }
 
 std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cuda(
-    torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream
+    torch::Tensor xyz, bool do_gradients, bool do_hessians, int64_t stream
 ) {
     if (xyz.dtype() == c10::kDouble) {
         return _compute_raw_cuda<sphericart::cuda::SphericalHarmonics, double>(
@@ -174,7 +176,7 @@ std::vector<torch::Tensor> SolidHarmonics::compute_raw_cpu(
 }
 
 std::vector<torch::Tensor> SolidHarmonics::compute_raw_cuda(
-    torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream
+    torch::Tensor xyz, bool do_gradients, bool do_hessians, int64_t stream
 ) {
     if (xyz.dtype() == c10::kDouble) {
         return _compute_raw_cuda<sphericart::cuda::SolidHarmonics, double>(
@@ -251,7 +253,8 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
     C& calculator,
     torch::Tensor xyz,
     bool do_gradients,
-    bool do_hessians
+    bool do_hessians,
+    int64_t stream
 ) {
     if (xyz.sizes().size() != 2) {
         throw std::runtime_error("xyz tensor must be a 2D array");
@@ -276,14 +279,6 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
         dsph = results[1];
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
-
-        void* stream = nullptr;
-#ifdef CUDA_AVAILABLE
-        //c10::cuda::CUDAGuard deviceGuard{xyz.device()};
-        cudaStream_t currstream = c10::cuda::getCurrentCUDAStream();
-        stream = reinterpret_cast<void*>(currstream);
-#endif
-
         auto results = calculator.compute_raw_cuda(xyz, requires_grad, requires_hessian, stream);
         sph = results[0];
         dsph = results[1];
@@ -295,6 +290,7 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
 
     if (xyz.requires_grad()) {
         ctx->save_for_backward({xyz, dsph, ddsph});
+        ctx->saved_data["stream"] = (int64_t)(intptr_t)stream;
     }
 
     if (do_hessians) {
@@ -315,7 +311,6 @@ std::vector<torch::Tensor> SphericartAutograd::backward(
             "harmonics"
         );
     }
-
     /* get the saved data from the forward pass */
     auto saved_variables = ctx->get_saved_variables();
     // We extract xyz and pass it as a separate variable because we will need
@@ -323,7 +318,7 @@ std::vector<torch::Tensor> SphericartAutograd::backward(
     auto xyz = saved_variables[0];
     torch::Tensor xyz_grad =
         SphericartAutogradBackward::apply(grad_outputs[0].contiguous(), xyz, saved_variables);
-    return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor()};
+    return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor(), torch::Tensor()};
 }
 
 torch::Tensor SphericartAutogradBackward::forward(
@@ -333,6 +328,7 @@ torch::Tensor SphericartAutogradBackward::forward(
     std::vector<torch::Tensor> saved_variables
 ) {
 
+    int64_t stream = (int64_t)(intptr_t)ctx->saved_data["stream"].toInt();
     auto dsph = saved_variables[1];
     auto ddsph = saved_variables[2];
 
@@ -341,12 +337,6 @@ torch::Tensor SphericartAutogradBackward::forward(
         if (xyz.device().is_cpu()) {
             xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
         } else if (xyz.device().is_cuda()) {
-            void* stream = nullptr;
-#ifdef CUDA_AVAILABLE
-            //c10::cuda::CUDAGuard deviceGuard{xyz.device()};
-            cudaStream_t currstream = c10::cuda::getCurrentCUDAStream();
-            stream = reinterpret_cast<void*>(currstream);
-#endif
             xyz_grad =
                 sphericart_torch::spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs, stream);
         } else {
@@ -362,6 +352,10 @@ torch::Tensor SphericartAutogradBackward::forward(
 std::vector<torch::Tensor> SphericartAutogradBackward::backward(
     torch::autograd::AutogradContext* ctx, std::vector<torch::Tensor> grad_2_outputs
 ) {
+
+    int64_t stream = (int64_t)(intptr_t)ctx->saved_data["stream"].toInt(
+    ); // unused since torch ops should be on the right stream
+
     auto saved_variables = ctx->get_saved_variables();
     auto xyz = saved_variables[0];
     auto grad_out = saved_variables[1];
@@ -433,12 +427,14 @@ template std::vector<torch::Tensor> SphericartAutograd::forward<SphericalHarmoni
     SphericalHarmonics& calculator,
     torch::Tensor xyz,
     bool do_gradients,
-    bool do_hessians
+    bool do_hessians,
+    int64_t stream
 );
 template std::vector<torch::Tensor> SphericartAutograd::forward<SolidHarmonics>(
     torch::autograd::AutogradContext* ctx,
     SolidHarmonics& calculator,
     torch::Tensor xyz,
     bool do_gradients,
-    bool do_hessians
+    bool do_hessians,
+    int64_t stream
 );

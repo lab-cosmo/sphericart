@@ -14,7 +14,8 @@ class SphericartAutograd : public torch::autograd::Function<SphericartAutograd> 
         C& calculator,
         torch::Tensor xyz,
         bool do_gradients,
-        bool do_hessians
+        bool do_hessians,
+        int64_t stream = 0
     );
 
     static std::vector<torch::Tensor> backward(

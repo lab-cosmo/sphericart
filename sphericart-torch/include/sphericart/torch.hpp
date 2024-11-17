@@ -18,9 +18,9 @@ class SphericalHarmonics : public torch::CustomClassHolder {
     SphericalHarmonics(int64_t l_max, bool backward_second_derivatives = false);
 
     // Actual calculation, with autograd support
-    torch::Tensor compute(torch::Tensor xyz);
-    std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz);
-    std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz);
+    torch::Tensor compute(torch::Tensor xyz, int64_t stream = 0);
+    std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz, int64_t stream = 0);
+    std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz, int64_t stream = 0);
 
     int64_t get_l_max() const { return this->l_max_; }
     bool get_backward_second_derivative_flag() const { return this->backward_second_derivatives_; }
@@ -33,7 +33,7 @@ class SphericalHarmonics : public torch::CustomClassHolder {
     std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients, bool do_hessians);
     // Raw calculation, without autograd support, running on CUDA
     std::vector<torch::Tensor> compute_raw_cuda(
-        torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream = nullptr
+        torch::Tensor xyz, bool do_gradients, bool do_hessians, int64_t stream = 0
     );
 
     int64_t omp_num_threads_;
@@ -54,9 +54,9 @@ class SolidHarmonics : public torch::CustomClassHolder {
     SolidHarmonics(int64_t l_max, bool backward_second_derivatives = false);
 
     // Actual calculation, with autograd support
-    torch::Tensor compute(torch::Tensor xyz);
-    std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz);
-    std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz);
+    torch::Tensor compute(torch::Tensor xyz, int64_t stream = 0);
+    std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz, int64_t stream = 0);
+    std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz, int64_t stream = 0);
 
     int64_t get_l_max() const { return this->l_max_; }
     bool get_backward_second_derivative_flag() const { return this->backward_second_derivatives_; }
@@ -69,7 +69,7 @@ class SolidHarmonics : public torch::CustomClassHolder {
     std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients, bool do_hessians);
     // Raw calculation, without autograd support, running on CUDA
     std::vector<torch::Tensor> compute_raw_cuda(
-        torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream = nullptr
+        torch::Tensor xyz, bool do_gradients, bool do_hessians, int64_t stream = 0
     );
 
     int64_t omp_num_threads_;
