@@ -93,7 +93,7 @@ jobs:
             TORCH_CUDA_ARCH_LIST=All
             CUDAARCHS=all
             SPHERICART_ARCH_NATIVE=OFF
-            SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.torch-version }}.*
+            SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.torch-version }}+cu${{ matrix.cuda-version-no-dot }}
             PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu${{ matrix.cuda-version-no-dot }}
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
             auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10.so --exclude libc10_cuda.so -w {dest_dir} {wheel}
