@@ -15,6 +15,7 @@ include(CheckLanguage)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
     set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
 else()
     message(STATUS "Could not find a CUDA compiler")
@@ -130,9 +131,15 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 if(CMAKE_CUDA_COMPILER)
+    target_include_directories(sphericart_torch PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    target_link_libraries(sphericart_torch PRIVATE ${CMAKE_DL_LIBS})
     target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
+    target_include_directories(sphericart_torch PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
 endif()
+
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
+
+target_include_directories(sphericart_torch PRIVATE ${TORCH_INCLUDE_DIRS})
 
 target_include_directories(sphericart_torch PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
