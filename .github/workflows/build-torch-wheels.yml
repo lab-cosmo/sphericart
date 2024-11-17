@@ -7,157 +7,167 @@ on:
   pull_request:
     # Check all PR
 
-env:
-  SPHERICART_NO_LOCAL_DEPS: "1"
+#env:
+#  SPHERICART_NO_LOCAL_DEPS: "1"
 
 jobs:
   build-torch-wheels:
-    name: ${{ matrix.os }}, torch ${{ matrix.torch }}, cuda ${{ matrix.cuda }}, arch ${{ matrix.arch }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - name: arm64 Linux
-            os: "ubuntu-22.04"
-            arch: "aarch64"
-            cibw-arch: "aarch64"
-            torch-version: "2.4.1"
-            python-version: "3.12"
-            cuda-version: "12.4"
-            cuda-version-no-dot: "124"
-            cibw-python: 'cp312-*'
-    steps:
-      # Checkout the repository
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      # Set up QEMU for ARM64 emulation
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      # Build the custom Manylinux Docker image
-      - name: Build Manylinux Docker Image
-        run: |
-          docker build -t manylinux2014_${{ matrix.cibw-arch }} \
-            scripts/manylinux2014_${{ matrix.cibw-arch }}
+        cibw-arch: ["x86_64"]
+        python-version: ["3.11", "3.12"]
+        pytorch-version: ["2.4.1", "2.5.0"]
+        cuda-version: ["12.4"]
+    env:
+      CIBW_SKIP: cp36-* cp37-* cp38-* cp39-* cp310-*
     
-      # Set up Python environment
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      # Install cibuildwheel and other required tools
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install cibuildwheel build
-      
-      # build sphericart wheel
-#      - name: Build sphericart wheels
-#        run: |
-#          # ensure we build the wheel from the sdist, not the checkout
-#          python -m build --sdist . --outdir dist
-#          python -m cibuildwheel dist/*.tar.gz --output-dir dist
-#        env:
-#          CIBW_BUILD_VERBOSITY: 3
-#          CIBW_BUILD: ${{ matrix.python }}
-#          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
-#          CIBW_ARCHS: ${{ matrix.cibw-arch }}
-#          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
-#          CIBW_BEFORE_BUILD: |
-#            pip install wheel
-#            pip install cmake
-#            pip install setuptools
-#          CIBW_ENVIRONMENT: |
-#            CUDA_HOME=/usr/local/cuda
-#            CUDAARCHS=all
-#            SPHERICART_ARCH_NATIVE=OFF
-#          CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
-#            auditwheel repair --exclude libsphericart.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libc10.so -w {dest_dir} {wheel}
-      
-      # build sphericart-torch wheel
-      - name: Build sphericart-torch wheels
-        run: python -m cibuildwheel sphericart-torch
-        env:
-          CIBW_BUILD_VERBOSITY: 3
-          CIBW_BUILD: ${{ matrix.cibw-python }}
-          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
-          CIBW_ARCHS: ${{ matrix.cibw-arch }}
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014_${{ matrix.cibw-arch }}
-          #CIBW_BEFORE_ALL: bash scripts/cibw_setup.sh ${{ matrix.cuda-version-no-dot }}
-          CIBW_ENVIRONMENT: >
-            CUDA_HOME=/usr/local/cuda
-            TORCH_CUDA_ARCH_LIST=All
-            CUDAARCHS=all
-            SPHERICART_ARCH_NATIVE=OFF
-            SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.torch-version }}.*
-            PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu${{ matrix.cuda-version-no-dot }}
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
-            auditwheel repair --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10.so --exclude libc10_cuda.so -w {dest_dir} {wheel}
-
-  merge-torch-wheels:
-    needs: build-torch-wheels
-    runs-on: ubuntu-22.04
-    name: merge sphericart-torch ${{ matrix.name }}
-    strategy:
-      matrix:
-        include:
-          - name: x86_64 Linux
-            os: ubuntu-22.04
-            arch: x86_64
-          - name: arm64 Linux
-            os: ubuntu-22.04
-            arch: aarch64
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Github Actions Envs Setup
+      run: |
+        CUVERSION="${{ matrix.cuda-version }}"
+        PYTHONVERSION="${{ matrix.python-version }}"
 
-      - name: Download wheels
-        uses: actions/download-artifact@v4
-        with:
-          pattern: torch-single-version-wheel-*-${{ matrix.os }}-${{ matrix.arch }}
-          merge-multiple: false
-          path: dist
+        CU_VERSION_NO_DOT=${CUVERSION//./}
+        echo CU_VERSION_NO_DOT=${CU_VERSION_NO_DOT} >> $GITHUB_ENV
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+        CU_VERSION_DASH=${CUVERSION//./-}
+        echo CU_VERSION_DASH=${CU_VERSION_DASH} >> $GITHUB_ENV
 
-      - name: install dependencies
-        run: python -m pip install twine wheel
+        PYTHON_VER_NO_DOT=${PYTHONVERSION//./}
+        echo PYTHON_VER_NO_DOT=${PYTHON_VER_NO_DOT} >> $GITHUB_ENV
 
-      - name: merge wheels
-        run: |
-          # collect all torch versions used for the build
-          REQUIRES_TORCH=$(find dist -name "*.whl" -exec unzip -p {} "sphericart_torch-*.dist-info/METADATA" \; | grep "Requires-Dist: torch")
-          MERGED_TORCH_REQUIRE=$(python scripts/create-torch-versions-range.py "$REQUIRES_TORCH")
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: all
+  
+    # Build the custom Manylinux Docker image
+    - name: Build Manylinux Docker Image
+      run: |
+        docker build --no-cache \
+        -t manylinux2014_"${{ matrix.cibw-arch }}" \
+        --build-arg PYTHON_VER="${{ matrix.python-version }}" \
+        --build-arg PYTHON_VER_NO_DOT="${{ env.PYTHON_VER_NO_DOT }}" \
+        --build-arg CUDA_VER="${{ matrix.cuda-version }}" \
+        --build-arg CUDA_VER_NO_DOT="${{ env.CU_VERSION_NO_DOT }}" \
+        --build-arg CUDA_VER_DASH="${{ env.CU_VERSION_DASH }}" \
+        --build-arg PYTORCH_VERSION="${{ matrix.pytorch-version }}" \
+        scripts/manylinux2014_"${{ matrix.cibw-arch }}"
+    
+    # Set up Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "${{ matrix.python-version }}"
+    
+    - name: Install cibuildwheel
+      run: python -m pip install cibuildwheel==2.22.0
 
-          echo MERGED_TORCH_REQUIRE=$MERGED_TORCH_REQUIRE
+    - name: Build torch wheels
+      run: python -m cibuildwheel ./sphericart-torch
+      env:
+        CUDA_HOME: /usr/local/cuda
+        PIP_EXTRA_INDEX_URL: "https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
+        CIBW_BUILD_VERBOSITY: 3
+        CIBW_BUILD: "cp${{ env.PYTHON_VER_NO_DOT }}-*"
+        CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation --check-build-dependencies"
+        CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+        CIBW_ARCHS: "${{ matrix.cibw-arch }}"
+        CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014_x86_64"
+        CIBW_MANYLINUX_AARCH64_IMAGE: "manylinux2014_aarch64"
+        CIBW_ENVIRONMENT: >
+          CUDA_HOME=/usr/local/cuda
+          PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
+          SPHERICART_ARCH_NATIVE=OFF
+        CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
+          auditwheel repair --exclude libc10.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10_cuda.so  -w {dest_dir} {wheel}
+    
+    - uses: actions/upload-artifact@v4
+      with:
+        name: "sphericart-torch-py-${{ env.PYTHON_VER_NO_DOT }}-torch-${{matrix.pytorch-version}}+cu${{ env.CU_VERSION_NO_DOT }}-${{ matrix.cibw-arch }}"
+        path: ./wheelhouse/*.whl
 
-          # unpack all single torch versions wheels in the same directory
-          mkdir dist/unpacked
-          find dist -name "*.whl" -print -exec python -m wheel unpack --dest dist/unpacked/ {} ';'
+    # - name: Build wheels
+    #   uses: pypa/cibuildwheel@v2.22.0
+    #   env:
+    #     CUDA_HOME: /usr/local/cuda
+    #     PIP_EXTRA_INDEX_URL: "https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
+    #     CIBW_BUILD_VERBOSITY: 3
+    #     CIBW_BUILD: "cp${{ env.PYTHON_VER_NO_DOT }}-*"
+    #     CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation"
+    #     CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+    #     CIBW_ARCHS: "${{ matrix.cibw-arch }}"
+    #     CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014_${{ matrix.cibw-arch }}"
+    #     CIBW_ENVIRONMENT: >
+    #       CUDA_HOME=/usr/local/cuda
+    #       PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
+    #     CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
+    #       auditwheel repair --exclude libcuda.so --exclude libcuda.so.1 --exclude libc10.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10_cuda.so  --exclude libcudart.so --exclude libnvToolsExt.so  --exclude libnvrtc.so --exclude libnvrtc.so.12 -w {dest_dir} {wheel}
 
-          sed -i "s/Requires-Dist: torch.*/$MERGED_TORCH_REQUIRE/" dist/unpacked/sphericart_torch-*/sphericart_torch-*.dist-info/METADATA
+  # merge-torch-wheels:
+  #   needs: build-torch-wheels
+  #   runs-on: ubuntu-22.04
+  #   name: merge sphericart-torch ${{ matrix.name }}
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - name: x86_64 Linux
+  #           os: ubuntu-22.04
+  #           arch: x86_64
+  #         - name: arm64 Linux
+  #           os: ubuntu-22.04
+  #           arch: aarch64
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-          echo "\n\n METADATA = \n\n"
-          cat dist/unpacked/sphericart_torch-*/metatensor_torch-*.dist-info/METADATA
+  #     - name: Download wheels
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: torch-single-version-wheel-*-${{ matrix.os }}-${{ matrix.arch }}
+  #         merge-multiple: false
+  #         path: dist
 
-          # check the right metadata was added to the file. grep will exit with
-          # code `1` if the line is not found, which will stop CI
-          grep "$MERGED_TORCH_REQUIRE" dist/unpacked/sphericart_torch-*/sphericart_torch-*.dist-info/METADATA
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
 
-          # repack the directory as a new wheel
-          mkdir wheelhouse
-          python -m wheel pack --dest wheelhouse/ dist/unpacked/*
+  #     - name: install dependencies
+  #       run: python -m pip install twine wheel
 
-      - name: check wheels with twine
-        run: twine check wheelhouse/*
+  #     - name: merge wheels
+  #       run: |
+  #         # collect all torch versions used for the build
+  #         REQUIRES_TORCH=$(find dist -name "*.whl" -exec unzip -p {} "sphericart_torch-*.dist-info/METADATA" \; | grep "Requires-Dist: torch")
+  #         MERGED_TORCH_REQUIRE=$(python scripts/create-torch-versions-range.py "$REQUIRES_TORCH")
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: torch-wheel-${{ matrix.os }}-${{ matrix.arch }}
-          path: ./wheelhouse/*.whl
+  #         echo MERGED_TORCH_REQUIRE=$MERGED_TORCH_REQUIRE
+
+  #         # unpack all single torch versions wheels in the same directory
+  #         mkdir dist/unpacked
+  #         find dist -name "*.whl" -print -exec python -m wheel unpack --dest dist/unpacked/ {} ';'
+
+  #         sed -i "s/Requires-Dist: torch.*/$MERGED_TORCH_REQUIRE/" dist/unpacked/sphericart_torch-*/sphericart_torch-*.dist-info/METADATA
+
+  #         echo "\n\n METADATA = \n\n"
+  #         cat dist/unpacked/sphericart_torch-*/metatensor_torch-*.dist-info/METADATA
+
+  #         # check the right metadata was added to the file. grep will exit with
+  #         # code `1` if the line is not found, which will stop CI
+  #         grep "$MERGED_TORCH_REQUIRE" dist/unpacked/sphericart_torch-*/sphericart_torch-*.dist-info/METADATA
+
+  #         # repack the directory as a new wheel
+  #         mkdir wheelhouse
+  #         python -m wheel pack --dest wheelhouse/ dist/unpacked/*
+
+  #     - name: check wheels with twine
+  #       run: twine check wheelhouse/*
+
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: torch-wheel-${{ matrix.os }}-${{ matrix.arch }}
+  #         path: ./wheelhouse/*.whl

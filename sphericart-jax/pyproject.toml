@@ -1,7 +1,7 @@
 [project]
 name = "sphericart-jax"
 dynamic = ["version"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = ["jax >= 0.4.18"]
 
 readme = "README.md"
@@ -42,7 +42,7 @@ repository = "https://github.com/lab-cosmo/sphericart"
 requires = [
     "setuptools >=44",
     "wheel >=0.36",
-    "cmake",
+    "cmake >=3.30",
     "pybind11>=2.8.0",
 ]
 build-backend = "setuptools.build_meta"

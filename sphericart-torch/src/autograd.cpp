@@ -1,7 +1,4 @@
-#ifdef CUDA_AVAILABLE
-//#include <c10/cuda/CUDAGuard.h>
-#include <c10/cuda/CUDAStream.h>
-#endif
+#include <cstdint> // For intptr_t
 
 #include "sphericart/autograd.hpp"
 
@@ -11,7 +8,12 @@
 #include "sphericart/torch_cuda_wrapper.hpp"
 #include <torch/torch.h>
 
+#ifdef CUDA_AVAILABLE
+#include <c10/cuda/CUDAStream.h>
+#endif
+
 using namespace sphericart_torch;
+using namespace at;
 
 template <template <typename> class C, typename scalar_t>
 std::vector<torch::Tensor> _compute_raw_cpu(
@@ -120,7 +122,12 @@ std::vector<torch::Tensor> _compute_raw_cuda(
         );
         return {sph, dsph, torch::Tensor()};
     } else {
-        calculator->compute(xyz.data_ptr<scalar_t>(), n_samples, sph.data_ptr<scalar_t>(), stream);
+        calculator->compute(
+            xyz.data_ptr<scalar_t>(),
+            n_samples,
+            sph.data_ptr<scalar_t>(),
+            reinterpret_cast<void*>(stream)
+        );
         return {sph, torch::Tensor(), torch::Tensor()};
     }
 }
@@ -261,6 +268,11 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
         throw std::runtime_error("xyz tensor must be an `n_samples x 3` array");
     }
 
+    void* stream = nullptr;
+#ifdef CUDA_AVAILABLE
+    stream = reinterpret_cast<void*>(at::cuda::getCurrentCUDAStream().stream());
+#endif
+
     auto sph = torch::Tensor();
     auto dsph = torch::Tensor();
     auto ddsph = torch::Tensor();
@@ -276,14 +288,6 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
         dsph = results[1];
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
-
-        void* stream = nullptr;
-#ifdef CUDA_AVAILABLE
-        //c10::cuda::CUDAGuard deviceGuard{xyz.device()};
-        cudaStream_t currstream = c10::cuda::getCurrentCUDAStream();
-        stream = reinterpret_cast<void*>(currstream);
-#endif
-
         auto results = calculator.compute_raw_cuda(xyz, requires_grad, requires_hessian, stream);
         sph = results[0];
         dsph = results[1];
@@ -295,6 +299,7 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
 
     if (xyz.requires_grad()) {
         ctx->save_for_backward({xyz, dsph, ddsph});
+        ctx->saved_data["stream"] = torch::IValue((int64_t)(intptr_t)stream);
     }
 
     if (do_hessians) {
@@ -309,13 +314,13 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
 std::vector<torch::Tensor> SphericartAutograd::backward(
     torch::autograd::AutogradContext* ctx, std::vector<torch::Tensor> grad_outputs
 ) {
+
     if (grad_outputs.size() > 1) {
         throw std::runtime_error(
             "We can not run a backward pass through the gradients of spherical "
             "harmonics"
         );
     }
-
     /* get the saved data from the forward pass */
     auto saved_variables = ctx->get_saved_variables();
     // We extract xyz and pass it as a separate variable because we will need
@@ -323,7 +328,7 @@ std::vector<torch::Tensor> SphericartAutograd::backward(
     auto xyz = saved_variables[0];
     torch::Tensor xyz_grad =
         SphericartAutogradBackward::apply(grad_outputs[0].contiguous(), xyz, saved_variables);
-    return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor()};
+    return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor(), torch::Tensor()};
 }
 
 torch::Tensor SphericartAutogradBackward::forward(
@@ -333,6 +338,11 @@ torch::Tensor SphericartAutogradBackward::forward(
     std::vector<torch::Tensor> saved_variables
 ) {
 
+    void* stream = nullptr;
+#ifdef CUDA_AVAILABLE
+    stream = reinterpret_cast<void*>(at::cuda::getCurrentCUDAStream().stream());
+#endif
+
     auto dsph = saved_variables[1];
     auto ddsph = saved_variables[2];
 
@@ -341,12 +351,6 @@ torch::Tensor SphericartAutogradBackward::forward(
         if (xyz.device().is_cpu()) {
             xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
         } else if (xyz.device().is_cuda()) {
-            void* stream = nullptr;
-#ifdef CUDA_AVAILABLE
-            //c10::cuda::CUDAGuard deviceGuard{xyz.device()};
-            cudaStream_t currstream = c10::cuda::getCurrentCUDAStream();
-            stream = reinterpret_cast<void*>(currstream);
-#endif
             xyz_grad =
                 sphericart_torch::spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs, stream);
         } else {
@@ -362,6 +366,7 @@ torch::Tensor SphericartAutogradBackward::forward(
 std::vector<torch::Tensor> SphericartAutogradBackward::backward(
     torch::autograd::AutogradContext* ctx, std::vector<torch::Tensor> grad_2_outputs
 ) {
+
     auto saved_variables = ctx->get_saved_variables();
     auto xyz = saved_variables[0];
     auto grad_out = saved_variables[1];
@@ -424,7 +429,7 @@ std::vector<torch::Tensor> SphericartAutogradBackward::backward(
         // not be updated
     }
 
-    return {gradgrad_wrt_grad_out, gradgrad_wrt_xyz, torch::Tensor()};
+    return {gradgrad_wrt_grad_out, gradgrad_wrt_xyz, torch::Tensor(), torch::Tensor()};
 }
 
 // Explicit instantiation of SphericartAutograd::forward
