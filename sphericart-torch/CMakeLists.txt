@@ -135,7 +135,10 @@ if(CMAKE_CUDA_COMPILER)
     target_link_libraries(sphericart_torch PRIVATE ${CMAKE_DL_LIBS})
     target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
 endif()
+
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
+
+target_include_directories(sphericart_torch PRIVATE ${TORCH_INCLUDE_DIRS})
 
 target_include_directories(sphericart_torch PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
