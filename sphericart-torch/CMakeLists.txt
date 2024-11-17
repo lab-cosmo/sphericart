@@ -138,6 +138,8 @@ endif()
 
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
 
+message (STATUS "DEBUG Torch Include Dirs ${TORCH_INCLUDE_DIRS}")
+
 target_include_directories(sphericart_torch PRIVATE ${TORCH_INCLUDE_DIRS})
 
 target_include_directories(sphericart_torch PUBLIC
