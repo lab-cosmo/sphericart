@@ -290,7 +290,7 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
 
     if (xyz.requires_grad()) {
         ctx->save_for_backward({xyz, dsph, ddsph});
-        ctx->saved_data["stream"] = (int64_t)(intptr_t)stream;
+        ctx->saved_data["stream"] = torch::IValue((int64_t)(intptr_t)stream);
     }
 
     if (do_hessians) {
@@ -305,6 +305,9 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
 std::vector<torch::Tensor> SphericartAutograd::backward(
     torch::autograd::AutogradContext* ctx, std::vector<torch::Tensor> grad_outputs
 ) {
+
+    int64_t stream = (int64_t)(intptr_t)ctx->saved_data["stream"].toInt();
+
     if (grad_outputs.size() > 1) {
         throw std::runtime_error(
             "We can not run a backward pass through the gradients of spherical "
@@ -317,7 +320,7 @@ std::vector<torch::Tensor> SphericartAutograd::backward(
     // gradients with respect to it
     auto xyz = saved_variables[0];
     torch::Tensor xyz_grad =
-        SphericartAutogradBackward::apply(grad_outputs[0].contiguous(), xyz, saved_variables);
+        SphericartAutogradBackward::apply(grad_outputs[0].contiguous(), xyz, saved_variables, stream);
     return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor(), torch::Tensor()};
 }
 
@@ -325,10 +328,12 @@ torch::Tensor SphericartAutogradBackward::forward(
     torch::autograd::AutogradContext* ctx,
     torch::Tensor grad_outputs,
     torch::Tensor xyz,
-    std::vector<torch::Tensor> saved_variables
+    std::vector<torch::Tensor> saved_variables,
+    int64_t stream
 ) {
 
-    int64_t stream = (int64_t)(intptr_t)ctx->saved_data["stream"].toInt();
+    ctx->saved_data["stream"] = torch::IValue((int64_t)(intptr_t)stream);
+
     auto dsph = saved_variables[1];
     auto ddsph = saved_variables[2];
 
@@ -353,8 +358,7 @@ std::vector<torch::Tensor> SphericartAutogradBackward::backward(
     torch::autograd::AutogradContext* ctx, std::vector<torch::Tensor> grad_2_outputs
 ) {
 
-    int64_t stream = (int64_t)(intptr_t)ctx->saved_data["stream"].toInt(
-    ); // unused since torch ops should be on the right stream
+    int64_t stream = (int64_t)(intptr_t)ctx->saved_data["stream"].toInt();
 
     auto saved_variables = ctx->get_saved_variables();
     auto xyz = saved_variables[0];
@@ -418,7 +422,7 @@ std::vector<torch::Tensor> SphericartAutogradBackward::backward(
         // not be updated
     }
 
-    return {gradgrad_wrt_grad_out, gradgrad_wrt_xyz, torch::Tensor()};
+    return {gradgrad_wrt_grad_out, gradgrad_wrt_xyz, torch::Tensor(), torch::Tensor()};
 }
 
 // Explicit instantiation of SphericartAutograd::forward

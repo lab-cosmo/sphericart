@@ -29,7 +29,8 @@ class SphericartAutogradBackward : public torch::autograd::Function<SphericartAu
         torch::autograd::AutogradContext* ctx,
         torch::Tensor grad_outputs,
         torch::Tensor xyz,
-        std::vector<torch::Tensor> saved_variables
+        std::vector<torch::Tensor> saved_variables,
+        int64_t stream = 0
     );
 
     static std::vector<torch::Tensor> backward(

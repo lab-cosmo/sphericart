@@ -33,12 +33,12 @@ def torch_version_compatible(actual, required):
         return True
 
 
-#if not torch_version_compatible(torch.__version__, BUILD_TORCH_VERSION):
-#    raise ImportError(
-#        f"Trying to load sphericart-torch with torch v{torch.__version__}, "
-#        f"but it was compiled against torch v{BUILD_TORCH_VERSION}, which "
-#        "is not ABI compatible"
-#    )
+if not torch_version_compatible(torch.__version__, BUILD_TORCH_VERSION):
+   raise ImportError(
+       f"Trying to load sphericart-torch with torch v{torch.__version__}, "
+       f"but it was compiled against torch v{BUILD_TORCH_VERSION}, which "
+       "is not ABI compatible"
+   )
 
 
 _HERE = os.path.realpath(os.path.dirname(__file__))
@@ -177,7 +177,7 @@ class SphericalHarmonics(torch.nn.Module):
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
             1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
         """
-        return self.calculator.compute(xyz)
+        return self.calculator.compute(xyz, self.get_stream())
 
     def compute(self, xyz: Tensor) -> Tensor:
         """Equivalent to ``forward``"""
