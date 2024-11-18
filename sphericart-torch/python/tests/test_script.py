@@ -25,7 +25,7 @@ class SHModule(torch.nn.Module):
 
 @pytest.fixture
 def xyz():
-    return 6 * torch.randn(100, 3, dtype=torch.float64, requires_grad=True)
+    return 6 * torch.randn(100, 3, dtype=torch.float64, requires_grad=True, device='cuda')
 
 
 @pytest.mark.parametrize("normalized", [True, False])

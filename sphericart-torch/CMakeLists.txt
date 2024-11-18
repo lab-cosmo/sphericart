@@ -106,12 +106,7 @@ endif()
 
 find_package(Torch 2.1 REQUIRED)
 
-message (STATUS "CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}")
-message (STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
-
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERSION = '${Torch_VERSION}'")
-
-message(STATUS "DEBUG PyTorch Version: ${Torch_VERSION}")
 
 add_library(sphericart_torch SHARED
     "include/sphericart/torch_cuda_wrapper.hpp"
@@ -133,14 +128,10 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 if(CMAKE_CUDA_COMPILER)
-    #target_include_directories(sphericart_torch PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    #target_link_libraries(sphericart_torch PRIVATE ${CMAKE_DL_LIBS})
     target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
 endif()
 
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
-
-#target_include_directories(sphericart_torch PRIVATE ${TORCH_INCLUDE_DIRS})
 
 target_include_directories(sphericart_torch PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

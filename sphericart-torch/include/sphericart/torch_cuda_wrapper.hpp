@@ -7,7 +7,7 @@
 namespace sphericart_torch {
 
 torch::Tensor spherical_harmonics_backward_cuda(
-    torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad, int64_t stream = 0
+    torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad, void* stream = nullptr
 );
 
 } // namespace sphericart_torch

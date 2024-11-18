@@ -34,11 +34,11 @@ def torch_version_compatible(actual, required):
 
 
 if not torch_version_compatible(torch.__version__, BUILD_TORCH_VERSION):
-   raise ImportError(
-       f"Trying to load sphericart-torch with torch v{torch.__version__}, "
-       f"but it was compiled against torch v{BUILD_TORCH_VERSION}, which "
-       "is not ABI compatible"
-   )
+    raise ImportError(
+        f"Trying to load sphericart-torch with torch v{torch.__version__}, "
+        f"but it was compiled against torch v{BUILD_TORCH_VERSION}, which "
+        "is not ABI compatible"
+    )
 
 
 _HERE = os.path.realpath(os.path.dirname(__file__))
@@ -59,7 +59,8 @@ def _lib_path():
     if os.path.isfile(path):
         return path
 
-    raise ImportError("Could not find sphericart_torch shared library at " + path)
+    raise ImportError(
+        "Could not find sphericart_torch shared library at " + path)
 
 
 # load the C++ operators and custom classes
@@ -146,11 +147,13 @@ class SphericalHarmonics(torch.nn.Module):
             l_max, backward_second_derivatives
         )
 
-    def get_stream(self) -> int:
+    def get_stream(self, xyz : Tensor) -> int:
         """
         Returns the currently selected CudaStream_t. Defaults to 0 if no stream specified.
         """
-        return torch.cuda.current_stream().cuda_stream if (torch.cuda.is_available()) else 0
+        print(torch.cuda.current_stream(torch.cuda.current_device()))
+        print(torch.cuda.current_stream(torch.cuda.current_device()).id())
+        return torch.cuda.current_stream(xyz.device).id() if xyz.is_cuda else 0
 
     def forward(self, xyz: Tensor) -> Tensor:
         """
@@ -177,11 +180,11 @@ class SphericalHarmonics(torch.nn.Module):
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
             1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
         """
-        return self.calculator.compute(xyz, self.get_stream())
+        return self.calculator.compute(xyz)
 
     def compute(self, xyz: Tensor) -> Tensor:
         """Equivalent to ``forward``"""
-        return self.calculator.compute(xyz, self.get_stream())
+        return self.calculator.compute(xyz)
 
     def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
         """
@@ -213,7 +216,7 @@ class SphericalHarmonics(torch.nn.Module):
               derivatives in the the x, y, and z directions, respectively.
 
         """
-        return self.calculator.compute_with_gradients(xyz, self.get_stream())
+        return self.calculator.compute_with_gradients(xyz)
 
     def compute_with_hessians(self, xyz: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
         """
@@ -250,7 +253,7 @@ class SphericalHarmonics(torch.nn.Module):
               hessian dimensions.
 
         """
-        return self.calculator.compute_with_hessians(xyz, self.get_stream())
+        return self.calculator.compute_with_hessians(xyz)
 
     def omp_num_threads(self):
         """Returns the number of threads available for calculations on the CPU."""
@@ -294,27 +297,29 @@ class SolidHarmonics(torch.nn.Module):
             l_max, backward_second_derivatives
         )
 
-    def get_stream(self) -> int:
+    def get_stream(self, xyz: Tensor) -> int:
         """
         Returns the currently selected CudaStream_t. Defaults to 0 if no stream specified.
         """
-        return torch.cuda.current_stream().cuda_stream if (torch.cuda.is_available()) else 0
+        print(torch.cuda.current_stream(torch.cuda.current_device()))
+        print(torch.cuda.current_stream(torch.cuda.current_device()).id())
+        return torch.cuda.current_stream(xyz.device).id() if xyz.is_cuda else 0
 
     def forward(self, xyz: Tensor) -> Tensor:
         """See :py:meth:`SphericalHarmonics.forward`"""
-        return self.calculator.compute(xyz, self.get_stream())
+        return self.calculator.compute(xyz)
 
     def compute(self, xyz: Tensor) -> Tensor:
         """Equivalent to ``forward``"""
-        return self.calculator.compute(xyz, self.get_stream())
+        return self.calculator.compute(xyz)
 
     def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
         """See :py:meth:`SphericalHarmonics.compute_with_gradients`"""
-        return self.calculator.compute_with_gradients(xyz, self.get_stream())
+        return self.calculator.compute_with_gradients(xyz)
 
     def compute_with_hessians(self, xyz: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
         """See :py:meth:`SphericalHarmonics.compute_with_hessians`"""
-        return self.calculator.compute_with_hessians(xyz, self.get_stream())
+        return self.calculator.compute_with_hessians(xyz)
 
     def omp_num_threads(self):
         """Returns the number of threads available for calculations on the CPU."""

@@ -8,7 +8,12 @@
 #include "sphericart/torch_cuda_wrapper.hpp"
 #include <torch/torch.h>
 
+#ifdef CUDA_AVAILABLE
+#include <c10/cuda/CUDAStream.h>
+#endif
+
 using namespace sphericart_torch;
+using namespace at;
 
 template <template <typename> class C, typename scalar_t>
 std::vector<torch::Tensor> _compute_raw_cpu(
@@ -74,7 +79,7 @@ std::vector<torch::Tensor> _compute_raw_cuda(
     int64_t l_max,
     bool do_gradients,
     bool do_hessians,
-    int64_t stream
+    void * stream
 ) {
     if (!xyz.is_contiguous()) {
         throw std::runtime_error("this code only runs with contiguous tensors");
@@ -103,7 +108,7 @@ std::vector<torch::Tensor> _compute_raw_cuda(
             sph.data_ptr<scalar_t>(),
             dsph.data_ptr<scalar_t>(),
             ddsph.data_ptr<scalar_t>(),
-            reinterpret_cast<void*>(stream)
+            stream
         );
         return {sph, dsph, ddsph};
     } else if (do_gradients) {
@@ -113,7 +118,7 @@ std::vector<torch::Tensor> _compute_raw_cuda(
             n_samples,
             sph.data_ptr<scalar_t>(),
             dsph.data_ptr<scalar_t>(),
-            reinterpret_cast<void*>(stream)
+            stream
         );
         return {sph, dsph, torch::Tensor()};
     } else {
@@ -144,7 +149,7 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(
 }
 
 std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cuda(
-    torch::Tensor xyz, bool do_gradients, bool do_hessians, int64_t stream
+    torch::Tensor xyz, bool do_gradients, bool do_hessians, void * stream
 ) {
     if (xyz.dtype() == c10::kDouble) {
         return _compute_raw_cuda<sphericart::cuda::SphericalHarmonics, double>(
@@ -176,7 +181,7 @@ std::vector<torch::Tensor> SolidHarmonics::compute_raw_cpu(
 }
 
 std::vector<torch::Tensor> SolidHarmonics::compute_raw_cuda(
-    torch::Tensor xyz, bool do_gradients, bool do_hessians, int64_t stream
+    torch::Tensor xyz, bool do_gradients, bool do_hessians, void * stream
 ) {
     if (xyz.dtype() == c10::kDouble) {
         return _compute_raw_cuda<sphericart::cuda::SolidHarmonics, double>(
@@ -253,8 +258,7 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
     C& calculator,
     torch::Tensor xyz,
     bool do_gradients,
-    bool do_hessians,
-    int64_t stream
+    bool do_hessians
 ) {
     if (xyz.sizes().size() != 2) {
         throw std::runtime_error("xyz tensor must be a 2D array");
@@ -263,6 +267,11 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
     if (xyz.sizes()[1] != 3) {
         throw std::runtime_error("xyz tensor must be an `n_samples x 3` array");
     }
+
+    void* stream = nullptr;
+#ifdef CUDA_AVAILABLE
+    stream = reinterpret_cast<void*>(at::cuda::getCurrentCUDAStream().stream());
+#endif
 
     auto sph = torch::Tensor();
     auto dsph = torch::Tensor();
@@ -306,8 +315,6 @@ std::vector<torch::Tensor> SphericartAutograd::backward(
     torch::autograd::AutogradContext* ctx, std::vector<torch::Tensor> grad_outputs
 ) {
 
-    int64_t stream = (int64_t)(intptr_t)ctx->saved_data["stream"].toInt();
-
     if (grad_outputs.size() > 1) {
         throw std::runtime_error(
             "We can not run a backward pass through the gradients of spherical "
@@ -320,7 +327,7 @@ std::vector<torch::Tensor> SphericartAutograd::backward(
     // gradients with respect to it
     auto xyz = saved_variables[0];
     torch::Tensor xyz_grad =
-        SphericartAutogradBackward::apply(grad_outputs[0].contiguous(), xyz, saved_variables, stream);
+        SphericartAutogradBackward::apply(grad_outputs[0].contiguous(), xyz, saved_variables);
     return {torch::Tensor(), xyz_grad, torch::Tensor(), torch::Tensor(), torch::Tensor()};
 }
 
@@ -328,11 +335,13 @@ torch::Tensor SphericartAutogradBackward::forward(
     torch::autograd::AutogradContext* ctx,
     torch::Tensor grad_outputs,
     torch::Tensor xyz,
-    std::vector<torch::Tensor> saved_variables,
-    int64_t stream
+    std::vector<torch::Tensor> saved_variables
 ) {
 
-    ctx->saved_data["stream"] = torch::IValue((int64_t)(intptr_t)stream);
+    void* stream = nullptr;
+#ifdef CUDA_AVAILABLE
+    stream = reinterpret_cast<void*>(at::cuda::getCurrentCUDAStream().stream());
+#endif
 
     auto dsph = saved_variables[1];
     auto ddsph = saved_variables[2];
@@ -357,8 +366,6 @@ torch::Tensor SphericartAutogradBackward::forward(
 std::vector<torch::Tensor> SphericartAutogradBackward::backward(
     torch::autograd::AutogradContext* ctx, std::vector<torch::Tensor> grad_2_outputs
 ) {
-
-    int64_t stream = (int64_t)(intptr_t)ctx->saved_data["stream"].toInt();
 
     auto saved_variables = ctx->get_saved_variables();
     auto xyz = saved_variables[0];
@@ -431,14 +438,12 @@ template std::vector<torch::Tensor> SphericartAutograd::forward<SphericalHarmoni
     SphericalHarmonics& calculator,
     torch::Tensor xyz,
     bool do_gradients,
-    bool do_hessians,
-    int64_t stream
+    bool do_hessians
 );
 template std::vector<torch::Tensor> SphericartAutograd::forward<SolidHarmonics>(
     torch::autograd::AutogradContext* ctx,
     SolidHarmonics& calculator,
     torch::Tensor xyz,
     bool do_gradients,
-    bool do_hessians,
-    int64_t stream
+    bool do_hessians
 );
