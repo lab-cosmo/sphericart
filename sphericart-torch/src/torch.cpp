@@ -101,17 +101,9 @@ TORCH_LIBRARY(sphericart_torch, m) {
         )
         .def("compute", &SolidHarmonics::compute, "", {torch::arg("xyz")})
         .def(
-            "compute_with_gradients",
-            &SolidHarmonics::compute_with_gradients,
-            "",
-            {torch::arg("xyz")}
+            "compute_with_gradients", &SolidHarmonics::compute_with_gradients, "", {torch::arg("xyz")}
         )
-        .def(
-            "compute_with_hessians",
-            &SolidHarmonics::compute_with_hessians,
-            "",
-            {torch::arg("xyz")}
-        )
+        .def("compute_with_hessians", &SolidHarmonics::compute_with_hessians, "", {torch::arg("xyz")})
         .def("omp_num_threads", &SolidHarmonics::get_omp_num_threads)
         .def("l_max", &SolidHarmonics::get_l_max)
         .def_pickle(

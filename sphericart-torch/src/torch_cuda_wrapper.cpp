@@ -22,7 +22,7 @@
     Torch wrapper for the CUDA kernel backwards pass.
 */
 torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
-    torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad, void * stream
+    torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad, void* stream
 ) {
 
     if (!xyz.device().is_cuda()) {

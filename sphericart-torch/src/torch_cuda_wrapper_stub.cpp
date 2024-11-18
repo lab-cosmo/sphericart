@@ -6,7 +6,7 @@
     Torch wrapper for the CUDA kernel backwards pass.
 */
 torch::Tensor sphericart_torch::spherical_harmonics_backward_cuda(
-    torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad, void * stream
+    torch::Tensor xyz, torch::Tensor dsph, torch::Tensor sph_grad, void* stream
 ) {
 
     throw std::runtime_error("sphericart_torch was not compiled with CUDA support");

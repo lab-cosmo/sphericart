@@ -79,7 +79,7 @@ std::vector<torch::Tensor> _compute_raw_cuda(
     int64_t l_max,
     bool do_gradients,
     bool do_hessians,
-    void * stream
+    void* stream
 ) {
     if (!xyz.is_contiguous()) {
         throw std::runtime_error("this code only runs with contiguous tensors");
@@ -149,7 +149,7 @@ std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cpu(
 }
 
 std::vector<torch::Tensor> SphericalHarmonics::compute_raw_cuda(
-    torch::Tensor xyz, bool do_gradients, bool do_hessians, void * stream
+    torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream
 ) {
     if (xyz.dtype() == c10::kDouble) {
         return _compute_raw_cuda<sphericart::cuda::SphericalHarmonics, double>(
@@ -181,7 +181,7 @@ std::vector<torch::Tensor> SolidHarmonics::compute_raw_cpu(
 }
 
 std::vector<torch::Tensor> SolidHarmonics::compute_raw_cuda(
-    torch::Tensor xyz, bool do_gradients, bool do_hessians, void * stream
+    torch::Tensor xyz, bool do_gradients, bool do_hessians, void* stream
 ) {
     if (xyz.dtype() == c10::kDouble) {
         return _compute_raw_cuda<sphericart::cuda::SolidHarmonics, double>(

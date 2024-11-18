@@ -1,10 +1,8 @@
-import importlib
 import math
 import os
 import sys
 from types import ModuleType
 from typing import List, Optional, Union, Tuple
-import glob
 
 import torch
 from torch import Tensor
@@ -59,8 +57,7 @@ def _lib_path():
     if os.path.isfile(path):
         return path
 
-    raise ImportError(
-        "Could not find sphericart_torch shared library at " + path)
+    raise ImportError("Could not find sphericart_torch shared library at " + path)
 
 
 # load the C++ operators and custom classes
@@ -146,14 +143,6 @@ class SphericalHarmonics(torch.nn.Module):
         self.calculator = torch.classes.sphericart_torch.SphericalHarmonics(
             l_max, backward_second_derivatives
         )
-
-    def get_stream(self, xyz : Tensor) -> int:
-        """
-        Returns the currently selected CudaStream_t. Defaults to 0 if no stream specified.
-        """
-        print(torch.cuda.current_stream(torch.cuda.current_device()))
-        print(torch.cuda.current_stream(torch.cuda.current_device()).id())
-        return torch.cuda.current_stream(xyz.device).id() if xyz.is_cuda else 0
 
     def forward(self, xyz: Tensor) -> Tensor:
         """
@@ -297,14 +286,6 @@ class SolidHarmonics(torch.nn.Module):
             l_max, backward_second_derivatives
         )
 
-    def get_stream(self, xyz: Tensor) -> int:
-        """
-        Returns the currently selected CudaStream_t. Defaults to 0 if no stream specified.
-        """
-        print(torch.cuda.current_stream(torch.cuda.current_device()))
-        print(torch.cuda.current_stream(torch.cuda.current_device()).id())
-        return torch.cuda.current_stream(xyz.device).id() if xyz.is_cuda else 0
-
     def forward(self, xyz: Tensor) -> Tensor:
         """See :py:meth:`SphericalHarmonics.forward`"""
         return self.calculator.compute(xyz)
@@ -374,15 +355,13 @@ def e3nn_spherical_harmonics(
     if normalize:
         sh = SphericalHarmonics(l_max)(
             torch.index_select(
-                x, 1, torch.tensor(
-                    [2, 0, 1], dtype=torch.long, device=x.device)
+                x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
             )
         )
     else:
         sh = SolidHarmonics(l_max)(
             torch.index_select(
-                x, 1, torch.tensor(
-                    [2, 0, 1], dtype=torch.long, device=x.device)
+                x, 1, torch.tensor([2, 0, 1], dtype=torch.long, device=x.device)
             )
         )
     assert normalization in ["integral", "norm", "component"]
@@ -392,14 +371,14 @@ def e3nn_spherical_harmonics(
     if not is_range_lmax:
         sh_list = []
         for l in l_list:  # noqa E741
-            shl = sh[:, l * l: (l + 1) * (l + 1)]
+            shl = sh[:, l * l : (l + 1) * (l + 1)]
             if normalization == "norm":
                 shl *= math.sqrt(1 / (2 * l + 1))
             sh_list.append(shl)
         sh = torch.cat(sh_list, dim=-1)
     elif normalization == "norm":
         for l in l_list:  # noqa E741
-            sh[:, l * l: (l + 1) * (l + 1)] *= math.sqrt(1 / (2 * l + 1))
+            sh[:, l * l : (l + 1) * (l + 1)] *= math.sqrt(1 / (2 * l + 1))
 
     return sh
 
