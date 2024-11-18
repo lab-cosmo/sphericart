@@ -129,6 +129,7 @@ endif()
 
 if(CMAKE_CUDA_COMPILER)
     target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
+    target_include_directories(sphericart_torch PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
 endif()
 
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
