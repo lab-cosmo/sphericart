@@ -131,6 +131,7 @@ message (STATUS "CUDA Toolkit Dir: ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
 
 if(CMAKE_CUDA_COMPILER)
     target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
+    target_compile_definitions(sphericart_torch PRIVATE C10_CUDA_NO_CMAKE_CONFIGURE_FILE)
     target_include_directories(sphericart_torch PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 endif()
 
