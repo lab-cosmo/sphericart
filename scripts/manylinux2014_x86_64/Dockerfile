@@ -43,7 +43,7 @@ RUN echo "CUDA_HOME: ${CUDA_HOME}" && \
 #RUN pip install torch==2.4.1+cu124 --extra-index-url https://download.pytorch.org/whl/cu124
 #RUN pip install numpy cmake
 RUN pip install torch==${PYTORCH_VERSION}+cu${CUDA_VER_NO_DOT} --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VER_NO_DOT}
-RUN pip install -U "jax[cuda12]"
+RUN pip install -U "jax[cuda12]" pybind11
 RUN pip install numpy cmake
 
 RUN mkdir /workspace
