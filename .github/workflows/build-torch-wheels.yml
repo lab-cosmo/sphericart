@@ -74,7 +74,6 @@ jobs:
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
           auditwheel repair --exclude libcuda.so --exclude libcuda.so.1 --exclude libc10.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10_cuda.so  --exclude libcudart.so --exclude libnvToolsExt.so  --exclude libnvrtc.so --exclude libnvrtc.so.12 -w {dest_dir} {wheel}
 
-
   # merge-torch-wheels:
   #   needs: build-torch-wheels
   #   runs-on: ubuntu-22.04
