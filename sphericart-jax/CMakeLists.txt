@@ -52,13 +52,7 @@ install(TARGETS sphericart_jax_cpu
     LIBRARY DESTINATION "lib"
 )
 
-# Include the CUDA extensions if possible
-include(CheckLanguage)
-check_language(CUDA)
 if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    
-    enable_language(CUDA)
-
     set(CUDA_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
     pybind11_add_module(sphericart_jax_cuda ${CUDA_SOURCES})
 
