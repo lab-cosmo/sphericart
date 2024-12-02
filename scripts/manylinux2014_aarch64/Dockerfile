@@ -36,8 +36,6 @@ ENV CUDA_ROOT=/usr/local/cuda
 ENV CUDA_PATH=/usr/local/cuda
 ENV CUDADIR=/usr/local/cuda
 
-RUN yum install -y git-all
-
 # Verify the CUDA installation
 RUN echo "CUDA_HOME: ${CUDA_HOME}" && \
     nvcc --version
