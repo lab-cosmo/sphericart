@@ -7,8 +7,8 @@ on:
   pull_request:
     # Check all PR
 
-env:
-  SPHERICART_NO_LOCAL_DEPS: "1"
+#env:
+#  SPHERICART_NO_LOCAL_DEPS: "1"
 
 jobs:
   build-wheels:
