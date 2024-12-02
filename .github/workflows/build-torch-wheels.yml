@@ -89,7 +89,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: "sphericart-torch-py-${{ env.PYTHON_VER_NO_DOT }}-torch-${{matrix.pytorch-version}}+cu${{ env.CU_VERSION_NO_DOT }}-${{ matrix.cibw-arch }}"
-          path: ./wheelhouse/*.whl
+        path: ./wheelhouse/*.whl
 
     # - name: Build wheels
     #   uses: pypa/cibuildwheel@v2.22.0
