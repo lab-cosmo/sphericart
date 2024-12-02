@@ -11,7 +11,7 @@ on:
 #  SPHERICART_NO_LOCAL_DEPS: "1"
 
 jobs:
-  build-wheels:
+  build-torch-wheels:
     runs-on: ubuntu-latest
     strategy:
       matrix:
