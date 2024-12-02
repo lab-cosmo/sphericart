@@ -58,9 +58,12 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: "${{ matrix.python-version }}"
+    
+    - name: Install cibuildwheel
+      run: python -m pip install cibuildwheel==2.22.0
 
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.22.0
+      run: python -m cibuildwheel ./sphericart-torch
       env:
         CUDA_HOME: /usr/local/cuda
         PIP_EXTRA_INDEX_URL: "https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
@@ -75,6 +78,23 @@ jobs:
           PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
           auditwheel repair --exclude libcuda.so --exclude libcuda.so.1 --exclude libc10.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10_cuda.so  --exclude libcudart.so --exclude libnvToolsExt.so  --exclude libnvrtc.so --exclude libnvrtc.so.12 -w {dest_dir} {wheel}
+
+    # - name: Build wheels
+    #   uses: pypa/cibuildwheel@v2.22.0
+    #   env:
+    #     CUDA_HOME: /usr/local/cuda
+    #     PIP_EXTRA_INDEX_URL: "https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
+    #     CIBW_BUILD_VERBOSITY: 3
+    #     CIBW_BUILD: "cp${{ env.PYTHON_VER_NO_DOT }}-*"
+    #     CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation"
+    #     CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+    #     CIBW_ARCHS: "${{ matrix.cibw-arch }}"
+    #     CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014_${{ matrix.cibw-arch }}"
+    #     CIBW_ENVIRONMENT: >
+    #       CUDA_HOME=/usr/local/cuda
+    #       PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
+    #     CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
+    #       auditwheel repair --exclude libcuda.so --exclude libcuda.so.1 --exclude libc10.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10_cuda.so  --exclude libcudart.so --exclude libnvToolsExt.so  --exclude libnvrtc.so --exclude libnvrtc.so.12 -w {dest_dir} {wheel}
 
   # merge-torch-wheels:
   #   needs: build-torch-wheels
