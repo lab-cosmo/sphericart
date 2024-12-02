@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.30)
 
 if (POLICY CMP0076)
     #  target_sources() converts relative paths to absolute
@@ -15,7 +15,6 @@ if(CMAKE_CUDA_COMPILER)
 else()
     message(STATUS "Could not find a CUDA compiler")
 endif()
-
 
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
@@ -63,7 +62,7 @@ if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     set(CUDA_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
     pybind11_add_module(sphericart_jax_cuda ${CUDA_SOURCES})
 
-    set_target_properties(sphericart_jax_cuda PROPERTIES CUDA_ARCHITECTURES ALL)
+    #sset_target_properties(sphericart_jax_cuda PROPERTIES CUDA_ARCHITECTURES ALL)
     
     target_link_libraries(sphericart_jax_cuda PUBLIC sphericart)
     target_compile_features(sphericart_jax_cuda PUBLIC cxx_std_17)
