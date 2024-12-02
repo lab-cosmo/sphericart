@@ -40,6 +40,9 @@ jobs:
         PYTHON_VER_NO_DOT=${PYTHONVERSION//./}
         echo PYTHON_VER_NO_DOT=${PYTHON_VER_NO_DOT} >> $GITHUB_ENV
 
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+  
     # Build the custom Manylinux Docker image
     - name: Build Manylinux Docker Image
       run: |
