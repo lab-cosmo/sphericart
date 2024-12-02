@@ -42,6 +42,8 @@ jobs:
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
+      with:
+        platforms: all
   
     # Build the custom Manylinux Docker image
     - name: Build Manylinux Docker Image
