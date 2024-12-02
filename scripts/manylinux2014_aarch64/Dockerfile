@@ -8,7 +8,7 @@ ARG CUDA_VER_NO_DOT="124"
 ARG CUDA_VER_DASH="12-4"
 ARG PYTORCH_VERSION="2.4.1"
 
-RUN echo "PYTHON_VERSION: ${PYTHON_VER} NO-DOT: ${PYTHON_VER_NO_DOT}"
+#RUN echo "PYTHON_VERSION: ${PYTHON_VER} NO-DOT: ${PYTHON_VER_NO_DOT}"
 # Install system dependencies and CUDA
 RUN yum install -y yum-utils gcc gcc-c++ make zlib-devel bzip2-devel libffi-devel \
     && yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/sbsa/cuda-rhel8.repo \
