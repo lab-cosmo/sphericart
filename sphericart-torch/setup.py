@@ -76,8 +76,16 @@ class bdist_egg_disabled(bdist_egg):
 
 
 if __name__ == "__main__":
+    install_requires = []
+    forced_torch_version = os.environ.get("SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION")
+    if forced_torch_version is not None:
+        install_requires.append(f"torch =={forced_torch_version}")
+    else:
+        install_requires.append("torch >=2.1")
+
     setup(
         version=open(os.path.join(ROOT, "sphericart", "VERSION")).readline().strip(),
+        install_requires=install_requires,
         ext_modules=[
             Extension(name="sphericart_torch", sources=[]),
         ],
