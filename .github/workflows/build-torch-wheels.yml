@@ -74,7 +74,7 @@ jobs:
         PIP_EXTRA_INDEX_URL: "https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
         CIBW_BUILD_VERBOSITY: 3
         CIBW_BUILD: "cp${{ env.PYTHON_VER_NO_DOT }}-*"
-        CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation"
+        CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation --check-build-dependencies"
         CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
         CIBW_ARCHS: "${{ matrix.cibw-arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014_x86_64"
