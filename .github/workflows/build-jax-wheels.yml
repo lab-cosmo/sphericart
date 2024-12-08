@@ -61,6 +61,9 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: "${{ matrix.python-version }}"
+
+    - name: Set up build dependencies
+      run: python -m pip install setuptools wheel cmake pybind11 --upgrade
     
     - name: Install cibuildwheel
       run: python -m pip install cibuildwheel==2.22.0
@@ -71,7 +74,7 @@ jobs:
         CUDA_HOME: /usr/local/cuda
         CIBW_BUILD_VERBOSITY: 3
         CIBW_BUILD: "cp${{ env.PYTHON_VER_NO_DOT }}-*"
-        CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation"
+        CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation --check-build-dependencies"
         CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
         CIBW_ARCHS: "${{ matrix.cibw-arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014_x86_64"
