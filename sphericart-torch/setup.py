@@ -76,12 +76,17 @@ class bdist_egg_disabled(bdist_egg):
 
 
 if __name__ == "__main__":
-    install_requires = []
-    forced_torch_version = os.environ.get("SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION")
-    if forced_torch_version is not None:
-        install_requires.append(f"torch =={forced_torch_version}")
-    else:
-        install_requires.append("torch >=2.1")
+    
+    try:
+        import torch
+        # if we have torch, we are building a wheel -  requires specific torch version
+        torch_v_major, torch_v_minor, *_ = torch.__version__.split(".")
+        torch_version = f"== {torch_v_major}.{torch_v_minor}.*"
+    except ImportError:
+        # otherwise we are building a sdist
+        torch_version = ">= 2.1"
+
+    install_requires = [f"torch {torch_version}"]
 
     setup(
         version=open(os.path.join(ROOT, "sphericart", "VERSION")).readline().strip(),

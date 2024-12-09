@@ -63,7 +63,11 @@ jobs:
 
     - name: Build torch wheels
       run: python -m cibuildwheel ./sphericart-torch
+      #uses: pypa/cibuildwheel@v2.22.0
       env:
+        SPHERICART_ARCH_NATIVE: OFF
+        TORCH_CUDA_ARCH_LIST: "8.0 8.6 8.9 9.0"
+        SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION: ${{ matrix.pytorch-version }}
         CUDA_HOME: /usr/local/cuda
         PIP_EXTRA_INDEX_URL: "https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
         CIBW_BUILD_VERBOSITY: 3
@@ -73,13 +77,23 @@ jobs:
         CIBW_ARCHS: "${{ matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014_x86_64"
         CIBW_MANYLINUX_AARCH64_IMAGE: "manylinux2014_aarch64"
-        CIBW_ENVIRONMENT: >
-          SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.pytorch-version }}
-          CUDA_HOME=/usr/local/cuda
-          PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
-          SPHERICART_ARCH_NATIVE=OFF
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
-          auditwheel repair --exclude libc10.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10_cuda.so  -w {dest_dir} {wheel}
+          auditwheel repair \
+          --exclude libcuda.so \
+          --exclude libcuda.so.1 \
+          --exclude libc10.so \
+          --exclude libtorch.so \
+          --exclude libtorch_cpu.so \
+          --exclude libtorch_cuda.so \
+          --exclude libc10_cuda.so  \
+          --exclude libcudart.so \
+          --exclude libcudart-8774224f.so \
+          --exclude libcudart-9335f6a2.so \
+          --exclude libnvToolsExt.so \
+          --exclude libnvToolsExt-847d78f2.so  \
+          --exclude libnvrtc.so \
+          --exclude libnvrtc.so.12 \
+          -w {dest_dir} {wheel}
     
     - uses: actions/upload-artifact@v4
       with:
