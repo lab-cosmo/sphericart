@@ -8,12 +8,12 @@ from typing import List, Optional, Union, Tuple
 import torch
 from torch import Tensor
 
-from ._build_torch_version import BUILD_TORCH_VERSION
 import re
 import glob
 
 
 Version = namedtuple("Version", ["major", "minor", "patch"])
+
 
 def parse_version(version):
     match = re.match(r"(\d+)\.(\d+)\.(\d+).*", version)
@@ -29,32 +29,29 @@ _HERE = os.path.realpath(os.path.dirname(__file__))
 def _lib_path():
     torch_version = parse_version(torch.__version__)
     expected_prefix = os.path.join(
-        _HERE, f"torch-{torch_version.major}.{torch_version.minor}"
+        _HERE, f"../torch-{torch_version.major}.{torch_version.minor}"
     )
     if os.path.exists(expected_prefix):
         if sys.platform.startswith("darwin"):
             path = os.path.join(expected_prefix, "lib", "libsphericart_torch.dylib")
-            windows = False
         elif sys.platform.startswith("linux"):
             path = os.path.join(expected_prefix, "lib", "libsphericart_torch.so")
-            windows = False
         elif sys.platform.startswith("win"):
             path = os.path.join(expected_prefix, "bin", "sphericart_torch.dll")
-            windows = True
         else:
             raise ImportError("Unknown platform. Please edit this file")
 
         if os.path.isfile(path):
-            # if windows:
-            #     _check_dll(path)
             return path
         else:
-            raise ImportError("Could not find sphericart_torch shared library at " + path)
+            raise ImportError(
+                "Could not find sphericart_torch shared library at " + path
+            )
 
     # gather which torch version(s) the current install was built
     # with to create the error message
     existing_versions = []
-    for prefix in glob.glob(os.path.join(_HERE, "torch-*")):
+    for prefix in glob.glob(os.path.join(_HERE, "../torch-*")):
         existing_versions.append(os.path.basename(prefix)[11:])
 
     if len(existing_versions) == 1:

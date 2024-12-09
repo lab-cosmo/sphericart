@@ -75,6 +75,11 @@ https://docs.nvidia.com/cuda/cuda-runtime-api/index.html).
 */
 class CUDART {
   public:
+    static CUDART& instance() {
+        static CUDART instance;
+        return instance;
+    }
+
     bool loaded() { return cudartHandle != nullptr; }
 
     using cudaGetDeviceCount_t = cudaError_t (*)(int*);
@@ -147,6 +152,11 @@ https://docs.nvidia.com/cuda/cuda-driver-api/index.html).
 class CUDADriver {
 
   public:
+    static CUDADriver& instance() {
+        static CUDADriver instance;
+        return instance;
+    }
+
     bool loaded() { return cudaHandle != nullptr; }
 
     using cuInit_t = CUresult (*)(unsigned int);
@@ -259,6 +269,11 @@ libnvrtc.so library (see NVRTC API: https://docs.nvidia.com/cuda/nvrtc/index.htm
 class NVRTC {
 
   public:
+    static NVRTC& instance() {
+        static NVRTC instance;
+        return instance;
+    }
+
     bool loaded() { return nvrtcHandle != nullptr; }
 
     using nvrtcCreateProgram_t =
@@ -325,45 +340,8 @@ class NVRTC {
     void* nvrtcHandle = nullptr;
 };
 
-/*
-This implements the Schawrz counter idiom to ensure propper constructor/destructor ordering - we
-don't want these classes destroyed before jax or pytorch classes/objects are.
-*/
-
-// Static memory buffer for each class
-static std::aligned_storage<sizeof(CUDART), alignof(CUDART)>::type cudartBuffer;
-static std::aligned_storage<sizeof(CUDADriver), alignof(CUDADriver)>::type cudaDriverBuffer;
-static std::aligned_storage<sizeof(NVRTC), alignof(NVRTC)>::type nvrtcBuffer;
-
-/*
-global references that should be used by any dependent code. Use inline instead of extern as we want
-to define the implementation in a single-header.
-*/
-inline CUDART& CUDART_INSTANCE = reinterpret_cast<CUDART&>(cudartBuffer);
-inline CUDADriver& CUDA_DRIVER_INSTANCE = reinterpret_cast<CUDADriver&>(cudaDriverBuffer);
-inline NVRTC& NVRTC_INSTANCE = reinterpret_cast<NVRTC&>(nvrtcBuffer);
-
-static int nifty_counter = 0;
-
-// Counter class for initializing and destroying static objects
-static struct CUDAInitializer {
-
-    CUDAInitializer() {
-        if (nifty_counter++ == 0) {
-            new (&CUDART_INSTANCE) CUDART();
-            new (&CUDA_DRIVER_INSTANCE) CUDADriver();
-            new (&NVRTC_INSTANCE) NVRTC();
-        }
-    }
-
-    ~CUDAInitializer() {
-        if (--nifty_counter == 0) {
-            CUDART_INSTANCE.~CUDART();
-            CUDA_DRIVER_INSTANCE.~CUDADriver();
-            NVRTC_INSTANCE.~NVRTC();
-        }
-    }
-
-} cudaInitializer;
+#define CUDART_INSTANCE CUDART::instance()
+#define CUDA_DRIVER_INSTANCE CUDADriver::instance()
+#define NVRTC_INSTANCE NVRTC::instance()
 
 #endif // DYNAMIC_CUDA_HEADER_HPP
