@@ -143,7 +143,7 @@ jobs:
           sed -i "s/Requires-Dist: torch.*/$MERGED_TORCH_REQUIRE/" dist/unpacked/sphericart_torch-*/sphericart_torch-*.dist-info/METADATA
 
           echo "\n\n METADATA = \n\n"
-          cat dist/unpacked/sphericart_torch-*/metatensor_torch-*.dist-info/METADATA
+          cat dist/unpacked/sphericart_torch-*/sphericart_torch-*.dist-info/METADATA
 
           # check the right metadata was added to the file. grep will exit with
           # code `1` if the line is not found, which will stop CI

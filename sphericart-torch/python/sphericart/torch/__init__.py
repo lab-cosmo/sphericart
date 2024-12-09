@@ -8,12 +8,12 @@ from typing import List, Optional, Union, Tuple
 import torch
 from torch import Tensor
 
-from ._build_torch_version import BUILD_TORCH_VERSION
 import re
 import glob
 
 
 Version = namedtuple("Version", ["major", "minor", "patch"])
+
 
 def parse_version(version):
     match = re.match(r"(\d+)\.(\d+)\.(\d+).*", version)
@@ -34,13 +34,10 @@ def _lib_path():
     if os.path.exists(expected_prefix):
         if sys.platform.startswith("darwin"):
             path = os.path.join(expected_prefix, "lib", "libsphericart_torch.dylib")
-            windows = False
         elif sys.platform.startswith("linux"):
             path = os.path.join(expected_prefix, "lib", "libsphericart_torch.so")
-            windows = False
         elif sys.platform.startswith("win"):
             path = os.path.join(expected_prefix, "bin", "sphericart_torch.dll")
-            windows = True
         else:
             raise ImportError("Unknown platform. Please edit this file")
 
@@ -49,7 +46,9 @@ def _lib_path():
             #     _check_dll(path)
             return path
         else:
-            raise ImportError("Could not find sphericart_torch shared library at " + path)
+            raise ImportError(
+                "Could not find sphericart_torch shared library at " + path
+            )
 
     # gather which torch version(s) the current install was built
     # with to create the error message

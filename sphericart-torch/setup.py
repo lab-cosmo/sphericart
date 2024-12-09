@@ -76,9 +76,10 @@ class bdist_egg_disabled(bdist_egg):
 
 
 if __name__ == "__main__":
-    
+
     try:
         import torch
+
         # if we have torch, we are building a wheel -  requires specific torch version
         torch_v_major, torch_v_minor, *_ = torch.__version__.split(".")
         torch_version = f"== {torch_v_major}.{torch_v_minor}.*"
