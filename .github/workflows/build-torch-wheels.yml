@@ -17,10 +17,10 @@ jobs:
       matrix:
         arch: ["x86_64"]
         python-version: ["3.12"]
-        pytorch-version: ["2.4.1", "2.5.0"]
-        cuda-version: ["12.4"]
+        pytorch-version: ["2.4.1", "2.5.1"]
     env:
-      CIBW_SKIP: cp36-* cp37-* cp38-* cp39-* cp310-* cp311-*
+      CIBW_BUILD: cp312
+    name: "torch-cuda-wheel ${{matrix.os}} ${{matrix.arch}} python=${{matrix.python-version}} torch=${{matrix.pytorch-version}}"
     
     steps:
     - name: Checkout code
@@ -28,14 +28,7 @@ jobs:
     
     - name: Github Actions Envs Setup
       run: |
-        CUVERSION="${{ matrix.cuda-version }}"
         PYTHONVERSION="${{ matrix.python-version }}"
-
-        CU_VERSION_NO_DOT=${CUVERSION//./}
-        echo CU_VERSION_NO_DOT=${CU_VERSION_NO_DOT} >> $GITHUB_ENV
-
-        CU_VERSION_DASH=${CUVERSION//./-}
-        echo CU_VERSION_DASH=${CU_VERSION_DASH} >> $GITHUB_ENV
 
         PYTHON_VER_NO_DOT=${PYTHONVERSION//./}
         echo PYTHON_VER_NO_DOT=${PYTHON_VER_NO_DOT} >> $GITHUB_ENV
@@ -49,12 +42,9 @@ jobs:
     - name: Build Manylinux Docker Image
       run: |
         docker build --no-cache \
-        -t manylinux2014_"${{ matrix.arch }}" \
+        -t sphericart_manylinux2014_"${{ matrix.arch }}" \
         --build-arg PYTHON_VER="${{ matrix.python-version }}" \
         --build-arg PYTHON_VER_NO_DOT="${{ env.PYTHON_VER_NO_DOT }}" \
-        --build-arg CUDA_VER="${{ matrix.cuda-version }}" \
-        --build-arg CUDA_VER_NO_DOT="${{ env.CU_VERSION_NO_DOT }}" \
-        --build-arg CUDA_VER_DASH="${{ env.CU_VERSION_DASH }}" \
         --build-arg PYTORCH_VERSION="${{ matrix.pytorch-version }}" \
         scripts/manylinux2014_"${{ matrix.arch }}"
     
@@ -64,22 +54,25 @@ jobs:
     - name: Build torch wheels
       run: python -m cibuildwheel ./sphericart-torch
       env:
+        SPHERICART_ARCH_NATIVE: OFF
+        TORCH_CUDA_ARCH_LIST: "8.0 8.6 8.9 9.0"
+        SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION: ${{ matrix.pytorch-version }}
         CUDA_HOME: /usr/local/cuda
-        PIP_EXTRA_INDEX_URL: "https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
         CIBW_BUILD_VERBOSITY: 3
         CIBW_BUILD: "cp${{ env.PYTHON_VER_NO_DOT }}-*"
         CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation --check-build-dependencies"
         CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
         CIBW_ARCHS: "${{ matrix.arch }}"
-        CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014_x86_64"
-        CIBW_MANYLINUX_AARCH64_IMAGE: "manylinux2014_aarch64"
-        CIBW_ENVIRONMENT: >
-          SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.pytorch-version }}
-          CUDA_HOME=/usr/local/cuda
-          PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
-          SPHERICART_ARCH_NATIVE=OFF
+        CIBW_MANYLINUX_X86_64_IMAGE: "sphericart_manylinux2014_x86_64"
+        CIBW_MANYLINUX_AARCH64_IMAGE: "sphericart_manylinux2014_aarch64"
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
-          auditwheel repair --exclude libc10.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_cuda.so --exclude libc10_cuda.so  -w {dest_dir} {wheel}
+          auditwheel repair \
+          --exclude libc10.so \
+          --exclude libtorch.so \
+          --exclude libtorch_cpu.so \
+          --exclude libtorch_cuda.so \
+          --exclude libc10_cuda.so  \
+          -w {dest_dir} {wheel}
     
     - uses: actions/upload-artifact@v4
       with:
@@ -129,7 +122,7 @@ jobs:
           sed -i "s/Requires-Dist: torch.*/$MERGED_TORCH_REQUIRE/" dist/unpacked/sphericart_torch-*/sphericart_torch-*.dist-info/METADATA
 
           echo "\n\n METADATA = \n\n"
-          cat dist/unpacked/sphericart_torch-*/metatensor_torch-*.dist-info/METADATA
+          cat dist/unpacked/sphericart_torch-*/sphericart_torch-*.dist-info/METADATA
 
           # check the right metadata was added to the file. grep will exit with
           # code `1` if the line is not found, which will stop CI
@@ -144,5 +137,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: torch-wheel-${{ matrix.arch }}
+          name: sphericart-torch-wheel-${{ matrix.arch }}
           path: ./wheelhouse/*.whl
