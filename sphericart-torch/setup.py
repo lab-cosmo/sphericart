@@ -15,9 +15,13 @@ class cmake_ext(build_ext):
     """Build the native library using cmake"""
 
     def run(self):
+        import torch
+
+        torch_major, torch_minor, *_ = torch.__version__.split(".")
+
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
-        install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart/torch")
+        install_dir = os.path.join(os.path.realpath(self.build_lib), f"sphericart/torch-{torch_major}.{torch_minor}")
 
         os.makedirs(build_dir, exist_ok=True)
 
