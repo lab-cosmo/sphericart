@@ -16,10 +16,10 @@ jobs:
     strategy:
       matrix:
         arch: ["x86_64"]
-        python-version: ["3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
         cuda-version: ["12.4"]
     env:
-      CIBW_SKIP: cp36-* cp37-* cp38-* cp39-* cp310-* cp311-*
+      CIBW_SKIP: cp36-* cp37-* cp38-* cp39-*
     
     steps:
     - name: Checkout code
@@ -62,6 +62,7 @@ jobs:
     - name: Build jax wheels
       run: python -m cibuildwheel ./sphericart-jax
       env:
+        SPHERICART_ARCH_NATIVE: OFF
         CUDA_HOME: /usr/local/cuda
         CIBW_BUILD_VERBOSITY: 3
         CIBW_BUILD: "cp${{ env.PYTHON_VER_NO_DOT }}-*"
@@ -70,13 +71,16 @@ jobs:
         CIBW_ARCHS: "${{ matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014_x86_64"
         CIBW_MANYLINUX_AARCH64_IMAGE: "manylinux2014_aarch64"
-        CIBW_ENVIRONMENT: >
-          CUDA_HOME=/usr/local/cuda
-          SPHERICART_ARCH_NATIVE=OFF
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
-          auditwheel repair --exclude libcuda.so --exclude libcuda.so.1 --exclude libcudart.so --exclude libnvToolsExt.so  --exclude libnvrtc.so --exclude libnvrtc.so.12 -w {dest_dir} {wheel}
+          auditwheel repair \
+          --exclude libc10.so \
+          --exclude libtorch.so \
+          --exclude libtorch_cpu.so \
+          --exclude libtorch_cuda.so \
+          --exclude libc10_cuda.so  \
+          -w {dest_dir} {wheel}
     
     - uses: actions/upload-artifact@v4
       with:
-        name: "sphericart-jax-py-${{ env.PYTHON_VER_NO_DOT }}-jax+cu${{ env.CU_VERSION_NO_DOT }}-${{ matrix.arch }}"
+        name: "sphericart-jax-py-${{ env.PYTHON_VER_NO_DOT }}-${{ matrix.arch }}"
         path: ./wheelhouse/*.whl
