@@ -63,7 +63,6 @@ jobs:
 
     - name: Build torch wheels
       run: python -m cibuildwheel ./sphericart-torch
-      #uses: pypa/cibuildwheel@v2.22.0
       env:
         SPHERICART_ARCH_NATIVE: OFF
         TORCH_CUDA_ARCH_LIST: "8.0 8.6 8.9 9.0"
@@ -85,17 +84,6 @@ jobs:
           --exclude libtorch_cuda.so \
           --exclude libc10_cuda.so  \
           -w {dest_dir} {wheel}
-
-#placeholder comment to store the below
-#--exclude libcuda.so \
-#--exclude libcuda.so.1 \
-#--exclude libcudart.so \
-#--exclude libcudart-8774224f.so \
-#--exclude libcudart-9335f6a2.so \
-#--exclude libnvToolsExt.so \
-#--exclude libnvToolsExt-847d78f2.so  \
-#--exclude libnvrtc.so \
-#--exclude libnvrtc.so.12 \
     
     - uses: actions/upload-artifact@v4
       with:
