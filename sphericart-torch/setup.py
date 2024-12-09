@@ -21,7 +21,10 @@ class cmake_ext(build_ext):
 
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
-        install_dir = os.path.join(os.path.realpath(self.build_lib), f"sphericart/torch-{torch_major}.{torch_minor}")
+        install_dir = os.path.join(
+            os.path.realpath(self.build_lib),
+            f"sphericart/torch-{torch_major}.{torch_minor}",
+        )
 
         os.makedirs(build_dir, exist_ok=True)
 
