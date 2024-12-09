@@ -325,45 +325,25 @@ class NVRTC {
     void* nvrtcHandle = nullptr;
 };
 
-/*
-This implements the Schawrz counter idiom to ensure propper constructor/destructor ordering - we
-don't want these classes destroyed before jax or pytorch classes/objects are.
-*/
+// Singleton getter functions
+inline CUDART& GetCUDARTInstance() {
+    static CUDART instance;
+    return instance;
+}
 
-// Static memory buffer for each class
-static std::aligned_storage<sizeof(CUDART), alignof(CUDART)>::type cudartBuffer;
-static std::aligned_storage<sizeof(CUDADriver), alignof(CUDADriver)>::type cudaDriverBuffer;
-static std::aligned_storage<sizeof(NVRTC), alignof(NVRTC)>::type nvrtcBuffer;
+inline CUDADriver& GetCUDADriverInstance() {
+    static CUDADriver instance;
+    return instance;
+}
 
-/*
-global references that should be used by any dependent code. Use inline instead of extern as we want
-to define the implementation in a single-header.
-*/
-inline CUDART& CUDART_INSTANCE = reinterpret_cast<CUDART&>(cudartBuffer);
-inline CUDADriver& CUDA_DRIVER_INSTANCE = reinterpret_cast<CUDADriver&>(cudaDriverBuffer);
-inline NVRTC& NVRTC_INSTANCE = reinterpret_cast<NVRTC&>(nvrtcBuffer);
+inline NVRTC& GetNVRTCInstance() {
+    static NVRTC instance;
+    return instance;
+}
 
-static int nifty_counter = 0;
-
-// Counter class for initializing and destroying static objects
-static struct CUDAInitializer {
-
-    CUDAInitializer() {
-        if (nifty_counter++ == 0) {
-            new (&CUDART_INSTANCE) CUDART();
-            new (&CUDA_DRIVER_INSTANCE) CUDADriver();
-            new (&NVRTC_INSTANCE) NVRTC();
-        }
-    }
-
-    ~CUDAInitializer() {
-        if (--nifty_counter == 0) {
-            CUDART_INSTANCE.~CUDART();
-            CUDA_DRIVER_INSTANCE.~CUDADriver();
-            NVRTC_INSTANCE.~NVRTC();
-        }
-    }
-
-} cudaInitializer;
+// Macro shortcuts
+#define CUDART_INSTANCE GetCUDARTInstance()
+#define CUDA_DRIVER_INSTANCE GetCUDADriverInstance()
+#define NVRTC_INSTANCE GetNVRTCInstance()
 
 #endif // DYNAMIC_CUDA_HEADER_HPP
