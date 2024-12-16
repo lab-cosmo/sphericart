@@ -3,9 +3,9 @@ FROM quay.io/pypa/manylinux2014_x86_64
 # Set environment variables for Python and CUDA versions
 ARG PYTHON_VER="3.11"
 ARG PYTHON_VER_NO_DOT="311"
-ARG CUDA_VER="12.4"
-ARG CUDA_VER_NO_DOT="124"
-ARG CUDA_VER_DASH="12-4"
+ARG CUDA_VER="12.1"
+ARG CUDA_VER_NO_DOT="121"
+ARG CUDA_VER_DASH="12-1"
 ARG PYTORCH_VERSION="2.4.1"
 
 #RUN echo "PYTHON_VERSION: ${PYTHON_VER} NO-DOT: ${PYTHON_VER_NO_DOT}"
@@ -47,11 +47,20 @@ RUN pip install -U "jax[cuda12]"
 RUN mkdir /workspace
 
 # Add the remove_python.sh script to the container
-COPY remove_unused_python.sh /scripts/remove_unused_python.sh
+#COPY remove_unused_python.sh /scripts/remove_unused_python.sh
 # Make the script executable
-RUN chmod +x /scripts/remove_unused_python.sh
+#RUN chmod +x /scripts/remove_unused_python.sh
 # Run the script to remove all Python versions except Python 3.11
-RUN /scripts/remove_unused_python.sh python${PYTHON_VER}
+#RUN /scripts/remove_unused_python.sh python${PYTHON_VER}
+
+RUN bash -c 'bash <<EOF
+for python in /usr/local/bin/python*; do 
+if [[ "\$python" != *"$python${PYTHON_VER}"* ]]; then 
+    echo "Removing \$python"; 
+    rm -f "\$python"; 
+fi; 
+done
+EOF'
 
 # Clean up to reduce image size
 #RUN yum clean all && rm -rf /var/cache/yum/*

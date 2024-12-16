@@ -18,7 +18,7 @@ jobs:
         arch: ["x86_64"]
         python-version: ["3.12"]
         pytorch-version: ["2.4.1", "2.5.1"]
-        cuda-version: ["12.4"]
+        cuda-version: ["12.1"]
     env:
       CIBW_SKIP: cp36-* cp37-* cp38-* cp39-* cp310-* cp311-*
     
