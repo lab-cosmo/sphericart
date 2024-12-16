@@ -32,11 +32,7 @@ jobs:
         CUVERSION="${{ matrix.cuda-version }}"
         PYTHONVERSION="${{ matrix.python-version }}"
 
-        CU_VERSION_NO_DOT=${CUVERSION//./}
-        echo CU_VERSION_NO_DOT=${CU_VERSION_NO_DOT} >> $GITHUB_ENV
-
-        CU_VERSION_DASH=${CUVERSION//./-}
-        echo CU_VERSION_DASH=${CU_VERSION_DASH} >> $GITHUB_ENV
+        echo CUVERSION=${CUVERSION} >> $GITHUB_ENV
 
         PYTHON_VER_NO_DOT=${PYTHONVERSION//./}
         echo PYTHON_VER_NO_DOT=${PYTHON_VER_NO_DOT} >> $GITHUB_ENV
@@ -53,9 +49,6 @@ jobs:
         -t sphericart_manylinux2014_"${{ matrix.arch }}" \
         --build-arg PYTHON_VER="${{ matrix.python-version }}" \
         --build-arg PYTHON_VER_NO_DOT="${{ env.PYTHON_VER_NO_DOT }}" \
-        --build-arg CUDA_VER="${{ matrix.cuda-version }}" \
-        --build-arg CUDA_VER_NO_DOT="${{ env.CU_VERSION_NO_DOT }}" \
-        --build-arg CUDA_VER_DASH="${{ env.CU_VERSION_DASH }}" \
         --build-arg PYTORCH_VERSION="${{ matrix.pytorch-version }}" \
         scripts/manylinux2014_"${{ matrix.arch }}"
     
