@@ -74,8 +74,8 @@ jobs:
         CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation --check-build-dependencies"
         CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
         CIBW_ARCHS: "${{ matrix.arch }}"
-        CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014_x86_64"
-        CIBW_MANYLINUX_AARCH64_IMAGE: "manylinux2014_aarch64"
+        CIBW_MANYLINUX_X86_64_IMAGE: "sphericart_manylinux2014_x86_64"
+        CIBW_MANYLINUX_AARCH64_IMAGE: "sphericart_manylinux2014_aarch64"
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
           auditwheel repair \
           --exclude libc10.so \
