@@ -56,7 +56,6 @@ if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     set(CUDA_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
     pybind11_add_module(sphericart_jax_cuda ${CUDA_SOURCES})
 
-    #sset_target_properties(sphericart_jax_cuda PROPERTIES CUDA_ARCHITECTURES ALL)
     
     target_link_libraries(sphericart_jax_cuda PUBLIC sphericart)
     target_compile_features(sphericart_jax_cuda PUBLIC cxx_std_17)
