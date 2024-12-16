@@ -48,7 +48,7 @@ jobs:
     - name: Build Manylinux Docker Image
       run: |
         docker build --no-cache \
-        -t manylinux2014_"${{ matrix.arch }}" \
+        -t sphericart_manylinux2014_"${{ matrix.arch }}" \
         --build-arg PYTHON_VER="${{ matrix.python-version }}" \
         --build-arg PYTHON_VER_NO_DOT="${{ env.PYTHON_VER_NO_DOT }}" \
         --build-arg CUDA_VER="${{ matrix.cuda-version }}" \
