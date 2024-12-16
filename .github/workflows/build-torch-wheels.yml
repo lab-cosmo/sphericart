@@ -21,6 +21,7 @@ jobs:
         cuda-version: ["12.1"]
     env:
       CIBW_SKIP: cp36-* cp37-* cp38-* cp39-* cp310-* cp311-*
+    name: "sphericart-torch-wheel ${{matrix.os}} ${{matrix.arch}} python=${{matrix.python-version}} torch=${{matrix.torch-version}}"
     
     steps:
     - name: Checkout code

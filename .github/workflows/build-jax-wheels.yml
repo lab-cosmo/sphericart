@@ -20,6 +20,7 @@ jobs:
         cuda-version: ["12.1"]
     env:
       CIBW_SKIP: cp36-* cp37-* cp38-* cp39-*
+    name: "sphericart-jax-wheel ${{matrix.os}} ${{matrix.arch}} python=${{matrix.python-version}}"
     
     steps:
     - name: Checkout code

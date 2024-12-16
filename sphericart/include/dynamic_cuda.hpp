@@ -366,26 +366,4 @@ static struct CUDAInitializer {
 
 } cudaInitializer;
 
-/*
-// Singleton getter functions
-inline CUDART& GetCUDARTInstance() {
-    static CUDART instance;
-    return instance;
-}
-
-inline CUDADriver& GetCUDADriverInstance() {
-    static CUDADriver instance;
-    return instance;
-}
-
-inline NVRTC& GetNVRTCInstance() {
-    static NVRTC instance;
-    return instance;
-}
-
-// Macro shortcuts
-#define CUDART_INSTANCE GetCUDARTInstance()
-#define CUDA_DRIVER_INSTANCE GetCUDADriverInstance()
-#define NVRTC_INSTANCE GetNVRTCInstance() */
-
 #endif // DYNAMIC_CUDA_HEADER_HPP
