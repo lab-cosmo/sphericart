@@ -62,7 +62,6 @@ jobs:
         TORCH_CUDA_ARCH_LIST: "8.0 8.6 8.9 9.0"
         SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION: ${{ matrix.pytorch-version }}
         CUDA_HOME: /usr/local/cuda
-        PIP_EXTRA_INDEX_URL: "https://download.pytorch.org/whl/cu${{  env.CUVERSION }}"
         CIBW_BUILD_VERBOSITY: 3
         CIBW_BUILD: "cp${{ env.PYTHON_VER_NO_DOT }}-*"
         CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation --check-build-dependencies"
