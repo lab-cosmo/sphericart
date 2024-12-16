@@ -54,13 +54,13 @@ RUN mkdir /workspace
 # Run the script to remove all Python versions except Python 3.11
 #RUN /scripts/remove_unused_python.sh python${PYTHON_VER}
 
-RUN bash -c 'bash <<EOF
-for python in /usr/local/bin/python*; do 
-if [[ "\$python" != *"$python${PYTHON_VER}"* ]]; then 
-    echo "Removing \$python"; 
-    rm -f "\$python"; 
-fi; 
-done
+RUN bash -c 'bash <<EOF \
+for python in /usr/local/bin/python*; do \
+if [[ "\$python" != *"$python${PYTHON_VER}"* ]]; then \
+    echo "Removing \$python"; \
+    rm -f "\$python"; \
+fi; \
+done \
 EOF'
 
 
