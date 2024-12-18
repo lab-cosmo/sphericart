@@ -40,15 +40,5 @@ RUN pip install -U "jax[cuda12]" pybind11
 
 RUN mkdir /workspace
 
-# Add the remove_python.sh script to the container
-COPY remove_unused_python.sh /scripts/remove_unused_python.sh
-# Make the script executable
-RUN chmod +x /scripts/remove_unused_python.sh
-# Run the script to remove all Python versions except Python 3.11
-RUN /scripts/remove_unused_python.sh python${PYTHON_VER}
-
-# Clean up to reduce image size
-#RUN yum clean all && rm -rf /var/cache/yum/*
-
 # Default command (bash)
 CMD ["/bin/bash"]
