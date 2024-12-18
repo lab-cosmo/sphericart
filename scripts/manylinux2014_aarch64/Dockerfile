@@ -21,7 +21,6 @@ RUN yum install -y yum-utils gcc gcc-c++ make zlib-devel bzip2-devel libffi-deve
 ENV PATH="/opt/python/cp${PYTHON_VER_NO_DOT}-cp${PYTHON_VER_NO_DOT}/bin:${PATH}"
 RUN ln -sf /opt/python/cp${PYTHON_VER_NO_DOT}-cp${PYTHON_VER_NO_DOT}/bin/python${PYTHON_VER} /opt/python/cp${PYTHON_VER_NO_DOT}-cp${PYTHON_VER_NO_DOT}/bin/python
 
-RUN python -m ensurepip --upgrade
 
 # Set environment variables for CUDA
 ENV PATH="/usr/local/cuda/bin:${PATH}"
