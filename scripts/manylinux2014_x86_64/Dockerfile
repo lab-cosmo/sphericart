@@ -3,9 +3,9 @@ FROM quay.io/pypa/manylinux2014_x86_64
 # Set environment variables for Python and CUDA versions
 ARG PYTHON_VER="3.11"
 ARG PYTHON_VER_NO_DOT="311"
-ARG CUDA_VER="12.1"
-ARG CUDA_VER_NO_DOT="121"
-ARG CUDA_VER_DASH="12-1"
+ARG CUDA_VER="12.4"
+ARG CUDA_VER_NO_DOT="124"
+ARG CUDA_VER_DASH="12-4"
 ARG PYTORCH_VERSION="2.4.1"
 
 # Install system dependencies and CUDA
