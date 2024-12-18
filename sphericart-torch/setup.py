@@ -119,6 +119,7 @@ if __name__ == "__main__":
         cmdclass={
             "build_ext": cmake_ext,
             "bdist_egg": bdist_egg if "bdist_egg" in sys.argv else bdist_egg_disabled,
+            "bdist_wheel": universal_wheel,
         },
         package_data={
             "sphericart-torch": [
