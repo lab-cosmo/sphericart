@@ -75,7 +75,6 @@ https://docs.nvidia.com/cuda/cuda-runtime-api/index.html).
 */
 class CUDART {
   public:
-
     static CUDART& instance() {
         static CUDART instance;
         return instance;
@@ -153,7 +152,6 @@ https://docs.nvidia.com/cuda/cuda-driver-api/index.html).
 class CUDADriver {
 
   public:
-
     static CUDADriver& instance() {
         static CUDADriver instance;
         return instance;
@@ -271,7 +269,6 @@ libnvrtc.so library (see NVRTC API: https://docs.nvidia.com/cuda/nvrtc/index.htm
 class NVRTC {
 
   public:
-
     static NVRTC& instance() {
         static NVRTC instance;
         return instance;
