@@ -8,7 +8,6 @@ ARG CUDA_VER_NO_DOT="121"
 ARG CUDA_VER_DASH="12-1"
 ARG PYTORCH_VERSION="2.4.1"
 
-#RUN echo "PYTHON_VERSION: ${PYTHON_VER} NO-DOT: ${PYTHON_VER_NO_DOT}"
 # Install system dependencies and CUDA
 RUN yum install -y yum-utils gcc gcc-c++ make zlib-devel bzip2-devel libffi-devel \
     && yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/sbsa/cuda-rhel8.repo \
@@ -17,10 +16,6 @@ RUN yum install -y yum-utils gcc gcc-c++ make zlib-devel bzip2-devel libffi-deve
     && yum clean all \
     && rm -rf /var/cache/yum/* \
     && echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/999_nvidia_cuda.conf
-
-    # Remove all other Python versions
-#ENV PATH="/opt/python/cp311-cp311/bin:${PATH}"
-#RUN ln -sf /opt/python/cp311-cp311/bin/python3.11 /opt/python/cp311-cp311/bin/python
 
 # Set Python version environment variables dynamically
 ENV PATH="/opt/python/cp${PYTHON_VER_NO_DOT}-cp${PYTHON_VER_NO_DOT}/bin:${PATH}"
@@ -40,7 +35,6 @@ ENV CUDADIR=/usr/local/cuda
 RUN echo "CUDA_HOME: ${CUDA_HOME}" && \
     nvcc --version
 
-#RUN pip install torch==2.4.1+cu124 --extra-index-url https://download.pytorch.org/whl/cu124
 RUN pip install setuptools wheel cmake pybind11 --upgrade
 RUN pip install torch==${PYTORCH_VERSION}+cu${CUDA_VER_NO_DOT} --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VER_NO_DOT}
 RUN pip install -U "jax[cuda12]" pybind11

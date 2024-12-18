@@ -17,9 +17,8 @@ jobs:
       matrix:
         arch: ["x86_64"]
         python-version: ["3.10", "3.11", "3.12"]
-        cuda-version: ["12.1"]
     env:
-      CIBW_SKIP: cp36-* cp37-* cp38-* cp39-*
+      CIBW_BUILD: cp312
     name: "sphericart-jax-wheel ${{matrix.os}} ${{matrix.arch}} python=${{matrix.python-version}}"
     
     steps:
