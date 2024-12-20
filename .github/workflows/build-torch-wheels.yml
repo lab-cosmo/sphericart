@@ -16,9 +16,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04]
-        arch: ["x86_64"]
         pytorch-version: ["2.4", "2.5"]
+        arch: ["arm64", "x86_64"]
+        os: ["ubuntu-22.04", "macos-14"]
+        exclude:
+          # remove mismatched arch/os pairs
+          - {os: macos-14, arch: x86_64}
+          - {os: ubuntu-22.04, arch: arm64}
+
     name: "Torch ${{matrix.pytorch-version}} ${{matrix.os}} ${{matrix.arch}}"
 
     steps:
@@ -26,6 +31,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Build custom manylinux Docker Image with CUDA
+      if: matrix.os == 'ubuntu-22.04'
       run: |
         docker build --no-cache \
             -t sphericart_manylinux2014_"${{ matrix.arch }}" \
@@ -55,6 +61,10 @@ jobs:
               --exclude libtorch_cuda.so \
               --exclude libc10_cuda.so  \
               -w {dest_dir} {wheel}
+        CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
+          delocate-wheel --ignore-missing-dependencies \
+                         --require-archs {delocate_archs} \
+                         -w {dest_dir} -v {wheel}
         CIBW_ENVIRONMENT: >
           SPHERICART_ARCH_NATIVE=OFF
           SPHERICART_NO_LOCAL_DEPS=1
@@ -68,7 +78,7 @@ jobs:
 
   merge-torch-wheels:
     needs: build-torch-wheels
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     name: merge wheels for ${{ matrix.name }}
     strategy:
       matrix:
@@ -76,6 +86,9 @@ jobs:
           - name: x86_64 Linux
             os: ubuntu-22.04
             arch: x86_64
+          - name: arm64 macOS
+            os: macos-14
+            arch: arm64
     steps:
       - uses: actions/checkout@v4
 
