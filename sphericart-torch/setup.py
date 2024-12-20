@@ -43,6 +43,7 @@ class cmake_ext(build_ext):
         os.makedirs(build_dir, exist_ok=True)
 
         cmake_options = [
+            "-DCMAKE_BUILD_TYPE=Release",
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
