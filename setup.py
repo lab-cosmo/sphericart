@@ -37,6 +37,7 @@ class cmake_ext(build_ext):
         os.makedirs(build_dir, exist_ok=True)
 
         cmake_options = [
+            "-DCMAKE_BUILD_TYPE=Release",
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DBUILD_SHARED_LIBS=ON",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
