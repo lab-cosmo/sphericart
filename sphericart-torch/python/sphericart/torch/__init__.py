@@ -29,7 +29,7 @@ _HERE = os.path.realpath(os.path.dirname(__file__))
 def _lib_path():
     torch_version = parse_version(torch.__version__)
     expected_prefix = os.path.join(
-        _HERE, f"../torch-{torch_version.major}.{torch_version.minor}"
+        _HERE, f"torch-{torch_version.major}.{torch_version.minor}"
     )
     if os.path.exists(expected_prefix):
         if sys.platform.startswith("darwin"):
