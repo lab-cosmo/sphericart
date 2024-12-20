@@ -14,18 +14,26 @@ concurrency:
 jobs:
   build-wheels:
     runs-on: ${{ matrix.os }}
+    name: ${{matrix.name}}
     strategy:
       matrix:
-        os: [ubuntu-24.04]
-        arch: ["x86_64"]
-
-    name: "${{matrix.os}} ${{matrix.arch}}"
+        include:
+          - name: x86_64 Linux
+            os: ubuntu-22.04
+            arch: x86_64
+          - name: x86_64 macOS
+            os: macos-13
+            arch: x86_64
+          - name: arm64 macOS
+            os: macos-14
+            arch: arm64
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Build custom manylinux Docker Image with CUDA
+      if: matrix.os == 'ubuntu-22.04'
       run: |
         docker build --no-cache \
             -t sphericart_manylinux2014_"${{ matrix.arch }}" \
@@ -50,6 +58,7 @@ jobs:
         CIBW_ENVIRONMENT: >
           SPHERICART_ARCH_NATIVE=OFF
           SPHERICART_NO_LOCAL_DEPS=1
+          MACOSX_DEPLOYMENT_TARGET=11.0
 
     - uses: actions/upload-artifact@v4
       with:
