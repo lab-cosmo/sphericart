@@ -37,12 +37,13 @@ class cmake_ext(build_ext):
         build_dir = os.path.join(ROOT, "build", "cmake-build")
         install_dir = os.path.join(
             os.path.realpath(self.build_lib),
-            f"sphericart/torch-{torch_major}.{torch_minor}",
+            f"sphericart/torch/torch-{torch_major}.{torch_minor}",
         )
 
         os.makedirs(build_dir, exist_ok=True)
 
         cmake_options = [
+            "-DCMAKE_BUILD_TYPE=Release",
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
