@@ -38,15 +38,11 @@ class SphericalHarmonics:
         ]
         self.precomputed_xyz_components = Labels(
             names=["xyz"],
-            values=torch.arange(2).reshape(-1, 1),
-        )
-        self.precomputed_xyz_1_components = Labels(
-            names=["xyz_1"],
-            values=torch.arange(2).reshape(-1, 1),
+            values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_xyz_2_components = Labels(
             names=["xyz_2"],
-            values=torch.arange(2).reshape(-1, 1),
+            values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_properties = Labels.single()
 
@@ -59,7 +55,6 @@ class SphericalHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             metatensor_module=metatensor.torch,
@@ -76,7 +71,6 @@ class SphericalHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,
@@ -95,7 +89,6 @@ class SphericalHarmonics:
             self.precomputed_mu_components,
             self.precomputed_properties,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             sh_gradients,
             sh_hessians,
@@ -123,15 +116,11 @@ class SolidHarmonics:
         ]
         self.precomputed_xyz_components = Labels(
             names=["xyz"],
-            values=torch.arange(2).reshape(-1, 1),
-        )
-        self.precomputed_xyz_1_components = Labels(
-            names=["xyz_1"],
-            values=torch.arange(2).reshape(-1, 1),
+            values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_xyz_2_components = Labels(
             names=["xyz_2"],
-            values=torch.arange(2).reshape(-1, 1),
+            values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_properties = Labels.single()
 
@@ -144,7 +133,6 @@ class SolidHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             metatensor_module=metatensor.torch,
@@ -161,7 +149,6 @@ class SolidHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,
@@ -179,7 +166,6 @@ class SolidHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,

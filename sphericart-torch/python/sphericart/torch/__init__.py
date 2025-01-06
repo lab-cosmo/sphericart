@@ -10,6 +10,8 @@ from torch import Tensor
 from ._build_torch_version import BUILD_TORCH_VERSION
 import re
 
+from . import metatensor  # noqa
+
 
 def parse_version_string(version_string):
     match = re.match(r"(\d+)\.(\d+)\.(\d+)", version_string)

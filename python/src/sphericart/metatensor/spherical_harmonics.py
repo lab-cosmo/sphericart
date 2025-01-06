@@ -35,15 +35,11 @@ class SphericalHarmonics:
         ]
         self.precomputed_xyz_components = Labels(
             names=["xyz"],
-            values=np.arange(2).reshape(-1, 1),
-        )
-        self.precomputed_xyz_1_components = Labels(
-            names=["xyz_1"],
-            values=np.arange(2).reshape(-1, 1),
+            values=np.arange(3).reshape(-1, 1),
         )
         self.precomputed_xyz_2_components = Labels(
             names=["xyz_2"],
-            values=np.arange(2).reshape(-1, 1),
+            values=np.arange(3).reshape(-1, 1),
         )
         self.precomputed_properties = Labels.single()
 
@@ -56,7 +52,6 @@ class SphericalHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
         )
@@ -72,7 +67,6 @@ class SphericalHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,
@@ -88,10 +82,9 @@ class SphericalHarmonics:
             self.precomputed_keys,
             xyz.block().samples,
             self.precomputed_mu_components,
-            self.precomputed_properties,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
+            self.precomputed_properties,
             sh_gradients,
             sh_hessians,
         )
@@ -117,15 +110,11 @@ class SolidHarmonics:
         ]
         self.precomputed_xyz_components = Labels(
             names=["xyz"],
-            values=np.arange(2).reshape(-1, 1),
-        )
-        self.precomputed_xyz_1_components = Labels(
-            names=["xyz_1"],
-            values=np.arange(2).reshape(-1, 1),
+            values=np.arange(3).reshape(-1, 1),
         )
         self.precomputed_xyz_2_components = Labels(
             names=["xyz_2"],
-            values=np.arange(2).reshape(-1, 1),
+            values=np.arange(3).reshape(-1, 1),
         )
         self.precomputed_properties = Labels.single()
 
@@ -138,7 +127,6 @@ class SolidHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
         )
@@ -154,7 +142,6 @@ class SolidHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,
@@ -171,7 +158,6 @@ class SolidHarmonics:
             xyz.block().samples,
             self.precomputed_mu_components,
             self.precomputed_xyz_components,
-            self.precomputed_xyz_1_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,
@@ -198,7 +184,6 @@ def _wrap_into_tensor_map(
     samples: Labels,
     components: List[Labels],
     xyz_components: Labels,
-    xyz_1_components: Labels,
     xyz_2_components: Labels,
     properties: Labels,
     sh_gradients: Optional[np.ndarray] = None,
@@ -223,7 +208,7 @@ def _wrap_into_tensor_map(
             sh_gradients_block = metatensor_module.TensorBlock(
                 values=sh_gradients[:, :, l_start:l_end, None],
                 samples=samples,
-                components=[components[l], xyz_components],
+                components=[xyz_components, components[l]],
                 properties=properties,
             )
             if sh_hessians is not None:
@@ -231,9 +216,9 @@ def _wrap_into_tensor_map(
                     values=sh_hessians[:, :, :, l_start:l_end, None],
                     samples=samples,
                     components=[
-                        components[l],
-                        xyz_1_components,
                         xyz_2_components,
+                        xyz_components,
+                        components[l],
                     ],
                     properties=properties,
                 )

@@ -15,6 +15,7 @@ different languages and frameworks it supports.
     python-api
     pytorch-api
     jax-api
+    metatensor-api
 
 Although the Julia API is not fully documented yet, basic usage examples are available
 `here <https://github.com/lab-cosmo/sphericart/blob/main/julia/README.md>`_.
