@@ -7,7 +7,7 @@ metadata to inputs and outputs, as well as to naturally obtain spherical harmoni
 gradients and Hessians in a single object.
 
 Here is the API reference for the ``sphericart.metatensor`` and
-``sphericart.metatensor.torch`` modules.
+``sphericart.torch.metatensor`` modules.
 
 sphericart.metatensor
 ---------------------
@@ -18,11 +18,11 @@ sphericart.metatensor
 .. autoclass:: sphericart.metatensor.SolidHarmonics
     :members:
 
-sphericart.metatensor.torch
+sphericart.torch.metatensor
 ---------------------------
 
-.. autoclass:: sphericart.metatensor.torch.SphericalHarmonics
+.. autoclass:: sphericart.torch.metatensor.SphericalHarmonics
     :members:
 
-.. autoclass:: sphericart.metatensor.torch.SolidHarmonics
+.. autoclass:: sphericart.torch.metatensor.SolidHarmonics
     :members:

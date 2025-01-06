@@ -1,45 +1,54 @@
 from typing import List, Optional
 
-import numpy as np
+import torch
 
-from ..spherical_harmonics import SolidHarmonics as RawSolidHarmonics
-from ..spherical_harmonics import SphericalHarmonics as RawSphericalHarmonics
+from . import SolidHarmonics as RawSolidHarmonics
+from . import SphericalHarmonics as RawSphericalHarmonics
 
 
 try:
-    import metatensor
-    from metatensor import Labels, TensorMap
+    import metatensor.torch
+    from metatensor.torch import Labels, TensorMap
 except ImportError as e:
     raise ImportError(
-        "the `sphericart.metatensor` module requires `metatensor` to be installed"
+        "the `sphericart.torch.metatensor` module requires "
+        "`metatensor-torch` to be installed"
     ) from e
 
 
 class SphericalHarmonics:
+    """
+    ``metatensor``-based wrapper around the
+    :py:meth:`sphericart.torch.SphericalHarmonics` class.
+    """
 
-    def __init__(self, l_max: int):
+    def __init__(
+        self,
+        l_max: int,
+        backward_second_derivatives: bool = False,
+    ):
         self.l_max = l_max
-        self.raw_calculator = RawSphericalHarmonics(l_max)
+        self.raw_calculator = RawSphericalHarmonics(l_max, backward_second_derivatives)
 
         # precompute some labels
         self.precomputed_keys = Labels(
             names=["o3_lambda"],
-            values=np.arange(l_max + 1).reshape(-1, 1),
+            values=torch.arange(l_max + 1).reshape(-1, 1),
         )
         self.precomputed_mu_components = [
             Labels(
                 names=["o3_mu"],
-                values=np.arange(-l, l + 1).reshape(-1, 1),
+                values=torch.arange(-l, l + 1).reshape(-1, 1),
             )
             for l in range(l_max + 1)  # noqa E741
         ]
         self.precomputed_xyz_components = Labels(
             names=["xyz"],
-            values=np.arange(3).reshape(-1, 1),
+            values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_xyz_2_components = Labels(
             names=["xyz_2"],
-            values=np.arange(3).reshape(-1, 1),
+            values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_properties = Labels.single()
 
@@ -54,6 +63,7 @@ class SphericalHarmonics:
             self.precomputed_xyz_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
+            metatensor_module=metatensor.torch,
         )
 
     def compute_with_gradients(self, xyz: TensorMap) -> TensorMap:
@@ -70,6 +80,7 @@ class SphericalHarmonics:
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,
+            metatensor_module=metatensor.torch,
         )
 
     def compute_with_hessians(self, xyz: TensorMap) -> TensorMap:
@@ -82,43 +93,48 @@ class SphericalHarmonics:
             self.precomputed_keys,
             xyz.block().samples,
             self.precomputed_mu_components,
+            self.precomputed_properties,
             self.precomputed_xyz_components,
             self.precomputed_xyz_2_components,
-            self.precomputed_properties,
             sh_gradients,
             sh_hessians,
+            metatensor_module=metatensor.torch,
         )
 
 
 class SolidHarmonics:
 
-    def __init__(self, l_max: int):
+    def __init__(
+        self,
+        l_max: int,
+        backward_second_derivatives: bool = False,
+    ):
         self.l_max = l_max
-        self.raw_calculator = RawSolidHarmonics(l_max)
+        self.raw_calculator = RawSolidHarmonics(l_max, backward_second_derivatives)
 
         # precompute some labels
         self.precomputed_keys = Labels(
             names=["o3_lambda"],
-            values=np.arange(l_max + 1).reshape(-1, 1),
+            values=torch.arange(l_max + 1).reshape(-1, 1),
         )
         self.precomputed_mu_components = [
             Labels(
                 names=["o3_mu"],
-                values=np.arange(-l, l + 1).reshape(-1, 1),
+                values=torch.arange(-l, l + 1).reshape(-1, 1),
             )
             for l in range(l_max + 1)  # noqa E741
         ]
         self.precomputed_xyz_components = Labels(
             names=["xyz"],
-            values=np.arange(3).reshape(-1, 1),
+            values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_xyz_2_components = Labels(
             names=["xyz_2"],
-            values=np.arange(3).reshape(-1, 1),
+            values=torch.arange(3).reshape(-1, 1),
         )
         self.precomputed_properties = Labels.single()
 
-    def compute(self, xyz: np.ndarray) -> TensorMap:
+    def compute(self, xyz: torch.Tensor) -> TensorMap:
         _check_xyz_tensor_map(xyz)
         sh_values = self.raw_calculator.compute(xyz.block().values.squeeze(-1))
         return _wrap_into_tensor_map(
@@ -129,9 +145,10 @@ class SolidHarmonics:
             self.precomputed_xyz_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
+            metatensor_module=metatensor.torch,
         )
 
-    def compute_with_gradients(self, xyz: np.ndarray) -> TensorMap:
+    def compute_with_gradients(self, xyz: torch.Tensor) -> TensorMap:
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients = self.raw_calculator.compute_with_gradients(
             xyz.block().values.squeeze(-1)
@@ -145,9 +162,10 @@ class SolidHarmonics:
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,
+            metatensor_module=metatensor.torch,
         )
 
-    def compute_with_hessians(self, xyz: np.ndarray) -> TensorMap:
+    def compute_with_hessians(self, xyz: torch.Tensor) -> TensorMap:
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients, sh_hessians = (
             self.raw_calculator.compute_with_hessians(xyz.block().values.squeeze(-1))
@@ -162,6 +180,7 @@ class SolidHarmonics:
             self.precomputed_properties,
             sh_gradients,
             sh_hessians,
+            metatensor_module=metatensor.torch,
         )
 
 
@@ -179,16 +198,15 @@ def _check_xyz_tensor_map(xyz: TensorMap):
 
 
 def _wrap_into_tensor_map(
-    sh_values: np.ndarray,
+    sh_values: torch.Tensor,
     keys: Labels,
     samples: Labels,
     components: List[Labels],
     xyz_components: Labels,
     xyz_2_components: Labels,
     properties: Labels,
-    sh_gradients: Optional[np.ndarray] = None,
-    sh_hessians: Optional[np.ndarray] = None,
-    metatensor_module=metatensor,  # can be replaced with metatensor.torch
+    sh_gradients: Optional[torch.Tensor] = None,
+    sh_hessians: Optional[torch.Tensor] = None,
 ) -> TensorMap:
 
     # infer l_max
@@ -198,21 +216,21 @@ def _wrap_into_tensor_map(
     for l in range(l_max + 1):  # noqa E741
         l_start = l**2
         l_end = (l + 1) ** 2
-        sh_values_block = metatensor_module.TensorBlock(
+        sh_values_block = metatensor.TensorBlock(
             values=sh_values[:, l_start:l_end, None],
             samples=samples,
             components=[components[l]],
             properties=properties,
         )
         if sh_gradients is not None:
-            sh_gradients_block = metatensor_module.TensorBlock(
+            sh_gradients_block = metatensor.TensorBlock(
                 values=sh_gradients[:, :, l_start:l_end, None],
                 samples=samples,
                 components=[xyz_components, components[l]],
                 properties=properties,
             )
             if sh_hessians is not None:
-                sh_hessians_block = metatensor_module.TensorBlock(
+                sh_hessians_block = metatensor.TensorBlock(
                     values=sh_hessians[:, :, :, l_start:l_end, None],
                     samples=samples,
                     components=[
@@ -227,4 +245,4 @@ def _wrap_into_tensor_map(
 
         blocks.append(sh_values_block)
 
-    return metatensor_module.TensorMap(keys=keys, blocks=blocks)
+    return metatensor.TensorMap(keys=keys, blocks=blocks)
