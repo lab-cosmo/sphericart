@@ -1,9 +1,9 @@
-import numpy as np
 import pytest
-from metatensor import Labels, TensorBlock, TensorMap
+import torch
+from metatensor.torch import Labels, TensorBlock, TensorMap
 
-import sphericart
-import sphericart.metatensor
+import sphericart.torch
+import sphericart.torch.metatensor
 
 
 L_MAX = 15
@@ -16,15 +16,15 @@ def xyz():
         keys=Labels.single(),
         blocks=[
             TensorBlock(
-                values=np.random.rand(N_SAMPLES, 3, 1),
+                values=torch.rand(N_SAMPLES, 3, 1),
                 samples=Labels(
                     names=["sample"],
-                    values=np.arange(N_SAMPLES).reshape(-1, 1),
+                    values=torch.arange(N_SAMPLES).reshape(-1, 1),
                 ),
                 components=[
                     Labels(
                         names=["xyz"],
-                        values=np.arange(3).reshape(-1, 1),
+                        values=torch.arange(3).reshape(-1, 1),
                     )
                 ],
                 properties=Labels.single(),
@@ -35,15 +35,15 @@ def xyz():
 
 def test_metatensor(xyz):
     for l in range(L_MAX + 1):  # noqa E741
-        calculator_spherical = sphericart.metatensor.SphericalHarmonics(l)
-        calculator_solid = sphericart.metatensor.SolidHarmonics(l)
+        calculator_spherical = sphericart.torch.metatensor.SphericalHarmonics(l)
+        calculator_solid = sphericart.torch.metatensor.SolidHarmonics(l)
 
         spherical = calculator_spherical.compute(xyz)
         solid = calculator_solid.compute(xyz)
 
         assert spherical.keys == Labels(
             names=["o3_lambda"],
-            values=np.arange(l + 1).reshape(-1, 1),
+            values=torch.arange(l + 1).reshape(-1, 1),
         )
         for single_l in range(l + 1):  # noqa E741
             spherical_block = spherical.block({"o3_lambda": single_l})
@@ -56,7 +56,7 @@ def test_metatensor(xyz):
             assert spherical_block.components == [
                 Labels(
                     names=["o3_mu"],
-                    values=np.arange(-single_l, single_l + 1).reshape(-1, 1),
+                    values=torch.arange(-single_l, single_l + 1).reshape(-1, 1),
                 )
             ]
 
@@ -64,15 +64,15 @@ def test_metatensor(xyz):
             assert spherical_block.properties == Labels.single()
 
             # check values
-            assert np.allclose(
+            assert torch.allclose(
                 spherical_block.values.squeeze(-1),
-                sphericart.SphericalHarmonics(single_l).compute(
+                sphericart.torch.SphericalHarmonics(single_l).compute(
                     xyz.block().values.squeeze(-1)
                 )[:, single_l**2 : (single_l + 1) ** 2],
             )
-            assert np.allclose(
+            assert torch.allclose(
                 solid_block.values.squeeze(-1),
-                sphericart.SolidHarmonics(l).compute(xyz.block().values.squeeze(-1))[
-                    :, single_l**2 : (single_l + 1) ** 2
-                ],
+                sphericart.torch.SolidHarmonics(l).compute(
+                    xyz.block().values.squeeze(-1)
+                )[:, single_l**2 : (single_l + 1) ** 2],
             )
