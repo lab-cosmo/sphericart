@@ -61,7 +61,8 @@ class SphericalHarmonics:
             there must be one component named ``"xyz"`` with 3 values, and one property.
 
         :return: The spherical harmonics and their metadata as a
-            :py:class:`metatensor.TensorMap`
+            :py:class:`metatensor.TensorMap`. All ``samples`` in the output
+            ``TensorMap`` will be the same as those of the ``xyz`` input.
         """
         _check_xyz_tensor_map(xyz)
         sh_values = self.raw_calculator.compute(xyz.block().values.squeeze(-1))
@@ -85,7 +86,9 @@ class SphericalHarmonics:
 
         :return: The spherical harmonics and their metadata as a
             :py:class:`metatensor.TensorMap`. Each ``TensorBlock`` in the output
-            ``TensorMap`` will have a gradient with respect to the Cartesian positions.
+            ``TensorMap`` will have a gradient block with respect to the Cartesian
+            positions. All ``samples`` in the output ``TensorMap`` will be the same as
+            those of the ``xyz`` input.
         """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients = self.raw_calculator.compute_with_gradients(
@@ -113,8 +116,10 @@ class SphericalHarmonics:
 
         :return: The spherical harmonics and their metadata as a
             :py:class:`metatensor.TensorMap`. Each ``TensorBlock`` in the output
-            ``TensorMap`` will have a gradient with respect to the Cartesian positions,
-            which will itself have a gradient with respect to the Cartesian positions.
+            ``TensorMap`` will have a gradient block  with respect to the Cartesian
+            positions, which will itself have a gradient with respect to the Cartesian
+            positions. All ``samples`` in the output ``TensorMap`` will be the same as
+            those of the ``xyz`` input.
         """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients, sh_hessians = (

@@ -31,6 +31,7 @@ xyz = TensorMap(
 calculator = sphericart.metatensor.SphericalHarmonics(l_max)
 
 spherical_harmonics = calculator.compute(xyz)
+# for each block, the samples are the same as those of the `xyz` input
 
 for single_l in range(l_max + 1):
     spherical_single_l = spherical_harmonics.block({"o3_lambda": single_l})
