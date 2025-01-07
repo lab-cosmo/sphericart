@@ -7,8 +7,7 @@ from . import SphericalHarmonics as RawSphericalHarmonics
 
 
 try:
-    import metatensor.torch
-    from metatensor.torch import Labels, TensorMap
+    from metatensor.torch import Labels, TensorBlock, TensorMap
 except ImportError as e:
     raise ImportError(
         "the `sphericart.torch.metatensor` module requires "
@@ -20,6 +19,10 @@ class SphericalHarmonics:
     """
     ``metatensor``-based wrapper around the
     :py:meth:`sphericart.torch.SphericalHarmonics` class.
+
+    See :py:class:`sphericart.metatensor.SphericalHarmonics` for more details.
+    ``backward_second_derivatives`` has the same meaning as in
+    :py:class:`sphericart.torch.SphericalHarmonics`.
     """
 
     def __init__(
@@ -53,6 +56,9 @@ class SphericalHarmonics:
         self.precomputed_properties = Labels.single()
 
     def compute(self, xyz: TensorMap) -> TensorMap:
+        """
+        See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute`.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values = self.raw_calculator.compute(xyz.block().values.squeeze(-1))
         return _wrap_into_tensor_map(
@@ -63,10 +69,12 @@ class SphericalHarmonics:
             self.precomputed_xyz_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
-            metatensor_module=metatensor.torch,
         )
 
     def compute_with_gradients(self, xyz: TensorMap) -> TensorMap:
+        """
+        See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_gradients`.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients = self.raw_calculator.compute_with_gradients(
             xyz.block().values.squeeze(-1)
@@ -80,10 +88,12 @@ class SphericalHarmonics:
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,
-            metatensor_module=metatensor.torch,
         )
 
     def compute_with_hessians(self, xyz: TensorMap) -> TensorMap:
+        """
+        See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_hessians`.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients, sh_hessians = (
             self.raw_calculator.compute_with_hessians(xyz.block().values.squeeze(-1))
@@ -98,11 +108,18 @@ class SphericalHarmonics:
             self.precomputed_xyz_2_components,
             sh_gradients,
             sh_hessians,
-            metatensor_module=metatensor.torch,
         )
 
 
 class SolidHarmonics:
+    """
+    ``metatensor``-based wrapper around the
+    :py:meth:`sphericart.torch.SolidHarmonics` class.
+
+    See :py:class:`sphericart.metatensor.SphericalHarmonics` for more details.
+    ``backward_second_derivatives`` has the same meaning as in
+    :py:class:`sphericart.torch.SphericalHarmonics`.
+    """
 
     def __init__(
         self,
@@ -134,7 +151,10 @@ class SolidHarmonics:
         )
         self.precomputed_properties = Labels.single()
 
-    def compute(self, xyz: torch.Tensor) -> TensorMap:
+    def compute(self, xyz: TensorMap) -> TensorMap:
+        """
+        See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute`.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values = self.raw_calculator.compute(xyz.block().values.squeeze(-1))
         return _wrap_into_tensor_map(
@@ -145,10 +165,12 @@ class SolidHarmonics:
             self.precomputed_xyz_components,
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
-            metatensor_module=metatensor.torch,
         )
 
-    def compute_with_gradients(self, xyz: torch.Tensor) -> TensorMap:
+    def compute_with_gradients(self, xyz: TensorMap) -> TensorMap:
+        """
+        See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_gradients`.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients = self.raw_calculator.compute_with_gradients(
             xyz.block().values.squeeze(-1)
@@ -162,10 +184,12 @@ class SolidHarmonics:
             self.precomputed_xyz_2_components,
             self.precomputed_properties,
             sh_gradients,
-            metatensor_module=metatensor.torch,
         )
 
-    def compute_with_hessians(self, xyz: torch.Tensor) -> TensorMap:
+    def compute_with_hessians(self, xyz: TensorMap) -> TensorMap:
+        """
+        See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_hessians`.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients, sh_hessians = (
             self.raw_calculator.compute_with_hessians(xyz.block().values.squeeze(-1))
@@ -180,7 +204,6 @@ class SolidHarmonics:
             self.precomputed_properties,
             sh_gradients,
             sh_hessians,
-            metatensor_module=metatensor.torch,
         )
 
 
@@ -216,21 +239,21 @@ def _wrap_into_tensor_map(
     for l in range(l_max + 1):  # noqa E741
         l_start = l**2
         l_end = (l + 1) ** 2
-        sh_values_block = metatensor.TensorBlock(
+        sh_values_block = TensorBlock(
             values=sh_values[:, l_start:l_end, None],
             samples=samples,
             components=[components[l]],
             properties=properties,
         )
         if sh_gradients is not None:
-            sh_gradients_block = metatensor.TensorBlock(
+            sh_gradients_block = TensorBlock(
                 values=sh_gradients[:, :, l_start:l_end, None],
                 samples=samples,
                 components=[xyz_components, components[l]],
                 properties=properties,
             )
             if sh_hessians is not None:
-                sh_hessians_block = metatensor.TensorBlock(
+                sh_hessians_block = TensorBlock(
                     values=sh_hessians[:, :, :, l_start:l_end, None],
                     samples=samples,
                     components=[
@@ -245,4 +268,4 @@ def _wrap_into_tensor_map(
 
         blocks.append(sh_values_block)
 
-    return metatensor.TensorMap(keys=keys, blocks=blocks)
+    return TensorMap(keys=keys, blocks=blocks)

@@ -7,8 +7,7 @@ from .spherical_harmonics import SphericalHarmonics as RawSphericalHarmonics
 
 
 try:
-    import metatensor
-    from metatensor import Labels, TensorMap
+    from metatensor import Labels, TensorBlock, TensorMap
 except ImportError as e:
     raise ImportError(
         "the `sphericart.metatensor` module requires `metatensor` to be installed"
@@ -16,6 +15,14 @@ except ImportError as e:
 
 
 class SphericalHarmonics:
+    """
+    ``metatensor``-based wrapper around the
+    :py:meth:`sphericart.SphericalHarmonics` class.
+
+    :param l_max: the maximum degree of the spherical harmonics to be calculated
+
+    :return: a spherical harmonics calculator object
+    """
 
     def __init__(self, l_max: int):
         self.l_max = l_max
@@ -44,6 +51,18 @@ class SphericalHarmonics:
         self.precomputed_properties = Labels.single()
 
     def compute(self, xyz: TensorMap) -> TensorMap:
+        """
+        Computes the spherical harmonics for the given Cartesian coordinates, up to
+        the maximum degree ``l_max`` specified during initialization.
+
+        :param xyz: a :py:class:`metatensor.TensorMap` containing the Cartesian
+            coordinates of the 3D points. This ``TensorMap`` should have only one
+            ``TensorBlock``. In this ``TensorBlock``, the samples are arbitrary,
+            there must be one component named ``"xyz"`` with 3 values, and one property.
+
+        :return: The spherical harmonics and their metadata as a
+            :py:class:`metatensor.TensorMap`
+        """
         _check_xyz_tensor_map(xyz)
         sh_values = self.raw_calculator.compute(xyz.block().values.squeeze(-1))
         return _wrap_into_tensor_map(
@@ -57,6 +76,17 @@ class SphericalHarmonics:
         )
 
     def compute_with_gradients(self, xyz: TensorMap) -> TensorMap:
+        """
+        Computes the spherical harmonics for the given Cartesian coordinates, up to
+        the maximum degree ``l_max`` specified during initialization,
+        together with their gradients with respect to the Cartesian coordinates.
+
+        :param xyz: see :py:meth:`compute`
+
+        :return: The spherical harmonics and their metadata as a
+            :py:class:`metatensor.TensorMap`. Each ``TensorBlock`` in the output
+            ``TensorMap`` will have a gradient with respect to the Cartesian positions.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients = self.raw_calculator.compute_with_gradients(
             xyz.block().values.squeeze(-1)
@@ -73,6 +103,19 @@ class SphericalHarmonics:
         )
 
     def compute_with_hessians(self, xyz: TensorMap) -> TensorMap:
+        """
+        Computes the spherical harmonics for the given Cartesian coordinates, up to
+        the maximum degree ``l_max`` specified during initialization,
+        together with their gradients and Hessians with respect to the Cartesian
+        coordinates.
+
+        :param xyz: see :py:meth:`compute`
+
+        :return: The spherical harmonics and their metadata as a
+            :py:class:`metatensor.TensorMap`. Each ``TensorBlock`` in the output
+            ``TensorMap`` will have a gradient with respect to the Cartesian positions,
+            which will itself have a gradient with respect to the Cartesian positions.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients, sh_hessians = (
             self.raw_calculator.compute_with_hessians(xyz.block().values.squeeze(-1))
@@ -91,6 +134,11 @@ class SphericalHarmonics:
 
 
 class SolidHarmonics:
+    """
+    ``metatensor``-based wrapper around the :py:meth:`sphericart.SolidHarmonics` class.
+
+    See :py:class:`SphericalHarmonics` for more details.
+    """
 
     def __init__(self, l_max: int):
         self.l_max = l_max
@@ -118,7 +166,10 @@ class SolidHarmonics:
         )
         self.precomputed_properties = Labels.single()
 
-    def compute(self, xyz: np.ndarray) -> TensorMap:
+    def compute(self, xyz: TensorMap) -> TensorMap:
+        """
+        See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute`.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values = self.raw_calculator.compute(xyz.block().values.squeeze(-1))
         return _wrap_into_tensor_map(
@@ -131,7 +182,10 @@ class SolidHarmonics:
             self.precomputed_properties,
         )
 
-    def compute_with_gradients(self, xyz: np.ndarray) -> TensorMap:
+    def compute_with_gradients(self, xyz: TensorMap) -> TensorMap:
+        """
+        See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_gradients`.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients = self.raw_calculator.compute_with_gradients(
             xyz.block().values.squeeze(-1)
@@ -147,7 +201,10 @@ class SolidHarmonics:
             sh_gradients,
         )
 
-    def compute_with_hessians(self, xyz: np.ndarray) -> TensorMap:
+    def compute_with_hessians(self, xyz: TensorMap) -> TensorMap:
+        """
+        See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_hessians`.
+        """
         _check_xyz_tensor_map(xyz)
         sh_values, sh_gradients, sh_hessians = (
             self.raw_calculator.compute_with_hessians(xyz.block().values.squeeze(-1))
@@ -197,21 +254,21 @@ def _wrap_into_tensor_map(
     for l in range(l_max + 1):  # noqa E741
         l_start = l**2
         l_end = (l + 1) ** 2
-        sh_values_block = metatensor.TensorBlock(
+        sh_values_block = TensorBlock(
             values=sh_values[:, l_start:l_end, None],
             samples=samples,
             components=[components[l]],
             properties=properties,
         )
         if sh_gradients is not None:
-            sh_gradients_block = metatensor.TensorBlock(
+            sh_gradients_block = TensorBlock(
                 values=sh_gradients[:, :, l_start:l_end, None],
                 samples=samples,
                 components=[xyz_components, components[l]],
                 properties=properties,
             )
             if sh_hessians is not None:
-                sh_hessians_block = metatensor.TensorBlock(
+                sh_hessians_block = TensorBlock(
                     values=sh_hessians[:, :, :, l_start:l_end, None],
                     samples=samples,
                     components=[
@@ -226,4 +283,4 @@ def _wrap_into_tensor_map(
 
         blocks.append(sh_values_block)
 
-    return metatensor.TensorMap(keys=keys, blocks=blocks)
+    return TensorMap(keys=keys, blocks=blocks)
