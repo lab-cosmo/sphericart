@@ -33,7 +33,12 @@ def xyz():
     )
 
 
-def test_metatensor(xyz):
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_metatensor(xyz, device):
+    if device == "cuda" and not torch.cuda.is_available():
+        pytest.skip("CUDA is not available")
+
+    xyz = xyz.to(device)
     for l in range(L_MAX + 1):  # noqa E741
         calculator_spherical = sphericart.torch.metatensor.SphericalHarmonics(l)
         calculator_solid = sphericart.torch.metatensor.SolidHarmonics(l)

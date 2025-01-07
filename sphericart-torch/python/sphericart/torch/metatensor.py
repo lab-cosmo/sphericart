@@ -60,6 +60,10 @@ class SphericalHarmonics:
         See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute`.
         """
         _check_xyz_tensor_map(xyz)
+        device = xyz.device
+        if self.precomputed_keys.device != device:
+            self._send_precomputed_labels_to_device(device)
+
         sh_values = self.raw_calculator.compute(xyz.block().values.squeeze(-1))
         return _wrap_into_tensor_map(
             sh_values,
@@ -76,6 +80,10 @@ class SphericalHarmonics:
         See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_gradients`.
         """
         _check_xyz_tensor_map(xyz)
+        device = xyz.device
+        if self.precomputed_keys.device != device:
+            self._send_precomputed_labels_to_device(device)
+
         sh_values, sh_gradients = self.raw_calculator.compute_with_gradients(
             xyz.block().values.squeeze(-1)
         )
@@ -95,6 +103,10 @@ class SphericalHarmonics:
         See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_hessians`.
         """
         _check_xyz_tensor_map(xyz)
+        device = xyz.device
+        if self.precomputed_keys.device != device:
+            self._send_precomputed_labels_to_device(device)
+
         sh_values, sh_gradients, sh_hessians = (
             self.raw_calculator.compute_with_hessians(xyz.block().values.squeeze(-1))
         )
@@ -109,6 +121,15 @@ class SphericalHarmonics:
             sh_gradients,
             sh_hessians,
         )
+
+    def _send_precomputed_labels_to_device(self, device):
+        self.precomputed_keys = self.precomputed_keys.to(device)
+        self.precomputed_mu_components = [
+            comp.to(device) for comp in self.precomputed_mu_components
+        ]
+        self.precomputed_xyz_components = self.precomputed_xyz_components.to(device)
+        self.precomputed_xyz_2_components = self.precomputed_xyz_2_components.to(device)
+        self.precomputed_properties = self.precomputed_properties.to(device)
 
 
 class SolidHarmonics:
@@ -156,6 +177,10 @@ class SolidHarmonics:
         See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute`.
         """
         _check_xyz_tensor_map(xyz)
+        device = xyz.device
+        if self.precomputed_keys.device != device:
+            self._send_precomputed_labels_to_device(device)
+
         sh_values = self.raw_calculator.compute(xyz.block().values.squeeze(-1))
         return _wrap_into_tensor_map(
             sh_values,
@@ -172,6 +197,10 @@ class SolidHarmonics:
         See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_gradients`.
         """
         _check_xyz_tensor_map(xyz)
+        device = xyz.device
+        if self.precomputed_keys.device != device:
+            self._send_precomputed_labels_to_device(device)
+
         sh_values, sh_gradients = self.raw_calculator.compute_with_gradients(
             xyz.block().values.squeeze(-1)
         )
@@ -191,6 +220,10 @@ class SolidHarmonics:
         See :py:meth:`sphericart.metatensor.SphericalHarmonics.compute_with_hessians`.
         """
         _check_xyz_tensor_map(xyz)
+        device = xyz.device
+        if self.precomputed_keys.device != device:
+            self._send_precomputed_labels_to_device(device)
+
         sh_values, sh_gradients, sh_hessians = (
             self.raw_calculator.compute_with_hessians(xyz.block().values.squeeze(-1))
         )
@@ -205,6 +238,15 @@ class SolidHarmonics:
             sh_gradients,
             sh_hessians,
         )
+
+    def _send_precomputed_labels_to_device(self, device):
+        self.precomputed_keys = self.precomputed_keys.to(device)
+        self.precomputed_mu_components = [
+            comp.to(device) for comp in self.precomputed_mu_components
+        ]
+        self.precomputed_xyz_components = self.precomputed_xyz_components.to(device)
+        self.precomputed_xyz_2_components = self.precomputed_xyz_2_components.to(device)
+        self.precomputed_properties = self.precomputed_properties.to(device)
 
 
 def _check_xyz_tensor_map(xyz: TensorMap):
