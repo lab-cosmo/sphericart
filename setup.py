@@ -41,6 +41,9 @@ class cmake_ext(build_ext):
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DBUILD_SHARED_LIBS=ON",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
+            # Do not create multiple versionned files (libsphericart.so.0.5.0,
+            # libsphericart.so.0.5, libsphericart.so), but only the main one
+            "-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON",
         ]
 
         CUDA_HOME = os.environ.get("CUDA_HOME")

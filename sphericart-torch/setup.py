@@ -48,6 +48,7 @@ class cmake_ext(build_ext):
             "-DSPHERICART_TORCH_BUILD_FOR_PYTHON=ON",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
+            "-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON",
         ]
 
         CUDA_HOME = os.environ.get("CUDA_HOME")
@@ -98,7 +99,6 @@ class bdist_egg_disabled(bdist_egg):
 
 
 if __name__ == "__main__":
-
     try:
         import torch
 
