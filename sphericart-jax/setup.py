@@ -25,10 +25,12 @@ class cmake_ext(build_ext):
         cmake_prefix_path = [pybind11.get_cmake_dir()]
 
         cmake_options = [
+            "-DCMAKE_BUILD_TYPE=Release",
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
             f"-DCMAKE_PREFIX_PATH={';'.join(cmake_prefix_path)}",
+            "-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON",
         ]
 
         CUDA_HOME = os.environ.get("CUDA_HOME")

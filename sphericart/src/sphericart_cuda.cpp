@@ -64,9 +64,11 @@ template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {
         this->prefactors_cpu = nullptr;
     }
 
+    /* Leave OS to cleanup due to static (de-)initialisation problem with shpericart-jax.
     if (this->prefactors_cuda) {
         CUDART_SAFE_CALL(CUDART_INSTANCE.cudaFree(this->prefactors_cuda));
     }
+    */
 }
 
 template <typename T>

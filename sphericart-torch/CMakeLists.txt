@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.27)
 
 if (POLICY CMP0076)
     #  target_sources() converts relative paths to absolute
@@ -104,7 +104,7 @@ else()
     endif()
 endif()
 
-find_package(Torch 1.13 REQUIRED)
+find_package(Torch 2.1 REQUIRED)
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERSION = '${Torch_VERSION}'")
 
@@ -127,9 +127,14 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(sphericart_torch PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
+message (STATUS "CUDA Toolkit Dir: ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
+
 if(CMAKE_CUDA_COMPILER)
     target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
+    target_compile_definitions(sphericart_torch PRIVATE C10_CUDA_NO_CMAKE_CONFIGURE_FILE)
+    target_include_directories(sphericart_torch PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 endif()
+
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
 
 target_include_directories(sphericart_torch PUBLIC

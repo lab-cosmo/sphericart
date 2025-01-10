@@ -17,7 +17,7 @@ class universal_wheel(bdist_wheel):
     # When building the wheel, the `wheel` package assumes that if we have a
     # binary extension then we are linking to `libpython.so`; and thus the wheel
     # is only usable with a single python version. This is not the case for
-    # here, and the wheel will be compatible with any Python >=3.6. This is
+    # here, and the wheel will be compatible with any Python >=3.7. This is
     # tracked in https://github.com/pypa/wheel/issues/185, but until then we
     # manually override the wheel tag.
     def get_tag(self):
@@ -37,13 +37,16 @@ class cmake_ext(build_ext):
         os.makedirs(build_dir, exist_ok=True)
 
         cmake_options = [
+            "-DCMAKE_BUILD_TYPE=Release",
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
             "-DBUILD_SHARED_LIBS=ON",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
+            # Do not create multiple versionned files (libsphericart.so.0.5.0,
+            # libsphericart.so.0.5, libsphericart.so), but only the main one
+            "-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON",
         ]
 
         CUDA_HOME = os.environ.get("CUDA_HOME")
-        print("sphericart: CUDA_HOME: ", CUDA_HOME)
 
         if CUDA_HOME is not None:
             cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")

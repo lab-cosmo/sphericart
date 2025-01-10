@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.27)
 
 if (POLICY CMP0076)
     #  target_sources() converts relative paths to absolute
@@ -15,7 +15,6 @@ if(CMAKE_CUDA_COMPILER)
 else()
     message(STATUS "Could not find a CUDA compiler")
 endif()
-
 
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
@@ -39,7 +38,6 @@ add_subdirectory(sphericart EXCLUDE_FROM_ALL)
 # CPU op library
 set(CPU_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cpu.cpp)
 pybind11_add_module(sphericart_jax_cpu ${CPU_SOURCES})
-install(TARGETS sphericart_jax_cpu DESTINATION sphericart_jax_cpu)
 
 target_link_libraries(sphericart_jax_cpu PUBLIC sphericart)
 target_compile_features(sphericart_jax_cpu PUBLIC cxx_std_17)
@@ -53,17 +51,10 @@ install(TARGETS sphericart_jax_cpu
     LIBRARY DESTINATION "lib"
 )
 
-# Include the CUDA extensions if possible
-include(CheckLanguage)
-check_language(CUDA)
 if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    
-    enable_language(CUDA)
-    include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
     set(CUDA_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
     pybind11_add_module(sphericart_jax_cuda ${CUDA_SOURCES})
-    set_target_properties(sphericart_jax_cuda PROPERTIES CUDA_ARCHITECTURES native)
-    install(TARGETS sphericart_jax_cuda DESTINATION sphericart_jax_cuda)
+
 
     target_link_libraries(sphericart_jax_cuda PUBLIC sphericart)
     target_compile_features(sphericart_jax_cuda PUBLIC cxx_std_17)
@@ -71,8 +62,8 @@ if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     target_include_directories(sphericart_jax_cuda PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
+        ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     )
-
     install(TARGETS sphericart_jax_cuda
         LIBRARY DESTINATION "lib"
     )

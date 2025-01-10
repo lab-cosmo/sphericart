@@ -42,7 +42,7 @@ repository = "https://github.com/lab-cosmo/sphericart"
 requires = [
     "setuptools >=44",
     "wheel >=0.36",
-    "cmake",
+    "cmake >=3.30",
     "pybind11>=2.8.0",
 ]
 build-backend = "setuptools.build_meta"

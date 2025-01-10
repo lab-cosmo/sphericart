@@ -1,4 +1,4 @@
-name: Build Wheels
+name: Build Jax Wheels
 
 on:
   push:
@@ -8,25 +8,23 @@ on:
     # Check all PR
 
 concurrency:
-  group: wheels-${{ github.ref }}
+  group: jax-wheels-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  build-wheels:
+  build-jax-wheels:
     runs-on: ${{ matrix.os }}
-    name: ${{matrix.name}}
     strategy:
       matrix:
-        include:
-          - name: x86_64 Linux
-            os: ubuntu-22.04
-            arch: x86_64
-          - name: x86_64 macOS
-            os: macos-13
-            arch: x86_64
-          - name: arm64 macOS
-            os: macos-14
-            arch: arm64
+        python-version: ["39", "310", "311", "312", "313"]
+        arch: ["arm64", "x86_64"]
+        os: ["ubuntu-22.04", "macos-14"]
+        exclude:
+          # remove mismatched arch/os pairs
+          - {os: macos-14, arch: x86_64}
+          - {os: ubuntu-22.04, arch: arm64}
+
+    name: "Py${{matrix.python-version}} ${{matrix.os}} ${{matrix.arch}}"
 
     steps:
     - name: Checkout code
@@ -47,22 +45,21 @@ jobs:
     - name: Install cibuildwheel
       run: python -m pip install cibuildwheel
 
-    - name: Build wheels
-      run: python -m cibuildwheel .
+    - name: Build jax wheels
+      run: python -m cibuildwheel ./sphericart-jax
       env:
         CIBW_BUILD_VERBOSITY: 1
-        CIBW_BUILD: "cp312-*"
+        CIBW_BUILD: "cp${{ matrix.python-version }}-*"
         CIBW_SKIP: "*-musllinux*"
         CIBW_ARCHS: "${{ matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux2014_x86_64
         CIBW_ENVIRONMENT: >
           SPHERICART_ARCH_NATIVE=OFF
           SPHERICART_NO_LOCAL_DEPS=1
-          MACOSX_DEPLOYMENT_TARGET=11.0
 
     - uses: actions/upload-artifact@v4
       with:
-        name: sphericart-wheel-${{ matrix.os }}-${{ matrix.arch }}
+        name: "sphericart-jax-py-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.arch }}"
         path: ./wheelhouse/*.whl
 
     - name: upload to GitHub release
