@@ -1,5 +1,5 @@
 JAX API
-===========
+=======
 
 The `sphericart.jax` module aims to provide a functional-style and
 `JAX`-friendly framework. As a result, it does not follow the same syntax as
