@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.27)
 project(sphericart LANGUAGES C CXX)
 
 #[[
- This function wraps the input file with the appropriate string to allow us to 
+ This function wraps the input file with the appropriate string to allow us to
  static-initialize string variables, for example:
      static const char* CUDA_CODE =
 #include "generated/wrapped_sphericart_impl.cu"
@@ -128,7 +128,7 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     # Prepend headers to the source file
     prepend_headers_to_source(
         "${CMAKE_CURRENT_SOURCE_DIR}/src/sphericart_impl.cu"
-        "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cu" 
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cu"
         "${SPHERICART_CUDA_HEADERS}"
         )
 

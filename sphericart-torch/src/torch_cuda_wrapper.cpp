@@ -1,7 +1,4 @@
 #include "sphericart/torch_cuda_wrapper.hpp"
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <iostream>
 #include <torch/torch.h>
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION // gives us access to
