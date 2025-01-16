@@ -1,19 +1,67 @@
 #include <cstdint> // For intptr_t
 
+#ifdef __linux__
+#include <dlfcn.h>
+#endif
+
 #include "sphericart/autograd.hpp"
 
-#include "cuda_base.hpp"
 #include "sphericart.hpp"
 #include "sphericart/torch.hpp"
 #include "sphericart/torch_cuda_wrapper.hpp"
 #include <torch/torch.h>
 
-#ifdef CUDA_AVAILABLE
-#include <c10/cuda/CUDAStream.h>
+/// Dynamically load `get_current_cuda_stream`, see `streams.cpp` for more
+/// information
+class CUDAStream {
+  public:
+    static CUDAStream& instance() {
+        static CUDAStream instance;
+        return instance;
+    }
+
+    bool loaded() { return handle != nullptr; }
+
+    using get_stream_t = void* (*)(uint8_t);
+    get_stream_t get_stream = nullptr;
+
+    CUDAStream() {
+#ifdef __linux__
+        handle = dlopen("libsphericart_torch_cuda_stream.so", RTLD_NOW);
+        if (!handle) {
+            throw std::runtime_error(
+                std::string("Failed to load libsphericart_torch_cuda_stream.so: ") + dlerror()
+            );
+        }
+
+        auto get_stream = reinterpret_cast<get_stream_t>(dlsym(handle, "get_current_cuda_stream"));
+        if (!get_stream) {
+            throw std::runtime_error(
+                std::string("Failed to load get_current_cuda_stream: ") + dlerror()
+            );
+        }
+        this->get_stream = get_stream;
+#else
+        throw std::runtime_error("Platform not supported for dynamic loading of CUDA streams");
 #endif
+    }
+
+    ~CUDAStream() {
+#ifdef __linux__
+        if (handle) {
+            dlclose(handle);
+        }
+#endif
+    }
+
+    // Prevent copying
+    CUDAStream(const CUDAStream&) = delete;
+    CUDAStream& operator=(const CUDAStream&) = delete;
+
+    void* handle = nullptr;
+};
 
 using namespace sphericart_torch;
-using namespace at;
 
 template <template <typename> class C, typename scalar_t>
 std::vector<torch::Tensor> _compute_raw_cpu(
@@ -269,9 +317,6 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
     }
 
     void* stream = nullptr;
-#ifdef CUDA_AVAILABLE
-    stream = reinterpret_cast<void*>(at::cuda::getCurrentCUDAStream().stream());
-#endif
 
     auto sph = torch::Tensor();
     auto dsph = torch::Tensor();
@@ -288,6 +333,7 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
         dsph = results[1];
         ddsph = results[2];
     } else if (xyz.device().is_cuda()) {
+        stream = CUDAStream::instance().get_stream(xyz.device().index());
         auto results = calculator.compute_raw_cuda(xyz, requires_grad, requires_hessian, stream);
         sph = results[0];
         dsph = results[1];
@@ -339,10 +385,6 @@ torch::Tensor SphericartAutogradBackward::forward(
 ) {
 
     void* stream = nullptr;
-#ifdef CUDA_AVAILABLE
-    stream = reinterpret_cast<void*>(at::cuda::getCurrentCUDAStream().stream());
-#endif
-
     auto dsph = saved_variables[1];
     auto ddsph = saved_variables[2];
 
@@ -351,6 +393,7 @@ torch::Tensor SphericartAutogradBackward::forward(
         if (xyz.device().is_cpu()) {
             xyz_grad = backward_cpu(xyz, dsph, grad_outputs);
         } else if (xyz.device().is_cuda()) {
+            stream = CUDAStream::instance().get_stream(xyz.device().index());
             xyz_grad =
                 sphericart_torch::spherical_harmonics_backward_cuda(xyz, dsph, grad_outputs, stream);
         } else {
