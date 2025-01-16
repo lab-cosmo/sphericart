@@ -8,8 +8,11 @@
 #include <mutex>
 #include <tuple>
 
+#include "dynamic_cuda.hpp"
 #include "sphericart_cuda.hpp"
 #include "sphericart/pybind11_kernel_helpers.hpp"
+
+using namespace pybind11::literals;
 
 struct SphDescriptor {
     std::int64_t n_samples;
@@ -115,10 +118,22 @@ pybind11::dict Registrations() {
     return dict;
 }
 
+std::pair<int, int> getCUDARuntimeVersion() {
+    int version;
+    CUDART_SAFE_CALL(CUDART_INSTANCE.cudaRuntimeGetVersion(&version));
+    int major = version / 1000;
+    int minor = (version % 1000) / 10;
+    return {major, minor};
+}
+
 PYBIND11_MODULE(sphericart_jax_cuda, m) {
     m.def("registrations", &Registrations);
     m.def("build_sph_descriptor", [](std::int64_t n_samples, std::int64_t lmax) {
         return PackDescriptor(SphDescriptor{n_samples, lmax});
+    });
+    m.def("get_cuda_runtime_version", []() {
+        auto [major, minor] = getCUDARuntimeVersion();
+        return pybind11::dict("major"_a = major, "minor"_a = minor);
     });
 }
 

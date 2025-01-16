@@ -92,6 +92,7 @@ class CUDART {
     using cudaDeviceSynchronize_t = cudaError_t (*)(void);
     using cudaPointerGetAttributes_t = cudaError_t (*)(cudaPointerAttributes*, const void*);
     using cudaFree_t = cudaError_t (*)(void*);
+    using cudaRuntimeGetVersion_t = cudaError_t (*)(int*);
 
     cudaGetDeviceCount_t cudaGetDeviceCount;
     cudaGetDevice_t cudaGetDevice;
@@ -103,6 +104,7 @@ class CUDART {
     cudaDeviceSynchronize_t cudaDeviceSynchronize;
     cudaPointerGetAttributes_t cudaPointerGetAttributes;
     cudaFree_t cudaFree;
+    cudaRuntimeGetVersion_t cudaRuntimeGetVersion;
 
     CUDART() {
 #ifdef __linux__
@@ -124,6 +126,8 @@ class CUDART {
             cudaPointerGetAttributes =
                 load<cudaPointerGetAttributes_t>(cudartHandle, "cudaPointerGetAttributes");
             cudaFree = load<cudaFree_t>(cudartHandle, "cudaFree");
+            cudaRuntimeGetVersion =
+                load<cudaRuntimeGetVersion_t>(cudartHandle, "cudaRuntimeGetVersion");
         }
     }
 
