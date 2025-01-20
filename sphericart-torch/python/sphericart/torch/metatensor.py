@@ -250,15 +250,21 @@ class SolidHarmonics:
 
 
 def _check_xyz_tensor_map(xyz: TensorMap):
-    if len(xyz.blocks()) != 1:
+    blocks = xyz.blocks()
+    if len(blocks) != 1:
         raise ValueError("`xyz` should have only one block")
-    if len(xyz.block().components) != 1:
+
+    block = blocks[0]
+    components = block.components
+    if len(components) != 1:
         raise ValueError("`xyz` should have only one component")
-    if xyz.block().components[0].names != ["xyz"]:
+    if components[0].names != ["xyz"]:
         raise ValueError("`xyz` should have only one component named 'xyz'")
-    if xyz.block().components[0].values.shape[0] != 3:
+
+    values_shape = block.values.shape
+    if values_shape[1] != 3:
         raise ValueError("`xyz` should have 3 Cartesian coordinates")
-    if xyz.block().properties.values.shape[0] != 1:
+    if values_shape[2] != 1:
         raise ValueError("`xyz` should have only one property")
 
 
@@ -273,7 +279,6 @@ def _wrap_into_tensor_map(
     sh_gradients: Optional[torch.Tensor] = None,
     sh_hessians: Optional[torch.Tensor] = None,
 ) -> TensorMap:
-
     # infer l_max
     l_max = len(components) - 1
 
