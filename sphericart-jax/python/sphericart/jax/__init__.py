@@ -1,5 +1,6 @@
 import jax
 from packaging import version
+import warnings
 
 from .lib import sphericart_jax_cpu
 from .spherical_harmonics import spherical_harmonics, solid_harmonics  # noqa: F401
@@ -64,10 +65,13 @@ if has_sphericart_jax_cuda:
     jax_version = jax.__version__
     required_version = get_minimum_cuda_version_for_jax(jax_version)
     if cuda_version < required_version:
-        raise RuntimeError(
-            f"Installed CUDA Toolkit: {cuda_version[0]}.{cuda_version[1]} \
-            is not compatible with installed JAX version {jax_version}. \
-            Minimum required CUDA Toolkit for your JAX version \
-            is {required_version[0]}.{required_version[1]}. \
-            Please upgrade your CUDA Toolkit to meet the requirements."
+        warnings.warn(
+            "The installed CUDA Toolkit version is "
+            f"{cuda_version[0]}.{cuda_version[1]}, which "
+            f"is not compatible with the installed JAX version {jax_version}. "
+            "The minimum required CUDA Toolkit for your JAX version "
+            f"is {required_version[0]}.{required_version[1]}. "
+            "Please upgrade your CUDA Toolkit to meet the requirements, or ",
+            "downgrade JAX to a compatible version.",
+            stacklevel=2,
         )
