@@ -1,7 +1,7 @@
 name = "SpheriCart"
 uuid = "5caf2b29-02d9-47a3-9434-5931c85ba645"
 authors = ["Christoph Ortner <christohortner@gmail.com> and contributors"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
@@ -12,7 +12,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StrideArrays = "d1fa6d79-ef01-42a6-86c9-f7c551f8593b"
 
 [compat]
-Bumper = "0.6.0"
+Bumper = "0.6.0, 0.7.0"
 StrideArrays = "0.1.28"
 ForwardDiff = "0.10"
 LinearAlgebra = "1.8"
