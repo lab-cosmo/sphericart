@@ -408,14 +408,14 @@ SPHERICART_EXPORT void sphericart_spherical_harmonics_compute_sample_with_hessia
  * Similar to :func:`sphericart_spherical_harmonics_new`, but it returns a
  * `sphericart_solid_harmonics_calculator_t`, which perform solid harmonics calculations.
  */
-SPHERICART_EXPORT sphericart_solid_harmonics_calculator_t* sphericart_solid_harmonics_new(size_t l_max
-);
+SPHERICART_EXPORT sphericart_solid_harmonics_calculator_t* sphericart_solid_harmonics_new(size_t l_max);
 
 /**
  * Similar to `sphericart_solid_harmonics_new`, but it returns a
  * `sphericart_solid_harmonics_calculator_f_t`, which performs calculations on the `float` type.
  */
-SPHERICART_EXPORT sphericart_solid_harmonics_calculator_f_t* sphericart_solid_harmonics_new_f(size_t l_max
+SPHERICART_EXPORT sphericart_solid_harmonics_calculator_f_t* sphericart_solid_harmonics_new_f(
+    size_t l_max
 );
 
 /**

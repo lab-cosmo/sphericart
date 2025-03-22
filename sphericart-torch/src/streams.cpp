@@ -19,8 +19,10 @@ extern "C" void* get_current_cuda_stream(uint8_t device_id) {
 #else
 
 extern "C" void* get_current_cuda_stream(uint8_t device_id) {
-    TORCH_WARN_ONCE("Something wrong is happening: trying to get the current CUDA stream, "
-                    "but this version of sphericart was compiled without CUDA support");
+    TORCH_WARN_ONCE(
+        "Something wrong is happening: trying to get the current CUDA stream, "
+        "but this version of sphericart was compiled without CUDA support"
+    );
     return nullptr;
 }
 
