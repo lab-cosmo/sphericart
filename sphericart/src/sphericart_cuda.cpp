@@ -89,21 +89,27 @@ void SphericalHarmonics<T>::compute_internal(
     }
 
     if (sph == nullptr) {
-        throw std::runtime_error("sphericart::cuda::SphericalHarmonics::compute expected "
-                                 "sph ptr initialised, instead nullptr found. Initialise "
-                                 "sph with cudaMalloc.");
+        throw std::runtime_error(
+            "sphericart::cuda::SphericalHarmonics::compute expected "
+            "sph ptr initialised, instead nullptr found. Initialise "
+            "sph with cudaMalloc."
+        );
     }
 
     if (compute_with_gradients && dsph == nullptr) {
-        throw std::runtime_error("sphericart::cuda::SphericalHarmonics::compute expected "
-                                 "dsph != nullptr since compute_with_gradients = true. "
-                                 "initialise dsph with cudaMalloc.");
+        throw std::runtime_error(
+            "sphericart::cuda::SphericalHarmonics::compute expected "
+            "dsph != nullptr since compute_with_gradients = true. "
+            "initialise dsph with cudaMalloc."
+        );
     }
 
     if (compute_with_hessian && ddsph == nullptr) {
-        throw std::runtime_error("sphericart::cuda::SphericalHarmonics::compute expected "
-                                 "ddsph != nullptr since compute_with_hessian = true. "
-                                 "initialise ddsph with cudaMalloc.");
+        throw std::runtime_error(
+            "sphericart::cuda::SphericalHarmonics::compute expected "
+            "ddsph != nullptr since compute_with_hessian = true. "
+            "initialise ddsph with cudaMalloc."
+        );
     }
 
     cudaPointerAttributes attributes;
