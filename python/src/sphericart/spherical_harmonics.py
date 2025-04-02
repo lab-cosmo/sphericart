@@ -149,7 +149,7 @@ class SphericalHarmonics:
               the spherical harmonics' derivatives up to degree ``l_max``. The
               last axis is organized in the same way as in the spherical
               harmonics return array, while the second-to-last axis refers to
-              derivatives in the the x, y, and z directions, respectively.
+              derivatives in the x, y, and z directions, respectively.
 
         """
 

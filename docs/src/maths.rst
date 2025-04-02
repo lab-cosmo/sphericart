@@ -52,7 +52,10 @@ where
     F_l^m = &\, (-1)^m \sqrt{\frac{2l+1}{2\pi}\frac{(l-m)!}{(l+m)!}}.
 
 If we neglect some constant normalization factors, these correspond to the 
-`regular solid harmonics <https://en.wikipedia.org/wiki/Solid_harmonics>`_. 
+`regular solid harmonics <https://en.wikipedia.org/wiki/Solid_harmonics>`_:
+the functions computed by ``sphericart`` should be multiplied by 
+:math:`\sqrt{4\pi/(2l+1)}` to recover the usual definition.
+
 See also the `reference paper <https://arxiv.org/abs/2302.08381>`_ for further 
 implementation details.
 
