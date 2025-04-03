@@ -15,3 +15,18 @@ def test_no_points(l_max, normalized):
         calculator = sphericart.SolidHarmonics(l_max)
     sph_sphericart = calculator.compute(xyz)
     assert sph_sphericart.shape == (0, l_max * l_max + 2 * l_max + 1)
+
+
+def test_double_del():
+    calculator = sphericart.SphericalHarmonics(l_max=4)
+    calculator.__del__()
+    calculator.__del__()
+
+    calculator = sphericart.SolidHarmonics(l_max=4)
+    calculator.__del__()
+    calculator.__del__()
+
+    message = "can not use a deleted calculator"
+    xyz = np.zeros((5, 3))
+    with pytest.raises(ValueError, match=message):
+        calculator.compute(xyz)

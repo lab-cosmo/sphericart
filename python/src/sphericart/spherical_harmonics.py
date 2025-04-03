@@ -58,8 +58,13 @@ class SphericalHarmonics:
         )
 
     def __del__(self):
-        self._lib.sphericart_spherical_harmonics_delete(self._calculator)
-        self._lib.sphericart_spherical_harmonics_delete_f(self._calculator_f)
+        if self._calculator is not None:
+            self._lib.sphericart_spherical_harmonics_delete(self._calculator)
+            self._calculator = None
+
+        if self._calculator_f is not None:
+            self._lib.sphericart_spherical_harmonics_delete_f(self._calculator_f)
+            self._calculator_f = None
 
     def compute(self, xyz: np.ndarray) -> np.ndarray:
         """
@@ -85,6 +90,8 @@ class SphericalHarmonics:
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
             1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
         """
+        if self._calculator is None or self._calculator_f is None:
+            raise ValueError("can not use a deleted calculator")
 
         if not isinstance(xyz, np.ndarray):
             raise TypeError("xyz must be a numpy array")
@@ -152,6 +159,8 @@ class SphericalHarmonics:
               derivatives in the x, y, and z directions, respectively.
 
         """
+        if self._calculator is None or self._calculator_f is None:
+            raise ValueError("can not use a deleted calculator")
 
         if not isinstance(xyz, np.ndarray):
             raise TypeError("xyz must be a numpy array")
@@ -246,6 +255,8 @@ class SphericalHarmonics:
               Hessian dimensions.
 
         """
+        if self._calculator is None or self._calculator_f is None:
+            raise ValueError("can not use a deleted calculator")
 
         if not isinstance(xyz, np.ndarray):
             raise TypeError("xyz must be a numpy array")
@@ -338,13 +349,20 @@ class SolidHarmonics:
         )
 
     def __del__(self):
-        self._lib.sphericart_solid_harmonics_delete(self._calculator)
-        self._lib.sphericart_solid_harmonics_delete_f(self._calculator_f)
+        if self._calculator is not None:
+            self._lib.sphericart_solid_harmonics_delete(self._calculator)
+            self._calculator = None
+
+        if self._calculator_f is not None:
+            self._lib.sphericart_solid_harmonics_delete_f(self._calculator_f)
+            self._calculator_f = None
 
     def compute(self, xyz: np.ndarray) -> np.ndarray:
         """
         Same as ``SphericalHarmonics.compute``, but for the solid harmonics.
         """
+        if self._calculator is None or self._calculator_f is None:
+            raise ValueError("can not use a deleted calculator")
 
         if not isinstance(xyz, np.ndarray):
             raise TypeError("xyz must be a numpy array")
@@ -386,6 +404,8 @@ class SolidHarmonics:
         Same as ``SphericalHarmonics.compute_with_gradients``, but for the solid
         harmonics.
         """
+        if self._calculator is None or self._calculator_f is None:
+            raise ValueError("can not use a deleted calculator")
 
         if not isinstance(xyz, np.ndarray):
             raise TypeError("xyz must be a numpy array")
@@ -445,6 +465,8 @@ class SolidHarmonics:
         Same as ``SphericalHarmonics.compute_with_hessians``, but for the solid
         harmonics.
         """
+        if self._calculator is None or self._calculator_f is None:
+            raise ValueError("can not use a deleted calculator")
 
         if not isinstance(xyz, np.ndarray):
             raise TypeError("xyz must be a numpy array")
