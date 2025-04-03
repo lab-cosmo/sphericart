@@ -9,7 +9,7 @@ basis = SolidHarmonic(L::Integer; kwargs...)
 
 ### Keyword arguments:
 * `normalisation = :L2` : choose the normalisation of the basis, default is to 
-   make it orthonoormal on the unit sphere. 
+   make it orthonormal on the unit sphere. 
 * `static = (L<=15)` : decide whether to use a generated code that outputs an 
 `SVector` but has a larger compiler and stack footprint
 * `T = Float64` : datatype in which basis parameters are stored. The output type 
@@ -28,10 +28,11 @@ Z = compute(basis, 𝐫)
 R = [ @SVector randn(3) for _ = 1:32 ]
 Z = basis(Rs)
 Z = compute(basis, Rs)
+# evaluate basis with gradients
+Z, ∇Z = compute_with_gradients(basis, 𝐫) # or Rs
 
-# to be implented: 
-# Z, ∇Z = compute_and_gradients(basis, 𝐫)
-# Z, ∇Z, ∇²Z = compute_and_hessian(basis, 𝐫)
+# to be implented: (simply use ForwardDiff)
+# Z, ∇Z, ∇²Z = compute_with_hessian(basis, 𝐫)
 ```
 See documentation for more details.
 """

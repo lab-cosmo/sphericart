@@ -1,7 +1,7 @@
 name = "SpheriCart"
 uuid = "5caf2b29-02d9-47a3-9434-5931c85ba645"
-authors = ["Christoph Ortner <christohortner@gmail.com> and contributors"]
-version = "0.2-dev"
+authors = ["Christoph Ortner <christophortner@gmail.com> and contributors"]
+version = "0.2.0-dev"
 
 [deps]
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
@@ -10,20 +10,25 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StrideArrays = "d1fa6d79-ef01-42a6-86c9-f7c551f8593b"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 
 [compat]
 Bumper = "0.7.0"
-StrideArrays = "0.1.28"
 ForwardDiff = "1.0.1"
+GPUArrays = "11.2.2"
+KernelAbstractions = "0.9.34"
 LinearAlgebra = "1.10"
 OffsetArrays = "1.16"
 StaticArrays = "1.9"
+StrideArrays = "0.1.28"
 julia = "1.10.0, 1.11.0"
 
 [extras]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
 
 [targets]
 test = ["Test", "LinearAlgebra", "Random"]
