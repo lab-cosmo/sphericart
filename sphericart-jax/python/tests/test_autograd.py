@@ -6,7 +6,7 @@ import pytest
 import sphericart.jax
 
 
-@pytest.mark.parametrize("normalized", [True, False])
+@pytest.mark.parametrize("normalized", [True, False], ids=["spherical", "solid"])
 def test_autograd(normalized):
     # here, 32-bit numerical gradients are very noisy, so we use 64-bit
     jax.config.update("jax_enable_x64", True)
@@ -30,7 +30,7 @@ def test_autograd(normalized):
     jax.config.update("jax_enable_x64", False)
 
 
-@pytest.mark.parametrize("normalized", [True, False])
+@pytest.mark.parametrize("normalized", [True, False], ids=["spherical", "solid"])
 def test_autograd_second_derivatives(normalized):
     # here, 32-bit numerical gradients are very noisy, so we use 64-bit
     jax.config.update("jax_enable_x64", True)
