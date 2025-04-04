@@ -40,6 +40,38 @@ function ka_solid_harmonics!(Z, ::Val{L}, Rs, Flm) where {L}
    nothing; 
 end
 
+function ka_solid_harmonics!!(Z, ::Val{L}, Rs, Flm, 
+               x, y, z, r², s, c, Q) where {L}
+   # check sizes 
+   @assert size(Rs, 1) == 3 
+   nRs = size(Rs, 2)
+   @assert size(Z, 1) >= nRs 
+   len = sizeY(L)
+   @assert size(Z, 2) >= len 
+
+   # allocate temporary arrays
+   # x = similar(Rs, (nRs,))
+   # y = similar(Rs, (nRs,))
+   # z = similar(Rs, (nRs,))
+   # r² = similar(Rs, (nRs,))
+   # s = similar(Rs, (nRs, L+1))
+   # c = similar(Rs, (nRs, L+1))
+   # Q = similar(Rs, (nRs, len))
+
+   # compile the kernels 
+   backend = KernelAbstractions.get_backend(Z)
+   solidh_load! = _ka_solidh_load!(backend) 
+   solidh_sincos! = _ka_solidh_sincos!(backend)
+   solidh_main! = _ka_solidh_main!(backend)
+
+   # call the kernels 
+   solidh_load!(x, y, z, r², Rs; ndrange = (nRs,))
+   solidh_sincos!(s, c, x, y, Val{L}(); ndrange = (nRs,))
+   solidh_main!(Z, Val{L}(), Q, Rs, Flm, x, y, z, r², s, c; ndrange = (nRs,))
+   nothing; 
+end
+
+
 
 @kernel function _ka_solidh_load!(x, y, z, r², @Const(Rs))
    j = @index(Global) 
