@@ -12,7 +12,7 @@ def xyz():
     return 6 * jax.random.normal(key, (100, 3))
 
 
-@pytest.mark.parametrize("normalized", [False, True])
+@pytest.mark.parametrize("normalized", [False, True], ids=["solid", "spherical"])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_consistency(xyz, l_max, normalized):
     if normalized:
