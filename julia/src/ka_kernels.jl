@@ -35,7 +35,7 @@ function ka_solid_harmonics!(Z, ::Val{L}, Rs, Flm) where {L}
 
    # call the kernels 
    solidh_load!(x, y, z, r², Rs; ndrange = (nRs,))
-   solidh_sincos!(s, c, x, y; ndrange = (nRs,))
+   solidh_sincos!(s, c, x, y, Val{L}(); ndrange = (nRs,))
    solidh_main!(Z, Val{L}(), Q, Rs, Flm, x, y, z, r², s, c; ndrange = (nRs,))
    nothing; 
 end
@@ -50,10 +50,9 @@ end
    nothing; 
 end
 
-@kernel function _ka_solidh_sincos!(s, c, @Const(x), @Const(y))
+@kernel function _ka_solidh_sincos!(s, c, @Const(x), @Const(y), ::Val{L})  where {L}
    j = @index(Global) 
    T = eltype(s) 
-   L = size(s, 2) - 1
    # initialise sin(0*θ), cos(0*θ)
    s[j, 1] = zero(T)    # 0 -> 1 (1-based indexing)
    c[j, 1] = one(T)
@@ -63,6 +62,7 @@ end
       c[j, m+1] = c[j, m] * x[j] - s[j, m] * y[j]
    end
    # change c[0] to 1/rt2 to avoid a special case l-1=m=0 later 
+   T = eltype(s)
    c[j, 1] = one(T)/sqrt(T(2))
 
    nothing 
