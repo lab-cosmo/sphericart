@@ -15,5 +15,7 @@ include("generated_kernels.jl")
 include("batched_kernels.jl")
 include("spherical.jl")
 
+include("ka_kernels.jl")
+
 end
 
