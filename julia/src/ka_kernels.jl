@@ -1,4 +1,5 @@
 using KernelAbstractions, GPUArraysCore
+using KernelAbstractions.Extras.LoopInfo: @unroll 
 
 function solid_harmonics!(
                Z::AbstractGPUArray, 
@@ -27,36 +28,13 @@ function ka_solid_harmonics!(Z, ::Val{L}, Rs, Flm) where {L}
    c = similar(Rs, (nRs, L+1))
    Q = similar(Rs, (nRs, len))
 
-   # compile the kernels 
-   backend = KernelAbstractions.get_backend(Z)
-   solidh_load! = _ka_solidh_load!(backend) 
-   solidh_sincos! = _ka_solidh_sincos!(backend)
-   solidh_main! = _ka_solidh_main!(backend)
+   ka_solid_harmonics!!(Z, Val{L}(), Rs, Flm, x, y, z, r², s, c, Q)
 
-   # call the kernels 
-   solidh_load!(x, y, z, r², Rs; ndrange = (nRs,))
-   solidh_sincos!(s, c, x, y, Val{L}(); ndrange = (nRs,))
-   solidh_main!(Z, Val{L}(), Q, Rs, Flm, x, y, z, r², s, c; ndrange = (nRs,))
    nothing; 
 end
 
 function ka_solid_harmonics!!(Z, ::Val{L}, Rs, Flm, 
                x, y, z, r², s, c, Q) where {L}
-   # check sizes 
-   @assert size(Rs, 1) == 3 
-   nRs = size(Rs, 2)
-   @assert size(Z, 1) >= nRs 
-   len = sizeY(L)
-   @assert size(Z, 2) >= len 
-
-   # allocate temporary arrays
-   # x = similar(Rs, (nRs,))
-   # y = similar(Rs, (nRs,))
-   # z = similar(Rs, (nRs,))
-   # r² = similar(Rs, (nRs,))
-   # s = similar(Rs, (nRs, L+1))
-   # c = similar(Rs, (nRs, L+1))
-   # Q = similar(Rs, (nRs, len))
 
    # compile the kernels 
    backend = KernelAbstractions.get_backend(Z)
@@ -65,9 +43,11 @@ function ka_solid_harmonics!!(Z, ::Val{L}, Rs, Flm,
    solidh_main! = _ka_solidh_main!(backend)
 
    # call the kernels 
+   nRs = size(Rs, 2)
    solidh_load!(x, y, z, r², Rs; ndrange = (nRs,))
-   solidh_sincos!(s, c, x, y, Val{L}(); ndrange = (nRs,))
+   solidh_sincos!(s, c, x, y, Val{L}(); ndrange = (nRs, ))
    solidh_main!(Z, Val{L}(), Q, Rs, Flm, x, y, z, r², s, c; ndrange = (nRs,))
+   synchronize(backend)
    nothing; 
 end
 
@@ -94,24 +74,11 @@ end
       c[j, m+1] = c[j, m] * x[j] - s[j, m] * y[j]
    end
    # change c[0] to 1/rt2 to avoid a special case l-1=m=0 later 
-   T = eltype(s)
    c[j, 1] = one(T)/sqrt(T(2))
 
    nothing 
 end 
 
-# @kernel function _ka_solidh_sincos!(s, c, @Const(x), @Const(y))
-#    j = @index(Global) 
-#    T = eltype(s) 
-#    L = size(s, 2) - 1
-#    # initialise sin(m*θ), cos(m*θ)
-#    for m = 0:L 
-#       s[j, m+1], c[j, m+1] = sincos(m * atan(y[j], x[j]))
-#    end
-#    # change c[0] to 1/rt2 to avoid a special case l-1=m=0 later 
-#    c[j, 1] = one(T)/sqrt(T(2))
-#    nothing 
-# end 
 
 @kernel function _ka_solidh_main!(
                Z, ::Val{L}, Q, 
@@ -127,7 +94,7 @@ end
    # fill Q_0^0 and Z_0^0 
    i00 = lm2idx(0, 0)
    Q[j, i00] = one(T)
-   Z[j, i00] = (Flm[1,1]/rt2) * Q[j, i00]
+   Z[j, i00] = (Flm[1,1]/rt2) * one(T) # Q[j, i00]
 
    for l = 1:L 
       ill = lm2idx(l, l)
@@ -139,17 +106,13 @@ end
       F_l_l⁻¹ = Flm[l+1,l]
 
       # ----- inner j-loop ----- 
-      # Q_l^l and Y_l^l
-      # m = l 
       Q[j, ill]  = - (2*l-1) * Q[j, il⁻¹l⁻¹]
+      Q[j, ill⁻¹]  = (2*l-1) * z[j] * Q[j, il⁻¹l⁻¹]
       Z[j, ill]  = F_l_l * Q[j, ill] * c[j, l+1]  # l -> l+1
       Z[j, il⁻l] = F_l_l * Q[j, ill] * s[j, l+1]  # l -> l+1
-      # Q_l^l-1 and Y_l^l-1
-      # m = l-1 
-      Q[j, ill⁻¹]  = (2*l-1) * z[j] * Q[j, il⁻¹l⁻¹]
       Z[j, il⁻l⁺¹] = F_l_l⁻¹ * Q[j, ill⁻¹] * s[j, l]  # l-1 -> l
       Z[j, ill⁻¹]  = F_l_l⁻¹ * Q[j, ill⁻¹] * c[j, l]  # l-1 -> l
-      # overwrite if m = 0 -> ok 
+      # ------- 
 
       # now we can go to the second recursion 
       for m = l-2:-1:0 
