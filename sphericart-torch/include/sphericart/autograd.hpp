@@ -1,32 +1,28 @@
 #ifndef SPHERICART_TORCH_AUTOGRAD_HPP
 #define SPHERICART_TORCH_AUTOGRAD_HPP
 
-#include <ATen/Tensor.h>
-#include <torch/autograd.h>
-#include <torch/data.h>
 #include <vector>
+#include <torch/torch.h>
 
 namespace sphericart_torch {
 
-class SphericalHarmonics;
-
-class SphericalHarmonicsAutograd : public torch::autograd::Function<SphericalHarmonicsAutograd> {
+class SphericartAutograd : public torch::autograd::Function<SphericartAutograd> {
   public:
-    static torch::autograd::variable_list forward(
+    template <typename C>
+    static std::vector<torch::Tensor> forward(
         torch::autograd::AutogradContext* ctx,
-        SphericalHarmonics& calculator,
+        C& calculator,
         torch::Tensor xyz,
         bool do_gradients,
         bool do_hessians
     );
 
-    static torch::autograd::variable_list backward(
-        torch::autograd::AutogradContext* ctx, torch::autograd::variable_list grad_outputs
+    static std::vector<torch::Tensor> backward(
+        torch::autograd::AutogradContext* ctx, std::vector<torch::Tensor> grad_outputs
     );
 };
 
-class SphericalHarmonicsAutogradBackward
-    : public torch::autograd::Function<SphericalHarmonicsAutogradBackward> {
+class SphericartAutogradBackward : public torch::autograd::Function<SphericartAutogradBackward> {
   public:
     static torch::Tensor forward(
         torch::autograd::AutogradContext* ctx,
@@ -35,8 +31,8 @@ class SphericalHarmonicsAutogradBackward
         std::vector<torch::Tensor> saved_variables
     );
 
-    static torch::autograd::variable_list backward(
-        torch::autograd::AutogradContext* ctx, torch::autograd::variable_list grad_2_outputs
+    static std::vector<torch::Tensor> backward(
+        torch::autograd::AutogradContext* ctx, std::vector<torch::Tensor> grad_2_outputs
     );
 };
 

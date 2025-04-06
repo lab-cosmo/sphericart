@@ -1,0 +1,108 @@
+name: Build Jax Wheels
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+  pull_request:
+    # Check all PR
+
+concurrency:
+  group: jax-wheels-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build-jax-sdist:
+    runs-on: ubuntu-22.04
+    name: sdist
+    env:
+      SPHERICART_NO_LOCAL_DEPS: 1
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: python -m pip install build
+
+    - name: Build jax sdist
+      run: python -m build --sdist ./sphericart-jax --outdir ./dist
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: "sphericart-jax-sdist"
+        path: ./dist/*.tar.gz
+
+    - name: upload to GitHub release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ./dist/*.tar.gz
+        prerelease: ${{ contains(github.ref, '-rc') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-jax-wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ["39", "310", "311", "312", "313"]
+        arch: ["arm64", "x86_64"]
+        os: ["ubuntu-22.04", "macos-14"]
+        exclude:
+          # remove mismatched arch/os pairs
+          - {os: macos-14, arch: x86_64}
+          - {os: ubuntu-22.04, arch: arm64}
+
+    name: "Py${{matrix.python-version}} ${{matrix.os}} ${{matrix.arch}}"
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build custom manylinux Docker Image with CUDA
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        docker build --no-cache \
+            -t sphericart_manylinux2014_"${{ matrix.arch }}" \
+            scripts/manylinux2014_"${{ matrix.arch }}"
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install cibuildwheel
+      run: python -m pip install cibuildwheel
+
+    - name: Build jax wheels
+      run: python -m cibuildwheel ./sphericart-jax
+      env:
+        CIBW_BUILD_VERBOSITY: 1
+        CIBW_BUILD: "cp${{ matrix.python-version }}-*"
+        CIBW_SKIP: "*-musllinux*"
+        CIBW_ARCHS: "${{ matrix.arch }}"
+        CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux2014_x86_64
+        CIBW_ENVIRONMENT: >
+          SPHERICART_ARCH_NATIVE=OFF
+          SPHERICART_NO_LOCAL_DEPS=1
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: "sphericart-jax-py-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.arch }}"
+        path: ./wheelhouse/*.whl
+
+    - name: upload to GitHub release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ./wheelhouse/*.whl
+        prerelease: ${{ contains(github.ref, '-rc') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

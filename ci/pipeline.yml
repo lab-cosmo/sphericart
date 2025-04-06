@@ -2,31 +2,21 @@ include:
   - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
 
 stages:
-  - build
   - test
-
-build_base_image_job:
-  stage: build
-  extends: .container-builder-dynamic-name
-  timeout: 2h
-  variables:
-    DOCKERFILE: ci/docker/Dockerfile.base
-    WATCH_FILECHANGES: $DOCKERFILE
-    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/base/public/sphericart
 
 test_job:
   stage: test
   extends: .container-runner-daint-gpu
-  image: $BASE_IMAGE
+  image: nvcr.io/nvidia/pytorch:24.12-py3
   timeout: 2h
   script:
     - export CUDA_HOME="/usr/local/cuda"
     - python3 -m pip install --upgrade pip
     - python3 -m pip install tox
     - tox
+    - export Torch_DIR=/usr/local/lib/python3.12/dist-packages/torch/share/cmake/Torch/
     - mkdir buildcpp
     - cd buildcpp
-    - export Torch_DIR=/usr/local/lib/python3.10/dist-packages/torch/share/cmake/Torch/
     - cmake .. -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_ENABLE_CUDA=ON -DSPHERICART_BUILD_TORCH=ON
     - cmake --build . --parallel
     - ctest
@@ -35,5 +25,5 @@ test_job:
     SLURM_JOB_NUM_NODES: 1
     SLURM_PARTITION: normal
     SLURM_NTASKS: 1
-    SLURM_TIMELIMIT: '00:40:00'
+    SLURM_TIMELIMIT: '02:30:00'
     GIT_STRATEGY: fetch

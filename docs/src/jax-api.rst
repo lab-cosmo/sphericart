@@ -1,5 +1,5 @@
 JAX API
-===========
+=======
 
 The `sphericart.jax` module aims to provide a functional-style and
 `JAX`-friendly framework. As a result, it does not follow the same syntax as
@@ -13,4 +13,6 @@ using 32- or 64- bits floating point arythmetics, and
 using the CPU or CUDA implementation.
 
 .. autofunction:: sphericart.jax.spherical_harmonics
+
+.. autofunction:: sphericart.jax.solid_harmonics
 

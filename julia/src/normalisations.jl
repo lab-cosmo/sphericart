@@ -4,7 +4,7 @@
 # Generates the `F[l, m]` values exactly as described in the 
 # `sphericart` publication.  This gives L2-orthonormality. 
 function _generate_Flms(L::Integer, ::Union{Val{:sphericart}, Val{:L2}}, T=Float64)
-   Flm = OffsetMatrix(zeros(L+1, L+1), (-1, -1))
+   Flm = OffsetMatrix(zeros(T, L+1, L+1), (-1, -1))
    for l = 0:L
       Flm[l, 0] = sqrt((2*l+1)/(2 * π))
       for m = 1:l 

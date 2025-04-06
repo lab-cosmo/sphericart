@@ -7,6 +7,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, ROOT)
 
+# When importing metatensor-torch, this will change the definition of the classes
+# to include the documentation
+os.environ["METATENSOR_IMPORT_FOR_SPHINX"] = "1"
 
 # -- Project information -----------------------------------------------------
 
@@ -57,6 +60,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
     "e3nn": ("https://docs.e3nn.org/en/latest/", None),
+    "metatensor": ("https://docs.metatensor.org/latest/", None),
 }
 
 html_theme = "furo"

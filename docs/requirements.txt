@@ -7,3 +7,6 @@ furo               # sphinx theme
 # jax[cpu], because python -m pip install jax, which would be triggered
 # by the main package's dependencies, does not install jaxlib
 jax[cpu] >= 0.4.18
+
+# metatensor and metatensor-torch for the metatensor API
+metatensor-torch

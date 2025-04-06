@@ -1,50 +1,13 @@
-#include <cmath>
-#include <iostream>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
-
-#define _SPHERICART_INTERNAL_IMPLEMENTATION
-#define CUDA_DEVICE_PREFIX __device__
-
-#include "cuda_base.hpp"
 
 #define HARDCODED_LMAX 1
 
 /* MASK used for warp reductions */
 #define FULL_MASK 0xffffffff
 
-#define CUDA_CHECK(call)                                                                           \
-    do {                                                                                           \
-        cudaError_t cudaStatus = (call);                                                           \
-        if (cudaStatus != cudaSuccess) {                                                           \
-            std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - "                  \
-                      << cudaGetErrorString(cudaStatus) << std::endl;                              \
-            cudaDeviceReset();                                                                     \
-            exit(EXIT_FAILURE);                                                                    \
-        }                                                                                          \
-    } while (0)
-
-#define CUDA_CHECK_KERNEL()                                                                        \
-    do {                                                                                           \
-        cudaDeviceSynchronize();                                                                   \
-        cudaError_t err = cudaGetLastError();                                                      \
-        if (err != cudaSuccess) {                                                                  \
-            fprintf(                                                                               \
-                stderr,                                                                            \
-                "CUDA error after kernel launch in %s at line %d: %s\n",                           \
-                __FILE__,                                                                          \
-                __LINE__,                                                                          \
-                cudaGetErrorString(err)                                                            \
-            );                                                                                     \
-            exit(EXIT_FAILURE);                                                                    \
-        }                                                                                          \
-    } while (0)
-
 /*
     Computes the index for buffer values which are shared across GRID_DIM_Y
 */
-__device__ int get_index(int i) { return i * blockDim.y + threadIdx.y; }
+__device__ inline int get_index(int i) { return i * blockDim.y + threadIdx.y; }
 
 /*
     Clears the shared memory buffers for the spherical harmonics and gradients
@@ -104,8 +67,8 @@ __device__ inline void clear_buffers(
 */
 template <typename scalar_t>
 __device__ inline void write_buffers(
-    size_t edge_idx,
-    size_t nedges,
+    int edge_idx,
+    int nedges,
     scalar_t x,
     scalar_t y,
     scalar_t z,
@@ -132,7 +95,7 @@ __device__ inline void write_buffers(
     scalar_t* sph,
     scalar_t* dsph,
     scalar_t* ddsph,
-    size_t n_total,
+    int n_total,
     bool requires_grad,
     bool requires_hessian,
     bool normalize
@@ -239,23 +202,23 @@ __device__ inline void write_buffers(
 */
 template <typename scalar_t>
 __global__ void spherical_harmonics_kernel(
-    const scalar_t* __restrict__ xyz,
+    scalar_t* xyz,
     int nedges,
-    const scalar_t* __restrict__ prefactors,
+    scalar_t* prefactors,
     int nprefactors,
     int lmax,
     int ntotal,
     bool requires_grad,
     bool requires_hessian,
     bool normalize,
-    scalar_t* __restrict__ sph,
-    scalar_t* __restrict__ dsph,
-    scalar_t* __restrict__ ddsph
+    scalar_t* sph,
+    scalar_t* dsph,
+    scalar_t* ddsph
 ) {
 
     extern __shared__ char buffer[];
 
-    size_t offset = 0;
+    int offset = 0;
 
     scalar_t* buffer_c = reinterpret_cast<scalar_t*>(buffer + offset);
     offset += blockDim.y * (lmax + 1) * sizeof(scalar_t);
@@ -317,7 +280,7 @@ __global__ void spherical_harmonics_kernel(
         offset += blockDim.y * nl * sizeof(scalar_t);
     }
 
-    size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    int edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
 
     scalar_t x = 0.0;
     scalar_t y = 0.0;
@@ -647,205 +610,34 @@ __global__ void spherical_harmonics_kernel(
     }
 }
 
-/*
-    Computes the total amount of shared memory space required by
-   spherical_harmonics_kernel.
-
-    For lmax <= HARCODED_LMAX, we need to store all (HARDCODED_LMAX + 1)**2
-   scalars in shared memory. For lmax > HARDCODED_LMAX, we only need to store
-   each spherical harmonics vector per sample in shared memory.
-*/
-static size_t total_buffer_size(
-    size_t l_max,
-    size_t GRID_DIM_X,
-    size_t GRID_DIM_Y,
-    size_t dtype_size,
-    bool requires_grad,
-    bool requires_hessian
-) {
-    int nl = max(static_cast<size_t>((HARDCODED_LMAX + 1) * (HARDCODED_LMAX + 1)), 2 * l_max + 1);
-
-    size_t total_buff_size = 0;
-
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_c
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_s
-    total_buff_size += GRID_DIM_Y * (l_max + 1) * dtype_size;  // buffer_twomz
-    total_buff_size += (l_max + 1) * (l_max + 2) * dtype_size; // buffer_prefactors
-    total_buff_size += GRID_DIM_Y * nl * dtype_size;           // buffer_sph_out
-
-    if (requires_grad) {
-        total_buff_size += 3 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_derivs
-    }
-
-    if (requires_hessian) {
-        total_buff_size += 9 * GRID_DIM_Y * nl * dtype_size; // buffer_sph_hessian
-    }
-
-    return total_buff_size;
-}
-
-/*
-    The default shared memory space on most recent NVIDIA cards is defaulted
-   49152 bytes, regarldess if there is more available per SM. This method
-   attempts to adjust the shared memory to fit the requested configuration if
-   the kernel launch parameters exceeds the default 49152 bytes.
-*/
-
-int sphericart::cuda::adjust_shared_memory(
-    size_t element_size,
-    int64_t l_max,
-    int64_t GRID_DIM_X,
-    int64_t GRID_DIM_Y,
+template __global__ void spherical_harmonics_kernel<float>(
+    float* xyz,
+    int nedges,
+    float* prefactors,
+    int nprefactors,
+    int lmax,
+    int ntotal,
     bool requires_grad,
     bool requires_hessian,
-    int64_t current_shared_mem_alloc
-) {
-
-    int device_count;
-
-    cudaGetDeviceCount(&device_count);
-
-    int current_device;
-    cudaGetDevice(&current_device);
-
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, current_device);
-
-    auto required_buff_size = total_buffer_size(
-        l_max, GRID_DIM_X, GRID_DIM_Y, element_size, requires_grad, requires_hessian
-    );
-
-    if (required_buff_size > current_shared_mem_alloc &&
-        required_buff_size > (deviceProp.sharedMemPerBlock - deviceProp.reservedSharedMemPerBlock)) {
-
-        if (required_buff_size > deviceProp.sharedMemPerBlockOptin) {
-            return -1; // failure - need to adjust parameters
-        }
-
-        // broadcast changes to all visible GPUs
-        for (int device = 0; device < device_count; device++) {
-
-            CUDA_CHECK(cudaSetDevice(device));
-
-            switch (element_size) {
-            case 8:
-                cudaFuncSetAttribute(
-                    spherical_harmonics_kernel<double>,
-                    cudaFuncAttributeMaxDynamicSharedMemorySize,
-                    required_buff_size
-                );
-                break;
-            case 4:
-                cudaFuncSetAttribute(
-                    spherical_harmonics_kernel<float>,
-                    cudaFuncAttributeMaxDynamicSharedMemorySize,
-                    required_buff_size
-                );
-                break;
-            }
-        }
-
-        CUDA_CHECK(cudaSetDevice(current_device));
-
-        return required_buff_size;
-
-    } else {
-        return (current_shared_mem_alloc >
-                (deviceProp.sharedMemPerBlock - deviceProp.reservedSharedMemPerBlock))
-                   ? current_shared_mem_alloc
-                   : (deviceProp.sharedMemPerBlock - deviceProp.reservedSharedMemPerBlock);
-    }
-}
-
-/*
-    Wrapper to launch the CUDA kernel. Returns a vector containing the spherical
-   harmonics and their gradients if required, otherwise returns the spherical
-   harmonics and an empty tensor.
-
-    GRID_DIM_X is the number of threads to launch in the x dimension. Used to
-   parallelize over the sample dimension. GRID_DIM_Y is the number of threads to
-   launch in the y dimension. Used only to improve memory throughput on reads
-   and writes.
-
-    Total number of threads used is GRID_DIM_X * GRID_DIM_Y.
-
-    cuda_stream should be of type (void *), therefore if you want to pass in
-    a cudaStream_t, first do void * stream_ptr = reinterpret_cast<void *>
-   (stream);
-*/
-
-template <typename scalar_t>
-void sphericart::cuda::spherical_harmonics_cuda_base(
-    const scalar_t* __restrict__ xyz,
-    const int nedges,
-    const scalar_t* __restrict__ prefactors,
-    const int nprefactors,
-    const int64_t l_max,
-    const bool normalize,
-    const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y,
-    const bool gradients,
-    const bool hessian,
-    scalar_t* __restrict__ sph,
-    scalar_t* __restrict__ dsph,
-    scalar_t* __restrict__ ddsph,
-    void* cuda_stream
-) {
-
-    int n_total = (l_max + 1) * (l_max + 1);
-
-    dim3 grid_dim(GRID_DIM_X, GRID_DIM_Y);
-
-    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
-
-    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-
-    dim3 block_dim(find_num_blocks(nedges, GRID_DIM_Y));
-
-    size_t total_buff_size =
-        total_buffer_size(l_max, GRID_DIM_X, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
-
-    spherical_harmonics_kernel<scalar_t><<<block_dim, grid_dim, total_buff_size, cstream>>>(
-        xyz, nedges, prefactors, nprefactors, l_max, n_total, gradients, hessian, normalize, sph, dsph, ddsph
-    );
-
-    CUDA_CHECK_KERNEL();
-
-    CUDA_CHECK(cudaStreamSynchronize(cstream));
-}
-
-template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
-    const float* __restrict__ xyz,
-    const int nedges,
-    const float* __restrict__ prefactors,
-    const int nprefactors,
-    const int64_t l_max,
-    const bool normalize,
-    const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y,
-    const bool gradients,
-    const bool hessian,
-    float* __restrict__ sph,
-    float* __restrict__ dsph,
-    float* __restrict__ ddsph,
-    void* cuda_stream
+    bool normalize,
+    float* sph,
+    float* dsph,
+    float* ddsph
 );
 
-template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
-    const double* __restrict__ xyz,
-    const int nedges,
-    const double* __restrict__ prefactors,
-    const int nprefactors,
-    const int64_t l_max,
-    const bool normalize,
-    const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y,
-    const bool gradients,
-    const bool hessian,
-    double* __restrict__ sph,
-    double* __restrict__ dsph,
-    double* __restrict__ ddsph,
-    void* cuda_stream
+template __global__ void spherical_harmonics_kernel<double>(
+    double* xyz,
+    int nedges,
+    double* prefactors,
+    int nprefactors,
+    int lmax,
+    int ntotal,
+    bool requires_grad,
+    bool requires_hessian,
+    bool normalize,
+    double* sph,
+    double* dsph,
+    double* ddsph
 );
 
 /*
@@ -853,14 +645,10 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
 */
 template <typename scalar_t>
 __global__ void backward_kernel(
-    const scalar_t* __restrict__ dsph,
-    const scalar_t* __restrict__ sph_grad,
-    size_t nedges,
-    size_t n_total,
-    scalar_t* __restrict__ xyz_grad
+    scalar_t* dsph, scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
 ) {
 
-    size_t edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
+    int edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
 
     int spatial = blockIdx.y;
 
@@ -891,46 +679,10 @@ __global__ void backward_kernel(
     }
 }
 
-template <typename scalar_t>
-void sphericart::cuda::spherical_harmonics_backward_cuda_base(
-    const scalar_t* __restrict__ dsph,
-    const scalar_t* __restrict__ sph_grad,
-    const int nedges,
-    const int ntotal,
-    scalar_t* __restrict__ xyz_grad,
-    void* cuda_stream
-) {
-
-    dim3 grid_dim(4, 32);
-
-    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
-
-    dim3 block_dim(find_num_blocks(nedges, 32), 3);
-
-    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-
-    backward_kernel<scalar_t>
-        <<<block_dim, grid_dim, 0, cstream>>>(dsph, sph_grad, nedges, ntotal, xyz_grad);
-
-    CUDA_CHECK_KERNEL();
-
-    cudaStreamSynchronize(cstream);
-}
-
-template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
-    const float* __restrict__ dsph,
-    const float* __restrict__ sph_grad,
-    const int nedges,
-    const int ntotal,
-    float* __restrict__ xyz_grad,
-    void* cuda_stream
+template __global__ void backward_kernel<float>(
+    float* dsph, float* sph_grad, int nedges, int n_total, float* xyz_grad
 );
 
-template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
-    const double* __restrict__ dsph,
-    const double* __restrict__ sph_grad,
-    const int nedges,
-    const int ntotal,
-    double* __restrict__ xyz_grad,
-    void* cuda_stream
+template __global__ void backward_kernel<double>(
+    double* dsph, double* sph_grad, int nedges, int n_total, double* xyz_grad
 );

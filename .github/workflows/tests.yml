@@ -6,6 +6,10 @@ on:
   pull_request:
     # Check all PR
 
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
@@ -14,7 +18,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-20.04
-          - os: macos-13
+          - os: macos-14
     steps:
       - uses: actions/checkout@v3
 

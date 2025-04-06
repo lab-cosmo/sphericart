@@ -42,32 +42,36 @@ int main(int argc, char* argv[]) {
     /* ===== API calls ===== */
 
     // opaque pointer declaration: initializes buffers and numerical factors
-    sphericart_calculator_t* calculator = sphericart_new(l_max, 0);
+    sphericart_spherical_harmonics_calculator_t* calculator =
+        sphericart_spherical_harmonics_new(l_max);
 
     // function calls
     // without derivatives
-    sphericart_compute_array(calculator, xyz, 3 * n_samples, sph, sph_size);
+    sphericart_spherical_harmonics_compute_array(calculator, xyz, 3 * n_samples, sph, sph_size);
     // with derivatives
-    sphericart_compute_array_with_gradients(
+    sphericart_spherical_harmonics_compute_array_with_gradients(
         calculator, xyz, 3 * n_samples, sph, sph_size, dsph, dsph_size
     );
     // with second derivatives
-    sphericart_compute_array_with_hessians(
+    sphericart_spherical_harmonics_compute_array_with_hessians(
         calculator, xyz, 3 * n_samples, sph, sph_size, dsph, dsph_size, ddsph, ddsph_size
     );
 
     // per-sample calculation - we reuse the same arrays for simplicity, but
     // only the first item is computed
-    sphericart_compute_sample(calculator, xyz, 3, sph, sph_size);
-    sphericart_compute_sample_with_gradients(calculator, xyz, 3, sph, sph_size, dsph, dsph_size);
-    sphericart_compute_sample_with_hessians(
+    sphericart_spherical_harmonics_compute_sample(calculator, xyz, 3, sph, sph_size);
+    sphericart_spherical_harmonics_compute_sample_with_gradients(
+        calculator, xyz, 3, sph, sph_size, dsph, dsph_size
+    );
+    sphericart_spherical_harmonics_compute_sample_with_hessians(
         calculator, xyz, 3, sph, sph_size, dsph, dsph_size, ddsph, ddsph_size
     );
 
     // float version
-    sphericart_calculator_f_t* calculator_f = sphericart_new_f(l_max, 0);
+    sphericart_spherical_harmonics_calculator_f_t* calculator_f =
+        sphericart_spherical_harmonics_new_f(l_max);
 
-    sphericart_compute_array_with_gradients_f(
+    sphericart_spherical_harmonics_compute_array_with_gradients_f(
         calculator_f, xyz_f, 3 * n_samples, sph_f, sph_size, dsph_f, dsph_size
     );
 
@@ -83,12 +87,12 @@ int main(int argc, char* argv[]) {
     /* ===== clean up ===== */
 
     // frees up data arrays and sph object pointers
-    sphericart_delete(calculator);
+    sphericart_spherical_harmonics_delete(calculator);
     free(xyz);
     free(sph);
     free(dsph);
 
-    sphericart_delete_f(calculator_f);
+    sphericart_spherical_harmonics_delete_f(calculator_f);
     free(xyz_f);
     free(sph_f);
     free(dsph_f);
