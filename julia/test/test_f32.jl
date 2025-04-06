@@ -1,44 +1,52 @@
-using SpheriCart, StaticArrays, LinearAlgebra, Quadmath, Printf 
+using SpheriCart, StaticArrays, LinearAlgebra, Quadmath, Printf, Test
 
 
 ##
 
-n_samples = 100_000 
+n_samples = 10_000 
 Rs = [ @SVector randn(3) for _ = 1:n_samples ]
+Rs_64 = [ 𝐫/norm(𝐫) for 𝐫 in Rs ]
+Rs_32 = [ Float32.(𝐫) for 𝐫 in Rs_64 ]
+Rs_128 = [ Float128.(𝐫) for 𝐫 in Rs_64 ]
+
+tol_32 = eps(Float32) * 1e2 
+tol_64 = eps(Float64) * 1e2
 
 @printf("  L  |  |Z32-Z64|  |Z64-Z128|  |   |∇Z32-∇Z64|  |∇Z64-∇Z128|  \n")
 @printf("-----|-------------------------|----------------------------- \n")
 
 for L = 4:4:20
-   basis = SolidHarmonics(L; static=false)
-   
-   Z, ∇Z = compute_with_gradients(basis, Rs)
+   basis_64 = SolidHarmonics(L; static=false)
+   Z_64, ∇Z_64 = compute_with_gradients(basis_64, Rs_64)
 
-   basis_f32 = SolidHarmonics(L; static=false, T = Float32)
-   Rs_f32 = [ Float32.(𝐫) for 𝐫 in Rs]
-   Z_f32, ∇Z_f32 = compute_with_gradients(basis_f32, Rs_f32)
+   basis_32 = SolidHarmonics(L; static=false, T = Float32)
+   Z_32, ∇Z_32 = compute_with_gradients(basis_32, Rs_32)
 
-   basis_quad = SolidHarmonics(L; static=false, T = Float128)
-   Rs_quad = [ Float128.(𝐫) for 𝐫 in Rs]
-   Z_quad, ∇Z_quad = compute_with_gradients(basis_quad, Rs_quad)
+   basis_128 = SolidHarmonics(L; static=false, T = Float128)
+   Z_128, ∇Z_128 = compute_with_gradients(basis_128, Rs_128)
+
+   err_32 = norm(Z_64 - Z_32, Inf)
+   err_64 = norm(Z_64 - Z_128, Inf)
+   ∇err_32 = norm(∇Z_64 - ∇Z_32, Inf)
+   ∇err_64 = norm(∇Z_64 - ∇Z_128, Inf)
 
    @printf("  %2d |  %.2e    %.2e   |   %.2e     %.2e  \n", 
-            L, 
-            norm(Z - Z_f32, Inf), 
-            norm(Z_f32 - Z_quad, Inf), 
-            norm(∇Z - ∇Z_f32, Inf), 
-            norm(∇Z_f32 - ∇Z_quad, Inf) )
+            L, err_32, err_64, ∇err_32, ∇err_64)
+
+   @test err_32 / L^2 < tol_32
+   @test err_64 / L^2 < tol_64
+   @test ∇err_32 / L^2 < tol_32
+   @test ∇err_64 / L^2 < tol_64
 end
+println()
 
 ## 
 
-function compute_Q(L, Rs64, T)
-   Rs = [ T.(𝐫) for 𝐫 in Rs64 ]
+function compute_Q(L, Rs::Vector{SVector{3, T}}) where {T} 
    basis = SolidHarmonics(L; static=false, T = T)
    nX = length(Rs)
    len = SpheriCart.sizeY(L)
    Z = zeros(T, nX, len)
-   # ∇Z = zeros(SVector{3, T}, nX, len)
    
    # allocate temporary arrays from an array cache 
    temps = (x = zeros(T, nX), 
@@ -58,18 +66,20 @@ end
 
 ##
 
-# n_samples = 100_000 
-# Rs = [ @SVector randn(3) for _ = 1:n_samples ]
+# Relative errors for Q 
 
-@printf("  L   |Q32-Q64|  |Q64-Q128| \n")
-@printf("----------------------------\n")
-for L = 4:4:20
-   Q_32 = compute_Q(L, Rs, Float32)
-   Q_64 = compute_Q(L, Rs, Float64)
-   Q_128 = compute_Q(L, Rs, Float128)
+# @printf("  L   |Q32-Q64|  |Q64-Q128| \n")
+# @printf("----------------------------\n")
+# for L = 4:4:20
+#    Q_32  = compute_Q(L, Rs_32)
+#    Q_64  = compute_Q(L, Rs_64)
+#    Q_128 = compute_Q(L, Rs_128)
 
-   @printf(" %2d   %.2e   %.2e \n", 
-            L, 
-            norm(Q_32 - Q_64, Inf), 
-            norm(Q_64 - Q_128, Inf) )
-end
+#    err_32 = norm(Q_32 - Q_64, Inf) / (1+norm(Q_64, Inf))
+#    err_64 = norm(Q_64 - Q_128, Inf) / (1+norm(Q_128, Inf))
+
+#    @printf(" %2d   %.2e   %.2e \n",  L, err_32, err_64)
+
+#    # @test err_32 / L^2 < tol_32
+#    # @test err_64 / L^2 < tol_64
+# end
