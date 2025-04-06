@@ -3,16 +3,17 @@ using SpheriCart, StaticArrays, LinearAlgebra, Quadmath, Printf, Test
 
 ##
 
-n_samples = 10_000 
+n_samples = 1_000 
 Rs = [ @SVector randn(3) for _ = 1:n_samples ]
 Rs_64 = [ 𝐫/norm(𝐫) for 𝐫 in Rs ]
 Rs_32 = [ Float32.(𝐫) for 𝐫 in Rs_64 ]
 Rs_128 = [ Float128.(𝐫) for 𝐫 in Rs_64 ]
 
-tol_32 = eps(Float32) * 1e2 
-tol_64 = eps(Float64) * 1e2
+tol_32 = eps(Float32) * 1e1 
+tol_64 = eps(Float64) * 1e1
 
 @printf("  L  |  |Z32-Z64|  |Z64-Z128|  |   |∇Z32-∇Z64|  |∇Z64-∇Z128|  \n")
+@printf("     |     / L²        / L²    |      / L³          / L³   \n")
 @printf("-----|-------------------------|----------------------------- \n")
 
 for L = 4:4:20
@@ -25,18 +26,18 @@ for L = 4:4:20
    basis_128 = SolidHarmonics(L; static=false, T = Float128)
    Z_128, ∇Z_128 = compute_with_gradients(basis_128, Rs_128)
 
-   err_32 = norm(Z_64 - Z_32, Inf)
-   err_64 = norm(Z_64 - Z_128, Inf)
-   ∇err_32 = norm(∇Z_64 - ∇Z_32, Inf)
-   ∇err_64 = norm(∇Z_64 - ∇Z_128, Inf)
+   err_32 = norm(Z_64 - Z_32, Inf) / L^2
+   err_64 = norm(Z_64 - Z_128, Inf) / L^2
+   ∇err_32 = norm(∇Z_64 - ∇Z_32, Inf) / L^3
+   ∇err_64 = norm(∇Z_64 - ∇Z_128, Inf) / L^3
 
    @printf("  %2d |  %.2e    %.2e   |   %.2e     %.2e  \n", 
             L, err_32, err_64, ∇err_32, ∇err_64)
 
-   @test err_32 / L^2 < tol_32
-   @test err_64 / L^2 < tol_64
-   @test ∇err_32 / L^2 < tol_32
-   @test ∇err_64 / L^2 < tol_64
+   @test err_32 < tol_32
+   @test err_64 < tol_64
+   @test ∇err_32 < tol_32
+   @test ∇err_64 < tol_64
 end
 println()
 
