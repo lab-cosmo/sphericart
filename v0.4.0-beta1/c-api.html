@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C API &mdash; sphericart  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Python API" href="python-api.html" />
+    <link rel="prev" title="C++ API" href="cpp-api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            sphericart
+              <img src="_static/sphericart_icon.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">API documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cpp-api.html">C++ API</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">C API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python-api.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch-api.html">PyTorch API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="jax-api.html">JAX API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Usage and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maths.html">What sphericart computes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sphericart</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="api.html">API documentation</a></li>
+      <li class="breadcrumb-item active">C API</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/c-api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="c-api">
+<h1>C API<a class="headerlink" href="#c-api" title="Link to this heading"></a></h1>
+<p>Defines the C API for <code class="docutils literal notranslate"><span class="pre">sphericart</span></code>. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-typedefs">Typedefs</p>
+<dl class="c type">
+<dt class="sig sig-object c" id="c.sphericart_calculator_t">
+<span class="target" id="sphericart_8h_1abac88bf137e5b7657fe6197152293a5d"></span><span class="k"><span class="pre">typedef</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_calculator_t</span></span></span><a class="headerlink" href="#c.sphericart_calculator_t" title="Link to this definition"></a><br /></dt>
+<dd><p>A type referring to the <code class="docutils literal notranslate"><span class="pre">sphericart_calculator_t</span></code> struct. </p>
+</dd></dl>
+
+<dl class="c type">
+<dt class="sig sig-object c" id="c.sphericart_calculator_f_t">
+<span class="target" id="sphericart_8h_1a228ae69e2990e95534dcec42f4ea6546"></span><span class="k"><span class="pre">typedef</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></span><a class="headerlink" href="#c.sphericart_calculator_f_t" title="Link to this definition"></a><br /></dt>
+<dd><p>A type referring to the <code class="docutils literal notranslate"><span class="pre">sphericart_calculator_f_t</span></code> struct. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-functions">Functions</p>
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_new">
+<span class="target" id="sphericart_8h_1a7be28b66b0f5c8601016979c033405c2"></span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_new</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">l_max</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n"><span class="pre">normalized</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_new" title="Link to this definition"></a><br /></dt>
+<dd><p>Initializes a spherical harmonics calculator and returns a pointer that can then be used by functions that evaluate spherical harmonics over arrays or individual samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>l_max</strong> – The maximum degree of the spherical harmonics to be calculated. </p></li>
+<li><p><strong>normalized</strong> – If <code class="docutils literal notranslate"><span class="pre">false</span></code>, computes the scaled spherical harmonics, which are polynomials in the Cartesian coordinates of the input points. If <code class="docutils literal notranslate"><span class="pre">true</span></code>, computes the normalized spherical harmonics that are evaluated on the unit sphere. In practice, this simply computes the scaled harmonics at the normalized coordinates <span class="math notranslate nohighlight">\((x/r, y/r, z/r)\)</span>, and adapts the derivatives accordingly.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A pointer to a <code class="docutils literal notranslate"><span class="pre">sphericart_calculator_t</span></code> object </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_new_f">
+<span class="target" id="sphericart_8h_1ae85c37ff4561462e2c4911faf0c96134"></span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_new_f</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">l_max</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n"><span class="pre">normalized</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_new_f" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to <code class="docutils literal notranslate"><span class="pre">sphericart_new</span></code>, but it returns a <code class="docutils literal notranslate"><span class="pre">sphericart_calculator_f_t</span></code>, which performs calculations on the <code class="docutils literal notranslate"><span class="pre">float</span></code> type. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_delete">
+<span class="target" id="sphericart_8h_1ab2af61ba3633ef909bb6ef33141c80c9"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_delete</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_delete" title="Link to this definition"></a><br /></dt>
+<dd><p>Deletes a previously allocated <code class="docutils literal notranslate"><span class="pre">sphericart_calculator_t</span></code> calculator. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_delete_f">
+<span class="target" id="sphericart_8h_1ad6825af29359b738d273277d6b8277d1"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_delete_f</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_delete_f" title="Link to this definition"></a><br /></dt>
+<dd><p>Deletes a previously allocated <code class="docutils literal notranslate"><span class="pre">sphericart_calculator_f_t</span></code> calculator. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_array">
+<span class="target" id="sphericart_8h_1a00b02417515ff2eb8c73b583a9ff6297"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_array</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_array" title="Link to this definition"></a><br /></dt>
+<dd><p>This function calculates the spherical harmonics and, optionally, their derivatives for an array of 3D points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>calculator</strong> – A pointer to a <code class="docutils literal notranslate"><span class="pre">sphericart_calculator_t</span></code> struct that holds prefactors and options to compute the spherical harmonics. </p></li>
+<li><p><strong>xyz</strong> – An array of size <code class="docutils literal notranslate"><span class="pre">n_samples</span> <span class="pre">x</span> <span class="pre">3</span></code>. It contains the Cartesian coordinates of the 3D points for which the spherical harmonics are to be computed, organized along two dimensions. The outer dimension is <code class="docutils literal notranslate"><span class="pre">n_samples</span></code> long, accounting for different samples, while the inner dimension has size 3 and it represents the x, y, and z coordinates respectively. </p></li>
+<li><p><strong>xyz_length</strong> – size of the xyz allocation, i.e, <code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">*</span> <span class="pre">n_samples</span></code></p></li>
+<li><p><strong>sph</strong> – pointer to the first element of an array containing <code class="docutils literal notranslate"><span class="pre">n_samples</span></code></p></li>
+<li><p><strong>sph_length</strong> – <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">sph</span> <span class="pre">allocation,</span> <span class="pre">should</span> <span class="pre">be</span>  </code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_array_with_gradients">
+<span class="target" id="sphericart_8h_1ab8ce2299cf2fdea0313d0da91dffdedc"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_array_with_gradients</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">dsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">dsph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_array_with_gradients" title="Link to this definition"></a><br /></dt>
+<dd><p>This function calculates the spherical harmonics and their derivatives for an array of 3D points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>calculator</strong> – A pointer to a <code class="docutils literal notranslate"><span class="pre">sphericart_calculator_t</span></code> struct that holds prefactors and options to compute the spherical harmonics. </p></li>
+<li><p><strong>xyz</strong> – An array of size <code class="docutils literal notranslate"><span class="pre">n_samples</span> <span class="pre">x</span> <span class="pre">3</span></code>. It contains the Cartesian coordinates of the 3D points for which the spherical harmonics are to be computed, organized along two dimensions. The outer dimension is <code class="docutils literal notranslate"><span class="pre">n_samples</span></code> long, accounting for different samples, while the inner dimension has size 3 and it represents the x, y, and z coordinates respectively. </p></li>
+<li><p><strong>xyz_length</strong> – size of the xyz allocation, i.e, <code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">*</span> <span class="pre">n_samples</span></code></p></li>
+<li><p><strong>sph</strong> – pointer to the first element of an array containing <code class="docutils literal notranslate"><span class="pre">n_samples</span></code></p></li>
+<li><p><strong>sph_length</strong> – <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">sph</span> <span class="pre">allocation,</span> <span class="pre">should</span> <span class="pre">be</span>  </code></p></li>
+<li><p><strong>dsph</strong> – <code class="docutils literal notranslate"><span class="pre">pointer</span> <span class="pre">to</span> <span class="pre">the</span> <span class="pre">first</span> <span class="pre">element</span> <span class="pre">of</span> <span class="pre">an</span> <span class="pre">array</span> <span class="pre">containing</span> <span class="pre">n_samples</span> <span class="pre">*</span> <span class="pre">3</span> <span class="pre">*</span> <span class="pre">(l_max</span> <span class="pre">+</span> <span class="pre">1)</span> <span class="pre">*</span> <span class="pre">(l_max</span> <span class="pre">+</span> <span class="pre">1)</span> <span class="pre">elements.</span> <span class="pre">On</span> <span class="pre">exit,</span> <span class="pre">this</span> <span class="pre">array</span> <span class="pre">will</span> <span class="pre">contain</span> <span class="pre">the</span> <span class="pre">spherical</span> <span class="pre">harmonics</span> <span class="pre">derivatives</span> <span class="pre">organized</span> <span class="pre">along</span> <span class="pre">three</span> <span class="pre">dimensions.</span> <span class="pre">As</span> <span class="pre">for</span> <span class="pre">the</span>  <span class="pre">parameter,</span> <span class="pre">the</span> <span class="pre">leading</span> <span class="pre">dimension</span> <span class="pre">represents</span> <span class="pre">the</span> <span class="pre">different</span> <span class="pre">samples,</span> <span class="pre">while</span> <span class="pre">the</span> <span class="pre">inner-most</span> <span class="pre">dimension</span> <span class="pre">size</span> <span class="pre">is</span> <span class="pre">,</span> <span class="pre">and</span> <span class="pre">it</span> <span class="pre">represents</span> <span class="pre">the</span> <span class="pre">degree</span> <span class="pre">and</span> <span class="pre">order</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">spherical</span> <span class="pre">harmonics</span> <span class="pre">(again,</span> <span class="pre">organized</span> <span class="pre">in</span> <span class="pre">lexicographic</span> <span class="pre">order).</span> <span class="pre">The</span> <span class="pre">intermediate</span> <span class="pre">dimension</span> <span class="pre">corresponds</span> <span class="pre">to</span> <span class="pre">different</span> <span class="pre">spatial</span> <span class="pre">derivatives</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">spherical</span> <span class="pre">harmonics:</span> <span class="pre">x,</span> <span class="pre">y,</span> <span class="pre">and</span> <span class="pre">z,</span> <span class="pre">respectively.</span> </code></p></li>
+<li><p><strong>dsph_length</strong> – <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">dsph</span> <span class="pre">allocation,</span> <span class="pre">which</span> <span class="pre">should</span> <span class="pre">be</span> </code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_array_with_hessians">
+<span class="target" id="sphericart_8h_1a1a8390150b43d62fa0aa8f8491fe596a"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_array_with_hessians</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">dsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">dsph_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ddsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">ddsph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_array_with_hessians" title="Link to this definition"></a><br /></dt>
+<dd><p>This function calculates the spherical harmonics, their derivatives and second derivatives for an array of 3D points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>calculator</strong> – A pointer to a <code class="docutils literal notranslate"><span class="pre">sphericart_calculator_t</span></code> struct that holds prefactors and options to compute the spherical harmonics. </p></li>
+<li><p><strong>xyz</strong> – An array of size <code class="docutils literal notranslate"><span class="pre">n_samples</span> <span class="pre">x</span> <span class="pre">3</span></code>. It contains the Cartesian coordinates of the 3D points for which the spherical harmonics are to be computed, organized along two dimensions. The outer dimension is <code class="docutils literal notranslate"><span class="pre">n_samples</span></code> long, accounting for different samples, while the inner dimension has size 3 and it represents the x, y, and z coordinates respectively. </p></li>
+<li><p><strong>xyz_length</strong> – size of the xyz allocation, i.e, <code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">*</span> <span class="pre">n_samples</span></code></p></li>
+<li><p><strong>sph</strong> – pointer to the first element of an array containing <code class="docutils literal notranslate"><span class="pre">n_samples</span></code></p></li>
+<li><p><strong>sph_length</strong> – <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">sph</span> <span class="pre">allocation,</span> <span class="pre">should</span> <span class="pre">be</span>  </code></p></li>
+<li><p><strong>dsph</strong> – <code class="docutils literal notranslate"><span class="pre">pointer</span> <span class="pre">to</span> <span class="pre">the</span> <span class="pre">first</span> <span class="pre">element</span> <span class="pre">of</span> <span class="pre">an</span> <span class="pre">array</span> <span class="pre">containing</span>  <span class="pre">elements.</span> <span class="pre">On</span> <span class="pre">exit,</span> <span class="pre">this</span> <span class="pre">array</span> <span class="pre">will</span> <span class="pre">contain</span> <span class="pre">the</span> <span class="pre">spherical</span> <span class="pre">harmonics'</span> <span class="pre">derivatives</span> <span class="pre">organized</span> <span class="pre">along</span> <span class="pre">three</span> <span class="pre">dimensions.</span> <span class="pre">As</span> <span class="pre">for</span> <span class="pre">the</span>  <span class="pre">parameter,</span> <span class="pre">the</span> <span class="pre">leading</span> <span class="pre">dimension</span> <span class="pre">represents</span> <span class="pre">the</span> <span class="pre">different</span> <span class="pre">samples,</span> <span class="pre">while</span> <span class="pre">the</span> <span class="pre">inner-most</span> <span class="pre">dimension</span> <span class="pre">size</span> <span class="pre">is</span> <span class="pre">,</span> <span class="pre">and</span> <span class="pre">it</span> <span class="pre">represents</span> <span class="pre">the</span> <span class="pre">degree</span> <span class="pre">and</span> <span class="pre">order</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">spherical</span> <span class="pre">harmonics</span> <span class="pre">(again,</span> <span class="pre">organized</span> <span class="pre">in</span> <span class="pre">lexicographic</span> <span class="pre">order).</span> <span class="pre">The</span> <span class="pre">intermediate</span> <span class="pre">dimension</span> <span class="pre">corresponds</span> <span class="pre">to</span> <span class="pre">different</span> <span class="pre">spatial</span> <span class="pre">derivatives</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">spherical</span> <span class="pre">harmonics:</span> <span class="pre">x,</span> <span class="pre">y,</span> <span class="pre">and</span> <span class="pre">z,</span> <span class="pre">respectively.</span> </code></p></li>
+<li><p><strong>dsph_length</strong> – <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">dsph</span> <span class="pre">allocation,</span> <span class="pre">which</span> <span class="pre">should</span> <span class="pre">be</span> </code></p></li>
+<li><p><strong>ddsph</strong> – <code class="docutils literal notranslate"></code></p></li>
+<li><p><strong>ddsph_length</strong> – <code class="docutils literal notranslate"></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_sample">
+<span class="target" id="sphericart_8h_1a772809dd8c0cd7457e6e410362221477"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_sample</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_sample" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to :func:<code class="docutils literal notranslate"><span class="pre">sphericart_compute_array</span></code>, but it computes the spherical harmonics for a single 3D point in space. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_sample_with_gradients">
+<span class="target" id="sphericart_8h_1a6c87c28f657c48f96dce4c8766af89b5"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_sample_with_gradients</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">dsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">dsph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_sample_with_gradients" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to :func:<code class="docutils literal notranslate"><span class="pre">sphericart_compute_array_with_gradients</span></code>, but it computes the spherical harmonics for a single 3D point in space. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_sample_with_hessians">
+<span class="target" id="sphericart_8h_1acaf92c303599bf22153df3946114ee24"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_sample_with_hessians</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">dsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">dsph_length</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ddsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">ddsph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_sample_with_hessians" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to :func:<code class="docutils literal notranslate"><span class="pre">sphericart_compute_array_with_hessians</span></code>, but it computes the spherical harmonics for a single 3D point in space. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_array_f">
+<span class="target" id="sphericart_8h_1a60d32fc32fd2bfc9e479b3cf3137a81b"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_array_f</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_array_f" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to :func:<code class="docutils literal notranslate"><span class="pre">sphericart_compute_array</span></code>, but using the <code class="docutils literal notranslate"><span class="pre">float</span></code> data type. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_array_with_gradients_f">
+<span class="target" id="sphericart_8h_1a9d749144f80096f585558233c9359dd1"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_array_with_gradients_f</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">dsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">dsph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_array_with_gradients_f" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to :func:<code class="docutils literal notranslate"><span class="pre">sphericart_compute_array_with_gradients</span></code>, but using the <code class="docutils literal notranslate"><span class="pre">float</span></code> data type. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_array_with_hessians_f">
+<span class="target" id="sphericart_8h_1a132914ae564d413139efc0b5c9c4f019"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_array_with_hessians_f</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">dsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">dsph_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ddsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">ddsph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_array_with_hessians_f" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to :func:<code class="docutils literal notranslate"><span class="pre">sphericart_compute_array_with_hessians</span></code>, but using the <code class="docutils literal notranslate"><span class="pre">float</span></code> data type. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_sample_f">
+<span class="target" id="sphericart_8h_1ae42bd7aad20d16ba526223b943854434"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_sample_f</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_sample_f" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to :func:<code class="docutils literal notranslate"><span class="pre">sphericart_compute_sample</span></code>, but using the <code class="docutils literal notranslate"><span class="pre">float</span></code> data type. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_sample_with_gradients_f">
+<span class="target" id="sphericart_8h_1a9db3b35bc41df89b8dccc4c4b12bf676"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_sample_with_gradients_f</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">dsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">dsph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_sample_with_gradients_f" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to :func:<code class="docutils literal notranslate"><span class="pre">sphericart_compute_sample_with_gradients</span></code>, but using the <code class="docutils literal notranslate"><span class="pre">float</span></code> data type. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_compute_sample_with_hessians_f">
+<span class="target" id="sphericart_8h_1ab40693b6130b30195ce288b5e8dcd9fb"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_compute_sample_with_hessians_f</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">xyz</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">xyz_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">sph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">sph_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">dsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">dsph_length</span></span>, <span class="kt"><span class="pre">float</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ddsph</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">ddsph_length</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_compute_sample_with_hessians_f" title="Link to this definition"></a><br /></dt>
+<dd><p>Similar to :func:<code class="docutils literal notranslate"><span class="pre">sphericart_compute_sample_with_hessians</span></code>, but using the <code class="docutils literal notranslate"><span class="pre">float</span></code> data type. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_omp_num_threads">
+<span class="target" id="sphericart_8h_1a72b6441a67c93cbe71bbb200e52a8d53"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_omp_num_threads</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_t" title="sphericart_calculator_t"><span class="n"><span class="pre">sphericart_calculator_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_omp_num_threads" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the number of OpenMP threads used by a calculator. If <code class="docutils literal notranslate"><span class="pre">sphericart</span></code> is computed without OpenMP support returns 1. </p>
+</dd></dl>
+
+<dl class="c function">
+<dt class="sig sig-object c" id="c.sphericart_omp_num_threads_f">
+<span class="target" id="sphericart_8h_1af0a46e4a8f3ff96450c5ce5b2c5914bb"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">sphericart_omp_num_threads_f</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#c.sphericart_calculator_f_t" title="sphericart_calculator_f_t"><span class="n"><span class="pre">sphericart_calculator_f_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">calculator</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.sphericart_omp_num_threads_f" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cpp-api.html" class="btn btn-neutral float-left" title="C++ API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="python-api.html" class="btn btn-neutral float-right" title="Python API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, sphericart developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
