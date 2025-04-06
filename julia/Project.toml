@@ -8,16 +8,18 @@ Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+Quadmath = "be4d8f0f-7fa4-5f49-b795-2f01399ab2dd"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StrideArrays = "d1fa6d79-ef01-42a6-86c9-f7c551f8593b"
 
 [compat]
 Bumper = "0.6.0, 0.7.0"
-StrideArrays = "0.1.28"
 ForwardDiff = "0.10"
 LinearAlgebra = "1.8"
 OffsetArrays = "1.13"
+Quadmath = "0.5.11"
 StaticArrays = "1.9"
+StrideArrays = "0.1.28"
 julia = "1.8.0, 1.9.0, 1.10.0"
 
 [extras]
