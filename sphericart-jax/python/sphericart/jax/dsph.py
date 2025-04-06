@@ -1,15 +1,15 @@
-import jax
-import jax.numpy as jnp
 import math
 from functools import partial
+
+import jax
+import jax.numpy as jnp
 from jax import core
 from jax.core import ShapedArray
-from jax.interpreters import mlir, xla
-from jax.interpreters.mlir import ir, custom_call
-from jax.interpreters import ad
+from jax.interpreters import ad, mlir, xla
+from jax.interpreters.mlir import custom_call, ir
 
-from .utils import default_layouts, build_sph_descriptor
 from .ddsph import ddsph
+from .utils import build_sph_descriptor, default_layouts
 
 
 # This file registers the _dsph_p primitive and defines its implementation,
@@ -22,7 +22,9 @@ _dsph_p.def_impl(partial(xla.apply_primitive, _dsph_p))
 
 
 def dsph(xyz, l_max, normalized):
-    sph, dsph = _dsph_p.bind(xyz, l_max, normalized, l_max_c=l_max, normalized_c=normalized)
+    sph, dsph = _dsph_p.bind(
+        xyz, l_max, normalized, l_max_c=l_max, normalized_c=normalized
+    )
     return sph, dsph
 
 
@@ -46,10 +48,15 @@ def dsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
     dsph_shape = xyz_shape[:-1] + [3, sph_size]
     n_samples = math.prod(xyz_shape[:-1])
 
+    op_name = "cpu_d"
+    if normalized_c:
+        op_name += "spherical_"
+    else:
+        op_name += "solid_"
     if dtype == ir.F32Type.get():
-        op_name = "cpu_dsph_f32"
+        op_name += "f32"
     elif dtype == ir.F64Type.get():
-        op_name = "cpu_dsph_f64"
+        op_name += "f64"
     else:
         raise NotImplementedError(f"Unsupported dtype {dtype}")
 
@@ -62,10 +69,9 @@ def dsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
         operands=[
             xyz,
             mlir.ir_constant(l_max_c),
-            mlir.ir_constant(normalized_c),
             mlir.ir_constant(n_samples),
         ],
-        operand_layouts=default_layouts(xyz_shape, (), (), ()),
+        operand_layouts=default_layouts(xyz_shape, (), ()),
         result_layouts=default_layouts(sph_shape, dsph_shape),
     ).results
 
@@ -82,14 +88,19 @@ def dsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
     dsph_shape = xyz_shape[:-1] + [3, sph_size]
     n_samples = math.prod(xyz_shape[:-1])
 
+    op_name = "cuda_d"
+    if normalized_c:
+        op_name += "spherical_"
+    else:
+        op_name += "solid_"
     if dtype == ir.F32Type.get():
-        op_name = "cuda_dsph_f32"
+        op_name += "f32"
     elif dtype == ir.F64Type.get():
-        op_name = "cuda_dsph_f64"
+        op_name += "f64"
     else:
         raise NotImplementedError(f"Unsupported dtype {dtype}")
 
-    descriptor = build_sph_descriptor(n_samples, l_max_c, normalized_c)
+    descriptor = build_sph_descriptor(n_samples, l_max_c)
 
     return custom_call(
         op_name,
@@ -100,7 +111,7 @@ def dsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
         operands=[xyz],
         operand_layouts=default_layouts(xyz_shape),
         result_layouts=default_layouts(sph_shape, dsph_shape),
-        backend_config=descriptor
+        backend_config=descriptor,
     ).results
 
 

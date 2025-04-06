@@ -111,7 +111,7 @@ template <typename DTYPE> void run_timings(int l_max, int n_tries, int n_samples
     auto ddsph1 = std::vector<DTYPE>(n_samples * 9 * (l_max + 1) * (l_max + 1), 0.0);
 
     {
-        SphericalHarmonics<DTYPE> calculator(l_max, false);
+        SolidHarmonics<DTYPE> calculator(l_max);
         sxyz[0] = xyz[0];
         sxyz[1] = xyz[1];
         sxyz[2] = xyz[2];
@@ -143,7 +143,7 @@ template <typename DTYPE> void run_timings(int l_max, int n_tries, int n_samples
     }
 
     {
-        SphericalHarmonics<DTYPE> calculator(l_max, true);
+        SphericalHarmonics<DTYPE> calculator(l_max);
         benchmark("Call without derivatives (normalized)", n_samples, n_tries, [&]() {
             calculator.compute(xyz, sph1);
         });

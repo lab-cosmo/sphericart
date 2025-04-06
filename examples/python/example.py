@@ -12,11 +12,10 @@ array of random 3D points, using both 32-bit and 64-bit arithmetics.
 """
 
 
-def sphericart_example(l_max=10, n_samples=10000, normalized=False):
+def sphericart_example(l_max=10, n_samples=10000):
     # `sphericart` provides a SphericalHarmonics object that initializes the
     # calculation and then can be called on any n x 3 arrays of Cartesian
-    # coordinates. It computes _all_ SPH up to a given l_max, and can compute
-    # scaled (default) and normalized (standard Ylm) harmonics.
+    # coordinates. It computes _all_ SPH up to a given l_max.
 
     # ===== set up the calculation =====
 
@@ -27,8 +26,8 @@ def sphericart_example(l_max=10, n_samples=10000, normalized=False):
     xyz_f = np.array(xyz, dtype=np.float32)
 
     # ===== API calls =====
-
-    sh_calculator = sphericart.SphericalHarmonics(l_max, normalized=normalized)
+    # we could also compute the solid harmonics with sphericart.SolidHarmonics
+    sh_calculator = sphericart.SphericalHarmonics(l_max)
 
     # without gradients
     sh_sphericart = sh_calculator.compute(xyz)
@@ -62,14 +61,8 @@ if __name__ == "__main__":
 
     parser.add_argument("-l", type=int, default=10, help="maximum angular momentum")
     parser.add_argument("-s", type=int, default=1000, help="number of samples")
-    parser.add_argument(
-        "--normalized",
-        action="store_true",
-        default=False,
-        help="compute normalized spherical harmonics",
-    )
 
     args = parser.parse_args()
 
     # Process everything.
-    sphericart_example(args.l, args.s, args.normalized)
+    sphericart_example(args.l, args.s)

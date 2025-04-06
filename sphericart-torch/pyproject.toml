@@ -1,8 +1,7 @@
 [project]
 name = "sphericart-torch"
-dynamic = ["version"]
-requires-python = ">=3.8"
-dependencies = ["torch >= 1.13"]
+requires-python = ">=3.9"
+dynamic = ["version", "dependencies"]
 
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -41,11 +40,12 @@ repository = "https://github.com/lab-cosmo/sphericart"
 requires = [
     "setuptools >=44",
     "wheel >=0.36",
-    "cmake",
-    "torch >= 1.13",
+    "cmake >=3.30",
 ]
-build-backend = "setuptools.build_meta"
-
+# use a custom build backend to add a dependency on torch/cmake only when
+# building wheels
+build-backend = "backend"
+backend-path = ["build-backend"]
 
 [tool.setuptools]
 zip-safe = false

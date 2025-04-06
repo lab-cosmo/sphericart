@@ -14,7 +14,7 @@ def xyz():
 
 def test_cpu_vs_cuda(xyz):
     if torch.cuda.is_available():
-        calculator = sphericart.torch.SphericalHarmonics(l_max=20, normalized=False)
+        calculator = sphericart.torch.SolidHarmonics(l_max=20)
 
         s1 = torch.cuda.Stream()
         s2 = torch.cuda.Stream()

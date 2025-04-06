@@ -48,13 +48,13 @@ def test_against_scipy(xyz):
             y = xyz[:, 1]
             z = xyz[:, 2]
             r = np.sqrt(x**2 + y**2 + z**2)
-            calculator = sphericart.SphericalHarmonics(l)
+            calculator = sphericart.SolidHarmonics(l)
             sph_sphericart = calculator.compute(xyz)
             sph_sphericart_l_m = sph_sphericart[:, l * l + l + m] / r**l
 
             assert np.allclose(sph_scipy_l_m, sph_sphericart_l_m)
 
-            calculator = sphericart.SphericalHarmonics(l, normalized=True)
+            calculator = sphericart.SphericalHarmonics(l)
             sph_sphericart = calculator.compute(xyz)
             sph_normalized_l_m = sph_sphericart[:, l * l + l + m]
 
@@ -63,8 +63,10 @@ def test_against_scipy(xyz):
 
 def test_derivatives(xyz):
     delta = 1e-6
-    for normalized in [False, True]:
-        calculator = sphericart.SphericalHarmonics(L_MAX, normalized=normalized)
+    for calculator in [
+        sphericart.SphericalHarmonics(L_MAX),
+        sphericart.SolidHarmonics(L_MAX),
+    ]:
         for alpha in range(3):
             xyz_plus = xyz.copy()
             xyz_plus[:, alpha] += delta * np.ones_like(xyz[:, alpha])
@@ -80,8 +82,10 @@ def test_derivatives(xyz):
 
 def test_second_derivatives(xyz):
     delta = 1e-5
-    for normalized in [False, True]:
-        calculator = sphericart.SphericalHarmonics(L_MAX, normalized=normalized)
+    for calculator in [
+        sphericart.SphericalHarmonics(L_MAX),
+        sphericart.SolidHarmonics(L_MAX),
+    ]:
         for alpha in range(3):
             for beta in range(3):
                 xyz_plus_plus = xyz.copy()

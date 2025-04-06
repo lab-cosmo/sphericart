@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.27)
 
 if (POLICY CMP0076)
     #  target_sources() converts relative paths to absolute
@@ -104,7 +104,7 @@ else()
     endif()
 endif()
 
-find_package(Torch 1.13 REQUIRED)
+find_package(Torch 2.1 REQUIRED)
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERSION = '${Torch_VERSION}'")
 
@@ -122,14 +122,18 @@ else()
     target_sources(sphericart_torch PUBLIC "src/torch_cuda_wrapper_stub.cpp")
 endif()
 
-target_link_libraries(sphericart_torch PUBLIC torch sphericart)
+target_link_libraries(sphericart_torch PUBLIC sphericart)
+
+# only link to `torch_cpu_library` instead of `torch`, which could also include
+# `libtorch_cuda`.
+target_link_libraries(sphericart_torch PUBLIC torch_cpu_library)
+target_include_directories(sphericart_torch PUBLIC "${TORCH_INCLUDE_DIRS}")
+target_compile_definitions(sphericart_torch PUBLIC "${TORCH_CXX_FLAGS}")
+
 if(OpenMP_CXX_FOUND)
     target_link_libraries(sphericart_torch PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
-if(CMAKE_CUDA_COMPILER)
-    target_compile_definitions(sphericart_torch PRIVATE CUDA_AVAILABLE)
-endif()
 target_compile_features(sphericart_torch PUBLIC cxx_std_17)
 
 target_include_directories(sphericart_torch PUBLIC
@@ -137,7 +141,29 @@ target_include_directories(sphericart_torch PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
+if (LINUX)
+    # so dlopen can find libsphericart_torch_cuda_stream.so
+    set_target_properties(sphericart_torch PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+
+add_library(sphericart_torch_cuda_stream SHARED
+    "src/streams.cpp"
+)
+target_link_libraries(sphericart_torch_cuda_stream PUBLIC torch)
+target_compile_features(sphericart_torch_cuda_stream PUBLIC cxx_std_17)
+
+if(CMAKE_CUDA_COMPILER)
+    target_compile_definitions(sphericart_torch_cuda_stream PRIVATE CUDA_AVAILABLE)
+    target_compile_definitions(sphericart_torch_cuda_stream PRIVATE C10_CUDA_NO_CMAKE_CONFIGURE_FILE)
+    target_include_directories(sphericart_torch_cuda_stream PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+endif()
+
+
 install(TARGETS sphericart_torch
+    LIBRARY DESTINATION "lib"
+)
+
+install(TARGETS sphericart_torch_cuda_stream
     LIBRARY DESTINATION "lib"
 )
 
