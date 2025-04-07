@@ -14,6 +14,7 @@ def xyz():
 
 @pytest.mark.parametrize("l_max", [2, 7])
 def test_jit(xyz, l_max):
+    jax.config.update("jax_enable_x64", True)
     jitted_sph = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1,))
     pure_jax_jitted_sph = jax.jit(pure_jax_spherical_harmonics, static_argnums=1)
     sph = jitted_sph(xyz=xyz, l_max=l_max)
