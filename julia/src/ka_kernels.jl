@@ -9,12 +9,13 @@ function solid_harmonics!(
                Z::AbstractGPUArray, 
                ::Val{L}, 
                Rs::AbstractGPUArray, 
-               Flm::AbstractGPUArray) where {L}
-   ka_solid_harmonics!(Z, Val{L}(), Rs, Flm)
+               Flm::AbstractGPUArray, GRPSZ = 32) where {L}
+   ka_solid_harmonics!(Z, Val{L}(), Rs, Flm, GRPSZ)
 end
 
 function ka_solid_harmonics!(Z, ::Val{L}, 
-                  Rs::AbstractVector{<: SVector{3}}, Flm) where {L}
+                  Rs::AbstractVector{<: SVector{3}}, Flm, 
+                  GRPSZ = 32) where {L}
 
    # check sizes to make sure the inbounds macro can be used safely.
    nRs = size(Rs, 2) 
@@ -23,7 +24,7 @@ function ka_solid_harmonics!(Z, ::Val{L},
    @assert size(Z, 2) >= len 
 
    backend = KernelAbstractions.get_backend(Z)
-   solidh_main! = _ka_solidh_main!(backend, (32,))
+   solidh_main! = _ka_solidh_main!(backend, (GRPSZ,))
 
    # call the kernels 
    nRs = length(Rs)
