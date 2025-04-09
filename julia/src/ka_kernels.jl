@@ -9,22 +9,69 @@ function solid_harmonics!(
    ka_solid_harmonics!(Z, Val{L}(), Rs, Flm)
 end
 
-function ka_solid_harmonics!(Z, ::Val{L}, Rs, Flm) where {L}
+#
+# TODO: completely  unclear to me why using a Vector of SVectors doesn't work 
+#       here something to be understood .... 
+#
+function ka_solid_harmonics!(Z, ::Val{L}, 
+                  Rs::AbstractVector{<: SVector{3}}, Flm) where {L}
+
+   # Rs_mat = reinterpret(reshape, eltype(eltype(Rs)), Rs)
+   # ka_solid_harmonics!(Z, Val{L}(), Rs_mat, Flm)
+
+   _copy_xyz(Rs, j) = Rs[j].data
+
+   backend = KernelAbstractions.get_backend(Z)
+   solidh_main! = _ka_solidh_main!(backend, (32,))
+
+   # call the kernels 
+   nRs = length(Rs)
+   solidh_main!(Z, Val{L}(), Rs, Flm, _copy_xyz; ndrange = (nRs,))
+   synchronize(backend)
+
+   nothing               
+end
+
+function ka_solid_harmonics!(Z, ::Val{L}, 
+               Rs::AbstractVector{<: NTuple{3}}, Flm) where {L}
+
+   _copy_xyz(Rs, j) = Rs[j]
+
+   backend = KernelAbstractions.get_backend(Z)
+   solidh_main! = _ka_solidh_main!(backend, (32,))
+
+   # call the kernels 
+   nRs = length(Rs)
+   solidh_main!(Z, Val{L}(), Rs, Flm, _copy_xyz; ndrange = (nRs,))
+   synchronize(backend)
+
+   nothing               
+end
+
+
+function ka_solid_harmonics!(Z, ::Val{L}, Rs::AbstractMatrix, Flm) where {L}
 
    # check sizes 
-   @assert size(Rs, 1) == 3 
-   nRs = size(Rs, 2)
+   @assert size(Rs, 1) == 3
+   nRs = size(Rs, 2) 
    @assert size(Z, 1) >= nRs 
    len = sizeY(L)
    @assert size(Z, 2) >= len 
 
    # compile the kernels 
+   #
+   # TODO: how to user-specify the group size here???
+   # 
    backend = KernelAbstractions.get_backend(Z)
    solidh_main! = _ka_solidh_main!(backend, (32,))
 
+   function _copy_xyz(Rs, j)
+      return Rs[1, j], Rs[2, j], Rs[3, j]
+   end
+
    # call the kernels 
    nRs = size(Rs, 2)
-   solidh_main!(Z, Val{L}(), Rs, Flm; ndrange = (nRs,))
+   solidh_main!(Z, Val{L}(), Rs, Flm, _copy_xyz; ndrange = (nRs,))
    synchronize(backend)
 
    nothing               
@@ -35,7 +82,8 @@ end
 @kernel function _ka_solidh_main!(
                Z, ::Val{L}, 
                @Const(Rs), 
-               @Const(Flm) ) where {L}
+               @Const(Flm), 
+               copy_xyz ) where {L}
 
    j = @index(Global)
    jl = @index(Local, Linear)
@@ -47,14 +95,16 @@ end
 
    # ------------------------------------------------------------------
    # STAGE 1a: load the coordinates into more convenient local variables 
+
+   # TODO: unclear to me why I have to allocate these arrays rather than 
+   #       simply working in thread-private variables. (I tried but only 
+   #       got lots of unexplained errors)
+
    x = @localmem T (len_grp,)
    y = @localmem T (len_grp,)
    z = @localmem T (len_grp,)
    r² = @localmem T (len_grp,)
-
-   x[jl] = Rs[1, j] 
-   y[jl] = Rs[2, j]
-   z[jl] = Rs[3, j]
+   x[jl], y[jl], z[jl] = copy_xyz(Rs, j)
    r²[jl] = x[jl]*x[jl] + y[jl]*y[jl] + z[jl]*z[jl] 
 
    # ------------------------------------------------------------------

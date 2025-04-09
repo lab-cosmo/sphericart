@@ -5,55 +5,55 @@ using SpheriCart, GPUArraysCore, Metal, StaticArrays,
 ##
 
 L = 6
-basis = SolidHarmonics(L)
-nbatch = 128_000
-
-Rs_64 = [ @SVector randn(3) for _=1:nbatch ]
-Rs_64 = [ 𝐫 / norm(𝐫) for 𝐫 in Rs_64 ]
-Rs = [ Float32.(𝐫) for 𝐫 in Rs_64 ]
-Z1 = compute(basis, Rs_64)
-
-T = Float32
-temps = (x = zeros(T, nbatch), 
-         y = zeros(T, nbatch),
-         z = zeros(T, nbatch), 
-        r² = zeros(T, nbatch),
-         s = zeros(T, nbatch, L+1), 
-         c = zeros(T, nbatch, L+1),
-         Q = zeros(T, nbatch, SpheriCart.sizeY(L)),
-       Flm = T.(basis.Flm) )
-
-Z1_32 = zeros(Float32, size(Z1))
-SpheriCart.solid_harmonics!(Z1_32, Val(L), Rs, temps)
-
 @info(L)
-@show norm(Z1 - Z1_32, Inf)
+basis = SolidHarmonics(L; T = Float32)
+Flm_cpu = basis.Flm.parent
+Flm_gpu = MtlArray(Flm_cpu)
 
-##
+nbatch = 64_000
 
+Rs = [ @SVector randn(Float32, 3) for _=1:nbatch ]
+Rs = [ 𝐫 / norm(𝐫) for 𝐫 in Rs ]
 Rs_mat = collect(reinterpret(reshape, Float32, Rs))
-Rs_gpu = MtlArray(Rs_mat)
-Z2 = MtlArray(zeros(Float32, size(Z1)))
-Flm_gpu = MtlArray(Float32.(basis.Flm.parent))
+Rs_gpu = MtlArray(Rs)
+Rs_mat_gpu = MtlArray(Rs_mat)
+Rs_gpu_tup = MtlArray([ 𝐫.data for 𝐫 in Rs ])
 
-SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu)
-Z2_cpu = Matrix(Z2)
-
-@show norm(Z1_32 - Z2_cpu, Inf)
+# reference calculation 
+Z1 = compute(basis, Rs)
 
 ##
 
-Z3 = deepcopy(Z1)
-Flm_cpu = Float32.(basis.Flm.parent)
-SpheriCart.ka_solid_harmonics!(Z3, Val{L}(), Rs_mat, Flm_cpu)
+Z2a = MtlArray(zeros(Float32, size(Z1)))
+Z2b = MtlArray(zeros(Float32, size(Z1)))
+Z2c = MtlArray(zeros(Float32, size(Z1)))
+SpheriCart.solid_harmonics!(Z2a, Val(L), Rs_gpu, Flm_gpu)
+SpheriCart.solid_harmonics!(Z2b, Val(L), Rs_mat_gpu, Flm_gpu)
+SpheriCart.solid_harmonics!(Z2c, Val(L), Rs_gpu_tup, Flm_gpu)
 
-@show norm(Z1_32 - Z3, Inf)
+@show norm(Z1 - Array(Z2a), Inf)
+@show norm(Z1 - Array(Z2b), Inf)
+@show norm(Z1 - Array(Z2c), Inf)
+
+##
+
+Z3a = zeros(Float32, size(Z1))
+Z3b = zeros(Float32, size(Z1))
+SpheriCart.ka_solid_harmonics!(Z3a, Val{L}(), Rs, Flm_cpu)
+SpheriCart.ka_solid_harmonics!(Z3b, Val{L}(), Rs_mat, Flm_cpu)
+
+@show norm(Z1 - Z3a, Inf)
+@show norm(Z1 - Z3b, Inf)
 
 ##
 
 @info("Hand-coded (single-threaded)")
 @btime compute!(Z1, basis, Rs)
-@info("KA-Metal")
-@btime SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu)
+@info("KA-Metal-Matrix")
+@btime SpheriCart.solid_harmonics!(Z2a, Val(L), Rs_gpu, Flm_gpu)
+@info("KA-Metal-Vector{SVector}")
+@btime SpheriCart.solid_harmonics!(Z2b, Val(L), Rs_mat_gpu, Flm_gpu)
+@info("KA-Metal-Vector{Tuple}")
+@btime SpheriCart.solid_harmonics!(Z2c, Val(L), Rs_gpu_tup, Flm_gpu)
 @info("KA-CPU")
-@btime SpheriCart.ka_solid_harmonics!(Z3, Val{L}(), Rs_mat, Flm_cpu)
+@btime SpheriCart.ka_solid_harmonics!(Z3b, Val{L}(), Rs_mat, Flm_cpu)
