@@ -1,6 +1,6 @@
 
 using SpheriCart, GPUArraysCore, Metal, StaticArrays,  
-      LinearAlgebra, KernelAbstractions
+      LinearAlgebra, KernelAbstractions, BenchmarkTools
 
 ##
 
@@ -9,6 +9,7 @@ basis = SolidHarmonics(L)
 nbatch = 128_000
 
 Rs_64 = [ @SVector randn(3) for _=1:nbatch ]
+Rs_64 = [ 𝐫 / norm(𝐫) for 𝐫 in Rs_64 ]
 Rs = [ Float32.(𝐫) for 𝐫 in Rs_64 ]
 Z1 = compute(basis, Rs_64)
 
@@ -27,7 +28,6 @@ SpheriCart.solid_harmonics!(Z1_32, Val(L), Rs, temps)
 
 @info(L)
 @show norm(Z1 - Z1_32, Inf)
-@show norm((Z1 - Z1_32)./(1 .+ abs.(Z1)), Inf)
 
 ##
 
@@ -51,27 +51,9 @@ SpheriCart.ka_solid_harmonics!(Z3, Val{L}(), Rs_mat, Flm_cpu)
 
 ##
 
-nRs = size(Rs_gpu, 2)
-len = SpheriCart.sizeY(L)
-x = similar(Rs_gpu, (nRs,))
-y = similar(Rs_gpu, (nRs,))
-z = similar(Rs_gpu, (nRs,))
-r² = similar(Rs_gpu, (nRs,))
-s = similar(Rs_gpu, (nRs, L+1))
-c = similar(Rs_gpu, (nRs, L+1))
-Q = similar(Rs_gpu, (nRs, len))
-Z4 = MtlArray(zeros(Float32, size(Z1)))
-SpheriCart.ka_solid_harmonics!!(Z4, Val{L}(), Rs_gpu, Flm_gpu, x, y, z, r², s, c, Q)
-
-@show norm(Z1_32 - Array(Z4), Inf)
-
-##
-
 @info("Hand-coded (single-threaded)")
-@time compute!(Z1, basis, Rs)
+@btime compute!(Z1, basis, Rs)
 @info("KA-Metal")
-@time SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu)
-@info("KA-Metal (pre-allocated)")
-@time SpheriCart.ka_solid_harmonics!!(Z4, Val{L}(), Rs_gpu, Flm_gpu, x, y, z, r², s, c, Q)
+@btime SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu)
 @info("KA-CPU")
-@time SpheriCart.ka_solid_harmonics!(Z3, Val{L}(), Rs_mat, Flm_cpu)
+@btime SpheriCart.ka_solid_harmonics!(Z3, Val{L}(), Rs_mat, Flm_cpu)
