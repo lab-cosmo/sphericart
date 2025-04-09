@@ -1,6 +1,10 @@
 using KernelAbstractions, GPUArraysCore
 using KernelAbstractions.Extras.LoopInfo: @unroll 
 
+#
+# splitting off this function barrier, to allow experimenting with 
+# KA for CPU via calling ka_solid_harmonics directly. 
+#
 function solid_harmonics!(
                Z::AbstractGPUArray, 
                ::Val{L}, 
@@ -9,69 +13,21 @@ function solid_harmonics!(
    ka_solid_harmonics!(Z, Val{L}(), Rs, Flm)
 end
 
-#
-# TODO: completely  unclear to me why using a Vector of SVectors doesn't work 
-#       here something to be understood .... 
-#
 function ka_solid_harmonics!(Z, ::Val{L}, 
                   Rs::AbstractVector{<: SVector{3}}, Flm) where {L}
 
-   # Rs_mat = reinterpret(reshape, eltype(eltype(Rs)), Rs)
-   # ka_solid_harmonics!(Z, Val{L}(), Rs_mat, Flm)
-
-   _copy_xyz(Rs, j) = Rs[j].data
-
-   backend = KernelAbstractions.get_backend(Z)
-   solidh_main! = _ka_solidh_main!(backend, (32,))
-
-   # call the kernels 
-   nRs = length(Rs)
-   solidh_main!(Z, Val{L}(), Rs, Flm, _copy_xyz; ndrange = (nRs,))
-   synchronize(backend)
-
-   nothing               
-end
-
-function ka_solid_harmonics!(Z, ::Val{L}, 
-               Rs::AbstractVector{<: NTuple{3}}, Flm) where {L}
-
-   _copy_xyz(Rs, j) = Rs[j]
-
-   backend = KernelAbstractions.get_backend(Z)
-   solidh_main! = _ka_solidh_main!(backend, (32,))
-
-   # call the kernels 
-   nRs = length(Rs)
-   solidh_main!(Z, Val{L}(), Rs, Flm, _copy_xyz; ndrange = (nRs,))
-   synchronize(backend)
-
-   nothing               
-end
-
-
-function ka_solid_harmonics!(Z, ::Val{L}, Rs::AbstractMatrix, Flm) where {L}
-
-   # check sizes 
-   @assert size(Rs, 1) == 3
+   # check sizes to make sure the inbounds macro can be used safely.
    nRs = size(Rs, 2) 
    @assert size(Z, 1) >= nRs 
    len = sizeY(L)
    @assert size(Z, 2) >= len 
 
-   # compile the kernels 
-   #
-   # TODO: how to user-specify the group size here???
-   # 
    backend = KernelAbstractions.get_backend(Z)
    solidh_main! = _ka_solidh_main!(backend, (32,))
 
-   function _copy_xyz(Rs, j)
-      return Rs[1, j], Rs[2, j], Rs[3, j]
-   end
-
    # call the kernels 
-   nRs = size(Rs, 2)
-   solidh_main!(Z, Val{L}(), Rs, Flm, _copy_xyz; ndrange = (nRs,))
+   nRs = length(Rs)
+   solidh_main!(Z, Val{L}(), Rs, Flm; ndrange = (nRs,))
    synchronize(backend)
 
    nothing               
@@ -82,8 +38,7 @@ end
 @kernel function _ka_solidh_main!(
                Z, ::Val{L}, 
                @Const(Rs), 
-               @Const(Flm), 
-               copy_xyz ) where {L}
+               @Const(Flm), ) where {L}
 
    j = @index(Global)
    jl = @index(Local, Linear)
@@ -104,7 +59,7 @@ end
    y = @localmem T (len_grp,)
    z = @localmem T (len_grp,)
    r² = @localmem T (len_grp,)
-   x[jl], y[jl], z[jl] = copy_xyz(Rs, j)
+   x[jl], y[jl], z[jl] = Rs[j].data  # Rs[j]::SVector{3}
    r²[jl] = x[jl]*x[jl] + y[jl]*y[jl] + z[jl]*z[jl] 
 
    # ------------------------------------------------------------------
@@ -116,7 +71,7 @@ end
    s[jl, 1] = zero(T)    # 0 -> 1 (1-based indexing)
    c[jl, 1] = one(T)
    # construct sin(mθ), cos(mθ) recursively {m -> m+1 and  m-1 -> m}
-   for m = 1:L
+   @inbounds for m = 1:L
       s[jl, m+1] = s[jl, m] * x[jl] + c[jl, m] * y[jl]
       c[jl, m+1] = c[jl, m] * x[jl] - s[jl, m] * y[jl]
    end
@@ -132,7 +87,7 @@ end
    Q[jl, i00] = one(T)
    Z[j, i00] = (Flm[1,1]/rt2) * one(T) # Q[jl, i00]
 
-   for l = 1:L 
+   @inbounds for l = 1:L 
       ill = lm2idx(l, l)
       il⁻l = lm2idx(l, -l)
       ill⁻¹ = lm2idx(l, l-1)
