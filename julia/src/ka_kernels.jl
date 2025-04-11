@@ -1,5 +1,4 @@
 using KernelAbstractions, GPUArraysCore
-using KernelAbstractions.Extras.LoopInfo: @unroll 
 
 #
 # splitting off this function barrier, to allow experimenting with 
@@ -9,12 +8,34 @@ function solid_harmonics!(
                Z::AbstractGPUArray, 
                ::Val{L}, 
                Rs::AbstractGPUArray, 
-               Flm::AbstractGPUArray, GRPSZ = 32) where {L}
+               Flm::AbstractGPUArray, 
+               GRPSZ = 32) where {L}
    ka_solid_harmonics!(Z, nothing, Val{L}(), Rs, Flm, GRPSZ)
 end
 
 
+function solid_harmonics_with_grad!(
+               Z::AbstractGPUArray, dZ::AbstractGPUArray, 
+               ::Val{L}, 
+               Rs::AbstractGPUArray, 
+               Flm::AbstractGPUArray, 
+               GRPSZ = 32) where {L} 
+   ka_solid_harmonics!(Z, dZ, Val{L}(), Rs, Flm, GRPSZ)
+end
 
+
+
+
+"""
+```
+function ka_solid_harmonics!(Z, dZ, ::Val{L}, 
+                  Rs::AbstractVector{<: SVector{3}}, Flm, 
+                  GRPSZ = 32) where {L}
+```
+KernelAbstractions.jl kernel launcher for evaluating solid harmonics 
+on a batch of input points. If `dZ == nothing` then only `Z will be 
+evaluated, otherwise, both `Z` and `dZ`.
+"""
 function ka_solid_harmonics!(Z, dZ, ::Val{L}, 
                   Rs::AbstractVector{<: SVector{3}}, Flm, 
                   GRPSZ = 32) where {L}
@@ -188,7 +209,7 @@ end
 
          # ----- inner j-loop ----- 
          cj = c[jl, m+1]; sj = s[jl, m+1]   # m -> m+1
-         Q[jl, ilm]  = ((2*l-1) * z[jl] * Q[jl, il⁻¹m] - (l+m-1) * r²[jl] * Q[jl, il⁻²m]) / (l-m)
+         Q[jl, ilm]  = Q_lm = ((2*l-1) * z[jl] * Q[jl, il⁻¹m] - (l+m-1) * r²[jl] * Q[jl, il⁻²m]) / (l-m)
          Z[j,  il⁻m] = F_l_m * Q[jl, ilm] * sj
          Z[j,  ilm]  = F_l_m * Q[jl, ilm] * cj
 
