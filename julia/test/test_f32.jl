@@ -3,6 +3,8 @@ using SpheriCart, StaticArrays, LinearAlgebra, Quadmath, Printf, Test
 
 ##
 
+@info("============= Testset F32 =============")
+
 n_samples = 1_000 
 Rs = [ @SVector randn(3) for _ = 1:n_samples ]
 Rs_64 = [ 𝐫/norm(𝐫) for 𝐫 in Rs ]
