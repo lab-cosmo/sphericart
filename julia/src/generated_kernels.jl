@@ -2,7 +2,10 @@
 #  This is a generated code for best possible performance with a single input
 
 import ForwardDiff
-import ForwardDiff: Dual
+using ForwardDiff: Dual 
+
+_codegen_Zlm(L, T::Dual, normalisation) = 
+   _codegen_Zlm(L, ForwardDiff.valtype(T), normalisation)
 
 function _codegen_Zlm(L, T, normalisation) 
    Flm = generate_Flms(L; normalisation = normalisation, T = T)
