@@ -30,7 +30,7 @@ SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu)
 
 @info("test CPU-KA execution")
 Z3 = zeros(Float32, size(Z1))
-SpheriCart.ka_solid_harmonics!(Z3, Val{L}(), Rs, Flm_cpu)
+SpheriCart.ka_solid_harmonics!(Z3, nothing, Val{L}(), Rs, Flm_cpu)
 @show norm(Z1 - Z3, Inf)
 
 ##
@@ -66,20 +66,3 @@ SpheriCart.ka_solid_harmonics!(Z3, Val{L}(), Rs, Flm_cpu)
 # @btime SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu, 16)
 # @btime SpheriCart.solid_harmonics!(Zd_gpu, Val(L), Rsd_gpu, Flm_gpu, 16)
 
-##
-
-
-Z2 = MtlArray(zeros(Float32, size(Z1)))
-Z2a = MtlArray(zeros(Float32, size(Z1)))
-
-SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu)
-@show norm(Z1 - Array(Z2), Inf)
-
-SpheriCart.ka_solid_harmonics!(Z2a, nothing, Val(L), Rs_gpu, Flm_gpu)
-@show norm(Z1 - Array(Z2a), Inf)
-
-
-##
-
-@btime SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu)
-@btime SpheriCart.ka_solid_harmonics!(Z2a, nothing, Val(L), Rs_gpu, Flm_gpu)
