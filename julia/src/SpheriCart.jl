@@ -1,6 +1,6 @@
 module SpheriCart
 
-using StaticArrays, OffsetArrays, Bumper, StrideArrays
+using StaticArrays, OffsetArrays, Bumper
 
 export SolidHarmonics, 
        compute, 
