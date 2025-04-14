@@ -2,13 +2,14 @@ import jax
 import jax.numpy as jnp
 import jax.test_util as jtu
 import pytest
+from utils import jax_float64
 
 import sphericart.jax
-from sphericart.jax.utils import jax_float64
 
 
 @pytest.mark.parametrize("normalized", [True, False], ids=["spherical", "solid"])
 def test_autograd(normalized):
+    # 32-bit numerical gradients are very noisy, so we use 64-bit
     with jax_float64():
         key = jax.random.PRNGKey(0)
         xyz = 6 * jax.random.normal(key, (100, 3))
@@ -30,8 +31,6 @@ def test_autograd(normalized):
 def test_autograd_second_derivatives(normalized):
     # 32-bit numerical gradients are very noisy, so we use 64-bit
     with jax_float64():
-        jax.config.update("jax_enable_x64", True)
-
         key = jax.random.PRNGKey(0)
         xyz = 6 * jax.random.normal(key, (100, 3))
 
