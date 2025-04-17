@@ -6,7 +6,7 @@ stages:
 
 test_job:
   stage: test
-  extends: .container-runner-daint-gpu
+  extends: .container-runner-daint-gh200
   image: nvcr.io/nvidia/pytorch:24.12-py3
   timeout: 2h
   script:

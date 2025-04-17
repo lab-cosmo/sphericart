@@ -7,7 +7,7 @@ import sphericart.torch
 torch.manual_seed(0)
 
 
-@pytest.mark.parametrize("normalized", [False, True])
+@pytest.mark.parametrize("normalized", [False, True], ids=["solid", "spherical"])
 @pytest.mark.parametrize("l_max", [0, 3, 7, 10, 20, 50])
 def test_error(l_max, normalized):
     xyz = torch.zeros(0, 3, dtype=torch.float64)
