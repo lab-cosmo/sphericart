@@ -2,8 +2,7 @@ import math
 from functools import partial
 
 import jax
-from jax import core
-from jax.core import ShapedArray
+from jax.extend import core
 from jax.interpreters import mlir, xla
 from jax.interpreters.mlir import custom_call, ir
 
@@ -33,9 +32,9 @@ def ddsph_abstract_eval(xyz, l_max, normalized, *, l_max_c, normalized_c):
     dsph_shape = xyz.shape[:-1] + (3, sph_size)
     ddsph_shape = xyz.shape[:-1] + (3, 3, sph_size)
     return (
-        ShapedArray(sph_shape, dtype),
-        ShapedArray(dsph_shape, dtype),
-        ShapedArray(ddsph_shape, dtype),
+        core.ShapedArray(sph_shape, dtype),
+        core.ShapedArray(dsph_shape, dtype),
+        core.ShapedArray(ddsph_shape, dtype),
     )
 
 
