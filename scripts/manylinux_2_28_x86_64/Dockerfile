@@ -6,7 +6,7 @@ FROM quay.io/pypa/manylinux_2_28_x86_64
 # Install cuda
 # ------------
 
-ARG CUDA_VER="12-4"
+ARG CUDA_VER="12-6"
 ARG ARCH="x86_64"
 
 RUN yum install -y yum-utils
