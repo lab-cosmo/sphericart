@@ -6,16 +6,11 @@ FROM quay.io/pypa/manylinux_2_28_x86_64
 # Install cuda
 # ------------
 
-ARG CUDA_VER="12-4"
+ARG CUDA_VER="12-6"
 ARG ARCH="x86_64"
 
-# install gcc 13
-RUN yum install -y centos-release-scl
-RUN yum install -y devtoolset-13
-RUN scl enable devtoolset-13 bash
-
 RUN yum install -y yum-utils
-RUN yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/cuda-rhel7.repo
+RUN yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo
 RUN yum -y install cuda-compiler-${CUDA_VER}.${ARCH} \
                    cuda-libraries-${CUDA_VER}.${ARCH} \
                    cuda-libraries-devel-${CUDA_VER}.${ARCH} \
