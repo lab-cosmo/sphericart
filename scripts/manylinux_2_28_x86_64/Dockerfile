@@ -1,6 +1,6 @@
 # Inspired by https://github.com/ameli/manylinux-cuda, adding cuda-nvtx
 
-FROM quay.io/pypa/manylinux2014_x86_64
+FROM quay.io/pypa/manylinux_2_28_x86_64
 
 # ------------
 # Install cuda

@@ -51,7 +51,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        pytorch-version: ["2.4", "2.5", "2.6"]
+        pytorch-version: ["2.4", "2.5", "2.6", "2.7"]
         arch: ["arm64", "x86_64"]
         os: ["ubuntu-22.04", "macos-14"]
         exclude:
@@ -69,8 +69,8 @@ jobs:
       if: matrix.os == 'ubuntu-22.04'
       run: |
         docker build --no-cache \
-            -t sphericart_manylinux2014_"${{ matrix.arch }}" \
-            scripts/manylinux2014_"${{ matrix.arch }}"
+            -t sphericart_manylinux_2_28_"${{ matrix.arch }}" \
+            scripts/manylinux_2_28_"${{ matrix.arch }}"
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -87,7 +87,7 @@ jobs:
         CIBW_BUILD: "cp312-*"
         CIBW_SKIP: "*-musllinux*"
         CIBW_ARCHS: "${{ matrix.arch }}"
-        CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux2014_x86_64
+        CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux_2_28_x86_64
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
           auditwheel repair \
               --exclude libc10.so \
