@@ -35,7 +35,7 @@ GRPSIZE = 8  # to be on the safe side; testing just for correctness
 
 
 basis = SolidHarmonics(L; T = Float32)
-Flm_cpu = basis.Flm.parent
+Flm_cpu = basis.Flm
 Flm_gpu = gpu(Flm_cpu)
 
 Rs = [ @SVector randn(Float32, 3) for _=1:nbatch ]

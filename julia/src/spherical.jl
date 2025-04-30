@@ -39,9 +39,8 @@ Z = compute(basis, Rs)
 ```
 See documentation for more details.
 """
-struct SphericalHarmonics{L, NORM, STATIC, T1}
-   solids::SolidHarmonics{L, NORM, STATIC, T1}
-   # Flm::OffsetMatrix{T1, Matrix{T1}}
+struct SphericalHarmonics{L, NORM, STATIC, TF}
+   solids::SolidHarmonics{L, NORM, STATIC, TF}
 end
 
 SphericalHarmonics(L::Integer; kwargs...) = 

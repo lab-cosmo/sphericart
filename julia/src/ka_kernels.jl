@@ -1,4 +1,5 @@
 using KernelAbstractions, GPUArraysCore
+using StaticArrays: SMatrix 
 
 #
 # splitting off this function barrier, to allow experimenting with 
@@ -8,7 +9,7 @@ function solid_harmonics!(
                Z::AbstractGPUArray, 
                ::Val{L}, 
                Rs::AbstractGPUArray, 
-               Flm::AbstractGPUArray, 
+               Flm::Union{AbstractGPUArray, SMatrix}, 
                GRPSZ = 32) where {L}
    ka_solid_harmonics!(Z, nothing, Val{L}(), Rs, Flm, GRPSZ)
 end
@@ -18,7 +19,7 @@ function solid_harmonics_with_grad!(
                Z::AbstractGPUArray, dZ::AbstractGPUArray, 
                ::Val{L}, 
                Rs::AbstractGPUArray, 
-               Flm::AbstractGPUArray, 
+               Flm::Union{AbstractGPUArray, SMatrix}, 
                GRPSZ = 32) where {L} 
    ka_solid_harmonics!(Z, dZ, Val{L}(), Rs, Flm, GRPSZ)
 end
