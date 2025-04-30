@@ -46,6 +46,9 @@ function SolidHarmonics(L::Integer;
                         T = Float64) 
    Flm = generate_Flms(L; normalisation = normalisation, T = T)
    @assert eltype(Flm) == T   
+   if static 
+      Flm = SMatrix{size(Flm, 1), size(Flm, 2)}(Flm)
+   end
    SolidHarmonics{L, normalisation, static, typeof(Flm)}(Flm)
 end
 
@@ -70,10 +73,11 @@ function compute(basis::SolidHarmonics{L, NORM, STATIC},
                   ) where {L, NORM, STATIC, T}
    # note here we are NOT using the type of the Flm. If the Flm type  is 
    # different from the Rs type then there will be an implicit conversion 
-   Z = zeros(T, length(Rs), sizeY(L)) # we could make this cached as well 
+   Z = similar(Rs, T, (length(Rs), sizeY(L))) # we could make this cached as well 
    compute!(Z, basis, Rs)
    return Z
 end
+
 
 function compute!(Z::AbstractMatrix, 
                   basis::SolidHarmonics{L, NORM, STATIC}, 
@@ -127,8 +131,8 @@ end
 function compute_with_gradients(basis::SolidHarmonics{L, NORM, STATIC}, 
                                 Rs::AbstractVector{SVector{3, T}}
                                 ) where {L, NORM, STATIC, T}
-   Z = zeros(T, length(Rs), sizeY(L)) # we could make this cached as well 
-   dZ = zeros(SVector{3, T}, length(Rs), sizeY(L)) 
+   Z = similar(Rs, T, (length(Rs), sizeY(L))) # we could make this cached as well 
+   dZ = similar(Rs, SVector{3, T}, (length(Rs), sizeY(L))) 
    compute_with_gradients!(Z, dZ, basis, Rs)
    return Z, dZ 
 end

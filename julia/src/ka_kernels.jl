@@ -1,6 +1,44 @@
 using KernelAbstractions, GPUArraysCore
 using StaticArrays: SMatrix 
 
+
+function compute!(Z::AbstractGPUMatrix, 
+                  basis::SolidHarmonics{L, NORM, STATIC}, 
+                  Rs::AbstractGPUVector{SVector{3, T}}
+                  ) where {L, NORM, STATIC, T}
+
+   if !STATIC 
+      error("GPU evaluation of SolidHarmonics is only implemented for the static basis.")
+   end
+
+   nX = length(Rs)
+   @assert size(Z, 1) >= nX
+
+   solid_harmonics!(Z, Val{L}(), Rs, basis.Flm)
+
+   return Z 
+end 
+
+function compute_with_gradients!(Z::AbstractGPUMatrix, dZ::AbstractGPUMatrix,
+                  basis::SolidHarmonics{L, NORM, STATIC}, 
+                  Rs::AbstractGPUVector{SVector{3, T}}
+                  ) where {L, NORM, STATIC, T}
+
+   if !STATIC 
+      error("GPU evaluation of SolidHarmonics is only implemented for the static basis.")
+   end
+
+   nX = length(Rs)
+   @assert size(Z, 1) >= nX
+   @assert size(dZ, 1) >= nX
+
+   solid_harmonics_with_grad!(Z, dZ, Val{L}(), Rs, basis.Flm)
+
+   return Z, dZ  
+end 
+
+
+
 #
 # splitting off this function barrier, to allow experimenting with 
 # KA for CPU via calling ka_solid_harmonics directly. 
