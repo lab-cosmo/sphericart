@@ -46,6 +46,9 @@ end
 SphericalHarmonics(L::Integer; kwargs...) = 
       SphericalHarmonics(SolidHarmonics(L; kwargs...))
 
+Base.getproperty(basis::SphericalHarmonics, prop::Symbol) = (
+      prop == :solids ? getfield(basis, :solids) 
+                      : getfield(getfield(basis, :solids), prop) )
 
 @inline (basis::SphericalHarmonics)(args...) = compute(basis, args...)
 
@@ -95,6 +98,19 @@ function _rescale_∇Z2∇Y!(∇Z::AbstractMatrix, Rs_norm, rs)
    end
 end
 
+# For a future GPU interface for Spherical Harmonics 
+# function _rescale_∇Z2∇Y!(∇Z::AbstractGPUMatrix, Rs::AbstractGPUVector)
+#    nX = length(rs)
+#    @inbounds for i = 1:size(∇Z, 2)
+#       @simd ivdep for j = 1:nX
+#          dzj = ∇Z[j, i] / rs[j]
+#          𝐫̂j = Rs_norm[j]
+#          ∇Z[j, i] = dzj - dot(𝐫̂j, dzj) * 𝐫̂j
+#       end
+#    end
+# end
+
+
 function compute(basis::SphericalHarmonics, 
                   Rs::AbstractVector{<: SVector{3, T1}}
                   ) where {T1}  
@@ -107,6 +123,18 @@ function compute(basis::SphericalHarmonics,
    end
    return Y
 end
+
+# For a future GPU interface for Spherical Harmonics 
+# function compute(basis::SphericalHarmonics, 
+#                   Rs::AbstractGPUVector{<: SVector{3, T1}}
+#                   ) where {T1}  
+#    _norm(𝐫::SVector) = 𝐫/norm(𝐫)
+#    nX = length(Rs)              
+#    Rs_norm = similar(Rs)
+#    map!(_norm, Rs_norm, Rs)
+#    Y = compute(basis.solids, Rs_norm)
+#    return Y
+# end
 
 function compute!(Y, basis::SphericalHarmonics, 
                   Rs::AbstractVector{<: SVector{3, T1}}
