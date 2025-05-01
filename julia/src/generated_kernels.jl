@@ -28,24 +28,24 @@ function _codegen_Zlm(L, T, normalisation)
 
    # Q_0^0 and Y_0^0
    push!(code, Meta.parse("Q_0_0 = one($T)"))
-   push!(code, Meta.parse("Z_1 = $(Flm[0,0]/rt2) * Q_0_0"))
+   push!(code, Meta.parse("Z_1 = $(Flm[1+0,1+0]/rt2) * Q_0_0"))
 
    for l = 1:L 
       # Q_l^l and Y_l^l
       # m = l 
       push!(code, Meta.parse("Q_$(l)_$(l)  = - $(2*l-1) * Q_$(l-1)_$(l-1)"))
-      push!(code, Meta.parse("Z_$(lm2idx(l, l))  = $(Flm[l,l]) * Q_$(l)_$(l) * c_$(l)"))
-      push!(code, Meta.parse("Z_$(lm2idx(l, -l)) = $(Flm[l, l]) * Q_$(l)_$(l) * s_$(l)"))
+      push!(code, Meta.parse("Z_$(lm2idx(l, l))  = $(Flm[1+l,1+l]) * Q_$(l)_$(l) * c_$(l)"))
+      push!(code, Meta.parse("Z_$(lm2idx(l, -l)) = $(Flm[1+l,1+ l]) * Q_$(l)_$(l) * s_$(l)"))
       # Q_l^l-1 and Y_l^l-1
       # m = l-1 
       push!(code, Meta.parse("Q_$(l)_$(l-1)  = $(2*l-1) * z * Q_$(l-1)_$(l-1)"))
-      push!(code, Meta.parse("Z_$(lm2idx(l, -l+1)) = $(Flm[l, l-1]) * Q_$(l)_$(l-1) * s_$(l-1)"))
-      push!(code, Meta.parse("Z_$(lm2idx(l, l-1) ) = $(Flm[l, l-1]) * Q_$(l)_$(l-1) * c_$(l-1)" )) # overwrite if m = 0 -> ok 
+      push!(code, Meta.parse("Z_$(lm2idx(l, -l+1)) = $(Flm[1+l, 1+ l-1]) * Q_$(l)_$(l-1) * s_$(l-1)"))
+      push!(code, Meta.parse("Z_$(lm2idx(l, l-1) ) = $(Flm[1+l, 1+ l-1]) * Q_$(l)_$(l-1) * c_$(l-1)" )) # overwrite if m = 0 -> ok 
       # now we can go to the second recursion 
       for m = l-2:-1:0
          push!(code, Meta.parse("Q_$(l)_$(m)  = $((2*l-1)/(l-m)) * z * Q_$(l-1)_$m - $((l+m-1)/(l-m)) * r² * Q_$(l-2)_$(m)"))
-         push!(code, Meta.parse("Z_$(lm2idx(l,-m)) = $(Flm[l, m]) * Q_$(l)_$(m) * s_$(m)"))
-         push!(code, Meta.parse("Z_$(lm2idx(l,m) ) = $(Flm[l, m]) * Q_$(l)_$(m) * c_$(m)"))
+         push!(code, Meta.parse("Z_$(lm2idx(l,-m)) = $(Flm[1+l, 1+ m]) * Q_$(l)_$(m) * s_$(m)"))
+         push!(code, Meta.parse("Z_$(lm2idx(l,m) ) = $(Flm[1+l, 1+ m]) * Q_$(l)_$(m) * c_$(m)"))
       end
    end
 
@@ -74,7 +74,7 @@ function _codegen_Zlm_grads(L, T, normalisation)
    # l = 0 
    # Q_0^0 and Y_0^0
    push!(code, Meta.parse("Q_0_0 = one($T)"))
-   push!(code, Meta.parse("Z_1 = $(Flm[0,0]/rt2) * Q_0_0"))
+   push!(code, Meta.parse("Z_1 = $(Flm[1+0,1+0]/rt2) * Q_0_0"))
 
    # gradients
    push!(code, Meta.parse("dZ_1 = zero(SVector{3, $T})"))
@@ -83,50 +83,50 @@ function _codegen_Zlm_grads(L, T, normalisation)
    # l = 1 special case 
    # Q_1^1 => Y_1^1, Y_1^-1
    push!(code, Meta.parse("Q_1_1  = - Q_0_0"))
-   push!(code, Meta.parse("Z_$(lm2idx(1,  1)) = $(-Flm[1,1]) * c_1"))
-   push!(code, Meta.parse("Z_$(lm2idx(1, -1)) = $(-Flm[1,1]) * s_1"))
+   push!(code, Meta.parse("Z_$(lm2idx(1,  1)) = $(-Flm[1+1, 1+1]) * c_1"))
+   push!(code, Meta.parse("Z_$(lm2idx(1, -1)) = $(-Flm[1+1, 1+1]) * s_1"))
    # Q_1^0 and Y_1^0
    push!(code, Meta.parse("Q_1_0  = z"))
-   push!(code, Meta.parse("Z_$(lm2idx(1, 0)) = $(Flm[1, 0]/rt2) * Q_1_0 * c_0"))
+   push!(code, Meta.parse("Z_$(lm2idx(1, 0)) = $(Flm[1+1, 1+ 0]/rt2) * Q_1_0 * c_0"))
 
    # gradients       
-   push!(code, Meta.parse("dZ_$(lm2idx(1,  1)) = SA[ $(-Flm[1,1]), zero($T), zero($T) ]"))
-   push!(code, Meta.parse("dZ_$(lm2idx(1, -1)) = SA[ zero($T), $(-Flm[1,1]), zero($T) ]"))
-   push!(code, Meta.parse("dZ_$(lm2idx(1,  0)) = SA[ zero($T), zero($T), $(Flm[1, 0]/rt2) ]"))
+   push!(code, Meta.parse("dZ_$(lm2idx(1,  1)) = SA[ $(-Flm[1+1, 1+1]), zero($T), zero($T) ]"))
+   push!(code, Meta.parse("dZ_$(lm2idx(1, -1)) = SA[ zero($T), $(-Flm[1+1, 1+1]), zero($T) ]"))
+   push!(code, Meta.parse("dZ_$(lm2idx(1,  0)) = SA[ zero($T), zero($T), $(Flm[1+1, 1+ 0]/rt2) ]"))
 
    for l = 2:L 
       # Q_l^l => Y_l^l, Y_l^-l
       push!(code, Meta.parse("Q_$(l)_$(l)  = - $(2*l-1) * Q_$(l-1)_$(l-1)"))
-      push!(code, Meta.parse("Z_$(lm2idx(l, l))  = $(Flm[l,l]) * Q_$(l)_$(l) * c_$(l)"))
-      push!(code, Meta.parse("Z_$(lm2idx(l, -l)) = $(Flm[l, l]) * Q_$(l)_$(l) * s_$(l)"))
+      push!(code, Meta.parse("Z_$(lm2idx(l, l))  = $(Flm[1+l, 1+l]) * Q_$(l)_$(l) * c_$(l)"))
+      push!(code, Meta.parse("Z_$(lm2idx(l, -l)) = $(Flm[1+l, 1+ l]) * Q_$(l)_$(l) * s_$(l)"))
       # Q_l^l-1 => Y_l^l-1, Y_l^-l+1
       push!(code, Meta.parse("Q_$(l)_$(l-1)  = $(2*l-1) * z * Q_$(l-1)_$(l-1)"))
-      push!(code, Meta.parse("Z_$(lm2idx(l, -l+1)) = $(Flm[l, l-1]) * Q_$(l)_$(l-1) * s_$(l-1)"))
-      push!(code, Meta.parse("Z_$(lm2idx(l, l-1) ) = $(Flm[l, l-1]) * Q_$(l)_$(l-1) * c_$(l-1)" )) # overwrite if m = 0 -> ok 
+      push!(code, Meta.parse("Z_$(lm2idx(l, -l+1)) = $(Flm[1+l, 1+ l-1]) * Q_$(l)_$(l-1) * s_$(l-1)"))
+      push!(code, Meta.parse("Z_$(lm2idx(l, l-1) ) = $(Flm[1+l, 1+ l-1]) * Q_$(l)_$(l-1) * c_$(l-1)" )) # overwrite if m = 0 -> ok 
 
       # gradients 
-      push!(code, Meta.parse("dZ_$(lm2idx(l, l)) = $(Flm[l,l]) * Q_$(l)_$(l) * SA[ $l * c_$(l-1), - $l * s_$(l-1), zero($T) ]"))
-      push!(code, Meta.parse("dZ_$(lm2idx(l, -l)) = $(Flm[l,l]) * Q_$(l)_$(l) * SA[ $l * s_$(l-1),  $l * c_$(l-1), zero($T) ]"))
-      push!(code, Meta.parse("""dZ_$(lm2idx(l, -l+1)) = $(Flm[l, l-1]) * SA[ Q_$(l)_$(l-1) * $(l-1) * s_$(l-2), 
+      push!(code, Meta.parse("dZ_$(lm2idx(l, l)) = $(Flm[1+l, 1+l]) * Q_$(l)_$(l) * SA[ $l * c_$(l-1), - $l * s_$(l-1), zero($T) ]"))
+      push!(code, Meta.parse("dZ_$(lm2idx(l, -l)) = $(Flm[1+l, 1+l]) * Q_$(l)_$(l) * SA[ $l * s_$(l-1),  $l * c_$(l-1), zero($T) ]"))
+      push!(code, Meta.parse("""dZ_$(lm2idx(l, -l+1)) = $(Flm[1+l, 1+ l-1]) * SA[ Q_$(l)_$(l-1) * $(l-1) * s_$(l-2), 
                                                                              Q_$(l)_$(l-1) * $(l-1) * c_$(l-2), 
                                                                              $(2*l-1) * Q_$(l-1)_$(l-1) * s_$(l-1) ]"""))
-      push!(code, Meta.parse("""dZ_$(lm2idx(l,  l-1)) = $(Flm[l, l-1]) * SA[ Q_$(l)_$(l-1) * $(l-1) * c_$(l-2), 
+      push!(code, Meta.parse("""dZ_$(lm2idx(l,  l-1)) = $(Flm[1+l, 1+ l-1]) * SA[ Q_$(l)_$(l-1) * $(l-1) * c_$(l-2), 
                                                                              Q_$(l)_$(l-1) * $(-l+1) * s_$(l-2), 
                                                                              $(2*l-1) * Q_$(l-1)_$(l-1) * c_$(l-1) ]"""))
 
       # now we can go to the second recursion 
       for m = l-2:-1:1
          push!(code, Meta.parse("Q_$(l)_$(m)  = $((2*l-1)/(l-m)) * z * Q_$(l-1)_$m - $((l+m-1)/(l-m)) * r² * Q_$(l-2)_$(m)"))
-         push!(code, Meta.parse("Z_$(lm2idx(l,-m)) = $(Flm[l, m]) * Q_$(l)_$(m) * s_$(m)"))
-         push!(code, Meta.parse("Z_$(lm2idx(l,m) ) = $(Flm[l, m]) * Q_$(l)_$(m) * c_$(m)"))
+         push!(code, Meta.parse("Z_$(lm2idx(l,-m)) = $(Flm[1+l, 1+ m]) * Q_$(l)_$(m) * s_$(m)"))
+         push!(code, Meta.parse("Z_$(lm2idx(l,m) ) = $(Flm[1+l, 1+ m]) * Q_$(l)_$(m) * c_$(m)"))
 
          # gradients 
          push!(code, Meta.parse(""" 
-            dZ_$(lm2idx(l, -m)) = $(Flm[l, m]) * SA[ Q_$(l)_$(m) * $(m) * s_$(m-1) + x * Q_$(l-1)_$(m+1) * s_$(m), 
+            dZ_$(lm2idx(l, -m)) = $(Flm[1+l, 1+ m]) * SA[ Q_$(l)_$(m) * $(m) * s_$(m-1) + x * Q_$(l-1)_$(m+1) * s_$(m), 
                                                      Q_$(l)_$(m) * $(m) * c_$(m-1) + y * Q_$(l-1)_$(m+1) * s_$(m), 
                                                      $(l+m) * Q_$(l-1)_$(m) * s_$m ]"""))
          push!(code, Meta.parse("""
-            dZ_$(lm2idx(l, m)) = $(Flm[l, m]) * SA[ Q_$(l)_$(m) * $(m) * c_$(m-1) + x * Q_$(l-1)_$(m+1) * c_$(m), 
+            dZ_$(lm2idx(l, m)) = $(Flm[1+l, 1+ m]) * SA[ Q_$(l)_$(m) * $(m) * c_$(m-1) + x * Q_$(l-1)_$(m+1) * c_$(m), 
                                                     Q_$(l)_$(m) * $(-m) * s_$(m-1) + y * Q_$(l-1)_$(m+1) * c_$(m), 
                                                     $(l+m) * Q_$(l-1)_$(m) * c_$m ]"""))
       end
@@ -134,11 +134,11 @@ function _codegen_Zlm_grads(L, T, normalisation)
       # special-case m = 0 
       if l >= 2 
          push!(code, Meta.parse("Q_$(l)_0  = $((2*l-1)/l) * z * Q_$(l-1)_0 - $((l-1)/(l)) * r² * Q_$(l-2)_0"))
-         push!(code, Meta.parse("Z_$(lm2idx(l,0) ) = $(Flm[l, 0] / rt2) * Q_$(l)_0"))
+         push!(code, Meta.parse("Z_$(lm2idx(l,0) ) = $(Flm[1+l, 1+ 0] / rt2) * Q_$(l)_0"))
 
          # gradients
          # dZ[j, il0] = F_l_0_f * cj * SA[Q_l0_x, Q_l0_y, Q_l0_z ]                                                 
-         push!(code, Meta.parse("dZ_$(lm2idx(l, 0)) = $(Flm[l, 0] / rt2) * SA[ Q_$(l-1)_1 * x, Q_$(l-1)_1 * y, $(l) * Q_$(l-1)_0 ]"))
+         push!(code, Meta.parse("dZ_$(lm2idx(l, 0)) = $(Flm[1+l, 1+ 0] / rt2) * SA[ Q_$(l-1)_1 * x, Q_$(l-1)_1 * y, $(l) * Q_$(l-1)_0 ]"))
       end
    end
 

@@ -36,8 +36,8 @@ Z, ∇Z = compute_with_gradients(basis, 𝐫) # or Rs
 ```
 See documentation for more details.
 """
-struct SolidHarmonics{L, NORM, STATIC, T1}
-   Flm::OffsetMatrix{T1, Matrix{T1}}
+struct SolidHarmonics{L, NORM, STATIC, TF}
+   Flm::TF
 end
 
 function SolidHarmonics(L::Integer; 
@@ -46,7 +46,10 @@ function SolidHarmonics(L::Integer;
                         T = Float64) 
    Flm = generate_Flms(L; normalisation = normalisation, T = T)
    @assert eltype(Flm) == T   
-   SolidHarmonics{L, normalisation, static, T}(Flm)
+   if static 
+      Flm = SMatrix{size(Flm, 1), size(Flm, 2)}(Flm)
+   end
+   SolidHarmonics{L, normalisation, static, typeof(Flm)}(Flm)
 end
 
 @inline (basis::SolidHarmonics)(args...) = compute(basis, args...)
@@ -57,31 +60,31 @@ end
    return static_solid_harmonics(Val{L}(), 𝐫, Val{NORM}())
 end 
 
-function compute(basis::SolidHarmonics{L, NORM, false, T1}, 𝐫::SVector{3, T2}
-         ) where {L, NORM, T1, T2}
-   T = promote_type(T1, T2)
+function compute(basis::SolidHarmonics{L, NORM, false}, 𝐫::SVector{3, T}
+         ) where {L, NORM, T}
    Z = zeros(T, sizeY(L))
    Zmat = reshape(Z, 1, :)   # this is a view, not a copy!
    compute!(Zmat, basis, SA[𝐫,])
    return Z 
 end 
 
-function compute(basis::SolidHarmonics{L, NORM, STATIC, T1}, 
-                  Rs::AbstractVector{SVector{3, T2}}
-                  ) where {L, NORM, STATIC, T1, T2}
-   T = promote_type(T1, T2)
-   Z = zeros(T, length(Rs), sizeY(L)) # we could make this cached as well 
+function compute(basis::SolidHarmonics{L, NORM, STATIC}, 
+                  Rs::AbstractVector{SVector{3, T}}
+                  ) where {L, NORM, STATIC, T}
+   # note here we are NOT using the type of the Flm. If the Flm type  is 
+   # different from the Rs type then there will be an implicit conversion 
+   Z = similar(Rs, T, (length(Rs), sizeY(L))) # we could make this cached as well 
    compute!(Z, basis, Rs)
    return Z
 end
 
+
 function compute!(Z::AbstractMatrix, 
-                  basis::SolidHarmonics{L, NORM, STATIC, T1}, 
-                  Rs::AbstractVector{SVector{3, T2}}
-                  ) where {L, NORM, STATIC, T1, T2}
+                  basis::SolidHarmonics{L, NORM, STATIC}, 
+                  Rs::AbstractVector{SVector{3, T}}
+                  ) where {L, NORM, STATIC, T}
 
    nX = length(Rs)
-   T = promote_type(T1, T2)
 
    @no_escape begin 
 
@@ -107,10 +110,9 @@ end
 
 # ---------- gradients 
 
-function compute_with_gradients(basis::SolidHarmonics{L, NORM, false, T1}, 
-                                𝐫::SVector{3, T2}
-                               ) where {L, NORM, T1, T2}
-   T = promote_type(T1, T2)
+function compute_with_gradients(basis::SolidHarmonics{L, NORM, false}, 
+                                𝐫::SVector{3, T}
+                               ) where {L, NORM, T}
    Z = zeros(T, sizeY(L))
    dZ = zeros(SVector{3, T}, sizeY(L))
    Zmat = reshape(Z, 1, :)   # this is a view, not a copy!
@@ -119,19 +121,18 @@ function compute_with_gradients(basis::SolidHarmonics{L, NORM, false, T1},
    return Z, dZ 
 end 
 
-function compute_with_gradients(basis::SolidHarmonics{L, NORM, true, T1}, 
-                                𝐫::SVector{3, T2}
-                               ) where {L, NORM, T1, T2}
+function compute_with_gradients(basis::SolidHarmonics{L, NORM, true}, 
+                                𝐫::SVector{3, T}
+                               ) where {L, NORM, T}
    return static_solid_harmonics_with_grads(Val{L}(), 𝐫, Val{NORM}())
 end 
 
 
-function compute_with_gradients(basis::SolidHarmonics{L, NORM, STATIC, T1}, 
-                                Rs::AbstractVector{SVector{3, T2}}
-                                ) where {L, NORM, STATIC, T1, T2}
-   T = promote_type(T1, T2)
-   Z = zeros(T, length(Rs), sizeY(L)) # we could make this cached as well 
-   dZ = zeros(SVector{3, T}, length(Rs), sizeY(L)) 
+function compute_with_gradients(basis::SolidHarmonics{L, NORM, STATIC}, 
+                                Rs::AbstractVector{SVector{3, T}}
+                                ) where {L, NORM, STATIC, T}
+   Z = similar(Rs, T, (length(Rs), sizeY(L))) # we could make this cached as well 
+   dZ = similar(Rs, SVector{3, T}, (length(Rs), sizeY(L))) 
    compute_with_gradients!(Z, dZ, basis, Rs)
    return Z, dZ 
 end
@@ -141,12 +142,11 @@ end
 function compute_with_gradients!(
             Z::AbstractMatrix, 
             dZ::AbstractMatrix,
-            basis::SolidHarmonics{L, NORM, STATIC, T1}, 
-            Rs::AbstractVector{SVector{3, T2}}
-            ) where {L, NORM, STATIC, T1, T2}
+            basis::SolidHarmonics{L, NORM, STATIC}, 
+            Rs::AbstractVector{SVector{3, T}}
+            ) where {L, NORM, STATIC, T}
 
    nX = length(Rs)
-   T = promote_type(T1, T2)
 
    @no_escape begin 
 
