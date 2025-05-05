@@ -4,7 +4,7 @@ import pytest
 import sphericart
 
 
-@pytest.mark.parametrize("normalized", [False, True])
+@pytest.mark.parametrize("normalized", [False, True], ids=["solid", "spherical"])
 @pytest.mark.parametrize("l_max", [0, 3, 7, 10, 20, 50])
 def test_no_points(l_max, normalized):
     xyz = np.empty((0, 3))

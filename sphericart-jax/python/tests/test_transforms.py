@@ -24,7 +24,7 @@ def test_script(xyz):
     jax.grad(jcompute)(xyz)
 
 
-@pytest.mark.parametrize("normalized", [True, False])
+@pytest.mark.parametrize("normalized", [True, False], ids=["spherical", "solid"])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_jit(xyz, l_max, normalized):
     function = (
@@ -42,7 +42,7 @@ def test_jit(xyz, l_max, normalized):
     np.testing.assert_allclose(sph, sph_ref, rtol=2e-5, atol=1e-6)
 
 
-@pytest.mark.parametrize("normalized", [True, False])
+@pytest.mark.parametrize("normalized", [True, False], ids=["spherical", "solid"])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_vmap(xyz, l_max, normalized):
     function = (
@@ -60,7 +60,7 @@ def test_vmap(xyz, l_max, normalized):
     np.testing.assert_allclose(sph, sph_ref, rtol=2e-5, atol=1e-6)
 
 
-@pytest.mark.parametrize("normalized", [True, False])
+@pytest.mark.parametrize("normalized", [True, False], ids=["spherical", "solid"])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_jit_jacfwd(xyz, l_max, normalized):
     function = (
@@ -72,7 +72,7 @@ def test_jit_jacfwd(xyz, l_max, normalized):
     transformed_sph(xyz, l_max)
 
 
-@pytest.mark.parametrize("normalized", [True, False])
+@pytest.mark.parametrize("normalized", [True, False], ids=["spherical", "solid"])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_hessian_jit(xyz, l_max, normalized):
     function = (
@@ -84,7 +84,7 @@ def test_hessian_jit(xyz, l_max, normalized):
     transformed_sph(xyz, l_max)
 
 
-@pytest.mark.parametrize("normalized", [True, False])
+@pytest.mark.parametrize("normalized", [True, False], ids=["spherical", "solid"])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_vmap_grad(xyz, l_max, normalized):
     function = (
@@ -101,7 +101,7 @@ def test_vmap_grad(xyz, l_max, normalized):
     sh_grad(xyz, l_max)
 
 
-@pytest.mark.parametrize("normalized", [True, False])
+@pytest.mark.parametrize("normalized", [True, False], ids=["spherical", "solid"])
 @pytest.mark.parametrize("l_max", [4, 7, 10])
 def test_vmap_hessian(xyz, l_max, normalized):
     function = (
