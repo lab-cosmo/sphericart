@@ -3,8 +3,7 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-from jax import core
-from jax.core import ShapedArray
+from jax.extend import core
 from jax.interpreters import ad, mlir, xla
 from jax.interpreters.mlir import custom_call, ir
 
@@ -33,7 +32,7 @@ def dsph_abstract_eval(xyz, l_max, normalized, *, l_max_c, normalized_c):
     dtype = xyz.dtype
     sph_shape = xyz.shape[:-1] + (sph_size,)
     dsph_shape = xyz.shape[:-1] + (3, sph_size)
-    return ShapedArray(sph_shape, dtype), ShapedArray(dsph_shape, dtype)
+    return core.ShapedArray(sph_shape, dtype), core.ShapedArray(dsph_shape, dtype)
 
 
 _dsph_p.def_abstract_eval(dsph_abstract_eval)
