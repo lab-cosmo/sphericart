@@ -31,7 +31,6 @@ jobs:
         uses: julia-actions/setup-julia@v1
         with:
           version: '1.10'
-          version: '1.11'
 
       - name: install tests dependencies
         run: |
