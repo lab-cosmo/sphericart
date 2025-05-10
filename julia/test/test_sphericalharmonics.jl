@@ -48,9 +48,15 @@ end
 @info("test gradients")
 
 function fwd_grad_1(basis, 𝐫)
-   Z = basis(𝐫)
-   dZ = ForwardDiff.jacobian(basis, 𝐫)'
-   return Z, [ SVector{3, eltype(𝐫)}(dZ[:, i]...) for i = 1:length(Z) ]
+   _part3(TV, i) = ForwardDiff.Partials(ntuple(j -> one(TV) * (i==j), 3))
+   _dual(𝐫::SVector{N, T}) where {N, T} = 
+               SVector{N}( ntuple(j -> ForwardDiff.Dual(𝐫[j], _part3(T, j)), N)... )
+
+   𝐫d = _dual(𝐫)               
+   Zd = basis(𝐫d)
+   Z = ForwardDiff.value.(Zd)
+   ∇Z = SVector{3}.(ForwardDiff.partials.(Zd))
+   return Z, ∇Z
 end
 
 for ntest = 1:30 

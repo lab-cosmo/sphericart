@@ -4,11 +4,11 @@
 # Generates the `F[l, m]` values exactly as described in the 
 # `sphericart` publication.  This gives L2-orthonormality. 
 function _generate_Flms(L::Integer, ::Union{Val{:sphericart}, Val{:L2}}, T=Float64)
-   Flm = OffsetMatrix(zeros(L+1, L+1), (-1, -1))
+   Flm = zeros(T, L+1, L+1)
    for l = 0:L
-      Flm[l, 0] = sqrt((2*l+1)/(2 * π))
+      Flm[1+ l, 1+ 0] = sqrt((2*l+1)/(2 * π))
       for m = 1:l 
-         Flm[l, m] = - Flm[l, m-1] / sqrt((l+m) * (l+1-m))
+         Flm[1+ l, 1+ m] = - Flm[1+ l, 1+ m-1] / sqrt((l+m) * (l+1-m))
       end
    end
    return Flm
@@ -18,7 +18,7 @@ function _generate_Flms(L::Integer, ::Val{:racah}, T=Float64)
    Flm = _generate_Flms(L, Val(:L2), T)
    for l = 0:L 
       for m = 0:l
-         Flm[l, m] = Flm[l, m] * sqrt(4*pi/(2*l+1))
+         Flm[1+ l, 1+ m] = Flm[1+ l, 1+ m] * sqrt(4*pi/(2*l+1))
       end
    end
    return Flm
