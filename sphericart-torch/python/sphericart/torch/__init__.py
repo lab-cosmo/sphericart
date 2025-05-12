@@ -1,14 +1,13 @@
+import glob
 import os
+import re
 import sys
 from collections import namedtuple
 
 import torch
 
-import re
-import glob
-
-from .spherical_hamonics import SphericalHarmonics, SolidHarmonics  # noqa: F401
-from .e3nn import patch_e3nn, unpatch_e3nn, e3nn_spherical_harmonics  # noqa: F401
+from .e3nn import e3nn_spherical_harmonics, patch_e3nn, unpatch_e3nn  # noqa: F401
+from .spherical_hamonics import SolidHarmonics, SphericalHarmonics  # noqa: F401
 
 
 Version = namedtuple("Version", ["major", "minor", "patch"])
