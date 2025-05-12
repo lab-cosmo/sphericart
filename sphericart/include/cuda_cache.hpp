@@ -313,8 +313,7 @@ class CachedKernel {
             NVRTC_INSTANCE.nvrtcGetLoweredName(prog, this->kernel_name.c_str(), &lowered_name)
         );
         CUfunction kernel;
-        CUDADRIVER_SAFE_CALL(CUDA_DRIVER_INSTANCE.cuModuleGetFunction(&kernel, module, lowered_name)
-        );
+        CUDADRIVER_SAFE_CALL(CUDA_DRIVER_INSTANCE.cuModuleGetFunction(&kernel, module, lowered_name));
 
         this->module = module;
         this->function = kernel;

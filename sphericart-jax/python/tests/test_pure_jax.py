@@ -42,7 +42,6 @@ def test_jacrev(xyz, l_max):
 
 @pytest.mark.parametrize("l_max", [2, 7])
 def test_gradgrad(xyz, l_max):
-
     def sum_sph(x, l_max):
         return jnp.sum(sphericart.jax.spherical_harmonics(x, l_max))
 

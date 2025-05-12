@@ -1,9 +1,11 @@
-import jax
-from packaging import version
 import warnings
 
+from packaging import version
+
+import jax
+
 from .lib import sphericart_jax_cpu
-from .spherical_harmonics import spherical_harmonics, solid_harmonics  # noqa: F401
+from .spherical_harmonics import solid_harmonics, spherical_harmonics  # noqa: F401
 
 
 def get_minimum_cuda_version_for_jax(jax_version):

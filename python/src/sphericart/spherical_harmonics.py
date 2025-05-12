@@ -22,7 +22,7 @@ class SphericalHarmonics:
     Then, the :py:func:`compute` method can be called on an array of 3D
     Cartesian points to compute the spherical harmonics
 
-    >>> xyz = np.random.normal(size=(10,3))
+    >>> xyz = np.random.normal(size=(10, 3))
     >>> sh_values = sh.compute(xyz)
     >>> sh_values.shape
     (10, 81)
@@ -74,7 +74,7 @@ class SphericalHarmonics:
         >>> import numpy as np
         >>> import sphericart as sc
         >>> sh = sc.SphericalHarmonics(l_max=8)
-        >>> xyz = np.random.normal(size=(10,3))
+        >>> xyz = np.random.normal(size=(10, 3))
         >>> sh_values = sh.compute(xyz)
         >>> sh_values.shape
         (10, 81)
@@ -137,7 +137,7 @@ class SphericalHarmonics:
         >>> import numpy as np
         >>> import sphericart as sc
         >>> sh = sc.SphericalHarmonics(l_max=8)
-        >>> xyz = np.random.normal(size=(10,3))
+        >>> xyz = np.random.normal(size=(10, 3))
         >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
         >>> sh_grads.shape
         (10, 3, 81)
@@ -224,7 +224,7 @@ class SphericalHarmonics:
         >>> import numpy as np
         >>> import sphericart as sc
         >>> sh = sc.SphericalHarmonics(l_max=8, normalized=False)
-        >>> xyz = np.random.normal(size=(10,3))
+        >>> xyz = np.random.normal(size=(10, 3))
         >>> sh_values, sh_grads, sh_hessians = sh.compute_with_hessians(xyz)
         >>> sh_values.shape
         (10, 81)
