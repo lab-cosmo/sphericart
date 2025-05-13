@@ -1,7 +1,7 @@
 name = "SpheriCart"
 uuid = "5caf2b29-02d9-47a3-9434-5931c85ba645"
 authors = ["Christoph Ortner <christophortner@gmail.com> and contributors"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
@@ -15,7 +15,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 [compat]
 BenchmarkTools = "1.6.0"
 Bumper = "0.7.0"
-ForwardDiff = "1.0.1"
+ForwardDiff = "0.10, 1.0.1"
 GPUArraysCore = "0.2.0"
 KernelAbstractions = "0.9.34"
 LinearAlgebra = "1.10"
