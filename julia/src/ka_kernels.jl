@@ -62,6 +62,24 @@ function solid_harmonics_with_grad!(
    ka_solid_harmonics!(Z, dZ, Val{L}(), Rs, Flm, GRPSZ)
 end
 
+function ka_solid_harmonics!(
+               Z::AbstractArray, 
+               ::Val{L}, 
+               Rs::AbstractArray, 
+               Flm::Union{AbstractArray, SMatrix}, 
+               GRPSZ = 32) where {L}
+   ka_solid_harmonics!(Z, nothing, Val{L}(), Rs, Flm, GRPSZ)
+end
+
+
+function ka_solid_harmonics_with_grad!(
+               Z::AbstractArray, dZ::AbstractArray, 
+               ::Val{L}, 
+               Rs::AbstractArray, 
+               Flm::Union{AbstractArray, SMatrix}, 
+               GRPSZ = 32) where {L} 
+   ka_solid_harmonics!(Z, dZ, Val{L}(), Rs, Flm, GRPSZ)
+end
 
 
 

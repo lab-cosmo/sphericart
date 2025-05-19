@@ -47,7 +47,7 @@ Z1 = compute(basis, Rs)
 
 @info("test GPU-KA execution")
 Z2 = gpu(zeros(Float32, size(Z1)))
-SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, basis.Flm, GRPSIZE)
+SpheriCart.ka_solid_harmonics!(Z2, Val(L), Rs_gpu, basis.Flm, GRPSIZE)
 @show norm(Z1 - Array(Z2), Inf) / L^2
 @test norm(Z1 - Array(Z2), Inf) / L^2 < 1e-7
 
@@ -70,7 +70,7 @@ SpheriCart.ka_solid_harmonics!(Z3, nothing, Val{L}(), Rs, basis.Flm)
 Z1, ∇Z1 = compute_with_gradients(basis, Rs)
 Z4 = gpu(zeros(Float32, size(Z1)))
 ∇Z4 = gpu(zeros(SVector{3, Float32}, size(Z1)))
-SpheriCart.solid_harmonics_with_grad!(Z4, ∇Z4, Val{L}(), Rs_gpu, basis.Flm, GRPSIZE)
+SpheriCart.ka_solid_harmonics_with_grad!(Z4, ∇Z4, Val{L}(), Rs_gpu, basis.Flm, GRPSIZE)
 
 Z4a, ∇Z4a = compute_with_gradients(basis, Rs_gpu)
 
