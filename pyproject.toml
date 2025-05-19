@@ -54,11 +54,13 @@ namespaces = false
 
 ### ======================================================================== ###
 
-[tool.isort]
-skip = "__init__.py"
-profile = "black"
-line_length = 88
-indent = 4
-include_trailing_comma = true
-lines_after_imports = 2
-known_first_party = ["sphericart"]
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]
+ignore = ["B018", "B904"]
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+known-first-party = ["sphericart"]
+
+[tool.ruff.format]
+docstring-code-format = true
