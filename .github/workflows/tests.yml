@@ -28,9 +28,9 @@ jobs:
           python-version: "3.12"
 
       - name: setup Julia
-        uses: julia-actions/setup-julia@v1
+        uses: julia-actions/setup-julia@v2
         with:
-          version: '1.10'
+          version: '1.11'
 
       - name: install tests dependencies
         run: |
@@ -53,10 +53,9 @@ jobs:
 
       - name: run Julia tests
         run: |
-          cd julia/test/
-          julia --project=.. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
-          julia --project=.. runtests.jl
-          cd python/
+          cd julia
+          julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); Pkg.test();'
+          cd test/python/
           julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.instantiate();'
           python -m pip install numpy pytest sphericart julia
           python -m pytest .
