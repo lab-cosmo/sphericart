@@ -48,7 +48,7 @@ class SphericalHarmonics(torch.nn.Module):
     >>> import torch
     >>> import sphericart.torch
     >>> sh = sphericart.torch.SphericalHarmonics(l_max=8)
-    >>> xyz = torch.rand(size=(10,3))
+    >>> xyz = torch.rand(size=(10, 3))
     >>> sh_values, sh_grads = sh.compute_with_gradients(xyz)
     >>> sh_grads.shape
     torch.Size([10, 3, 81])
