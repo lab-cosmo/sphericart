@@ -57,7 +57,7 @@ function solid_harmonics!(Z::AbstractMatrix, ::Val{L},
 
       # fill Q_0^0 and Z_0^0 
       Q[j, i00] = one(T)
-      Z[j, i00] = (Flm[0,0]/rt2) * Q[j, i00]
+      Z[j, i00] = (Flm[1+0,1+0]/rt2) * Q[j, i00]
    end
 
    @inbounds for l = 1:L 
@@ -66,8 +66,8 @@ function solid_harmonics!(Z::AbstractMatrix, ::Val{L},
       ill⁻¹ = lm2idx(l, l-1)
       il⁻¹l⁻¹ = lm2idx(l-1, l-1)
       il⁻l⁺¹ = lm2idx(l, -l+1)
-      F_l_l = Flm[l,l]
-      F_l_l⁻¹ = Flm[l,l-1]
+      F_l_l = Flm[1+l,1+l]
+      F_l_l⁻¹ = Flm[1+l,1+l-1]
       @simd ivdep for j = 1:nX 
          # Q_l^l and Y_l^l
          # m = l 
@@ -88,7 +88,7 @@ function solid_harmonics!(Z::AbstractMatrix, ::Val{L},
          il⁻m = lm2idx(l, -m)
          il⁻¹m = lm2idx(l-1, m)
          il⁻²m = lm2idx(l-2, m)
-         F_l_m = Flm[l,m]
+         F_l_m = Flm[1+l,1+m]
          @simd ivdep for j = 1:nX 
             Q[j, ilm] = ((2*l-1) * z[j] * Q[j, il⁻¹m] - (l+m-1) * r²[j] * Q[j, il⁻²m]) / (l-m)
             Z[j, il⁻m] = F_l_m * Q[j, ilm] * s[j, m+1]   # m -> m+1
@@ -174,7 +174,7 @@ function solid_harmonics_with_grad!(
    @inbounds @simd ivdep for j = 1:nX
       # fill Q_0^0 and Z_0^0 
       Q[j, i00] = one(T)
-      Z[j, i00] = (Flm[0,0]/rt2) * Q[j, i00]
+      Z[j, i00] = (Flm[1+0,1+0]/rt2) * Q[j, i00]
 
       # gradients 
       dZ[j, i00] = zero(SVector{3, T})
@@ -185,8 +185,8 @@ function solid_harmonics_with_grad!(
    i1⁻1 = lm2idx(1, -1)
    i00 = lm2idx(0, 0)
    i10 = lm2idx(1, 0)
-   F_1_1 = Flm[1,1]
-   F_1_0 = Flm[1,0]
+   F_1_1 = Flm[1+1,1+1]
+   F_1_0 = Flm[1+1,1+0]
 
    @inbounds @simd ivdep for j = 1:nX 
       # Q_1^1, Y_1^1, Y_1^-1
@@ -215,8 +215,8 @@ function solid_harmonics_with_grad!(
       il⁻l⁺¹ = lm2idx(l, -l+1)
       il⁻¹l = lm2idx(l-1, l)
       
-      F_l_l = Flm[l,l]
-      F_l_l⁻¹ = Flm[l,l-1]
+      F_l_l = Flm[1+l,1+l]
+      F_l_l⁻¹ = Flm[1+l,1+l-1]
 
       @simd ivdep for j = 1:nX 
          # Q_l^l and Y_l^l
@@ -260,7 +260,7 @@ function solid_harmonics_with_grad!(
          il⁻¹m⁺¹ = lm2idx(l-1, m+1)
          _f = (m == 0) ? _1/rt2 : _1
 
-         F_l_m = Flm[l,m]
+         F_l_m = Flm[1+l,1+m]
          F_l_m_f = F_l_m * _f
 
          @simd ivdep for j = 1:nX 
@@ -296,7 +296,7 @@ function solid_harmonics_with_grad!(
          il⁻²0 = lm2idx(l-2, 0)
          il⁻¹1 = lm2idx(l-1, 1)
 
-         F_l_0_f = Flm[l,0] / rt2
+         F_l_0_f = Flm[1+l,1+0] / rt2
 
          @simd ivdep for j = 1:nX 
             cj = c[j, 1]; sj = s[j, 1]   # 1 => m = 0

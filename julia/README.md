@@ -7,7 +7,6 @@ Filippo Bigi, Guillaume Fraux, Nicholas J. Browning and Michele Ceriotti;
 J. Chem. Phys. 159, 064802 (2023); arXiv:2302.08381
 ```
 
-
 `SpheriCart.jl` is released under MIT license and under Apache 2.0 license.
 
 ## Installation 
@@ -16,9 +15,10 @@ Install the package by opening a REPL, switch to the package manager by typing `
 
 ## Basic Usage
 
-There are two implementations of real solid harmonics and real spherical harmonics
+There are currently three implementations of real solid harmonics and real spherical harmonics
 - a generated  implementation for a single `𝐫::SVector{3, T}` input, returning the spherical harmonics as an `SVector{T}`. 
 - a generic implementation that is optimized for evaluating over batches of inputs, exploiting SIMD vectorization. 
+- an experimental implementation based on KernelAbstractions, which should run on CPU, as well as NVIDIA, AMD, Apple or Intel GPU devices. Since this is still experimental, it is not properly documented and not entirely consistent with the API; see `test/test_ka.jl` for usage.
 
 For large enough batches (system dependent) the second implementation is comparable to or faster than broadcasting over the generated implementation. For single inputs, the generated implementation is far superior in performance. 
 
