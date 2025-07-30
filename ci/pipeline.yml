@@ -30,7 +30,7 @@ test:
     - mkdir buildcpp
     - cmake -B buildcpp -S . -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_ENABLE_CUDA=ON -DSPHERICART_BUILD_TORCH=ON
     - cmake --build buildcpp --parallel
-    - ctest
+    - ctest --test-dir buildcpp --output-on-failure
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_PARTITION: normal
