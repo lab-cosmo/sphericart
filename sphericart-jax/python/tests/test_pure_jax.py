@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 from pure_jax_sph import pure_jax_spherical_harmonics
+from utils import jax_float64
 
 import sphericart.jax
 
@@ -14,12 +15,12 @@ def xyz():
 
 @pytest.mark.parametrize("l_max", [2, 7])
 def test_jit(xyz, l_max):
-    jax.config.update("jax_enable_x64", True)
-    jitted_sph = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1,))
-    pure_jax_jitted_sph = jax.jit(pure_jax_spherical_harmonics, static_argnums=1)
-    sph = jitted_sph(xyz=xyz, l_max=l_max)
-    sph_pure_jax = pure_jax_jitted_sph(xyz, l_max)
-    assert jnp.allclose(sph, sph_pure_jax, atol=1e-5, rtol=1e-4)
+    with jax_float64():
+        jitted_sph = jax.jit(sphericart.jax.spherical_harmonics, static_argnums=(1,))
+        pure_jax_jitted_sph = jax.jit(pure_jax_spherical_harmonics, static_argnums=1)
+        sph = jitted_sph(xyz=xyz, l_max=l_max)
+        sph_pure_jax = pure_jax_jitted_sph(xyz, l_max)
+        assert jnp.allclose(sph, sph_pure_jax, atol=1e-5, rtol=1e-4)
 
 
 @pytest.mark.parametrize("l_max", [2, 7])

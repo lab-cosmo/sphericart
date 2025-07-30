@@ -2,28 +2,38 @@ include:
   - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
 
 stages:
+  - build
   - test
 
-test_job:
+build:
+  stage: build
+  extends: .container-builder-cscs-gh200
+  before_script:
+    - TAG_DOCKERFILE=`sha256sum $DOCKERFILE | head -c 8`
+    - TAG=${TAG_DOCKERFILE}
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/base/mtt-base:$TAG
+    - echo "BASE_IMAGE=$PERSIST_IMAGE_NAME" > build.env
+    - 'echo "INFO: Building image $PERSIST_IMAGE_NAME"'
+  artifacts:
+    reports:
+      dotenv: build.env
+  variables:
+    DOCKERFILE: ci/containers/Containerfile
+
+test:
   stage: test
   extends: .container-runner-daint-gh200
-  image: nvcr.io/nvidia/pytorch:24.12-py3
-  timeout: 2h
+  image: $BASE_IMAGE
+  timeout: 1h
   script:
-    - export CUDA_HOME="/usr/local/cuda"
-    - python3 -m pip install --upgrade pip
-    - python3 -m pip install tox
-    - tox
-    - export Torch_DIR=/usr/local/lib/python3.12/dist-packages/torch/share/cmake/Torch/
+    - tox -r
     - mkdir buildcpp
-    - cd buildcpp
-    - cmake .. -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_ENABLE_CUDA=ON -DSPHERICART_BUILD_TORCH=ON
-    - cmake --build . --parallel
-    - ctest
-
+    - cmake -B buildcpp -S . -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_ENABLE_CUDA=ON -DSPHERICART_BUILD_TORCH=ON
+    - cmake --build buildcpp --parallel
+    - ctest --test-dir buildcpp --output-on-failure
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_PARTITION: normal
     SLURM_NTASKS: 1
-    SLURM_TIMELIMIT: '02:30:00'
+    SLURM_TIMELIMIT: '00:30:00'
     GIT_STRATEGY: fetch

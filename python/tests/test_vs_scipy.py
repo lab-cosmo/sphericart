@@ -14,10 +14,10 @@ def scipy_real_sph(xyz, l, m):  # noqa E741
     y = xyz[:, 1]
     z = xyz[:, 2]
     r = np.sqrt(x**2 + y**2 + z**2)
-    theta = np.arccos(z / r)
-    phi = np.arctan2(y, x)
-    complex_sh_scipy_l_m = scipy.special.sph_harm(m, l, phi, theta)
-    complex_sh_scipy_l_negm = scipy.special.sph_harm(-m, l, phi, theta)
+    phi = np.arccos(z / r)
+    theta = np.arctan2(y, x)
+    complex_sh_scipy_l_m = scipy.special.sph_harm_y(l, m, phi, theta)
+    complex_sh_scipy_l_negm = scipy.special.sph_harm_y(l, -m, phi, theta)
 
     if m > 0:
         sh_scipy_l_m = (
