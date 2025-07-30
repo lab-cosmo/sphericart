@@ -44,7 +44,7 @@ def get_minimum_cuda_version_for_jax(jax_version):
 
 # register the operations to xla
 for _name, _value in sphericart_jax_cpu.registrations().items():
-    jax.lib.xla_client.register_custom_call_target(_name, _value, platform="cpu")
+    jax.ffi.register_ffi_target(_name, _value, platform="cpu", api_version=0)
 
 has_sphericart_jax_cuda = False
 try:
@@ -53,7 +53,7 @@ try:
     has_sphericart_jax_cuda = True
     # register the operations to xla
     for _name, _value in sphericart_jax_cuda.registrations().items():
-        jax.lib.xla_client.register_custom_call_target(_name, _value, platform="gpu")
+        jax.ffi.register_ffi_target(_name, _value, platform="gpu", api_version=0)
 except ImportError:
     has_sphericart_jax_cuda = False
     pass
