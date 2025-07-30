@@ -27,9 +27,9 @@ test:
   timeout: 1h
   script:
     - tox -r
-    - mkdir build
-    - cmake -B build -S . -GNinja -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_ENABLE_CUDA=ON -DSPHERICART_BUILD_TORCH=ON
-    - cmake --build build --parallel
+    - mkdir buildcpp
+    - cmake -B buildcpp -S . -GNinja -DSPHERICART_BUILD_TESTS=ON -DSPHERICART_OPENMP=ON -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_ENABLE_CUDA=ON -DSPHERICART_BUILD_TORCH=ON
+    - cmake --build buildcpp --parallel
     - ctest
   variables:
     SLURM_JOB_NUM_NODES: 1
