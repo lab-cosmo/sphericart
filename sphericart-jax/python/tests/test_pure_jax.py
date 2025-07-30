@@ -2,9 +2,9 @@ import jax
 import jax.numpy as jnp
 import pytest
 from pure_jax_sph import pure_jax_spherical_harmonics
+from utils import jax_float64
 
 import sphericart.jax
-from utils import jax_float64
 
 
 @pytest.fixture
