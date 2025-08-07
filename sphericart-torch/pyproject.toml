@@ -4,7 +4,7 @@ requires-python = ">=3.9"
 dynamic = ["version", "dependencies"]
 
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0 or MIT"
 description = "TorchScript bindings to sphericart"
 authors = [
     {name = "Filippo Bigi"},
@@ -17,7 +17,6 @@ keywords = ["spherical harmonics", "torch"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: POSIX",
     "Operating System :: MacOS :: MacOS X",
     "Environment :: GPU :: NVIDIA CUDA",
@@ -38,7 +37,7 @@ repository = "https://github.com/lab-cosmo/sphericart"
 
 [build-system]
 requires = [
-    "setuptools >=44",
+    "setuptools >=77",
     "wheel >=0.36",
     "cmake >=3.30",
 ]
