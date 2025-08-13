@@ -72,32 +72,32 @@ if (SPHERICART_TORCH_BUILD_FOR_PYTHON)
     set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
     # First try using the `nvidia.cudnn` package (dependency of torch on PyPI)
-    execute_process(
-        COMMAND ${PYTHON_EXECUTABLE} -c "import nvidia.cudnn, os; print(os.path.dirname(nvidia.cudnn.__file__))"
-        RESULT_VARIABLE CUDNN_CMAKE_PATH_RESULT
-        OUTPUT_VARIABLE CUDNN_CMAKE_PATH_OUTPUT
-        ERROR_VARIABLE CUDNN_CMAKE_PATH_ERROR
-    )
-    if (${CUDNN_CMAKE_PATH_RESULT} EQUAL 0)
-        string(STRIP ${CUDNN_CMAKE_PATH_OUTPUT} CUDNN_CMAKE_PATH_OUTPUT)
-        set(CUDNN_ROOT ${CUDNN_CMAKE_PATH_OUTPUT})
-    else()
-        # Otherwise try to find CuDNN inside PyTorch itself
-        set(CUDNN_ROOT ${TORCH_CMAKE_PATH_OUTPUT}/../..)
+    # execute_process(
+    #     COMMAND ${PYTHON_EXECUTABLE} -c "import nvidia.cudnn, os; print(os.path.dirname(nvidia.cudnn.__file__))"
+    #     RESULT_VARIABLE CUDNN_CMAKE_PATH_RESULT
+    #     OUTPUT_VARIABLE CUDNN_CMAKE_PATH_OUTPUT
+    #     ERROR_VARIABLE CUDNN_CMAKE_PATH_ERROR
+    # )
+    # if (${CUDNN_CMAKE_PATH_RESULT} EQUAL 0)
+    #     string(STRIP ${CUDNN_CMAKE_PATH_OUTPUT} CUDNN_CMAKE_PATH_OUTPUT)
+    #     set(CUDNN_ROOT ${CUDNN_CMAKE_PATH_OUTPUT})
+    # else()
+    #     # Otherwise try to find CuDNN inside PyTorch itself
+    #     set(CUDNN_ROOT ${TORCH_CMAKE_PATH_OUTPUT}/../..)
 
-        if (NOT EXISTS ${CUDNN_ROOT}/include/cudnn_version.h)
-            # HACK: create a minimal cudnn_version.h (with a made-up version),
-            # because it is not bundled together with the CuDNN shared library
-            # in PyTorch: https://github.com/pytorch/pytorch/issues/47743
-            file(WRITE ${CUDNN_ROOT}/include/cudnn_version.h "#define CUDNN_MAJOR 8\n#define CUDNN_MINOR 5\n#define CUDNN_PATCHLEVEL 0\n")
-        endif()
-    endif()
+    #     if (NOT EXISTS ${CUDNN_ROOT}/include/cudnn_version.h)
+    #         # HACK: create a minimal cudnn_version.h (with a made-up version),
+    #         # because it is not bundled together with the CuDNN shared library
+    #         # in PyTorch: https://github.com/pytorch/pytorch/issues/47743
+    #         file(WRITE ${CUDNN_ROOT}/include/cudnn_version.h "#define CUDNN_MAJOR 8\n#define CUDNN_MINOR 5\n#define CUDNN_PATCHLEVEL 0\n")
+    #     endif()
+    # endif()
 
-    set(CUDNN_INCLUDE_DIR ${CUDNN_ROOT}/include CACHE PATH "" FORCE)
-    set(CUDNN_LIBRARY ${CUDNN_ROOT}/lib CACHE PATH "" FORCE)
-    unset(CUDNN_ROOT)
+    # set(CUDNN_INCLUDE_DIR ${CUDNN_ROOT}/include CACHE PATH "" FORCE)
+    # set(CUDNN_LIBRARY ${CUDNN_ROOT}/lib CACHE PATH "" FORCE)
+    # unset(CUDNN_ROOT)
 
-    mark_as_advanced(CUDNN_INCLUDE_DIR CUDNN_LIBRARY)
+    # mark_as_advanced(CUDNN_INCLUDE_DIR CUDNN_LIBRARY)
 else()
     if (NOT TARGET sphericart)
         message(FATAL_ERROR "missing sphericart target, you should build sphericart_torch as a sub-project of sphericart")
