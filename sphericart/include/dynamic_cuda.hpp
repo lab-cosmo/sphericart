@@ -296,8 +296,8 @@ class NVRTC {
     using nvrtcCompileProgram_t = nvrtcResult (*)(nvrtcProgram, int, const char*[]);
     using nvrtcGetPTX_t = nvrtcResult (*)(nvrtcProgram, char*);
     using nvrtcGetPTXSize_t = nvrtcResult (*)(nvrtcProgram, size_t*);
-    using nvrtcGetCUBIN_t = nvrtcResult (*) (nvrtcProgram, char*);
-    using nvrtcGetCUBINSize_t = nvrtcResult (*) (nvrtcProgram, size_t*);
+    using nvrtcGetCUBIN_t = nvrtcResult (*)(nvrtcProgram, char*);
+    using nvrtcGetCUBINSize_t = nvrtcResult (*)(nvrtcProgram, size_t*);
     using nvrtcGetProgramLog_t = nvrtcResult (*)(nvrtcProgram, char*);
     using nvrtcGetProgramLogSize_t = nvrtcResult (*)(nvrtcProgram, size_t*);
     using nvrtcAddNameExpression_t = nvrtcResult (*)(nvrtcProgram, const char* const);
@@ -332,7 +332,7 @@ class NVRTC {
             nvrtcGetPTX = load<nvrtcGetPTX_t>(nvrtcHandle, "nvrtcGetPTX");
             nvrtcGetPTXSize = load<nvrtcGetPTXSize_t>(nvrtcHandle, "nvrtcGetPTXSize");
             nvrtcGetCUBIN = load<nvrtcGetCUBIN_t>(nvrtcHandle, "nvrtcGetCUBIN");
-            nvrtcGetCUBINSize = load <nvrtcGetCUBINSize_t> (nvrtcHandle, "nvrtcGetCUBINSize");
+            nvrtcGetCUBINSize = load<nvrtcGetCUBINSize_t>(nvrtcHandle, "nvrtcGetCUBINSize");
             nvrtcGetProgramLog = load<nvrtcGetProgramLog_t>(nvrtcHandle, "nvrtcGetProgramLog");
             nvrtcGetProgramLogSize =
                 load<nvrtcGetProgramLogSize_t>(nvrtcHandle, "nvrtcGetProgramLogSize");

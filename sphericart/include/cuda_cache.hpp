@@ -275,8 +275,6 @@ class CachedKernel {
         int arch = major * 10 + minor;
         std::string smbuf = "--gpu-architecture=sm_" + std::to_string(arch);
 
-        std::cout << "GPU ARCH: " << smbuf << std::endl;
-
         c_options.push_back(smbuf.c_str());
 
         nvrtcResult compileResult =
@@ -299,8 +297,7 @@ class CachedKernel {
 
         // load the module from cubin
         CUmodule module = nullptr;
-        CUresult cuResult =
-            CUDA_DRIVER_INSTANCE.cuModuleLoadDataEx(&module, cubin.data(), 0, 0, 0);
+        CUresult cuResult = CUDA_DRIVER_INSTANCE.cuModuleLoadDataEx(&module, cubin.data(), 0, 0, 0);
 
         if (cuResult != CUDA_SUCCESS) {
             throw std::runtime_error(
