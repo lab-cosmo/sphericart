@@ -274,6 +274,7 @@ class CachedKernel {
         ));
         int arch = major * 10 + minor;
         std::string smbuf = "--gpu-architecture=sm_" + std::to_string(arch);
+
         c_options.push_back(smbuf.c_str());
 
         nvrtcResult compileResult =
@@ -288,16 +289,15 @@ class CachedKernel {
             );
         }
 
-        // Get PTX code
-        size_t ptxSize;
-        NVRTC_SAFE_CALL(NVRTC_INSTANCE.nvrtcGetPTXSize(prog, &ptxSize));
-        std::vector<char> ptxCode(ptxSize);
-        NVRTC_SAFE_CALL(NVRTC_INSTANCE.nvrtcGetPTX(prog, ptxCode.data()));
+        // fetch CUBIN
+        size_t cubinSize = 0;
+        NVRTC_SAFE_CALL(NVRTC_INSTANCE.nvrtcGetCUBINSize(prog, &cubinSize));
+        std::vector<char> cubin(cubinSize);
+        NVRTC_SAFE_CALL(NVRTC_INSTANCE.nvrtcGetCUBIN(prog, cubin.data()));
 
-        CUmodule module;
-
-        CUresult cuResult =
-            CUDA_DRIVER_INSTANCE.cuModuleLoadDataEx(&module, ptxCode.data(), 0, 0, 0);
+        // load the module from cubin
+        CUmodule module = nullptr;
+        CUresult cuResult = CUDA_DRIVER_INSTANCE.cuModuleLoadDataEx(&module, cubin.data(), 0, 0, 0);
 
         if (cuResult != CUDA_SUCCESS) {
             throw std::runtime_error(
