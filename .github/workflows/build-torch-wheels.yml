@@ -51,7 +51,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        pytorch-version: ["2.4", "2.5", "2.6", "2.7"]
+        pytorch-version: ["2.4", "2.5", "2.6", "2.7", "2.8"]
         arch: ["arm64", "x86_64"]
         os: ["ubuntu-22.04", "macos-14"]
         exclude:
@@ -64,6 +64,16 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Free disk space (Ubuntu)
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        sudo rm -rf /usr/local/.ghcup
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo rm -rf /usr/local/lib/android/sdk/ndk
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /usr/local/share/boost
 
     - name: Build custom manylinux Docker Image with CUDA
       if: matrix.os == 'ubuntu-22.04'

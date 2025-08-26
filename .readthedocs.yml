@@ -8,8 +8,6 @@ version: 2
 # Set the version of Python and other tools we need
 build:
   os: ubuntu-22.04
-  apt_packages:
-    - cmake
   tools:
     python: "3.12"
   jobs:
@@ -17,8 +15,9 @@ build:
     # we can not use the `python` section below since it does not allow
     # to specify `--extra-index-url`
     post_install:
-      - python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu ./sphericart-torch
-      - python -m pip install ./sphericart-jax
+      - python -m pip install --force-reinstall --extra-index-url https://download.pytorch.org/whl/cpu cmake torch pybind11
+      - python -m pip install --no-deps --no-build-isolation --check-build-dependencies ./sphericart-torch
+      - python -m pip install --no-deps --no-build-isolation --check-build-dependencies ./sphericart-jax
 
 # Declare the Python requirements required to build the docs
 python:
