@@ -7,14 +7,13 @@ FROM quay.io/pypa/manylinux_2_28_x86_64
 # ------------
 
 ARG CUDA_VER="12-8"
-ARG ARCH="x86_64"
 
 RUN yum install -y yum-utils
 RUN yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo
-RUN yum -y install cuda-compiler-${CUDA_VER}.${ARCH} \
-                   cuda-libraries-${CUDA_VER}.${ARCH} \
-                   cuda-libraries-devel-${CUDA_VER}.${ARCH} \
-                   cuda-nvtx-${CUDA_VER}.${ARCH}
+RUN yum -y install cuda-compiler-${CUDA_VER} \
+                   cuda-libraries-${CUDA_VER} \
+                   cuda-libraries-devel-${CUDA_VER} \
+                   cuda-nvtx-${CUDA_VER}
 RUN yum clean all
 RUN rm -rf /var/cache/yum/*
 RUN echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/999_nvidia_cuda.conf
