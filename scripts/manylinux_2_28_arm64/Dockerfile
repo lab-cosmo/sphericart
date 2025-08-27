@@ -10,7 +10,7 @@ ARG CUDA_VER="12-8"
 ARG ARCH="aarch64"
 
 RUN yum install -y yum-utils
-RUN yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/aarch64/cuda-rhel8.repo
+RUN yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/sbsa/cuda-rhel8.repo
 RUN yum -y install cuda-compiler-${CUDA_VER} \
                    cuda-libraries-${CUDA_VER} \
                    cuda-libraries-devel-${CUDA_VER} \
