@@ -7,7 +7,7 @@ FROM quay.io/pypa/manylinux_2_28_aarch64
 # ------------
 
 ARG CUDA_VER="12-8"
-ARG ARCH="x86_64"
+ARG ARCH="aarch64"
 
 RUN yum install -y yum-utils
 RUN yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/aarch64/cuda-rhel8.repo
