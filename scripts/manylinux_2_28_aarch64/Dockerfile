@@ -1,6 +1,6 @@
 # Inspired by https://github.com/ameli/manylinux-cuda, adding cuda-nvtx
 
-FROM quay.io/pypa/manylinux_2_28_x86_64
+FROM quay.io/pypa/manylinux_2_28_aarch64
 
 # ------------
 # Install cuda
@@ -9,7 +9,7 @@ FROM quay.io/pypa/manylinux_2_28_x86_64
 ARG CUDA_VER="12-8"
 
 RUN yum install -y yum-utils
-RUN yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo
+RUN yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/sbsa/cuda-rhel8.repo
 RUN yum -y install cuda-compiler-${CUDA_VER} \
                    cuda-libraries-${CUDA_VER} \
                    cuda-libraries-devel-${CUDA_VER} \
