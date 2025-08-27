@@ -3,7 +3,7 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-from jax import core
+from jax import extend
 from jax.core import ShapedArray
 from jax.interpreters import ad, mlir, xla
 from jax.interpreters.mlir import custom_call, ir
@@ -16,7 +16,7 @@ from .utils import build_sph_descriptor, default_layouts
 # as well as some transformation rules. For more information and comments,
 # see sph.py
 
-_dsph_p = core.Primitive("dsph")
+_dsph_p = extend.core.Primitive("dsph")
 _dsph_p.multiple_results = True
 _dsph_p.def_impl(partial(xla.apply_primitive, _dsph_p))
 
