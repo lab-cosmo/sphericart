@@ -65,7 +65,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Build custom manylinux Docker Image with CUDA
-      if: matrix.os == 'ubuntu-22.04'
+      if: startsWith(matrix.os, 'ubuntu-')
       run: |
         docker build --no-cache \
             -t sphericart_manylinux_2_28_"${{ matrix.arch }}" \
