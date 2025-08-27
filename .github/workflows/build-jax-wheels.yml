@@ -89,6 +89,7 @@ jobs:
         CIBW_SKIP: "*-musllinux*"
         CIBW_ARCHS: "${{ matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux_2_28_x86_64
+        CIBW_MANYLINUX_AARCH64_IMAGE: sphericart_manylinux_2_28_aarch64
         CIBW_ENVIRONMENT: >
           SPHERICART_ARCH_NATIVE=OFF
           SPHERICART_NO_LOCAL_DEPS=1
