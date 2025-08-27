@@ -56,19 +56,15 @@ jobs:
           - name: x86_64 Linux
             os: ubuntu-22.04
             arch: x86_64
-            cibw_arch_name: x86_64
           - name: x86_64 macOS
             os: macos-13
             arch: x86_64
-            cibw_arch_name: x86_64
           - name: arm64 macOS
             os: macos-14
             arch: arm64
-            cibw_arch_name: arm64
-          - name: arm64 Linux
+          - name: aarch64 Linux
             os: ubuntu-22.04-arm
-            arch: arm64
-            cibw_arch_name: aarch64
+            arch: aarch64
 
     steps:
     - name: Checkout code
@@ -95,7 +91,7 @@ jobs:
         CIBW_BUILD_VERBOSITY: 1
         CIBW_BUILD: "cp312-*"
         CIBW_SKIP: "*-musllinux*"
-        CIBW_ARCHS: "${{ matrix.cibw_arch_name }}"
+        CIBW_ARCHS: "${{ matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux_2_28_x86_64
         CIBW_MANYLINUX_AARCH64_IMAGE: sphericart_manylinux_2_28_aarch64
         CIBW_ENVIRONMENT: >
