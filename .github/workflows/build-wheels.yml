@@ -64,8 +64,7 @@ jobs:
           - name: arm64 macOS
             os: macos-14
             arch: arm64
-            cibw_arch_name: aarch64
-            arch: arm64
+            cibw_arch_name: arm64
           - name: arm64 Linux
             os: ubuntu-22.04-arm
             arch: arm64
