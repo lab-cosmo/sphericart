@@ -53,11 +53,14 @@ jobs:
       matrix:
         pytorch-version: ["2.4", "2.5", "2.6", "2.7", "2.8"]
         include:
-          - os: ubuntu-22.04
+          - name: x86_64 Linux
+            os: ubuntu-22.04
             arch: x86_64
-          - os: macos-14
+          - name: arm64 macOS
+            os: macos-14
             arch: arm64
-          - os: ubuntu-22.04-arm
+          - name: aarch64 Linux
+            os: ubuntu-22.04-arm
             arch: aarch64
 
     name: "Torch ${{matrix.pytorch-version}} ${{matrix.os}} ${{matrix.arch}}"
@@ -133,6 +136,9 @@ jobs:
           - name: x86_64 Linux
             os: ubuntu-22.04
             arch: x86_64
+          - name: arm64 macOS
+            os: macos-14
+            arch: arm64
           - name: aarch64 Linux
             os: ubuntu-22.04-arm
             arch: aarch64
