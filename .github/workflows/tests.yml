@@ -66,7 +66,7 @@ jobs:
     name: check Python build
     strategy:
       matrix:
-        python-version: ['3.8', '3.12']
+        python-version: ['3.9', '3.12']
     steps:
       - uses: actions/checkout@v3
 

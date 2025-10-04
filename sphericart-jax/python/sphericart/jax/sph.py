@@ -3,7 +3,7 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-from jax import core
+from jax import extend
 from jax.core import ShapedArray
 from jax.interpreters import ad, mlir, xla
 from jax.interpreters.mlir import custom_call, ir
@@ -13,7 +13,7 @@ from .utils import build_sph_descriptor, default_layouts
 
 
 # register the sph primitive
-_sph_p = core.Primitive("sph_fwd")
+_sph_p = extend.core.Primitive("sph_fwd")
 _sph_p.def_impl(partial(xla.apply_primitive, _sph_p))
 
 
