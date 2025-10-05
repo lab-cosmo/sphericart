@@ -98,17 +98,6 @@ function _rescale_∇Z2∇Y!(∇Z::AbstractMatrix, Rs_norm, rs)
    end
 end
 
-# For a future GPU interface for Spherical Harmonics 
-# function _rescale_∇Z2∇Y!(∇Z::AbstractGPUMatrix, Rs::AbstractGPUVector)
-#    nX = length(rs)
-#    @inbounds for i = 1:size(∇Z, 2)
-#       @simd ivdep for j = 1:nX
-#          dzj = ∇Z[j, i] / rs[j]
-#          𝐫̂j = Rs_norm[j]
-#          ∇Z[j, i] = dzj - dot(𝐫̂j, dzj) * 𝐫̂j
-#       end
-#    end
-# end
 
 
 function compute(basis::SphericalHarmonics, 
@@ -124,17 +113,6 @@ function compute(basis::SphericalHarmonics,
    return Y
 end
 
-# For a future GPU interface for Spherical Harmonics 
-# function compute(basis::SphericalHarmonics, 
-#                   Rs::AbstractGPUVector{<: SVector{3, T1}}
-#                   ) where {T1}  
-#    _norm(𝐫::SVector) = 𝐫/norm(𝐫)
-#    nX = length(Rs)              
-#    Rs_norm = similar(Rs)
-#    map!(_norm, Rs_norm, Rs)
-#    Y = compute(basis.solids, Rs_norm)
-#    return Y
-# end
 
 function compute!(Y, basis::SphericalHarmonics, 
                   Rs::AbstractVector{<: SVector{3, T1}}
@@ -179,4 +157,53 @@ function compute_with_gradients!(Y, ∇Y, basis::SphericalHarmonics,
       nothing 
    end 
    return Y, ∇Y
+end 
+
+
+# --------------------- 
+#  KernelAbstractions api 
+
+using KernelAbstractions
+using GPUArraysCore: AbstractGPUVector, AbstractGPUMatrix
+
+function compute(basis::SphericalHarmonics, 
+                  Rs::AbstractGPUVector{<: SVector{3, T1}}
+                  ) where {T1}
+   nX = length(Rs)              
+   Rs_norm = map(𝐫 -> 𝐫 / norm(𝐫), Rs)
+   Y = compute(basis.solids, Rs_norm)
+   return Y
+end
+
+
+@kernel function _ka_rescale_∇Z2∇Y!(
+                  ∇Z, @Const(Rs_norm), @Const(rs))
+   j, i = @index(Global, NTuple)
+   dzj = ∇Z[j, i] / rs[j]
+   𝐫̂j = Rs_norm[j]
+   ∇Z[j, i] = dzj - dot(𝐫̂j, dzj) * 𝐫̂j
+   nothing 
+end
+
+function _rescale_∇Z2∇Y!(∇Z::AbstractGPUMatrix, Rs_norm, rs)
+   backend = KernelAbstractions.get_backend(∇Z)
+   kernel! = _ka_rescale_∇Z2∇Y!(backend)
+   nRs, nZ = size(∇Z)
+   kernel!(∇Z, Rs_norm, rs; ndrange = (nRs, nZ))
+   synchronize(backend)
+end
+
+
+function compute_with_gradients(basis::SphericalHarmonics, 
+                  Rs::AbstractGPUVector{<: SVector{3, T1}}
+                  ) where {T1} 
+   nX = length(Rs)              
+   rs = map(𝐫 -> norm(𝐫), Rs)
+   Rs_norm = map(𝐫 -> 𝐫 / norm(𝐫), Rs)
+   Y, ∇Z = compute_with_gradients(basis.solids, Rs_norm)
+   # ∇Y = map( (dz, 𝐫̂, r) -> (dz - dot(𝐫̂, dz) * 𝐫̂) / r, 
+   #           ∇Z, Rs_norm, rs)
+   # @show size(∇Y)             
+   _rescale_∇Z2∇Y!(∇Z, Rs_norm, rs)
+   return Y, ∇Z
 end 
