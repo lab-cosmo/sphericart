@@ -85,17 +85,22 @@ end
 
 """
 ```
-function ka_solid_harmonics!(Z, dZ, ::Val{L}, 
+      ka_solid_harmonics!(Z, dZ, ::Val{L}, [::Val{SH}],
                   Rs::AbstractVector{<: SVector{3}}, Flm, 
                   GRPSZ = 32) where {L}
 ```
 KernelAbstractions.jl kernel launcher for evaluating solid harmonics 
 on a batch of input points. If `dZ == nothing` then only `Z will be 
 evaluated, otherwise, both `Z` and `dZ`.
+* `Z, dZ` : output arrays, if `isnothing(dZ)` then gradients are not computed 
+* `L` : max degree / angular momentum number 
+* `SH` : `SH = true` for spherical harmonics, `SH = false` for solid harmonics, default is `SH = false`
+* `Rs` : input; Vector or 3-vectors
+* `Flm` : precomputed normalization factors
 """
-function ka_solid_harmonics!(Z, dZ, ::Val{L}, 
+function ka_solid_harmonics!(Z, dZ, ::Val{L}, ::Val{SH}, 
                   Rs::AbstractVector{<: SVector{3}}, Flm, 
-                  GRPSZ = 32) where {L}
+                  GRPSZ = 32) where {L, SH}
 
    # check sizes to make sure the inbounds macro can be used safely.
    nRs = size(Rs, 2) 
@@ -109,21 +114,26 @@ function ka_solid_harmonics!(Z, dZ, ::Val{L},
    end
 
    backend = KernelAbstractions.get_backend(Z)  # assume same for dZ 
-   solidh_main! = _ka_solidh_main_withgrad!(backend, (GRPSZ,))
+   solidh_main! = _ka_solidh_main!(backend, (GRPSZ,))
 
    # call the kernels 
    nRs = length(Rs)
-   solidh_main!(Z, dZ, Val{L}(), Rs, Flm; ndrange = (nRs,))
+   solidh_main!(Z, dZ, Val{L}(), Val{SH}(), Rs, Flm; ndrange = (nRs,))
    synchronize(backend)
 
    nothing               
 end
 
+ka_solid_harmonics!(Z, dZ, ::Val{L}, # ::Val{SH}, (skip this argument)
+                    Rs::AbstractVector{<: SVector{3}}, Flm, 
+                    GRPSZ = 32) where {L} = 
+      ka_solid_harmonics!(Z, dZ, Val{L}(), Val{false}(), Rs, Flm, GRPSZ)
 
-@kernel function _ka_solidh_main_withgrad!(
-               Z, dZ, ::Val{L}, 
+
+@kernel function _ka_solidh_main!(
+               Z, dZ, ::Val{L}, ::Val{SH}, 
                @Const(Rs), 
-               @Const(Flm), ) where {L}
+               @Const(Flm), ) where {L, SH}
 
    j = @index(Global, Linear)
    jl = @index(Local, Linear)
@@ -141,6 +151,7 @@ end
    y = @localmem T (len_grp,)
    z = @localmem T (len_grp,)
    r² = @localmem T (len_grp,)
+   r = @localmem T (len_grp,)
    s = @localmem T (len_grp, L+1)
    c = @localmem T (len_grp, L+1)
    Q = @localmem T (len_grp, len)   # nb : len ≈ L^2
@@ -154,6 +165,18 @@ end
 
    x[jl], y[jl], z[jl] = Rs[j].data  # Rs[j]::SVector{3}
    r²[jl] = x[jl]*x[jl] + y[jl]*y[jl] + z[jl]*z[jl] 
+
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   #  normalize the input if we want spherical harmonics
+   if SH 
+      r[jl] = sqrt(r²[jl])
+      x[jl] /= r[jl]
+      y[jl] /= r[jl]
+      z[jl] /= r[jl]
+      r²[jl] = _1
+   end
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
    # ------------------------------------------------------------------
    # STAGE 1b: evaluate sines and cosines 
@@ -312,5 +335,16 @@ end
 
    end
 
-   nothing; 
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   # fix the spherical harmonics gradients
+   if SH && WITHGRAD
+      for α = 1:size(dZ, 2) 
+         dzj = dZ[j, α] / r[jl]
+         𝐫̂j = SA[x[jl], y[jl], z[jl]]
+         dZ[j, α] = dzj - dot(𝐫̂j, dzj) * 𝐫̂j
+      end
+   end
+   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   nothing 
 end

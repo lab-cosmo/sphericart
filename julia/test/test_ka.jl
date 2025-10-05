@@ -27,14 +27,14 @@ end
 ##
 
 # uncomment for developing on Metal 
-# using Metal
-# Metal.versioninfo()
-# gpu = MtlArray
+using Metal
+Metal.versioninfo()
+gpu = MtlArray
 
 ##
 
 L = 8
-nbatch = 32_000
+nbatch = 1024
 GRPSIZE = 8  # to be on the safe side; testing just for correctness
 
 @info("L = $L, nbatch = $nbatch")
@@ -110,7 +110,7 @@ sh = SphericalHarmonics(L; T = Float32)
 R̂s = [ 𝐫 / norm(𝐫) for 𝐫 in Rs ] 
 R̂s_gpu = gpu(R̂s)
 
-Y1a = compute(sh, R̂s_gpu)
+Y1a = compute(basis, R̂s_gpu)
 Y1b = compute(sh, Rs)
 Y2 = compute(sh, Rs_gpu)
 @test Y2 isa AbstractGPUArray

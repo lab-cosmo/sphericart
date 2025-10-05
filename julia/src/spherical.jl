@@ -75,6 +75,26 @@ end
 # --------------------- 
 #  batched api 
 
+
+function compute(basis::SphericalHarmonics{L}, 
+                  Rs::AbstractVector{<: SVector{3, T1}}
+                  ) where {L, T1}  
+   Y = similar(Rs, T1, (length(Rs), sizeY(L)))
+   compute!(Y, basis, Rs)
+   return Y
+end
+
+function compute_with_gradients(basis::SphericalHarmonics{L}, 
+                  Rs::AbstractVector{<: SVector{3, T1}}
+                  ) where {L, T1} 
+   Y = similar(Rs, T1, (length(Rs), sizeY(L)))
+   ∇Y = similar(Rs, SVector{3, T1}, (length(Rs), sizeY(L)))                  
+   compute_with_gradients!(Y, ∇Y, basis, Rs)
+   return Y, ∇Y
+end 
+
+
+
 function _normalise_Rs!(rs, Rs_norm, 
                         basis::SphericalHarmonics, 
                         Rs::AbstractVector{SVector{3, T1}}) where {T1}
@@ -100,19 +120,6 @@ end
 
 
 
-function compute(basis::SphericalHarmonics, 
-                  Rs::AbstractVector{<: SVector{3, T1}}
-                  ) where {T1}  
-   @no_escape begin     
-      nX = length(Rs)              
-      rs = @alloc(T1, nX)
-      Rs_norm = @alloc(SVector{3, T1}, nX)
-      _normalise_Rs!(rs, Rs_norm, basis, Rs)
-      Y = compute(basis.solids, Rs_norm)
-   end
-   return Y
-end
-
 
 function compute!(Y, basis::SphericalHarmonics, 
                   Rs::AbstractVector{<: SVector{3, T1}}
@@ -129,20 +136,6 @@ function compute!(Y, basis::SphericalHarmonics,
 end
 
 
-function compute_with_gradients(basis::SphericalHarmonics, 
-                  Rs::AbstractVector{<: SVector{3, T1}}
-                  ) where {T1} 
-   @no_escape begin     
-      nX = length(Rs)              
-      rs = @alloc(T1, nX)
-      Rs_norm = @alloc(SVector{3, T1}, nX)
-      _normalise_Rs!(rs, Rs_norm, basis, Rs)
-      Y, ∇Z = compute_with_gradients(basis.solids, Rs_norm)
-      _rescale_∇Z2∇Y!(∇Z, Rs_norm, rs)
-      nothing 
-   end 
-   return Y, ∇Z
-end 
 
 function compute_with_gradients!(Y, ∇Y, basis::SphericalHarmonics, 
                         Rs::AbstractVector{<: SVector{3, T1}}
@@ -160,50 +153,30 @@ function compute_with_gradients!(Y, ∇Y, basis::SphericalHarmonics,
 end 
 
 
-# --------------------- 
-#  KernelAbstractions api 
+# ------------------------------------------
+#  KernelAbstractions in-place api 
 
 using KernelAbstractions
 using GPUArraysCore: AbstractGPUVector, AbstractGPUMatrix
 
-function compute(basis::SphericalHarmonics, 
+
+function compute!(Y::AbstractGPUMatrix, 
+                  basis::SphericalHarmonics{L}, 
                   Rs::AbstractGPUVector{<: SVector{3, T1}}
-                  ) where {T1}
-   nX = length(Rs)              
-   Rs_norm = map(𝐫 -> 𝐫 / norm(𝐫), Rs)
-   Y = compute(basis.solids, Rs_norm)
+                  ) where {L, T1}
+   # note the Val{true}() means that inputs Rs will be rescaled to unit 
+   # length, and the gradient corrected accordingly
+   ka_solid_harmonics!(Y, nothing, Val{L}(), Val{true}(), 
+                       Rs, basis.Flm)
    return Y
 end
 
 
-@kernel function _ka_rescale_∇Z2∇Y!(
-                  ∇Z, @Const(Rs_norm), @Const(rs))
-   j, i = @index(Global, NTuple)
-   dzj = ∇Z[j, i] / rs[j]
-   𝐫̂j = Rs_norm[j]
-   ∇Z[j, i] = dzj - dot(𝐫̂j, dzj) * 𝐫̂j
-   nothing 
-end
-
-function _rescale_∇Z2∇Y!(∇Z::AbstractGPUMatrix, Rs_norm, rs)
-   backend = KernelAbstractions.get_backend(∇Z)
-   kernel! = _ka_rescale_∇Z2∇Y!(backend)
-   nRs, nZ = size(∇Z)
-   kernel!(∇Z, Rs_norm, rs; ndrange = (nRs, nZ))
-   synchronize(backend)
-end
-
-
-function compute_with_gradients(basis::SphericalHarmonics, 
+function compute_with_gradients!(Y, ∇Y, 
+                  basis::SphericalHarmonics{L}, 
                   Rs::AbstractGPUVector{<: SVector{3, T1}}
-                  ) where {T1} 
-   nX = length(Rs)              
-   rs = map(𝐫 -> norm(𝐫), Rs)
-   Rs_norm = map(𝐫 -> 𝐫 / norm(𝐫), Rs)
-   Y, ∇Z = compute_with_gradients(basis.solids, Rs_norm)
-   # ∇Y = map( (dz, 𝐫̂, r) -> (dz - dot(𝐫̂, dz) * 𝐫̂) / r, 
-   #           ∇Z, Rs_norm, rs)
-   # @show size(∇Y)             
-   _rescale_∇Z2∇Y!(∇Z, Rs_norm, rs)
-   return Y, ∇Z
+                  ) where {L, T1} 
+   ka_solid_harmonics!(Y, ∇Y, Val{L}(), Val{true}(), 
+                       Rs, basis.Flm)
+   return Y, ∇Y
 end 
