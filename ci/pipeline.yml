@@ -26,10 +26,11 @@ test tox:
   image: $BASE_IMAGE
   timeout: 1h
   script:
-    - tox -vv -e tests
-    - tox -vv -e torch-tests
-    - LD_LIBRARY_PATH=$CUDA_HOME/lib64/:$LD_LIBRARY_PATH tox -vv -e jax-tests
-    - tox -vv -e examples
+    - echo $CUDA_HOME
+    - tox --verbose -e tests
+    - tox --verbose -e torch-tests
+    - tox --verbose -e jax-tests
+    - tox --verbose -e examples
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_PARTITION: normal
