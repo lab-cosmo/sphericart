@@ -34,9 +34,9 @@ This library is dual-licensed under the Apache License 2.0 and the MIT license. 
 Pre-built (https://pypi.org/project/sphericart/).
 
 ```bash
-pip install sphericart             # numpy version
-pip install sphericart[torch]      # including also the torch bindings
-pip install sphericart[jax]        # JAX bindings (CPU-only)
+pip install sphericart             # numpy interface, CPU only
+pip install sphericart[torch]      # Torch (and TorchScript) interface, CPU and GPU
+pip install sphericart[jax]        # JAX interface, CPU and GPU
 ```
 
 Note that the pre-built packages are compiled for a generic CPU, and might be
@@ -54,14 +54,14 @@ pip install .[torch]
 pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 ```
 
-Building from source is also necessary to use sphericart's PyTorch GPU 
-functionalities, and it requires a CUDA compiler.
+If you want to enable the CUDA version of the code when builing from source,
+you'll need to set the `CUDA_HOME` environement variable. You can build a CUDA enabled `sphericart`, but the calculations though numpy will only run on CPU.
 
-### Julia 
+### Julia
 
-A native Julia implementation of `sphericart` is provided, called `SpheriCart`. 
-Install the package by opening a REPL, switch to the package manager by 
-typing `]` and then `add SpheriCart`. 
+A native Julia implementation of `sphericart` is provided, called `SpheriCart`.
+Install the package by opening a REPL, switch to the package manager by
+typing `]` and then `add SpheriCart`.
 See [julia/README.md](julia/README.md) for usage.
 
 
@@ -111,7 +111,6 @@ will build the documentation in a CPU-only environment.
 ## Other flavors of spherical harmonics
 
 Although sphericart natively calculates real solid and spherical harmonics from
-Cartesian positions, it is easy to manipulate its output it to calculate complex 
+Cartesian positions, it is easy to manipulate its output it to calculate complex
 spherical harmonics and/or to accept spherical coordinates as inputs. You can see
 examples [here](https://sphericart.readthedocs.io/en/latest/spherical-complex.html).
-

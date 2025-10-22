@@ -3,7 +3,8 @@ name = "sphericart-jax"
 dynamic = ["version"]
 requires-python = ">=3.9"
 dependencies = [
-    "jax >=0.4.32,<0.8",
+    # jax 0.7.2 broke handling of `int` in `mlir.ir_constant`
+    "jax >=0.6.0,<0.7.2",
     "packaging",
 ]
 
