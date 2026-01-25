@@ -51,7 +51,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["39", "310", "311", "312", "313"]
+        python-version: ["310", "311", "312", "313", "314"]
         os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm]
         include:
           - os: ubuntu-22.04
