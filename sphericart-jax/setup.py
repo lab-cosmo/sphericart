@@ -2,7 +2,6 @@ import os
 import subprocess
 import sys
 
-import pybind11
 from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
 from setuptools.command.build_ext import build_ext
@@ -13,7 +12,7 @@ SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
 
 
 class cmake_ext(build_ext):
-    """Build the native library using cmake"""
+    """Build the native libraries using cmake"""
 
     def run(self):
         source_dir = ROOT
@@ -22,14 +21,11 @@ class cmake_ext(build_ext):
 
         os.makedirs(build_dir, exist_ok=True)
 
-        cmake_prefix_path = [pybind11.get_cmake_dir()]
-
         cmake_options = [
             "-DCMAKE_BUILD_TYPE=Release",
             f"-DCMAKE_INSTALL_PREFIX={install_dir}",
-            f"-DPYTHON_EXECUTABLE={sys.executable}",
+            f"-DPython_EXECUTABLE={sys.executable}",
             f"-DSPHERICART_ARCH_NATIVE={SPHERICART_ARCH_NATIVE}",
-            f"-DCMAKE_PREFIX_PATH={';'.join(cmake_prefix_path)}",
             "-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON",
         ]
 
@@ -43,30 +39,23 @@ class cmake_ext(build_ext):
         if sys.platform.startswith("darwin"):
             cmake_options.append("-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=11.0")
 
-        # ARCHFLAGS is used by cibuildwheel to pass the requested arch to the
-        # compilers
         ARCHFLAGS = os.environ.get("ARCHFLAGS")
         if ARCHFLAGS is not None:
             cmake_options.append(f"-DCMAKE_C_FLAGS={ARCHFLAGS}")
             cmake_options.append(f"-DCMAKE_CXX_FLAGS={ARCHFLAGS}")
 
+        subprocess.run(["cmake", source_dir, *cmake_options], cwd=build_dir, check=True)
         subprocess.run(
-            ["cmake", source_dir, *cmake_options],
+            ["cmake", "--build", ".", "--config", "Release", "--parallel"],
             cwd=build_dir,
             check=True,
         )
-
-        build_command = [
-            "cmake",
-            "--build",
-            build_dir,
-            "--parallel",
-            "2",  # only two jobs to avoid OOM, we don't have many files
-            "--target",
-            "install",
-        ]
-
-        subprocess.run(build_command, check=True)
+        subprocess.run(
+            ["cmake", "--install", ".", "--config", "Release"],
+            cwd=build_dir,
+            check=True,
+        )
+        return
 
 
 class bdist_egg_disabled(bdist_egg):

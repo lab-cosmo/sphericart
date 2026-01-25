@@ -1,120 +1,401 @@
-// This file defines the Python interface to the XLA custom calls on CPU.
-// It is exposed as a standard pybind11 module defining "capsule"
-// objects containing our methods. For simplicity, we export a separate capsule
-// for each supported dtype.
+// Typed JAX FFI handlers for sphericart on CPU.
+//
+// These functions are registered from Python using ctypes + jax.ffi.pycapsule,
+// following the JAX FFI tutorial:
+// https://docs.jax.dev/en/latest/ffi.html
 
-#include <cstdlib>
+#include <cstdint>
 #include <map>
+#include <memory>
 #include <mutex>
-#include <tuple>
+#include <utility>
 
 #include "sphericart.hpp"
-#include "sphericart/pybind11_kernel_helpers.hpp"
 
-using namespace sphericart_jax;
+#include "xla/ffi/api/c_api.h"
+#include "xla/ffi/api/ffi.h"
+
+namespace ffi = xla::ffi;
 
 namespace {
-
-// CPU section
 
 template <template <typename> class C, typename T>
 using CacheMapCPU = std::map<size_t, std::unique_ptr<C<T>>>;
 
 template <template <typename> class C, typename T>
-std::unique_ptr<C<T>>& _get_or_create_sph_cpu(size_t l_max) {
-    // Static map to cache instances based on parameters
-    static CacheMapCPU<C, T> sph_cache;
+std::unique_ptr<C<T>>& GetOrCreateCPU(size_t l_max) {
+    static CacheMapCPU<C, T> cache;
     static std::mutex cache_mutex;
 
-    // Check if instance exists in cache, if not create and store it
     std::lock_guard<std::mutex> lock(cache_mutex);
-    auto it = sph_cache.find(l_max);
-    if (it == sph_cache.end()) {
-        it = sph_cache.insert({l_max, std::make_unique<C<T>>(l_max)}).first;
+    auto it = cache.find(l_max);
+    if (it == cache.end()) {
+        it = cache.insert({l_max, std::make_unique<C<T>>(l_max)}).first;
     }
     return it->second;
 }
 
-template <template <typename> class C, typename T> void cpu_sph(void* out, const void** in) {
-    // Parse the inputs
-    const T* xyz = reinterpret_cast<const T*>(in[0]);
-    const size_t l_max = *reinterpret_cast<const int*>(in[1]);
-    const size_t n_samples = *reinterpret_cast<const int*>(in[2]);
-    size_t xyz_length{n_samples * 3};
-    size_t sph_len{(l_max + 1) * (l_max + 1) * n_samples};
-    // The output is stored as a single pointer since there is only one output
-    T* sph = reinterpret_cast<T*>(out);
-
-    auto& calculator = _get_or_create_sph_cpu<C, T>(l_max);
-    calculator->compute_array(xyz, xyz_length, sph, sph_len);
+template <ffi::DataType DT>
+ffi::Error GetNSamples(const ffi::Buffer<DT>& xyz, int64_t* n_samples_out) {
+    auto dims = xyz.dimensions();
+    if (dims.size() == 0) {
+        return ffi::Error::InvalidArgument("xyz must be an array");
+    }
+    if (dims.back() != 3) {
+        return ffi::Error::InvalidArgument("xyz last dimension must have size 3");
+    }
+    const int64_t n_samples = static_cast<int64_t>(xyz.element_count() / 3);
+    if (n_samples < 0) {
+        return ffi::Error::InvalidArgument("invalid xyz shape");
+    }
+    *n_samples_out = n_samples;
+    return ffi::Error::Success();
 }
 
-template <template <typename> class C, typename T>
-void cpu_sph_with_gradients(void* out_tuple, const void** in) {
-    // Parse the inputs
-    const T* xyz = reinterpret_cast<const T*>(in[0]);
-    const size_t l_max = *reinterpret_cast<const int*>(in[1]);
-    const size_t n_samples = *reinterpret_cast<const int*>(in[2]);
-    size_t xyz_length{n_samples * 3};
-    size_t sph_len{(l_max + 1) * (l_max + 1) * n_samples};
-    size_t dsph_len{sph_len * 3};
-    // The output is stored as a list of pointers since we have multiple outputs
-    void** out = reinterpret_cast<void**>(out_tuple);
-    T* sph = reinterpret_cast<T*>(out[0]);
-    T* dsph = reinterpret_cast<T*>(out[1]);
+template <template <typename> class C, typename T, ffi::DataType DT>
+ffi::Error CpuSphImpl(int64_t l_max_i64, ffi::Buffer<DT> xyz, ffi::ResultBuffer<DT> sph) {
+    if (l_max_i64 < 0) {
+        return ffi::Error::InvalidArgument("l_max must be non-negative");
+    }
+    const size_t l_max = static_cast<size_t>(l_max_i64);
 
-    auto& calculator = _get_or_create_sph_cpu<C, T>(l_max);
-    calculator->compute_array_with_gradients(xyz, xyz_length, sph, sph_len, dsph, dsph_len);
+    int64_t n_samples = 0;
+    if (auto err = GetNSamples<DT>(xyz, &n_samples); err.failure()) {
+        return err;
+    }
+
+    const size_t sph_size = (l_max + 1) * (l_max + 1);
+    const size_t expected_sph_len = static_cast<size_t>(n_samples) * sph_size;
+    if (sph->element_count() != expected_sph_len) {
+        return ffi::Error::InvalidArgument("output sph has unexpected size");
+    }
+
+    const T* xyz_ptr = reinterpret_cast<const T*>(xyz.typed_data());
+    T* sph_ptr = reinterpret_cast<T*>(sph->typed_data());
+
+    const size_t xyz_len = xyz.element_count();
+    const size_t sph_len = sph->element_count();
+
+    auto& calculator = GetOrCreateCPU<C, T>(l_max);
+    calculator->compute_array(xyz_ptr, xyz_len, sph_ptr, sph_len);
+    return ffi::Error::Success();
 }
 
-template <template <typename> class C, typename T>
-void cpu_sph_with_hessians(void* out_tuple, const void** in) {
-    // Parse the inputs
-    const T* xyz = reinterpret_cast<const T*>(in[0]);
-    const size_t l_max = *reinterpret_cast<const int*>(in[1]);
-    const size_t n_samples = *reinterpret_cast<const int*>(in[2]);
-    size_t xyz_length{n_samples * 3};
-    size_t sph_len{(l_max + 1) * (l_max + 1) * n_samples};
-    size_t dsph_len{sph_len * 3};
-    size_t ddsph_len{sph_len * 3 * 3};
-    // The output is stored as a list of pointers since we have multiple outputs
-    void** out = reinterpret_cast<void**>(out_tuple);
-    T* sph = reinterpret_cast<T*>(out[0]);
-    T* dsph = reinterpret_cast<T*>(out[1]);
-    T* ddsph = reinterpret_cast<T*>(out[2]);
+template <template <typename> class C, typename T, ffi::DataType DT>
+ffi::Error CpuSphGradImpl(
+    int64_t l_max_i64, ffi::Buffer<DT> xyz, ffi::ResultBuffer<DT> sph, ffi::ResultBuffer<DT> dsph
+) {
+    if (l_max_i64 < 0) {
+        return ffi::Error::InvalidArgument("l_max must be non-negative");
+    }
+    const size_t l_max = static_cast<size_t>(l_max_i64);
 
-    auto& calculator = _get_or_create_sph_cpu<C, T>(l_max);
+    int64_t n_samples = 0;
+    if (auto err = GetNSamples<DT>(xyz, &n_samples); err.failure()) {
+        return err;
+    }
+
+    const size_t sph_size = (l_max + 1) * (l_max + 1);
+    const size_t sph_len_expected = static_cast<size_t>(n_samples) * sph_size;
+    const size_t dsph_len_expected = sph_len_expected * 3;
+
+    if (sph->element_count() != sph_len_expected) {
+        return ffi::Error::InvalidArgument("output sph has unexpected size");
+    }
+    if (dsph->element_count() != dsph_len_expected) {
+        return ffi::Error::InvalidArgument("output dsph has unexpected size");
+    }
+
+    const T* xyz_ptr = reinterpret_cast<const T*>(xyz.typed_data());
+    T* sph_ptr = reinterpret_cast<T*>(sph->typed_data());
+    T* dsph_ptr = reinterpret_cast<T*>(dsph->typed_data());
+
+    const size_t xyz_len = xyz.element_count();
+    const size_t sph_len = sph->element_count();
+    const size_t dsph_len = dsph->element_count();
+
+    auto& calculator = GetOrCreateCPU<C, T>(l_max);
+    calculator->compute_array_with_gradients(xyz_ptr, xyz_len, sph_ptr, sph_len, dsph_ptr, dsph_len);
+    return ffi::Error::Success();
+}
+
+template <template <typename> class C, typename T, ffi::DataType DT>
+ffi::Error CpuSphHessImpl(
+    int64_t l_max_i64,
+    ffi::Buffer<DT> xyz,
+    ffi::ResultBuffer<DT> sph,
+    ffi::ResultBuffer<DT> dsph,
+    ffi::ResultBuffer<DT> ddsph
+) {
+    if (l_max_i64 < 0) {
+        return ffi::Error::InvalidArgument("l_max must be non-negative");
+    }
+    const size_t l_max = static_cast<size_t>(l_max_i64);
+
+    int64_t n_samples = 0;
+    if (auto err = GetNSamples<DT>(xyz, &n_samples); err.failure()) {
+        return err;
+    }
+
+    const size_t sph_size = (l_max + 1) * (l_max + 1);
+    const size_t sph_len_expected = static_cast<size_t>(n_samples) * sph_size;
+    const size_t dsph_len_expected = sph_len_expected * 3;
+    const size_t ddsph_len_expected = sph_len_expected * 9;
+
+    if (sph->element_count() != sph_len_expected) {
+        return ffi::Error::InvalidArgument("output sph has unexpected size");
+    }
+    if (dsph->element_count() != dsph_len_expected) {
+        return ffi::Error::InvalidArgument("output dsph has unexpected size");
+    }
+    if (ddsph->element_count() != ddsph_len_expected) {
+        return ffi::Error::InvalidArgument("output ddsph has unexpected size");
+    }
+
+    const T* xyz_ptr = reinterpret_cast<const T*>(xyz.typed_data());
+    T* sph_ptr = reinterpret_cast<T*>(sph->typed_data());
+    T* dsph_ptr = reinterpret_cast<T*>(dsph->typed_data());
+    T* ddsph_ptr = reinterpret_cast<T*>(ddsph->typed_data());
+
+    const size_t xyz_len = xyz.element_count();
+    const size_t sph_len = sph->element_count();
+    const size_t dsph_len = dsph->element_count();
+    const size_t ddsph_len = ddsph->element_count();
+
+    auto& calculator = GetOrCreateCPU<C, T>(l_max);
     calculator->compute_array_with_hessians(
-        xyz, xyz_length, sph, sph_len, dsph, dsph_len, ddsph, ddsph_len
+        xyz_ptr, xyz_len, sph_ptr, sph_len, dsph_ptr, dsph_len, ddsph_ptr, ddsph_len
+    );
+    return ffi::Error::Success();
+}
+
+} // namespace
+
+// ===== CPU spherical harmonics =====
+
+ffi::Error CpuSphericalF32Impl(
+    int64_t l_max, ffi::Buffer<ffi::F32> xyz, ffi::ResultBuffer<ffi::F32> sph
+) {
+    return CpuSphImpl<sphericart::SphericalHarmonics, float, ffi::F32>(l_max, xyz, sph);
+}
+
+ffi::Error CpuSphericalF64Impl(
+    int64_t l_max, ffi::Buffer<ffi::F64> xyz, ffi::ResultBuffer<ffi::F64> sph
+) {
+    return CpuSphImpl<sphericart::SphericalHarmonics, double, ffi::F64>(l_max, xyz, sph);
+}
+
+ffi::Error CpuDSphericalF32Impl(
+    int64_t l_max,
+    ffi::Buffer<ffi::F32> xyz,
+    ffi::ResultBuffer<ffi::F32> sph,
+    ffi::ResultBuffer<ffi::F32> dsph
+) {
+    return CpuSphGradImpl<sphericart::SphericalHarmonics, float, ffi::F32>(l_max, xyz, sph, dsph);
+}
+
+ffi::Error CpuDSphericalF64Impl(
+    int64_t l_max,
+    ffi::Buffer<ffi::F64> xyz,
+    ffi::ResultBuffer<ffi::F64> sph,
+    ffi::ResultBuffer<ffi::F64> dsph
+) {
+    return CpuSphGradImpl<sphericart::SphericalHarmonics, double, ffi::F64>(l_max, xyz, sph, dsph);
+}
+
+ffi::Error CpuDDSphericalF32Impl(
+    int64_t l_max,
+    ffi::Buffer<ffi::F32> xyz,
+    ffi::ResultBuffer<ffi::F32> sph,
+    ffi::ResultBuffer<ffi::F32> dsph,
+    ffi::ResultBuffer<ffi::F32> ddsph
+) {
+    return CpuSphHessImpl<sphericart::SphericalHarmonics, float, ffi::F32>(
+        l_max, xyz, sph, dsph, ddsph
     );
 }
 
-// Registration of the custom calls with pybind11
-pybind11::dict Registrations() {
-    pybind11::dict dict;
-    dict["cpu_spherical_f32"] = EncapsulateFunction(cpu_sph<sphericart::SphericalHarmonics, float>);
-    dict["cpu_spherical_f64"] = EncapsulateFunction(cpu_sph<sphericart::SphericalHarmonics, double>);
-    dict["cpu_dspherical_f32"] =
-        EncapsulateFunction(cpu_sph_with_gradients<sphericart::SphericalHarmonics, float>);
-    dict["cpu_dspherical_f64"] =
-        EncapsulateFunction(cpu_sph_with_gradients<sphericart::SphericalHarmonics, double>);
-    dict["cpu_ddspherical_f32"] =
-        EncapsulateFunction(cpu_sph_with_hessians<sphericart::SphericalHarmonics, float>);
-    dict["cpu_ddspherical_f64"] =
-        EncapsulateFunction(cpu_sph_with_hessians<sphericart::SphericalHarmonics, double>);
-    dict["cpu_solid_f32"] = EncapsulateFunction(cpu_sph<sphericart::SolidHarmonics, float>);
-    dict["cpu_solid_f64"] = EncapsulateFunction(cpu_sph<sphericart::SolidHarmonics, double>);
-    dict["cpu_dsolid_f32"] =
-        EncapsulateFunction(cpu_sph_with_gradients<sphericart::SolidHarmonics, float>);
-    dict["cpu_dsolid_f64"] =
-        EncapsulateFunction(cpu_sph_with_gradients<sphericart::SolidHarmonics, double>);
-    dict["cpu_ddsolid_f32"] =
-        EncapsulateFunction(cpu_sph_with_hessians<sphericart::SolidHarmonics, float>);
-    dict["cpu_ddsolid_f64"] =
-        EncapsulateFunction(cpu_sph_with_hessians<sphericart::SolidHarmonics, double>);
-    return dict;
+ffi::Error CpuDDSphericalF64Impl(
+    int64_t l_max,
+    ffi::Buffer<ffi::F64> xyz,
+    ffi::ResultBuffer<ffi::F64> sph,
+    ffi::ResultBuffer<ffi::F64> dsph,
+    ffi::ResultBuffer<ffi::F64> ddsph
+) {
+    return CpuSphHessImpl<sphericart::SphericalHarmonics, double, ffi::F64>(
+        l_max, xyz, sph, dsph, ddsph
+    );
 }
 
-PYBIND11_MODULE(sphericart_jax_cpu, m) { m.def("registrations", &Registrations); }
+// ===== CPU solid harmonics =====
 
-} // namespace
+ffi::Error CpuSolidF32Impl(int64_t l_max, ffi::Buffer<ffi::F32> xyz, ffi::ResultBuffer<ffi::F32> sph) {
+    return CpuSphImpl<sphericart::SolidHarmonics, float, ffi::F32>(l_max, xyz, sph);
+}
+
+ffi::Error CpuSolidF64Impl(int64_t l_max, ffi::Buffer<ffi::F64> xyz, ffi::ResultBuffer<ffi::F64> sph) {
+    return CpuSphImpl<sphericart::SolidHarmonics, double, ffi::F64>(l_max, xyz, sph);
+}
+
+ffi::Error CpuDSolidF32Impl(
+    int64_t l_max,
+    ffi::Buffer<ffi::F32> xyz,
+    ffi::ResultBuffer<ffi::F32> sph,
+    ffi::ResultBuffer<ffi::F32> dsph
+) {
+    return CpuSphGradImpl<sphericart::SolidHarmonics, float, ffi::F32>(l_max, xyz, sph, dsph);
+}
+
+ffi::Error CpuDSolidF64Impl(
+    int64_t l_max,
+    ffi::Buffer<ffi::F64> xyz,
+    ffi::ResultBuffer<ffi::F64> sph,
+    ffi::ResultBuffer<ffi::F64> dsph
+) {
+    return CpuSphGradImpl<sphericart::SolidHarmonics, double, ffi::F64>(l_max, xyz, sph, dsph);
+}
+
+ffi::Error CpuDDSolidF32Impl(
+    int64_t l_max,
+    ffi::Buffer<ffi::F32> xyz,
+    ffi::ResultBuffer<ffi::F32> sph,
+    ffi::ResultBuffer<ffi::F32> dsph,
+    ffi::ResultBuffer<ffi::F32> ddsph
+) {
+    return CpuSphHessImpl<sphericart::SolidHarmonics, float, ffi::F32>(l_max, xyz, sph, dsph, ddsph);
+}
+
+ffi::Error CpuDDSolidF64Impl(
+    int64_t l_max,
+    ffi::Buffer<ffi::F64> xyz,
+    ffi::ResultBuffer<ffi::F64> sph,
+    ffi::ResultBuffer<ffi::F64> dsph,
+    ffi::ResultBuffer<ffi::F64> ddsph
+) {
+    return CpuSphHessImpl<sphericart::SolidHarmonics, double, ffi::F64>(l_max, xyz, sph, dsph, ddsph);
+}
+
+// ===== Exported handler symbols =====
+
+// Single output
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_spherical_f32,
+    CpuSphericalF32Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F32>>() // xyz
+        .Ret<ffi::Buffer<ffi::F32>>() // sph
+);
+
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_spherical_f64,
+    CpuSphericalF64Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F64>>() // xyz
+        .Ret<ffi::Buffer<ffi::F64>>() // sph
+);
+
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_solid_f32,
+    CpuSolidF32Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F32>>() // xyz
+        .Ret<ffi::Buffer<ffi::F32>>() // sph
+);
+
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_solid_f64,
+    CpuSolidF64Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F64>>() // xyz
+        .Ret<ffi::Buffer<ffi::F64>>() // sph
+);
+
+// Two outputs
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_dspherical_f32,
+    CpuDSphericalF32Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F32>>() // xyz
+        .Ret<ffi::Buffer<ffi::F32>>() // sph
+        .Ret<ffi::Buffer<ffi::F32>>() // dsph
+);
+
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_dspherical_f64,
+    CpuDSphericalF64Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F64>>() // xyz
+        .Ret<ffi::Buffer<ffi::F64>>() // sph
+        .Ret<ffi::Buffer<ffi::F64>>() // dsph
+);
+
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_dsolid_f32,
+    CpuDSolidF32Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F32>>() // xyz
+        .Ret<ffi::Buffer<ffi::F32>>() // sph
+        .Ret<ffi::Buffer<ffi::F32>>() // dsph
+);
+
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_dsolid_f64,
+    CpuDSolidF64Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F64>>() // xyz
+        .Ret<ffi::Buffer<ffi::F64>>() // sph
+        .Ret<ffi::Buffer<ffi::F64>>() // dsph
+);
+
+// Three outputs
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_ddspherical_f32,
+    CpuDDSphericalF32Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F32>>() // xyz
+        .Ret<ffi::Buffer<ffi::F32>>() // sph
+        .Ret<ffi::Buffer<ffi::F32>>() // dsph
+        .Ret<ffi::Buffer<ffi::F32>>() // ddsph
+);
+
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_ddspherical_f64,
+    CpuDDSphericalF64Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F64>>() // xyz
+        .Ret<ffi::Buffer<ffi::F64>>() // sph
+        .Ret<ffi::Buffer<ffi::F64>>() // dsph
+        .Ret<ffi::Buffer<ffi::F64>>() // ddsph
+);
+
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_ddsolid_f32,
+    CpuDDSolidF32Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F32>>() // xyz
+        .Ret<ffi::Buffer<ffi::F32>>() // sph
+        .Ret<ffi::Buffer<ffi::F32>>() // dsph
+        .Ret<ffi::Buffer<ffi::F32>>() // ddsph
+);
+
+XLA_FFI_DEFINE_HANDLER_SYMBOL(
+    cpu_ddsolid_f64,
+    CpuDDSolidF64Impl,
+    ffi::Ffi::Bind()
+        .Attr<int64_t>("l_max")
+        .Arg<ffi::Buffer<ffi::F64>>() // xyz
+        .Ret<ffi::Buffer<ffi::F64>>() // sph
+        .Ret<ffi::Buffer<ffi::F64>>() // dsph
+        .Ret<ffi::Buffer<ffi::F64>>() // ddsph
+);

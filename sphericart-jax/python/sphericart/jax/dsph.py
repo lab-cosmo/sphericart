@@ -1,137 +1,91 @@
-import math
 from functools import partial
+
+import numpy as np
 
 import jax
 import jax.numpy as jnp
 from jax import extend
 from jax.core import ShapedArray
 from jax.interpreters import ad, mlir, xla
-from jax.interpreters.mlir import custom_call, ir
 
 from .ddsph import ddsph
-from .utils import build_sph_descriptor, default_layouts
 
 
-# This file registers the _dsph_p primitive and defines its implementation,
-# as well as some transformation rules. For more information and comments,
-# see sph.py
-
-_dsph_p = extend.core.Primitive("dsph")
+# Register the dsph primitive
+_dsph_p = extend.core.Primitive("dsph_fwd")
 _dsph_p.multiple_results = True
 _dsph_p.def_impl(partial(xla.apply_primitive, _dsph_p))
 
 
 def dsph(xyz, l_max, normalized):
-    sph, dsph = _dsph_p.bind(
-        xyz, l_max, normalized, l_max_c=l_max, normalized_c=normalized
-    )
-    return sph, dsph
+    """Compute spherical/solid harmonics and their gradients."""
+    return _dsph_p.bind(xyz, l_max_c=int(l_max), normalized_c=bool(normalized))
 
 
-def dsph_abstract_eval(xyz, l_max, normalized, *, l_max_c, normalized_c):
+def dsph_abstract_eval(xyz, *, l_max_c, normalized_c):
     sph_size = (l_max_c + 1) * (l_max_c + 1)
-    dtype = xyz.dtype
-    sph_shape = xyz.shape[:-1] + (sph_size,)
-    dsph_shape = xyz.shape[:-1] + (3, sph_size)
-    return ShapedArray(sph_shape, dtype), ShapedArray(dsph_shape, dtype)
+    out_shape = xyz.shape[:-1] + (sph_size,)
+    dout_shape = xyz.shape[:-1] + (3, sph_size)
+    return (ShapedArray(out_shape, xyz.dtype), ShapedArray(dout_shape, xyz.dtype))
 
 
 _dsph_p.def_abstract_eval(dsph_abstract_eval)
 
 
-def dsph_lowering_cpu(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
-    xyz_type = ir.RankedTensorType(xyz.type)
-    xyz_shape = xyz_type.shape
-    dtype = xyz_type.element_type
-    sph_size = (l_max_c + 1) * (l_max_c + 1)
-    sph_shape = xyz_shape[:-1] + [sph_size]
-    dsph_shape = xyz_shape[:-1] + [3, sph_size]
-    n_samples = math.prod(xyz_shape[:-1])
+def _op_suffix_from_dtype(dtype):
+    if dtype == np.float32:
+        return "f32"
+    if dtype == np.float64:
+        return "f64"
+    raise NotImplementedError(f"Unsupported dtype {dtype}")
 
-    op_name = "cpu_d"
-    if normalized_c:
-        op_name += "spherical_"
-    else:
-        op_name += "solid_"
-    if dtype == ir.F32Type.get():
-        op_name += "f32"
-    elif dtype == ir.F64Type.get():
-        op_name += "f64"
-    else:
-        raise NotImplementedError(f"Unsupported dtype {dtype}")
 
-    return custom_call(
-        op_name,
-        result_types=[
-            mlir.ir.RankedTensorType.get(sph_shape, dtype),
-            mlir.ir.RankedTensorType.get(dsph_shape, dtype),
-        ],
-        operands=[
-            xyz,
-            mlir.ir_constant(l_max_c),
-            mlir.ir_constant(n_samples),
-        ],
-        operand_layouts=default_layouts(xyz_shape, (), ()),
-        result_layouts=default_layouts(sph_shape, dsph_shape),
-    ).results
+def dsph_lowering_cpu(ctx, xyz, *, l_max_c, normalized_c):
+    dtype = np.dtype(ctx.avals_in[0].dtype)
+    op_name = (
+        "cpu_"
+        + ("dspherical_" if normalized_c else "dsolid_")
+        + _op_suffix_from_dtype(dtype)
+    )
+    return jax.ffi.ffi_lowering(op_name)(ctx, xyz, l_max=np.int64(l_max_c))
 
 
 mlir.register_lowering(_dsph_p, dsph_lowering_cpu, platform="cpu")
 
 
-def dsph_lowering_cuda(ctx, xyz, l_max, normalized, *, l_max_c, normalized_c):
-    xyz_type = ir.RankedTensorType(xyz.type)
-    xyz_shape = xyz_type.shape
-    dtype = xyz_type.element_type
-    sph_size = (l_max_c + 1) * (l_max_c + 1)
-    sph_shape = xyz_shape[:-1] + [sph_size]
-    dsph_shape = xyz_shape[:-1] + [3, sph_size]
-    n_samples = math.prod(xyz_shape[:-1])
-
-    op_name = "cuda_d"
-    if normalized_c:
-        op_name += "spherical_"
-    else:
-        op_name += "solid_"
-    if dtype == ir.F32Type.get():
-        op_name += "f32"
-    elif dtype == ir.F64Type.get():
-        op_name += "f64"
-    else:
-        raise NotImplementedError(f"Unsupported dtype {dtype}")
-
-    descriptor = build_sph_descriptor(n_samples, l_max_c)
-
-    return custom_call(
-        op_name,
-        result_types=[
-            mlir.ir.RankedTensorType.get(sph_shape, dtype),
-            mlir.ir.RankedTensorType.get(dsph_shape, dtype),
-        ],
-        operands=[xyz],
-        operand_layouts=default_layouts(xyz_shape),
-        result_layouts=default_layouts(sph_shape, dsph_shape),
-        backend_config=descriptor,
-    ).results
+def dsph_lowering_cuda(ctx, xyz, *, l_max_c, normalized_c):
+    dtype = np.dtype(ctx.avals_in[0].dtype)
+    op_name = (
+        "cuda_"
+        + ("dspherical_" if normalized_c else "dsolid_")
+        + _op_suffix_from_dtype(dtype)
+    )
+    return jax.ffi.ffi_lowering(op_name)(ctx, xyz, l_max=np.int64(l_max_c))
 
 
 mlir.register_lowering(_dsph_p, dsph_lowering_cuda, platform="gpu")
 
 
 def dsph_p_batch(arg_values, batch_axes, *, l_max_c, normalized_c):
-    res = dsph(*arg_values)
-    return res, (batch_axes[0], batch_axes[0])
+    sph_val, dsph_val = dsph(arg_values[0], l_max_c, normalized_c)
+    return (sph_val, dsph_val), (batch_axes[0], batch_axes[0])
 
 
 jax.interpreters.batching.primitive_batchers[_dsph_p] = dsph_p_batch
 
 
 def dsph_jvp(primals, tangents, *, l_max_c, normalized_c):
-    sph, d_sph, dd_sph = ddsph(*primals)
-    return (sph, d_sph), (
-        jnp.einsum("...ay, ...a -> ...y", d_sph, tangents[0]),
-        jnp.einsum("...aby, ...a -> ...by", dd_sph, tangents[0]),
-    )
+    # Use the hessian implementation to get the derivative of dsph.
+    sph_val, dsph_val, ddsph_val = ddsph(primals[0], l_max_c, normalized_c)
+
+    # Tangent for sph is contraction of dsph with dx
+    sph_t = jnp.einsum("...ay, ...a -> ...y", dsph_val, tangents[0])
+
+    # Tangent for dsph is contraction of ddsph with dx
+    # ddsph expected shape: (..., 3, 3, sph_size)
+    dsph_t = jnp.einsum("...aby, ...a -> ...by", ddsph_val, tangents[0])
+
+    return (sph_val, dsph_val), (sph_t, dsph_t)
 
 
 ad.primitive_jvps[_dsph_p] = dsph_jvp
