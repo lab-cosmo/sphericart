@@ -171,116 +171,12 @@ ffi::Error CpuSphHessImpl(
 
 } // namespace
 
-// ===== CPU spherical harmonics =====
-
-ffi::Error CpuSphericalF32Impl(
-    int64_t l_max, ffi::Buffer<ffi::F32> xyz, ffi::ResultBuffer<ffi::F32> sph
-) {
-    return CpuSphImpl<sphericart::SphericalHarmonics, float, ffi::F32>(l_max, xyz, sph);
-}
-
-ffi::Error CpuSphericalF64Impl(
-    int64_t l_max, ffi::Buffer<ffi::F64> xyz, ffi::ResultBuffer<ffi::F64> sph
-) {
-    return CpuSphImpl<sphericart::SphericalHarmonics, double, ffi::F64>(l_max, xyz, sph);
-}
-
-ffi::Error CpuDSphericalF32Impl(
-    int64_t l_max,
-    ffi::Buffer<ffi::F32> xyz,
-    ffi::ResultBuffer<ffi::F32> sph,
-    ffi::ResultBuffer<ffi::F32> dsph
-) {
-    return CpuSphGradImpl<sphericart::SphericalHarmonics, float, ffi::F32>(l_max, xyz, sph, dsph);
-}
-
-ffi::Error CpuDSphericalF64Impl(
-    int64_t l_max,
-    ffi::Buffer<ffi::F64> xyz,
-    ffi::ResultBuffer<ffi::F64> sph,
-    ffi::ResultBuffer<ffi::F64> dsph
-) {
-    return CpuSphGradImpl<sphericart::SphericalHarmonics, double, ffi::F64>(l_max, xyz, sph, dsph);
-}
-
-ffi::Error CpuDDSphericalF32Impl(
-    int64_t l_max,
-    ffi::Buffer<ffi::F32> xyz,
-    ffi::ResultBuffer<ffi::F32> sph,
-    ffi::ResultBuffer<ffi::F32> dsph,
-    ffi::ResultBuffer<ffi::F32> ddsph
-) {
-    return CpuSphHessImpl<sphericart::SphericalHarmonics, float, ffi::F32>(
-        l_max, xyz, sph, dsph, ddsph
-    );
-}
-
-ffi::Error CpuDDSphericalF64Impl(
-    int64_t l_max,
-    ffi::Buffer<ffi::F64> xyz,
-    ffi::ResultBuffer<ffi::F64> sph,
-    ffi::ResultBuffer<ffi::F64> dsph,
-    ffi::ResultBuffer<ffi::F64> ddsph
-) {
-    return CpuSphHessImpl<sphericart::SphericalHarmonics, double, ffi::F64>(
-        l_max, xyz, sph, dsph, ddsph
-    );
-}
-
-// ===== CPU solid harmonics =====
-
-ffi::Error CpuSolidF32Impl(int64_t l_max, ffi::Buffer<ffi::F32> xyz, ffi::ResultBuffer<ffi::F32> sph) {
-    return CpuSphImpl<sphericart::SolidHarmonics, float, ffi::F32>(l_max, xyz, sph);
-}
-
-ffi::Error CpuSolidF64Impl(int64_t l_max, ffi::Buffer<ffi::F64> xyz, ffi::ResultBuffer<ffi::F64> sph) {
-    return CpuSphImpl<sphericart::SolidHarmonics, double, ffi::F64>(l_max, xyz, sph);
-}
-
-ffi::Error CpuDSolidF32Impl(
-    int64_t l_max,
-    ffi::Buffer<ffi::F32> xyz,
-    ffi::ResultBuffer<ffi::F32> sph,
-    ffi::ResultBuffer<ffi::F32> dsph
-) {
-    return CpuSphGradImpl<sphericart::SolidHarmonics, float, ffi::F32>(l_max, xyz, sph, dsph);
-}
-
-ffi::Error CpuDSolidF64Impl(
-    int64_t l_max,
-    ffi::Buffer<ffi::F64> xyz,
-    ffi::ResultBuffer<ffi::F64> sph,
-    ffi::ResultBuffer<ffi::F64> dsph
-) {
-    return CpuSphGradImpl<sphericart::SolidHarmonics, double, ffi::F64>(l_max, xyz, sph, dsph);
-}
-
-ffi::Error CpuDDSolidF32Impl(
-    int64_t l_max,
-    ffi::Buffer<ffi::F32> xyz,
-    ffi::ResultBuffer<ffi::F32> sph,
-    ffi::ResultBuffer<ffi::F32> dsph,
-    ffi::ResultBuffer<ffi::F32> ddsph
-) {
-    return CpuSphHessImpl<sphericart::SolidHarmonics, float, ffi::F32>(l_max, xyz, sph, dsph, ddsph);
-}
-
-ffi::Error CpuDDSolidF64Impl(
-    int64_t l_max,
-    ffi::Buffer<ffi::F64> xyz,
-    ffi::ResultBuffer<ffi::F64> sph,
-    ffi::ResultBuffer<ffi::F64> dsph,
-    ffi::ResultBuffer<ffi::F64> ddsph
-) {
-    return CpuSphHessImpl<sphericart::SolidHarmonics, double, ffi::F64>(l_max, xyz, sph, dsph, ddsph);
-}
-
 // ===== Exported handler symbols =====
 
 // Single output
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_spherical_f32,
-    CpuSphericalF32Impl,
+    (CpuSphImpl<sphericart::SphericalHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F32>>() // xyz
@@ -289,7 +185,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_spherical_f64,
-    CpuSphericalF64Impl,
+    (CpuSphImpl<sphericart::SphericalHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F64>>() // xyz
@@ -298,7 +194,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_solid_f32,
-    CpuSolidF32Impl,
+    (CpuSphImpl<sphericart::SolidHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F32>>() // xyz
@@ -307,7 +203,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_solid_f64,
-    CpuSolidF64Impl,
+    (CpuSphImpl<sphericart::SolidHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F64>>() // xyz
@@ -317,7 +213,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 // Two outputs
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_dspherical_f32,
-    CpuDSphericalF32Impl,
+    (CpuSphGradImpl<sphericart::SphericalHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F32>>() // xyz
@@ -327,7 +223,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_dspherical_f64,
-    CpuDSphericalF64Impl,
+    (CpuSphGradImpl<sphericart::SphericalHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F64>>() // xyz
@@ -337,7 +233,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_dsolid_f32,
-    CpuDSolidF32Impl,
+    (CpuSphGradImpl<sphericart::SolidHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F32>>() // xyz
@@ -347,7 +243,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_dsolid_f64,
-    CpuDSolidF64Impl,
+    (CpuSphGradImpl<sphericart::SolidHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F64>>() // xyz
@@ -358,7 +254,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 // Three outputs
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_ddspherical_f32,
-    CpuDDSphericalF32Impl,
+    (CpuSphHessImpl<sphericart::SphericalHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F32>>() // xyz
@@ -369,7 +265,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_ddspherical_f64,
-    CpuDDSphericalF64Impl,
+    (CpuSphHessImpl<sphericart::SphericalHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F64>>() // xyz
@@ -380,7 +276,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_ddsolid_f32,
-    CpuDDSolidF32Impl,
+    (CpuSphHessImpl<sphericart::SolidHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F32>>() // xyz
@@ -391,7 +287,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cpu_ddsolid_f64,
-    CpuDDSolidF64Impl,
+    (CpuSphHessImpl<sphericart::SolidHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Attr<int64_t>("l_max")
         .Arg<ffi::Buffer<ffi::F64>>() // xyz

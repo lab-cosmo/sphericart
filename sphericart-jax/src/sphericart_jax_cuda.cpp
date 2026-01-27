@@ -182,144 +182,12 @@ ffi::Error CudaSphHessImpl(
 
 } // namespace
 
-// ===== CUDA spherical harmonics =====
-
-ffi::Error CudaSphericalF32Impl(
-    cudaStream_t stream, int64_t l_max, ffi::Buffer<ffi::F32> xyz, ffi::ResultBuffer<ffi::F32> sph
-) {
-    return CudaSphImpl<sphericart::cuda::SphericalHarmonics, float, ffi::F32>(
-        stream, l_max, xyz, sph
-    );
-}
-
-ffi::Error CudaSphericalF64Impl(
-    cudaStream_t stream, int64_t l_max, ffi::Buffer<ffi::F64> xyz, ffi::ResultBuffer<ffi::F64> sph
-) {
-    return CudaSphImpl<sphericart::cuda::SphericalHarmonics, double, ffi::F64>(
-        stream, l_max, xyz, sph
-    );
-}
-
-ffi::Error CudaDSphericalF32Impl(
-    cudaStream_t stream,
-    int64_t l_max,
-    ffi::Buffer<ffi::F32> xyz,
-    ffi::ResultBuffer<ffi::F32> sph,
-    ffi::ResultBuffer<ffi::F32> dsph
-) {
-    return CudaSphGradImpl<sphericart::cuda::SphericalHarmonics, float, ffi::F32>(
-        stream, l_max, xyz, sph, dsph
-    );
-}
-
-ffi::Error CudaDSphericalF64Impl(
-    cudaStream_t stream,
-    int64_t l_max,
-    ffi::Buffer<ffi::F64> xyz,
-    ffi::ResultBuffer<ffi::F64> sph,
-    ffi::ResultBuffer<ffi::F64> dsph
-) {
-    return CudaSphGradImpl<sphericart::cuda::SphericalHarmonics, double, ffi::F64>(
-        stream, l_max, xyz, sph, dsph
-    );
-}
-
-ffi::Error CudaDDSphericalF32Impl(
-    cudaStream_t stream,
-    int64_t l_max,
-    ffi::Buffer<ffi::F32> xyz,
-    ffi::ResultBuffer<ffi::F32> sph,
-    ffi::ResultBuffer<ffi::F32> dsph,
-    ffi::ResultBuffer<ffi::F32> ddsph
-) {
-    return CudaSphHessImpl<sphericart::cuda::SphericalHarmonics, float, ffi::F32>(
-        stream, l_max, xyz, sph, dsph, ddsph
-    );
-}
-
-ffi::Error CudaDDSphericalF64Impl(
-    cudaStream_t stream,
-    int64_t l_max,
-    ffi::Buffer<ffi::F64> xyz,
-    ffi::ResultBuffer<ffi::F64> sph,
-    ffi::ResultBuffer<ffi::F64> dsph,
-    ffi::ResultBuffer<ffi::F64> ddsph
-) {
-    return CudaSphHessImpl<sphericart::cuda::SphericalHarmonics, double, ffi::F64>(
-        stream, l_max, xyz, sph, dsph, ddsph
-    );
-}
-
-// ===== CUDA solid harmonics =====
-
-ffi::Error CudaSolidF32Impl(
-    cudaStream_t stream, int64_t l_max, ffi::Buffer<ffi::F32> xyz, ffi::ResultBuffer<ffi::F32> sph
-) {
-    return CudaSphImpl<sphericart::cuda::SolidHarmonics, float, ffi::F32>(stream, l_max, xyz, sph);
-}
-
-ffi::Error CudaSolidF64Impl(
-    cudaStream_t stream, int64_t l_max, ffi::Buffer<ffi::F64> xyz, ffi::ResultBuffer<ffi::F64> sph
-) {
-    return CudaSphImpl<sphericart::cuda::SolidHarmonics, double, ffi::F64>(stream, l_max, xyz, sph);
-}
-
-ffi::Error CudaDSolidF32Impl(
-    cudaStream_t stream,
-    int64_t l_max,
-    ffi::Buffer<ffi::F32> xyz,
-    ffi::ResultBuffer<ffi::F32> sph,
-    ffi::ResultBuffer<ffi::F32> dsph
-) {
-    return CudaSphGradImpl<sphericart::cuda::SolidHarmonics, float, ffi::F32>(
-        stream, l_max, xyz, sph, dsph
-    );
-}
-
-ffi::Error CudaDSolidF64Impl(
-    cudaStream_t stream,
-    int64_t l_max,
-    ffi::Buffer<ffi::F64> xyz,
-    ffi::ResultBuffer<ffi::F64> sph,
-    ffi::ResultBuffer<ffi::F64> dsph
-) {
-    return CudaSphGradImpl<sphericart::cuda::SolidHarmonics, double, ffi::F64>(
-        stream, l_max, xyz, sph, dsph
-    );
-}
-
-ffi::Error CudaDDSolidF32Impl(
-    cudaStream_t stream,
-    int64_t l_max,
-    ffi::Buffer<ffi::F32> xyz,
-    ffi::ResultBuffer<ffi::F32> sph,
-    ffi::ResultBuffer<ffi::F32> dsph,
-    ffi::ResultBuffer<ffi::F32> ddsph
-) {
-    return CudaSphHessImpl<sphericart::cuda::SolidHarmonics, float, ffi::F32>(
-        stream, l_max, xyz, sph, dsph, ddsph
-    );
-}
-
-ffi::Error CudaDDSolidF64Impl(
-    cudaStream_t stream,
-    int64_t l_max,
-    ffi::Buffer<ffi::F64> xyz,
-    ffi::ResultBuffer<ffi::F64> sph,
-    ffi::ResultBuffer<ffi::F64> dsph,
-    ffi::ResultBuffer<ffi::F64> ddsph
-) {
-    return CudaSphHessImpl<sphericart::cuda::SolidHarmonics, double, ffi::F64>(
-        stream, l_max, xyz, sph, dsph, ddsph
-    );
-}
-
 // ===== Exported handler symbols (CUDA) =====
 
 // Single output
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_spherical_f32,
-    CudaSphericalF32Impl,
+    (CudaSphImpl<sphericart::cuda::SphericalHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -329,7 +197,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_spherical_f64,
-    CudaSphericalF64Impl,
+    (CudaSphImpl<sphericart::cuda::SphericalHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -339,7 +207,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_solid_f32,
-    CudaSolidF32Impl,
+    (CudaSphImpl<sphericart::cuda::SolidHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -349,7 +217,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_solid_f64,
-    CudaSolidF64Impl,
+    (CudaSphImpl<sphericart::cuda::SolidHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -360,7 +228,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 // Two outputs
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_dspherical_f32,
-    CudaDSphericalF32Impl,
+    (CudaSphGradImpl<sphericart::cuda::SphericalHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -371,7 +239,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_dspherical_f64,
-    CudaDSphericalF64Impl,
+    (CudaSphGradImpl<sphericart::cuda::SphericalHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -382,7 +250,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_dsolid_f32,
-    CudaDSolidF32Impl,
+    (CudaSphGradImpl<sphericart::cuda::SolidHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -393,7 +261,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_dsolid_f64,
-    CudaDSolidF64Impl,
+    (CudaSphGradImpl<sphericart::cuda::SolidHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -405,7 +273,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 // Three outputs
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_ddspherical_f32,
-    CudaDDSphericalF32Impl,
+    (CudaSphHessImpl<sphericart::cuda::SphericalHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -417,7 +285,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_ddspherical_f64,
-    CudaDDSphericalF64Impl,
+    (CudaSphHessImpl<sphericart::cuda::SphericalHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -429,7 +297,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_ddsolid_f32,
-    CudaDDSolidF32Impl,
+    (CudaSphHessImpl<sphericart::cuda::SolidHarmonics, float, ffi::F32>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
@@ -441,7 +309,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 
 XLA_FFI_DEFINE_HANDLER_SYMBOL(
     cuda_ddsolid_f64,
-    CudaDDSolidF64Impl,
+    (CudaSphHessImpl<sphericart::cuda::SolidHarmonics, double, ffi::F64>),
     ffi::Ffi::Bind()
         .Ctx<ffi::PlatformStream<cudaStream_t>>()
         .Attr<int64_t>("l_max")
