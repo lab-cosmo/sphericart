@@ -51,20 +51,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["310", "311", "312", "313", "314"]
         os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm]
         include:
-          - os: ubuntu-22.04
+          - name: x86_64 Linux
+            os: ubuntu-22.04
             arch: x86_64
-            name: x86_64 Linux
-          - os: macos-14
+          - name: x86_64 macOS
+            os: macos-14
+            arch: x86_64
+          - name: arm64 macOS
+            os: macos-14
             arch: arm64
-            name: arm64 macOS
-          - os: ubuntu-22.04-arm
+          - name: aarch64 Linux
+            os: ubuntu-22.04-arm
             arch: aarch64
-            name: aarch64 Linux
 
-    name: "Py${{matrix.python-version}} ${{matrix.os}} ${{matrix.arch}}"
+    name: "${{matrix.os}} ${{matrix.arch}}"
 
     steps:
     - name: Checkout code
@@ -89,7 +91,7 @@ jobs:
       run: python -m cibuildwheel ./sphericart-jax
       env:
         CIBW_BUILD_VERBOSITY: 1
-        CIBW_BUILD: "cp${{ matrix.python-version }}-*"
+        CIBW_BUILD: "cp312-*"
         CIBW_SKIP: "*-musllinux*"
         CIBW_ARCHS: "${{ matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux_2_28_x86_64
@@ -100,7 +102,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: "sphericart-jax-py-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.arch }}"
+        name: "sphericart-jax-py-${{ matrix.os }}-${{ matrix.arch }}"
         path: ./wheelhouse/*.whl
 
     - name: upload to GitHub release
