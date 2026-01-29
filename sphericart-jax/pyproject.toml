@@ -1,11 +1,7 @@
 [project]
 name = "sphericart-jax"
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 requires-python = ">=3.10"
-dependencies = [
-    "jax >=0.5.0",
-    "packaging",
-]
 
 readme = "README.md"
 license = "Apache-2.0 or MIT"
@@ -44,10 +40,11 @@ repository = "https://github.com/lab-cosmo/sphericart"
 requires = [
     "setuptools >=77",
     "wheel >=0.36",
-    "cmake >=3.30",
-    "jax >=0.5.0",  # needed for its XLA FFI headers
 ]
-build-backend = "setuptools.build_meta"
+# use a custom build backend to add a dependency on jax/cmake only when
+# building wheels
+build-backend = "backend"
+backend-path = ["build-backend"]
 
 
 [tool.setuptools]

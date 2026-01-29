@@ -1,5 +1,10 @@
 import ctypes
+import glob
+import os
+import re
+import sys
 import warnings
+from collections import namedtuple
 from pathlib import Path
 
 from packaging import version
@@ -9,12 +14,56 @@ import jax
 from .spherical_harmonics import solid_harmonics, spherical_harmonics  # noqa: F401
 
 
-def get_minimum_cuda_version_for_jax(jax_version):
+Version = namedtuple("Version", ["major", "minor", "patch"])
+
+
+def parse_version(version_string):
+    match = re.match(r"(\d+)\.(\d+)\.(\d+).*", version_string)
+    if match:
+        return Version(*map(int, match.groups()))
+    else:
+        raise ValueError(f"Invalid version string format: {version_string}")
+
+
+_HERE = os.path.realpath(os.path.dirname(__file__))
+
+
+def _get_lib_dir():
+    jax_version = parse_version(jax.__version__)
+    expected_prefix = os.path.join(
+        _HERE, f"jax-{jax_version.major}.{jax_version.minor}"
+    )
+    if os.path.exists(expected_prefix):
+        return expected_prefix
+
+    # gather which jax version(s) the current install was built
+    # with to create the error message
+    existing_versions = []
+    for prefix in glob.glob(os.path.join(_HERE, "jax-*")):
+        existing_versions.append(os.path.basename(prefix)[4:])
+
+    if len(existing_versions) == 1:
+        raise ImportError(
+            f"Trying to load sphericart-jax with jax v{jax.__version__}, "
+            f"but it was compiled against jax v{existing_versions[0]}, which "
+            "is not ABI compatible"
+        )
+    else:
+        all_versions = ", ".join(map(lambda v: f"v{v}", existing_versions))
+        raise ImportError(
+            f"Trying to load sphericart-jax with jax v{jax.__version__}, "
+            f"we found builds for jax {all_versions}; which are not ABI compatible.\n"
+            "You can try to re-install from source with "
+            "`pip install sphericart-jax --no-binary=sphericart-jax`"
+        )
+
+
+def get_minimum_cuda_version_for_jax(jax_version_str):
     """
     Get the minimum required CUDA version for a specific JAX version.
 
     Args:
-        jax_version (str): Installed JAX version, e.g., '0.4.11'.
+        jax_version_str (str): Installed JAX version, e.g., '0.4.11'.
 
     Returns:
         tuple: Minimum required CUDA version as (major, minor), e.g., (11, 8).
@@ -28,18 +77,29 @@ def get_minimum_cuda_version_for_jax(jax_version):
         ),  # JAX 0.4.26 and later: CUDA 12.1+
     ]
 
-    jax_ver = version.parse(jax_version)
+    jax_ver = version.parse(jax_version_str)
 
     # Find the appropriate CUDA version range
     for start, end, cuda_version in version_ranges:
         if start <= jax_ver <= end:
             return cuda_version
 
-    raise ValueError(f"Unsupported JAX version: {jax_version}")
+    raise ValueError(f"Unsupported JAX version: {jax_version_str}")
+
+
+_LIB_DIR = _get_lib_dir()
 
 
 def _load_shared_library(glob_pattern: str) -> ctypes.CDLL:
-    lib_dir = Path(__file__).resolve().parent / "lib"
+    if sys.platform.startswith("darwin"):
+        lib_dir = Path(_LIB_DIR) / "lib"
+    elif sys.platform.startswith("linux"):
+        lib_dir = Path(_LIB_DIR) / "lib"
+    elif sys.platform.startswith("win"):
+        lib_dir = Path(_LIB_DIR) / "bin"
+    else:
+        raise ImportError("Unknown platform. Please edit this file")
+
     matches = sorted(lib_dir.glob(glob_pattern))
     if not matches:
         raise ImportError(
