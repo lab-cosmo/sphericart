@@ -51,7 +51,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        pytorch-version: ["2.4", "2.5", "2.6", "2.7", "2.8", "2.9", "2.10"]
+        pytorch-version: ["2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9", "2.10"]
         os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm]
         include:
           - os: ubuntu-22.04

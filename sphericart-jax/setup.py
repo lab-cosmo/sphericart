@@ -103,7 +103,7 @@ if __name__ == "__main__":
         jax_version = f"== {jax_v_major}.{jax_v_minor}.{jax_v_patch}"
     except ImportError:
         # otherwise we are building a sdist
-        jax_version = ">=0.5.0"
+        jax_version = ">=0.6.0"
 
     install_requires = [f"jax {jax_version}", "packaging"]
 

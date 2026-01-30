@@ -10,7 +10,7 @@ FORCED_JAX_VERSION = os.environ.get("SPHERICART_JAX_BUILD_WITH_JAX_VERSION")
 if FORCED_JAX_VERSION is not None:
     JAX_DEP = f"jax =={FORCED_JAX_VERSION}"
 else:
-    JAX_DEP = "jax >=0.5.0"
+    JAX_DEP = "jax >=0.6.0"
 
 # ==================================================================================== #
 #                   Build backend functions definition                                 #

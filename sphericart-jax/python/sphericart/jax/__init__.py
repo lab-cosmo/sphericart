@@ -71,7 +71,7 @@ def get_minimum_cuda_version_for_jax(jax_version_str):
     # Define ranges of JAX versions and their corresponding minimum CUDA versions
     version_ranges = [
         (
-            version.parse("0.5.0"),
+            version.parse("0.6.0"),
             version.parse("999.999.999"),
             (12, 1),
         ),  # JAX 0.4.26 and later: CUDA 12.1+
