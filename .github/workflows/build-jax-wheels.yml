@@ -1,4 +1,4 @@
-name: Build Jax Wheels
+name: Build JAX Wheels
 
 on:
   push:
@@ -51,20 +51,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["39", "310", "311", "312", "313"]
+        jax-version: ["0.6.0", "0.6.1", "0.6.2", "0.7.0", "0.7.1", "0.7.2", "0.8.0", "0.8.1", "0.8.2", "0.8.3", "0.9.0"]
         os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm]
         include:
-          - os: ubuntu-22.04
+          - name: x86_64 Linux
+            os: ubuntu-22.04
             arch: x86_64
-            name: x86_64 Linux
-          - os: macos-14
+          - name: x86_64 macOS
+            os: macos-14
+            arch: x86_64
+          - name: arm64 macOS
+            os: macos-14
             arch: arm64
-            name: arm64 macOS
-          - os: ubuntu-22.04-arm
+          - name: aarch64 Linux
+            os: ubuntu-22.04-arm
             arch: aarch64
-            name: aarch64 Linux
 
-    name: "Py${{matrix.python-version}} ${{matrix.os}} ${{matrix.arch}}"
+    name: "JAX ${{matrix.jax-version}} ${{matrix.os}} ${{matrix.arch}}"
 
     steps:
     - name: Checkout code
@@ -89,26 +92,105 @@ jobs:
       run: python -m cibuildwheel ./sphericart-jax
       env:
         CIBW_BUILD_VERBOSITY: 1
-        CIBW_BUILD: "cp${{ matrix.python-version }}-*"
+        CIBW_BUILD: "cp312-*"
         CIBW_SKIP: "*-musllinux*"
         CIBW_ARCHS: "${{ matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux_2_28_x86_64
         CIBW_MANYLINUX_AARCH64_IMAGE: sphericart_manylinux_2_28_aarch64
+        CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
+          auditwheel repair \
+              -w {dest_dir} {wheel}
+        CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
+          delocate-wheel --ignore-missing-dependencies \
+                         --require-archs {delocate_archs} \
+                         -w {dest_dir} -v {wheel}
         CIBW_ENVIRONMENT: >
           SPHERICART_ARCH_NATIVE=OFF
           SPHERICART_NO_LOCAL_DEPS=1
+          SPHERICART_JAX_BUILD_WITH_JAX_VERSION=${{ matrix.jax-version }}.*
 
     - uses: actions/upload-artifact@v4
       with:
-        name: "sphericart-jax-py-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.arch }}"
+        name: jax-single-version-wheel-${{ matrix.os }}-${{ matrix.arch }}-jax-${{ matrix.jax-version }}
         path: ./wheelhouse/*.whl
 
-    - name: upload to GitHub release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          ./wheelhouse/*.whl
-        prerelease: ${{ contains(github.ref, '-rc') }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  merge-jax-wheels:
+    needs: build-jax-wheels
+    runs-on: ubuntu-22.04
+    name: merge wheels for ${{ matrix.name }}
+    strategy:
+      matrix:
+        include:
+          - name: x86_64 Linux
+            os: ubuntu-22.04
+            arch: x86_64
+          - name: arm64 macOS
+            os: macos-14
+            arch: arm64
+          - name: aarch64 Linux
+            os: ubuntu-22.04-arm
+            arch: aarch64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jax-single-version-wheel-${{ matrix.os }}-${{ matrix.arch }}-*
+          merge-multiple: false
+          path: dist
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: install dependencies
+        run: python -m pip install twine wheel
+
+      - name: merge wheels
+        run: |
+          set -euxo pipefail
+
+          ls dist/
+
+          # collect all jax versions used for the build
+          REQUIRES_JAX=$(find dist -name "*.whl" -exec unzip -p {} "sphericart_jax-*.dist-info/METADATA" \; | grep "Requires-Dist: jax")
+          MERGED_JAX_REQUIRE=$(python scripts/create-jax-versions-range.py "$REQUIRES_JAX")
+
+          echo MERGED_JAX_REQUIRE=$MERGED_JAX_REQUIRE
+
+          # unpack all single jax versions wheels in the same directory
+          mkdir dist/unpacked
+          find dist -name "*.whl" -print -exec python -m wheel unpack --dest dist/unpacked/ {} ';'
+
+          sed -i "s/Requires-Dist: jax.*/$MERGED_JAX_REQUIRE/" dist/unpacked/sphericart_jax-*/sphericart_jax-*.dist-info/METADATA
+
+          echo "\n\n METADATA = \n\n"
+          cat dist/unpacked/sphericart_jax-*/sphericart_jax-*.dist-info/METADATA
+
+          # check the right metadata was added to the file. grep will exit with
+          # code `1` if the line is not found, which will stop CI
+          grep "$MERGED_JAX_REQUIRE" dist/unpacked/sphericart_jax-*/sphericart_jax-*.dist-info/METADATA
+
+          # repack the directory as a new wheel
+          mkdir wheelhouse
+          python -m wheel pack --dest wheelhouse/ dist/unpacked/*
+
+      - name: check wheels with twine
+        run: twine check wheelhouse/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sphericart-jax-wheel-${{ matrix.os }}-${{ matrix.arch }}
+          path: ./wheelhouse/*.whl
+
+      - name: upload to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./wheelhouse/*.whl
+          prerelease: ${{ contains(github.ref, '-rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

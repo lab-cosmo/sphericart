@@ -30,41 +30,54 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     endif()
 endif()
 
-find_package(pybind11 CONFIG REQUIRED)
+# Locate Python (used to find the jaxlib include directory)
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 
+# Find the XLA/FFI header-only library shipped inside jaxlib
+execute_process(
+    COMMAND ${Python_EXECUTABLE} -c
+        "import pathlib, jaxlib; print((pathlib.Path(jaxlib.__file__).parent / 'include').resolve())"
+    OUTPUT_VARIABLE XLA_INCLUDE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(NOT EXISTS "${XLA_INCLUDE_DIR}")
+    message(FATAL_ERROR "Could not find jaxlib include directory: ${XLA_INCLUDE_DIR}")
+endif()
+
+message(STATUS "XLA include directory: ${XLA_INCLUDE_DIR}")
+
+# Build sphericart (static) and then link it into our shared libraries
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 add_subdirectory(sphericart EXCLUDE_FROM_ALL)
 
-# CPU op library
-set(CPU_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cpu.cpp)
-pybind11_add_module(sphericart_jax_cpu ${CPU_SOURCES})
-
-target_link_libraries(sphericart_jax_cpu PUBLIC sphericart)
-target_compile_features(sphericart_jax_cpu PUBLIC cxx_std_17)
-
-target_include_directories(sphericart_jax_cpu PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+# --- CPU shared library ---
+add_library(sphericart_jax_cpu SHARED ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cpu.cpp)
+target_link_libraries(sphericart_jax_cpu PRIVATE sphericart)
+target_compile_features(sphericart_jax_cpu PRIVATE cxx_std_17)
+target_include_directories(sphericart_jax_cpu PRIVATE
+    ${XLA_INCLUDE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-
 install(TARGETS sphericart_jax_cpu
     LIBRARY DESTINATION "lib"
+    RUNTIME DESTINATION "lib"
+    ARCHIVE DESTINATION "lib"
 )
 
+# --- CUDA shared library ---
 if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    set(CUDA_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
-    pybind11_add_module(sphericart_jax_cuda ${CUDA_SOURCES})
-
-
-    target_link_libraries(sphericart_jax_cuda PUBLIC sphericart)
-    target_compile_features(sphericart_jax_cuda PUBLIC cxx_std_17)
-
-    target_include_directories(sphericart_jax_cuda PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+    add_library(sphericart_jax_cuda SHARED ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
+    target_link_libraries(sphericart_jax_cuda PRIVATE sphericart)
+    target_compile_features(sphericart_jax_cuda PRIVATE cxx_std_17)
+    target_include_directories(sphericart_jax_cuda PRIVATE
+        ${XLA_INCLUDE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     )
     install(TARGETS sphericart_jax_cuda
         LIBRARY DESTINATION "lib"
+        RUNTIME DESTINATION "lib"
+        ARCHIVE DESTINATION "lib"
     )
 endif()
