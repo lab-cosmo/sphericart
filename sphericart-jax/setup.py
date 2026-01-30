@@ -31,13 +31,13 @@ class cmake_ext(build_ext):
     def run(self):
         import jax
 
-        jax_major, jax_minor, *_ = jax.__version__.split(".")
+        jax_major, jax_minor, jax_patch = jax.__version__.split(".")
 
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
         install_dir = os.path.join(
             os.path.realpath(self.build_lib),
-            f"sphericart/jax/jax-{jax_major}.{jax_minor}",
+            f"sphericart/jax/jax-{jax_major}.{jax_minor}.{jax_patch}",
         )
 
         os.makedirs(build_dir, exist_ok=True)
@@ -99,8 +99,8 @@ if __name__ == "__main__":
         import jax
 
         # if we have jax, we are building a wheel - requires specific jax version
-        jax_v_major, jax_v_minor, *_ = jax.__version__.split(".")
-        jax_version = f"== {jax_v_major}.{jax_v_minor}.*"
+        jax_v_major, jax_v_minor, jax_v_patch = jax.__version__.split(".")
+        jax_version = f"== {jax_v_major}.{jax_v_minor}.{jax_v_patch}"
     except ImportError:
         # otherwise we are building a sdist
         jax_version = ">=0.5.0"

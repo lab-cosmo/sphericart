@@ -22,15 +22,16 @@ if __name__ == "__main__":
             continue
 
         match = re.match(
-            r"Requires-Dist: jax[ ]?==(\d+)\.(\d+)\.*", version)
+            r"Requires-Dist: jax[ ]?==(\d+)\.(\d+)(?:\.(\d+))?(?:\.\*)?", version)
         if match is None:
             raise ValueError(f"unexpected Requires-Dist format: {version}")
 
-        major, minor = match.groups()
+        major, minor, patch = match.groups()
         major = int(major)
         minor = int(minor)
+        patch = int(patch) if patch is not None else 0
 
-        version = (major, minor)
+        version = (major, minor, patch)
 
         if version in jax_versions:
             raise ValueError(f"duplicate jax version: {version}")
@@ -39,7 +40,7 @@ if __name__ == "__main__":
 
     jax_versions = list(sorted(jax_versions))
 
-    min_version = f"{jax_versions[0][0]}.{jax_versions[0][1]}"
-    max_version = f"{jax_versions[-1][0]}.{jax_versions[-1][1] + 1}"
+    min_version = f"{jax_versions[0][0]}.{jax_versions[0][1]}.{jax_versions[0][2]}"
+    max_version = f"{jax_versions[-1][0]}.{jax_versions[-1][1]}.{jax_versions[-1][2] + 1}"
 
     print(f"Requires-Dist: jax >={min_version},<{max_version}")

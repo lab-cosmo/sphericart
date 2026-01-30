@@ -31,7 +31,7 @@ _HERE = os.path.realpath(os.path.dirname(__file__))
 def _get_lib_dir():
     jax_version = parse_version(jax.__version__)
     expected_prefix = os.path.join(
-        _HERE, f"jax-{jax_version.major}.{jax_version.minor}"
+        _HERE, f"jax-{jax_version.major}.{jax_version.minor}.{jax_version.patch}"
     )
     if os.path.exists(expected_prefix):
         return expected_prefix
