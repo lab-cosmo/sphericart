@@ -37,10 +37,7 @@ repository = "https://github.com/lab-cosmo/sphericart"
 ### ======================================================================== ###
 
 [build-system]
-requires = [
-    "setuptools >=77",
-    "wheel >=0.36",
-]
+requires = ["setuptools >=77"]
 # use a custom build backend to add a dependency on jax/cmake only when
 # building wheels
 build-backend = "backend"
