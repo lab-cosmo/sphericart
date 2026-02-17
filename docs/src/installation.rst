@@ -11,16 +11,14 @@ The Python package can be installed with pip by simply running
 
     pip install sphericart
 
-This basic package makes use of NumPy. A PyTorch-based implementation can be installed with
+This basic package makes use of NumPy. Implementations supporting PyTorch and JAX can be installed with
 
 .. code-block:: bash
 
     pip install sphericart[torch]
+    pip install sphericart[jax]
 
-This pre-built version available on PyPI sacrifices some performance to ensure it
-can run on all systems, and it does not include GPU support.
-If you need an extra 5-10% of performance, you want to evaluate the spherical harmonics on GPUs,
-and/or you want to use it in JAX, you should build the code from source:
+If you need an extra 5-10% of performance on CPU, you should build the code from source:
 
 .. code-block:: bash
 

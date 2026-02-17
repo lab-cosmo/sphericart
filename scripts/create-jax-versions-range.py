@@ -26,7 +26,7 @@ if __name__ == "__main__":
         if match is None:
             raise ValueError(f"unexpected Requires-Dist format: {version}")
 
-        major, minor, patch = match.groups()
+        major, minor, patch, *_ = match.groups()
         major = int(major)
         minor = int(minor)
         patch = int(patch) if patch is not None else 0
