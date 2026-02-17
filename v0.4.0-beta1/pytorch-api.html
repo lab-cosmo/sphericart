@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PyTorch API &mdash; sphericart  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="JAX API" href="jax-api.html" />
+    <link rel="prev" title="Python API" href="python-api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            sphericart
+              <img src="_static/sphericart_icon.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">API documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cpp-api.html">C++ API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c-api.html">C API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python-api.html">Python API</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">PyTorch API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sphericart.torch.SphericalHarmonics"><code class="docutils literal notranslate"><span class="pre">SphericalHarmonics</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sphericart.torch.SphericalHarmonics.compute"><code class="docutils literal notranslate"><span class="pre">SphericalHarmonics.compute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sphericart.torch.SphericalHarmonics.compute_with_gradients"><code class="docutils literal notranslate"><span class="pre">SphericalHarmonics.compute_with_gradients()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sphericart.torch.SphericalHarmonics.compute_with_hessians"><code class="docutils literal notranslate"><span class="pre">SphericalHarmonics.compute_with_hessians()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sphericart.torch.SphericalHarmonics.omp_num_threads"><code class="docutils literal notranslate"><span class="pre">SphericalHarmonics.omp_num_threads()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sphericart.torch.SphericalHarmonics.l_max"><code class="docutils literal notranslate"><span class="pre">SphericalHarmonics.l_max()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sphericart.torch.SphericalHarmonics.normalized"><code class="docutils literal notranslate"><span class="pre">SphericalHarmonics.normalized()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sphericart.torch.e3nn_spherical_harmonics"><code class="docutils literal notranslate"><span class="pre">e3nn_spherical_harmonics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sphericart.torch.patch_e3nn"><code class="docutils literal notranslate"><span class="pre">patch_e3nn()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sphericart.torch.unpatch_e3nn"><code class="docutils literal notranslate"><span class="pre">unpatch_e3nn()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="jax-api.html">JAX API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Usage and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maths.html">What sphericart computes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sphericart</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="api.html">API documentation</a></li>
+      <li class="breadcrumb-item active">PyTorch API</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pytorch-api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pytorch-api">
+<h1>PyTorch API<a class="headerlink" href="#pytorch-api" title="Link to this heading"></a></h1>
+<p>The main class for computing spherical harmonics using a
+<cite>PyTorch</cite>-compatible framework follows the same syntax as
+the Python version <a class="reference internal" href="python-api.html#sphericart.SphericalHarmonics" title="sphericart.SphericalHarmonics"><code class="xref py py-class docutils literal notranslate"><span class="pre">sphericart.SphericalHarmonics</span></code></a>.
+Depending on the device the tensor is
+stored on, and its <cite>dtype</cite>, the calculations will be performed
+using 32- or 64- bits floating point arythmetics, and
+using the CPU or CUDA implementation.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="sphericart.torch.SphericalHarmonics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sphericart.torch.</span></span><span class="sig-name descname"><span class="pre">SphericalHarmonics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backward_second_derivatives</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sphericart.torch.SphericalHarmonics" title="Link to this definition"></a></dt>
+<dd><p>Spherical harmonics calculator, up to degree <code class="docutils literal notranslate"><span class="pre">l_max</span></code>.</p>
+<p>By default, this class computes a non-normalized form of the real spherical
+harmonics, i.e. <span class="math notranslate nohighlight">\(r^l Y^l_m\)</span>. These scaled spherical harmonics
+are homogeneous polynomials in the Cartesian coordinates of the input points.
+<code class="docutils literal notranslate"><span class="pre">normalized=True</span></code> can be set to compute the normalized spherical harmonics
+<span class="math notranslate nohighlight">\(Y^l_m\)</span>, which are instead homogeneous polynomials of x/r, y/r, z/r.</p>
+<p>This class can be used similarly to <a class="reference internal" href="python-api.html#sphericart.SphericalHarmonics" title="sphericart.SphericalHarmonics"><code class="xref py py-class docutils literal notranslate"><span class="pre">sphericart.SphericalHarmonics</span></code></a>
+(its Python/NumPy counterpart), and it allows to return explicit forward gradients
+and/or Hessians. For example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sphericart.torch</span> <span class="k">as</span> <span class="nn">sct</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sh</span> <span class="o">=</span> <span class="n">sct</span><span class="o">.</span><span class="n">SphericalHarmonics</span><span class="p">(</span><span class="n">l_max</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xyz</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sh_values</span><span class="p">,</span> <span class="n">sh_grads</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">compute_with_gradients</span><span class="p">(</span><span class="n">xyz</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sh_grads</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">torch.Size([10, 3, 81])</span>
+</pre></div>
+</div>
+<p>Alternatively, if <cite>compute()</cite> is called, the outputs support
+single and double backpropagation.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">xyz</span> <span class="o">=</span> <span class="n">xyz</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sh</span> <span class="o">=</span> <span class="n">sct</span><span class="o">.</span><span class="n">SphericalHarmonics</span><span class="p">(</span><span class="n">l_max</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sh_values</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">xyz</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sh_values</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">xyz</span><span class="o">.</span><span class="n">grad</span><span class="p">,</span> <span class="n">sh_grads</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>By default, only single backpropagation with respect to <cite>xyz</cite> is
+enabled (this includes mixed second derivatives where <cite>xyz</cite> appears
+as only one of the differentiation steps). To activate support
+for double backpropagation with respect to <cite>xyz</cite>, please set
+<cite>backward_second_derivatives=True</cite> at class creation. Warning: if
+<cite>backward_second_derivatives</cite> is not set to <cite>True</cite> and double
+differentiation with respect to <cite>xyz</cite> is requested, the results may
+be incorrect and no warnings will be displayed. This is necessary to
+provide optimal performance for both use cases.</p>
+<p>This class supports TorchScript.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>l_max</strong> – the maximum degree of the spherical harmonics to be calculated</p></li>
+<li><p><strong>normalized</strong> – whether to normalize the spherical harmonics (default: False)</p></li>
+<li><p><strong>backward_second_derivatives</strong> – if this parameter is set to <cite>True</cite>, second derivatives of the spherical
+harmonics are calculated and stored during forward calls to <cite>compute</cite>
+(provided that <cite>xyz.requires_grad</cite> is <cite>True</cite>), making it possible to perform
+double reverse-mode differentiation with respect to <cite>xyz</cite>. If <cite>False</cite>, only
+the first derivatives will be computed and only a single reverse-mode
+differentiation step will be possible with respect to <cite>xyz</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a calculator, in the form of a SphericalHarmonics object</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="sphericart.torch.SphericalHarmonics.compute">
+<span class="sig-name descname"><span class="pre">compute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xyz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a></span></span><a class="headerlink" href="#sphericart.torch.SphericalHarmonics.compute" title="Link to this definition"></a></dt>
+<dd><p>Calculates the spherical harmonics for a set of 3D points.</p>
+<p>The coordinates should be stored in the <code class="docutils literal notranslate"><span class="pre">xyz</span></code> array. If <code class="docutils literal notranslate"><span class="pre">xyz</span></code>
+has <cite>requires_grad = True</cite> it stores the forward derivatives which
+are then used in the backward pass.
+The type of the entries of <cite>xyz</cite> determines the precision used,
+and the device the tensor is stored on determines whether the
+CPU or CUDA implementation is used for the calculation backend.
+It always supports single reverse-mode differentiation, as well as
+double reverse-mode differentiation if <cite>backward_second_derivatives</cite>
+was set to <cite>True</cite> during class creation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>xyz</strong> – The Cartesian coordinates of the 3D points, as a <cite>torch.Tensor</cite> with
+shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">3)</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A tensor of shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">(l_max+1)**2)</span></code> containing all the
+spherical harmonics up to degree <cite>l_max</cite> in lexicographic order.
+For example, if <code class="docutils literal notranslate"><span class="pre">l_max</span> <span class="pre">=</span> <span class="pre">2</span></code>, The last axis will correspond to
+spherical harmonics with <code class="docutils literal notranslate"><span class="pre">(l,</span> <span class="pre">m)</span> <span class="pre">=</span> <span class="pre">(0,</span> <span class="pre">0),</span> <span class="pre">(1,</span> <span class="pre">-1),</span> <span class="pre">(1,</span> <span class="pre">0),</span> <span class="pre">(1,</span>
+<span class="pre">1),</span> <span class="pre">(2,</span> <span class="pre">-2),</span> <span class="pre">(2,</span> <span class="pre">-1),</span> <span class="pre">(2,</span> <span class="pre">0),</span> <span class="pre">(2,</span> <span class="pre">1),</span> <span class="pre">(2,</span> <span class="pre">2)</span></code>, in this order.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sphericart.torch.SphericalHarmonics.compute_with_gradients">
+<span class="sig-name descname"><span class="pre">compute_with_gradients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xyz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.12)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#sphericart.torch.SphericalHarmonics.compute_with_gradients" title="Link to this definition"></a></dt>
+<dd><p>Calculates the spherical harmonics for a set of 3D points,
+and also returns the forward-mode derivatives.</p>
+<p>The coordinates should be stored in the <code class="docutils literal notranslate"><span class="pre">xyz</span></code> array.
+The type of the entries of <cite>xyz</cite> determines the precision used,
+and the device the tensor is stored on determines whether the
+CPU or CUDA implementation is used for the calculation backend.
+Reverse-mode differentiation is not supported for this function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>xyz</strong> – The Cartesian coordinates of the 3D points, as a <cite>torch.Tensor</cite> with
+shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">3)</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>A tuple that contains:</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">(l_max+1)**2)</span></code> tensor containing all the
+spherical harmonics up to degree <cite>l_max</cite> in lexicographic order.
+For example, if <code class="docutils literal notranslate"><span class="pre">l_max</span> <span class="pre">=</span> <span class="pre">2</span></code>, The last axis will correspond to
+spherical harmonics with <code class="docutils literal notranslate"><span class="pre">(l,</span> <span class="pre">m)</span> <span class="pre">=</span> <span class="pre">(0,</span> <span class="pre">0),</span> <span class="pre">(1,</span> <span class="pre">-1),</span> <span class="pre">(1,</span> <span class="pre">0),</span> <span class="pre">(1,</span>
+<span class="pre">1),</span> <span class="pre">(2,</span> <span class="pre">-2),</span> <span class="pre">(2,</span> <span class="pre">-1),</span> <span class="pre">(2,</span> <span class="pre">0),</span> <span class="pre">(2,</span> <span class="pre">1),</span> <span class="pre">(2,</span> <span class="pre">2)</span></code>, in this order.</p></li>
+<li><p>A tensor of shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">3,</span> <span class="pre">(l_max+1)**2)</span></code> containing all
+the spherical harmonics’ derivatives up to degree <code class="docutils literal notranslate"><span class="pre">l_max</span></code>. The
+last axis is organized in the same way as in the spherical
+harmonics return array, while the second-to-last axis refers to
+derivatives in the the x, y, and z directions, respectively.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sphericart.torch.SphericalHarmonics.compute_with_hessians">
+<span class="sig-name descname"><span class="pre">compute_with_hessians</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xyz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.12)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#sphericart.torch.SphericalHarmonics.compute_with_hessians" title="Link to this definition"></a></dt>
+<dd><p>Calculates the spherical harmonics for a set of 3D points,
+and also returns the forward derivatives and second derivatives.</p>
+<p>The coordinates should be stored in the <code class="docutils literal notranslate"><span class="pre">xyz</span></code> array.
+The type of the entries of <cite>xyz</cite> determines the precision used,
+and the device the tensor is stored on determines whether the
+CPU or CUDA implementation is used for the calculation backend.
+Reverse-mode differentiation is not supported for this function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>xyz</strong> – The Cartesian coordinates of the 3D points, as a <cite>torch.Tensor</cite> with
+shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">3)</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>A tuple that contains:</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">(l_max+1)**2)</span></code> tensor containing all the
+spherical harmonics up to degree <cite>l_max</cite> in lexicographic order.
+For example, if <code class="docutils literal notranslate"><span class="pre">l_max</span> <span class="pre">=</span> <span class="pre">2</span></code>, The last axis will correspond to
+spherical harmonics with <code class="docutils literal notranslate"><span class="pre">(l,</span> <span class="pre">m)</span> <span class="pre">=</span> <span class="pre">(0,</span> <span class="pre">0),</span> <span class="pre">(1,</span> <span class="pre">-1),</span> <span class="pre">(1,</span> <span class="pre">0),</span> <span class="pre">(1,</span>
+<span class="pre">1),</span> <span class="pre">(2,</span> <span class="pre">-2),</span> <span class="pre">(2,</span> <span class="pre">-1),</span> <span class="pre">(2,</span> <span class="pre">0),</span> <span class="pre">(2,</span> <span class="pre">1),</span> <span class="pre">(2,</span> <span class="pre">2)</span></code>, in this order.</p></li>
+<li><p>A tensor of shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">3,</span> <span class="pre">(l_max+1)**2)</span></code> containing all
+the spherical harmonics’ derivatives up to degree <code class="docutils literal notranslate"><span class="pre">l_max</span></code>. The
+last axis is organized in the same way as in the spherical
+harmonics return array, while the second-to-last axis refers to
+derivatives in the the x, y, and z directions, respectively.</p></li>
+<li><p>A tensor of shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">3,</span> <span class="pre">3,</span> <span class="pre">(l_max+1)**2)</span></code> containing all
+the spherical harmonics’ second derivatives up to degree <code class="docutils literal notranslate"><span class="pre">l_max</span></code>. The
+last axis is organized in the same way as in the spherical
+harmonics return array, while the two intermediate axes represent the
+hessian dimensions.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sphericart.torch.SphericalHarmonics.omp_num_threads">
+<span class="sig-name descname"><span class="pre">omp_num_threads</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sphericart.torch.SphericalHarmonics.omp_num_threads" title="Link to this definition"></a></dt>
+<dd><p>Returns the number of threads available for calculations on the CPU.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sphericart.torch.SphericalHarmonics.l_max">
+<span class="sig-name descname"><span class="pre">l_max</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sphericart.torch.SphericalHarmonics.l_max" title="Link to this definition"></a></dt>
+<dd><p>Returns the maximum angular momentum setting for this calculator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sphericart.torch.SphericalHarmonics.normalized">
+<span class="sig-name descname"><span class="pre">normalized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sphericart.torch.SphericalHarmonics.normalized" title="Link to this definition"></a></dt>
+<dd><p>Returns normalization setting for this calculator.</p>
+</dd></dl>
+
+</dd></dl>
+
+<p>The implementation also contains a couple of utility functions
+to facilitate the integration of <cite>sphericart</cite> into code using
+<cite>e3nn</cite>.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="sphericart.torch.e3nn_spherical_harmonics">
+<span class="sig-prename descclassname"><span class="pre">sphericart.torch.</span></span><span class="sig-name descname"><span class="pre">e3nn_spherical_harmonics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.12)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'integral'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.1)"><span class="pre">Tensor</span></a></span></span><a class="headerlink" href="#sphericart.torch.e3nn_spherical_harmonics" title="Link to this definition"></a></dt>
+<dd><p>Computes spherical harmonics with an interface similar to the e3nn package.</p>
+<p>Provides an interface that is similar to <a class="reference external" href="https://docs.e3nn.org/en/latest/api/o3/o3_sh.html#e3nn.o3.spherical_harmonics" title="(in e3nn)"><code class="xref py py-func docutils literal notranslate"><span class="pre">e3nn.o3.spherical_harmonics()</span></code></a>
+but uses <a class="reference internal" href="#sphericart.torch.SphericalHarmonics" title="sphericart.torch.SphericalHarmonics"><code class="xref py py-class docutils literal notranslate"><span class="pre">SphericalHarmonics</span></code></a> for the actual calculation.
+Uses the same ordering of the [x,y,z] axes, and supports the same options for
+input and harmonics normalization as <code class="xref py py-mod docutils literal notranslate"><span class="pre">e3nn</span></code>. However, it does not support
+defining the irreps through a <a class="reference external" href="https://docs.e3nn.org/en/latest/api/o3/o3_irreps.html#e3nn.o3.Irreps" title="(in e3nn)"><code class="xref py py-class docutils literal notranslate"><span class="pre">e3nn.o3._irreps.Irreps</span></code></a> or a string
+specification, but just as a single integer or a list of integers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>l_list</strong> – Either a single integer or a list of integers specifying which
+<span class="math notranslate nohighlight">\(Y^l_m\)</span> should be computed. All values up to the maximum
+l value are computed, so this may be inefficient for use cases
+requiring a single, or few, angular momentum channels.</p></li>
+<li><p><strong>x</strong> – A <cite>torch.Tensor</cite> containing the coordinates, in the same format
+expected by the <cite>e3nn</cite> function.</p></li>
+<li><p><strong>normalize</strong> – Flag specifying whether the input positions should be normalized,
+or whether the function should compute scaled :math:`   ilde{Y}^l_m`</p></li>
+<li><p><strong>normalization</strong> – String that can be “integral”, “norm”, “component”, that controls
+a further scaling of the <span class="math notranslate nohighlight">\(Y_m^l\)</span>. See the
+documentation of <a class="reference external" href="https://docs.e3nn.org/en/latest/api/o3/o3_sh.html#e3nn.o3.spherical_harmonics" title="(in e3nn)"><code class="xref py py-func docutils literal notranslate"><span class="pre">e3nn.o3.spherical_harmonics()</span></code></a>
+for a detailed explanation of the different conventions.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="sphericart.torch.patch_e3nn">
+<span class="sig-prename descclassname"><span class="pre">sphericart.torch.</span></span><span class="sig-name descname"><span class="pre">patch_e3nn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">e3nn_module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#sphericart.torch.patch_e3nn" title="Link to this definition"></a></dt>
+<dd><p>Patches the <code class="xref py py-mod docutils literal notranslate"><span class="pre">e3nn</span></code> module so that
+<code class="xref py py-func docutils literal notranslate"><span class="pre">sphericart_torch.e3nn_spherical_harmonics()</span></code>
+is called in lieu of the built-in function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>e3nn_module</strong> – The alias that has been chosen for the e3nn module,
+usually just <code class="docutils literal notranslate"><span class="pre">e3nn</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="sphericart.torch.unpatch_e3nn">
+<span class="sig-prename descclassname"><span class="pre">sphericart.torch.</span></span><span class="sig-name descname"><span class="pre">unpatch_e3nn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">e3nn_module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#sphericart.torch.unpatch_e3nn" title="Link to this definition"></a></dt>
+<dd><p>Restore the original <code class="docutils literal notranslate"><span class="pre">spherical_harmonics</span></code> function
+in the <code class="xref py py-mod docutils literal notranslate"><span class="pre">e3nn</span></code> module.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="python-api.html" class="btn btn-neutral float-left" title="Python API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="jax-api.html" class="btn btn-neutral float-right" title="JAX API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, sphericart developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
