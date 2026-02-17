@@ -18,7 +18,7 @@ This basic package makes use of NumPy. Implementations supporting PyTorch and JA
     pip install sphericart[torch]
     pip install sphericart[jax]
 
-If you need an extra 5-10% of performance, you should build the code from source:
+If you need an extra 5-10% of performance on CPU, you should build the code from source:
 
 .. code-block:: bash
 
