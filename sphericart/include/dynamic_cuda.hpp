@@ -179,8 +179,19 @@ class CUDADriver {
     using cuDeviceGetAttribute_t = CUresult (*)(int*, CUdevice_attribute, CUdevice);
     using cuDeviceGetName_t = CUresult (*)(char*, int, CUdevice);
     using cuDeviceTotalMem_t = CUresult (*)(size_t*, CUdevice);
-    using cuLaunchKernel_t =
-        CUresult (*)(CUfunction, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, size_t, CUstream, void**, void*);
+    using cuLaunchKernel_t = CUresult (*)(
+        CUfunction,
+        unsigned int,
+        unsigned int,
+        unsigned int,
+        unsigned int,
+        unsigned int,
+        unsigned int,
+        size_t,
+        CUstream,
+        void**,
+        void*
+    );
     using cuStreamCreate_t = CUresult (*)(CUstream*, unsigned int);
     using cuStreamDestroy_t = CUresult (*)(CUstream);
     using cuCtxSynchronize_t = CUresult (*)(void);

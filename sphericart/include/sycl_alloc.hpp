@@ -40,10 +40,9 @@ void check(T result, char const* const func, const char* const file, int const l
 
 #define FREE(var) ::sycl::free(var, *(sycl_get_queue()))
 
-#define MEMSET(addr, val, size)                                                                    \
-    {                                                                                              \
-        sycl_get_queue()->submit([&](::sycl::handler& cgh) { cgh.memset(addr, val, size); }        \
-        ).wait();                                                                                  \
+#define MEMSET(addr, val, size)                                                                      \
+    {                                                                                                \
+        sycl_get_queue()->submit([&](::sycl::handler& cgh) { cgh.memset(addr, val, size); }).wait(); \
     }
 
 #define DEVICE_INIT(type, dst, src, size)                                                          \

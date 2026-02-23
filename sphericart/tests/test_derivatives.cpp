@@ -149,9 +149,9 @@ bool check_hessian_call(int l_max, C<double>& calculator, const std::vector<doub
                                           sph_minus_minus[n_sph * i_sample + i_sph]) /
                                          (4.0 * DELTA * DELTA);
                     if (!(std::abs(analytical / finite_diff - 1.0) < TOLERANCE ||
-                          (std::abs(analytical) < 1e-15 && std::abs(finite_diff) < 1e-7)
-                        )) { // Add a criterion for second
-                             // derivatives which
+                          (std::abs(analytical) < 1e-15 &&
+                           std::abs(finite_diff) < 1e-7))) { // Add a criterion for second
+                                                             // derivatives which
                         // are zero, as they can fail the relative test
                         std::cout << "Wrong second derivative: " << analytical << " vs "
                                   << finite_diff << std::endl;
