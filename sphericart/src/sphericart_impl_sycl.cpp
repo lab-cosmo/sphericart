@@ -618,35 +618,7 @@ __global__ void backward_kernel(
     scalar_t* dsph, scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
 ) {
 
-//    int edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
-//
-//    int spatial = blockIdx.y;
-//
-//    scalar_t sum = 0.0;
-//
-//    if (edge_idx < nedges) {
-//        // for (int j = threadIdx.x; j < sph_grad.size(1); j += blockDim.x) {
-//        for (int j = threadIdx.x; j < n_total; j += blockDim.x) {
-//
-//            // sum += dsph[edge_idx][spatial][j] * sph_grad[edge_idx][j];
-//            sum += dsph[edge_idx * 3 * n_total + spatial * n_total + j] *
-//                   sph_grad[edge_idx * n_total + j];
-//        }
-//    }
-//
-//    __syncthreads();
-//
-//    // reduce across the sub-warp
-//    for (int offset = blockDim.x / 2; offset > 0; offset /= 2) {
-//        sum += __shfl_down_sync(FULL_MASK, sum, offset);
-//    }
-//
-//    if (edge_idx < nedges) {
-//        if (threadIdx.x == 0) {
-//            // xyz_grad[sample_idx][spatial] = sum;
-//            xyz_grad[edge_idx * 3 + spatial] = sum;
-//        }
-//    }
+//    TODO
 }
 
 template __global__ void backward_kernel<float>(
