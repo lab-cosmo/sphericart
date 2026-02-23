@@ -5,4 +5,4 @@ clang-format --version
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)
 cd "$ROOT_DIR"
 
-git ls-files '*.cpp' '*.c' '*.hpp' '*.h' '*.cu' '*.cuh' | xargs -L 1 clang-format-15 --dry-run --Werror
+git ls-files '*.cpp' '*.c' '*.hpp' '*.h' '*.cu' '*.cuh' | xargs -L 1 clang-format --dry-run --Werror
