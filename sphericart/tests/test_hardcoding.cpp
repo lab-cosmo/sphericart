@@ -13,7 +13,9 @@
 #include "sphericart.hpp"
 
 #define _SPH_TOL 1e-6
+#ifndef DTYPE
 #define DTYPE double
+#endif
 using namespace sphericart;
 
 // shorthand for all-past-1 generic sph only

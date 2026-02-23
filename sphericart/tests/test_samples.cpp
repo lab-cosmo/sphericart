@@ -13,7 +13,9 @@
 #include "sphericart.hpp"
 
 #define _SPH_TOL 1e-9
+#ifndef DTYPE
 #define DTYPE double
+#endif
 using namespace sphericart;
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
