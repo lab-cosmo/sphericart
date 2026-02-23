@@ -34,7 +34,6 @@
 
 #define __global__ __attribute__((always_inline))
 
-// using cudaStream_t = sycl::queue&;
 namespace syclex = sycl::ext::oneapi;
 
 #define rnorm3d(d1,d2,d3) (1 / sycl::length(sycl::vec<DTYPE, 3>(d1, d2, d3)))
@@ -218,6 +217,3 @@ static inline void syclSetDevice(int id) { dev_mgr::instance().select_device(id)
 /// Util function to get number of GPU devices (default: explicit scaling)
 static inline void syclGetDeviceCount(int* id) { *id = dev_mgr::instance().device_count(); }
 
-static inline void cudaMemset(void* ptr, int val, size_t size) {
-  sycl_get_queue()->memset(ptr, static_cast<unsigned char>(val), size).wait();
-}
