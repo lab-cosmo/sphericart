@@ -171,11 +171,9 @@ void SphericalHarmonics<T>::compute_with_hessians(
 template <typename T>
 void SphericalHarmonics<T>::compute_array(const T* xyz, size_t xyz_length, T* sph, size_t sph_length) {
     if (xyz_length % 3 != 0) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_array: expected "
-            "xyz array with `n_samples "
-            "x 3` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_array: expected "
+                                 "xyz array with `n_samples "
+                                 "x 3` elements");
     }
 
     auto n_samples = xyz_length / 3;
@@ -185,11 +183,9 @@ void SphericalHarmonics<T>::compute_array(const T* xyz, size_t xyz_length, T* sp
         return;
     }
     if (sph == nullptr || sph_length < (n_samples * (l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_array: expected "
-            "sph array with `n_samples "
-            "x (l_max + 1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_array: expected "
+                                 "sph array with `n_samples "
+                                 "x (l_max + 1)^2` elements");
     }
 
     this->_array_no_derivatives(
@@ -202,11 +198,9 @@ void SphericalHarmonics<T>::compute_array_with_gradients(
     const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length
 ) {
     if (xyz_length % 3 != 0) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_array: expected "
-            "xyz array with `n_samples "
-            "x 3` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_array: expected "
+                                 "xyz array with `n_samples "
+                                 "x 3` elements");
     }
 
     auto n_samples = xyz_length / 3;
@@ -216,18 +210,14 @@ void SphericalHarmonics<T>::compute_array_with_gradients(
         return;
     }
     if (sph == nullptr || sph_length < (n_samples * (l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_array: expected "
-            "sph array with `n_samples "
-            "x (l_max + 1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_array: expected "
+                                 "sph array with `n_samples "
+                                 "x (l_max + 1)^2` elements");
     }
 
     if (dsph == nullptr || dsph_length < (n_samples * 3 * (l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_array: expected dsph array with "
-            "`n_samples x 3 x (l_max + 1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_array: expected dsph array with "
+                                 "`n_samples x 3 x (l_max + 1)^2` elements");
     }
 
     this->_array_with_derivatives(
@@ -247,11 +237,9 @@ void SphericalHarmonics<T>::compute_array_with_hessians(
     size_t ddsph_length
 ) {
     if (xyz_length % 3 != 0) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_array: expected "
-            "xyz array with `n_samples "
-            "x 3` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_array: expected "
+                                 "xyz array with `n_samples "
+                                 "x 3` elements");
     }
 
     auto n_samples = xyz_length / 3;
@@ -261,25 +249,19 @@ void SphericalHarmonics<T>::compute_array_with_hessians(
         return;
     }
     if (sph == nullptr || sph_length < (n_samples * (l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_array: expected "
-            "sph array with `n_samples "
-            "x (l_max + 1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_array: expected "
+                                 "sph array with `n_samples "
+                                 "x (l_max + 1)^2` elements");
     }
 
     if (dsph == nullptr || dsph_length < (n_samples * 3 * (l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_array: expected dsph array with "
-            "`n_samples x 3 x (l_max + 1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_array: expected dsph array with "
+                                 "`n_samples x 3 x (l_max + 1)^2` elements");
     }
 
     if (ddsph == nullptr || ddsph_length < (n_samples * 9 * (l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_array: expected ddsph array with "
-            "`n_samples x 9 x (l_max + 1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_array: expected ddsph array with "
+                                 "`n_samples x 9 x (l_max + 1)^2` elements");
     }
 
     this->_array_with_hessians(
@@ -290,18 +272,14 @@ void SphericalHarmonics<T>::compute_array_with_hessians(
 template <typename T>
 void SphericalHarmonics<T>::compute_sample(const T* xyz, size_t xyz_length, T* sph, size_t sph_length) {
     if (xyz_length != 3) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_sample: expected xyz array with 3 "
-            "elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_sample: expected xyz array with 3 "
+                                 "elements");
     }
 
     if (sph == nullptr || sph_length < ((l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_sample: expected "
-            "sph array with `(l_max + "
-            "1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_sample: expected "
+                                 "sph array with `(l_max + "
+                                 "1)^2` elements");
     }
 
     this->_sample_no_derivatives(
@@ -324,25 +302,19 @@ void SphericalHarmonics<T>::compute_sample_with_gradients(
     const T* xyz, size_t xyz_length, T* sph, size_t sph_length, T* dsph, size_t dsph_length
 ) {
     if (xyz_length != 3) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_sample: expected xyz array with 3 "
-            "elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_sample: expected xyz array with 3 "
+                                 "elements");
     }
 
     if (sph == nullptr || sph_length < ((l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_sample: expected "
-            "sph array with `(l_max + "
-            "1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_sample: expected "
+                                 "sph array with `(l_max + "
+                                 "1)^2` elements");
     }
 
     if (dsph == nullptr || dsph_length < (3 * (l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_sample: expected sph array with `3 x "
-            "(l_max + 1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_sample: expected sph array with `3 x "
+                                 "(l_max + 1)^2` elements");
     }
 
     this->_sample_with_derivatives(
@@ -372,18 +344,14 @@ void SphericalHarmonics<T>::compute_sample_with_hessians(
     size_t ddsph_length
 ) {
     if (xyz_length != 3) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_sample: expected xyz array with 3 "
-            "elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_sample: expected xyz array with 3 "
+                                 "elements");
     }
 
     if (sph == nullptr || sph_length < ((l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_sample: expected "
-            "sph array with `(l_max + "
-            "1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_sample: expected "
+                                 "sph array with `(l_max + "
+                                 "1)^2` elements");
     }
 
     if (dsph == nullptr || dsph_length < (3 * (l_max + 1) * (l_max + 1))) {
@@ -394,11 +362,9 @@ void SphericalHarmonics<T>::compute_sample_with_hessians(
     }
 
     if (ddsph == nullptr || ddsph_length < (9 * (l_max + 1) * (l_max + 1))) {
-        throw std::runtime_error(
-            "SphericalHarmonics::compute_sample: expected "
-            "ddsph array with `9 x "
-            "(l_max + 1)^2` elements"
-        );
+        throw std::runtime_error("SphericalHarmonics::compute_sample: expected "
+                                 "ddsph array with `9 x "
+                                 "(l_max + 1)^2` elements");
     }
 
     this->_sample_with_hessians(

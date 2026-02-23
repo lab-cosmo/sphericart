@@ -20,14 +20,7 @@ using namespace sphericart;
 // shorthand for all-past-1 generic sph only
 template <typename T>
 inline void compute_generic(
-    int n_samples,
-    int l_max,
-    T* prefactors,
-    T* xyz,
-    T* sph,
-    T* dsph,
-    T* ddsph,
-    T* buffers
+    int n_samples, int l_max, T* prefactors, T* xyz, T* sph, T* dsph, T* ddsph, T* buffers
 ) {
     if (dsph == nullptr) {
         generic_sph<T, false, false, false, 1>(

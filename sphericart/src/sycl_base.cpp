@@ -31,22 +31,13 @@ void sphericart::sycl::spherical_harmonics_sycl_base(
     scalar_t* dsph,
     scalar_t* ddsph
 ) {
-    spherical_harmonics_kernel( 
-        xyz,
-        nedges,
-        prefactors,
-        l_max,
-        gradients,
-        hessian,
-        normalize,
-        sph,
-        dsph,
-        ddsph
+    spherical_harmonics_kernel(
+        xyz, nedges, prefactors, l_max, gradients, hessian, normalize, sph, dsph, ddsph
     );
 }
 
 template void sphericart::sycl::spherical_harmonics_sycl_base<float>(
-    const float *xyz,
+    const float* xyz,
     const int nedges,
     const float* prefactors,
     const int nprefactors,
@@ -79,27 +70,15 @@ template void sphericart::sycl::spherical_harmonics_sycl_base<double>(
 
 template <typename scalar_t>
 void sphericart::sycl::spherical_harmonics_backward_sycl_base(
-    const scalar_t* dsph,
-    const scalar_t* sph_grad,
-    const int nedges,
-    const int ntotal,
-    scalar_t* xyz_grad
+    const scalar_t* dsph, const scalar_t* sph_grad, const int nedges, const int ntotal, scalar_t* xyz_grad
 ) {
-	//TODO
+    // TODO
 }
 
 template void sphericart::sycl::spherical_harmonics_backward_sycl_base<float>(
-    const float* dsph,
-    const float* sph_grad,
-    const int nedges,
-    const int ntotal,
-    float* xyz_grad
+    const float* dsph, const float* sph_grad, const int nedges, const int ntotal, float* xyz_grad
 );
 
 template void sphericart::sycl::spherical_harmonics_backward_sycl_base<double>(
-    const double* dsph,
-    const double* sph_grad,
-    const int nedges,
-    const int ntotal,
-    double* xyz_grad
+    const double* dsph, const double* sph_grad, const int nedges, const int ntotal, double* xyz_grad
 );

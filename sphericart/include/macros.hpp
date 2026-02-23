@@ -256,31 +256,32 @@ template <typename T> using remove_pointer_t = typename remove_pointer<T>::type;
     (dz_sph_i)[SPH_IDX(23)] = 3 * (sph_i)[SPH_IDX(15)];                                              \
     (dz_sph_i)[SPH_IDX(24)] = cast(sph_i, 0.0);
 
-#define COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i, SPH_IDX)                                          \
-    {                                                                                                \
-        sph_i[SPH_IDX(25)] = cast(sph_i, 13.12764113680340) * y *                                    \
-                             (y2 * (x2 - cast(sph_i, 0.2) * y2) +                                    \
-                              cast(sph_i, 0.3994658435740642) * sph_i[SPH_IDX(24)]);                 \
-        auto tmp = cast(sph_i, 3.316624790355400) * z;                                               \
-        sph_i[SPH_IDX(26)] = tmp * sph_i[SPH_IDX(16)];                                               \
-        sph_i[SPH_IDX(34)] = tmp * sph_i[SPH_IDX(24)];                                               \
-        tmp = cast(sph_i, 4.974937185533100) *                                                       \
-              (z2 + cast(sph_i, 0.5284436396808015) * sph_i[SPH_IDX(6)]);                            \
-        sph_i[SPH_IDX(27)] = tmp * sph_i[SPH_IDX(9)];                                                \
-        sph_i[SPH_IDX(33)] = tmp * sph_i[SPH_IDX(15)];                                               \
-        tmp = cast(sph_i, 5.257947827012948) * sph_i[SPH_IDX(6)];                                    \
-        sph_i[SPH_IDX(28)] = tmp * sph_i[SPH_IDX(10)];                                               \
-        sph_i[SPH_IDX(32)] = tmp * sph_i[SPH_IDX(14)];                                               \
-        tmp = cast(sph_i, 0.6324555320336759) * z;                                                   \
-        sph_i[SPH_IDX(29)] =                                                                         \
-            cast(sph_i, 1.427248064296125) * (y * sph_i[SPH_IDX(20)] + tmp * sph_i[SPH_IDX(19)]);    \
-        sph_i[SPH_IDX(31)] =                                                                         \
-            cast(sph_i, 1.427248064296125) * (x * sph_i[SPH_IDX(20)] + tmp * sph_i[SPH_IDX(21)]);    \
-        sph_i[SPH_IDX(30)] =                                                                         \
-            cast(sph_i, 1.403403869441083) *                                                         \
-            (cast(sph_i, 3.540173863740353) * sph_i[SPH_IDX(6)] * sph_i[SPH_IDX(12)] - z * z2 * z2); \
-        sph_i[SPH_IDX(35)] =                                                                         \
-            -cast(sph_i, 1.048808848170152) * (y * sph_i[SPH_IDX(16)] - x * sph_i[SPH_IDX(24)]);     \
+#define COMPUTE_SPH_L5(x, y, z, x2, y2, z2, sph_i, SPH_IDX)                                        \
+    {                                                                                              \
+        sph_i[SPH_IDX(25)] = cast(sph_i, 13.12764113680340) * y *                                  \
+                             (y2 * (x2 - cast(sph_i, 0.2) * y2) +                                  \
+                              cast(sph_i, 0.3994658435740642) * sph_i[SPH_IDX(24)]);               \
+        auto tmp = cast(sph_i, 3.316624790355400) * z;                                             \
+        sph_i[SPH_IDX(26)] = tmp * sph_i[SPH_IDX(16)];                                             \
+        sph_i[SPH_IDX(34)] = tmp * sph_i[SPH_IDX(24)];                                             \
+        tmp = cast(sph_i, 4.974937185533100) *                                                     \
+              (z2 + cast(sph_i, 0.5284436396808015) * sph_i[SPH_IDX(6)]);                          \
+        sph_i[SPH_IDX(27)] = tmp * sph_i[SPH_IDX(9)];                                              \
+        sph_i[SPH_IDX(33)] = tmp * sph_i[SPH_IDX(15)];                                             \
+        tmp = cast(sph_i, 5.257947827012948) * sph_i[SPH_IDX(6)];                                  \
+        sph_i[SPH_IDX(28)] = tmp * sph_i[SPH_IDX(10)];                                             \
+        sph_i[SPH_IDX(32)] = tmp * sph_i[SPH_IDX(14)];                                             \
+        tmp = cast(sph_i, 0.6324555320336759) * z;                                                 \
+        sph_i[SPH_IDX(29)] =                                                                       \
+            cast(sph_i, 1.427248064296125) * (y * sph_i[SPH_IDX(20)] + tmp * sph_i[SPH_IDX(19)]);  \
+        sph_i[SPH_IDX(31)] =                                                                       \
+            cast(sph_i, 1.427248064296125) * (x * sph_i[SPH_IDX(20)] + tmp * sph_i[SPH_IDX(21)]);  \
+        sph_i[SPH_IDX(30)] =                                                                       \
+            cast(sph_i, 1.403403869441083) *                                                       \
+            (cast(sph_i, 3.540173863740353) * sph_i[SPH_IDX(6)] * sph_i[SPH_IDX(12)] - z * z2 * z2 \
+            );                                                                                     \
+        sph_i[SPH_IDX(35)] =                                                                       \
+            -cast(sph_i, 1.048808848170152) * (y * sph_i[SPH_IDX(16)] - x * sph_i[SPH_IDX(24)]);   \
     }
 
 #define COMPUTE_SPH_DERIVATIVE_L5(x, y, z, x2, y2, z2, sph_i, dx_sph_i, dy_sph_i, dz_sph_i, SPH_IDX) \
@@ -430,11 +431,10 @@ template <typename T> using remove_pointer_t = typename remove_pointer<T>::type;
             (x * (-cast(sph_i, 1.585330919042404) * (sph_i)[SPH_IDX(5)] * (sph_i)[SPH_IDX(5)] +      \
                   (z2 - y2) * (sph_i)[SPH_IDX(6)]) +                                                 \
              cast(sph_i, 0.1740776559556978) * sph_i[SPH_IDX(31)]);                                  \
-        (dy_sph_i)[SPH_IDX(41)] =                                                                    \
-            -cast(sph_i, 6.99145635022478) * z *                                                     \
-            (z2 * z2 + (cast(sph_i, 5.28443639680801) * y2 -                                         \
-                        cast(sph_i, 4.188790204786391) * (sph_i)[SPH_IDX(6)]) *                      \
-                           (sph_i)[SPH_IDX(6)]);                                                     \
+        (dy_sph_i)[SPH_IDX(41)] = -cast(sph_i, 6.99145635022478) * z *                               \
+                                  (z2 * z2 + (cast(sph_i, 5.28443639680801) * y2 -                   \
+                                              cast(sph_i, 4.188790204786391) * (sph_i)[SPH_IDX(6)]   \
+                                             ) * (sph_i)[SPH_IDX(6)]);                               \
         (dy_sph_i)[SPH_IDX(44)] =                                                                    \
             cast(sph_i, 13.49073756323204) *                                                         \
             (y2 * z * (sph_i)[SPH_IDX(5)] +                                                          \

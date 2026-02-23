@@ -69,11 +69,7 @@ void spherical_harmonics_sycl_base(
 
 template <typename scalar_t>
 void spherical_harmonics_backward_sycl_base(
-    const scalar_t* dsph,
-    const scalar_t* sph_grad,
-    const int nedges,
-    const int ntotal,
-    scalar_t* xyz_grad
+    const scalar_t* dsph, const scalar_t* sph_grad, const int nedges, const int ntotal, scalar_t* xyz_grad
 );
 
 /**

@@ -3,8 +3,7 @@
 #include "sphericart.h"
 #include "sphericart.hpp"
 
-extern "C" sphericart_spherical_harmonics_calculator_t* sphericart_spherical_harmonics_new(
-    size_t l_max
+extern "C" sphericart_spherical_harmonics_calculator_t* sphericart_spherical_harmonics_new(size_t l_max
 ) {
     try {
         return new sphericart::SphericalHarmonics<double>(l_max);
@@ -330,7 +329,8 @@ extern "C" sphericart_solid_harmonics_calculator_t* sphericart_solid_harmonics_n
     }
 }
 
-extern "C" void sphericart_solid_harmonics_delete(sphericart_solid_harmonics_calculator_t* calculator) {
+extern "C" void sphericart_solid_harmonics_delete(sphericart_solid_harmonics_calculator_t* calculator
+) {
     try {
         delete calculator;
     } catch (...) {
@@ -479,8 +479,7 @@ extern "C" sphericart_solid_harmonics_calculator_f_t* sphericart_solid_harmonics
     }
 }
 
-extern "C" void sphericart_solid_harmonics_delete_f(
-    sphericart_solid_harmonics_calculator_f_t* calculator
+extern "C" void sphericart_solid_harmonics_delete_f(sphericart_solid_harmonics_calculator_f_t* calculator
 ) {
     try {
         delete calculator;

@@ -72,10 +72,7 @@ template <typename T> class SphericalHarmonics {
      * (2, 0), (2, 1), (2, 2)`, in this order.
      */
     // void compute(const T* xyz, const size_t n_samples, T* sph);
-    void compute(
-      const T* xyz, 
-      const size_t n_samples, 
-      T* sph);
+    void compute(const T* xyz, const size_t n_samples, T* sph);
 
     /** Computes the spherical harmonics and their first derivatives for one or
      *  more 3D points, using pre-allocated device-side pointers
@@ -103,11 +100,7 @@ template <typename T> class SphericalHarmonics {
      */
     // void compute_with_gradients(
     //     const T* xyz, const size_t n_samples, T* sph, T* dsph );
-    void compute_with_gradients(
-        const T*  xyz, 
-        const size_t n_samples, 
-        T*  sph, 
-        T*  dsph );
+    void compute_with_gradients(const T* xyz, const size_t n_samples, T* sph, T* dsph);
 
     /** Computes the spherical harmonics and their first and second derivatives
      *  for one or more 3D points, using pre-allocated device-side pointers
@@ -143,19 +136,14 @@ template <typename T> class SphericalHarmonics {
      */
     // void compute_with_hessians(
     //     const T* xyz, const size_t n_samples, T* sph, T* dsph, T* ddsph  );
-    void compute_with_hessians(
-        const T*  xyz, 
-        const size_t n_samples, 
-        T*  sph, 
-        T*  dsph, 
-        T*  ddsph  );
+    void compute_with_hessians(const T* xyz, const size_t n_samples, T* sph, T* dsph, T* ddsph);
 
     template <typename U> friend class SolidHarmonics;
     /* @cond */
   private:
     size_t l_max = 0; // maximum l value computed by this class
     size_t nprefactors = 0;
-    bool normalized = false;              // should we normalize the input vectors?
+    bool normalized = false;      // should we normalize the input vectors?
     T* prefactors_cpu = nullptr;  // host prefactors buffer
     T* prefactors_sycl = nullptr; // storage space for prefactors
     int device_count = 0;         // number of visible GPU devices
