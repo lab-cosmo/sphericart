@@ -82,13 +82,6 @@ void spherical_harmonics_kernel(
     scalar_t* ddsph
 );
 
-// /*
-    // CUDA kernel to computes the backwards pass for autograd.
-// */
-// template <typename scalar_t>
-// __global__ void backward_kernel(
-    // scalar_t* dsph, scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
-// );
-}
-}
+} // namespace sycl
+} // namespace sphericart
 #endif

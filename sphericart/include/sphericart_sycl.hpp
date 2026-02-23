@@ -70,8 +70,6 @@ template <typename T> class SphericalHarmonics {
      * These are laid out in lexicographic order. For example, if `l_max=2`, it
      * will contain `(l, m) = (0, 0), (1, -1), (1, 0), (1, 1), (2, -2), (2, -1),
      * (2, 0), (2, 1), (2, 2)`, in this order.
-     * @param sycl_stream Pointer to a syclStream_t or nullptr. If this is
-     * nullptr, the kernel launch will be performed on the default stream.
      */
     // void compute(const T* xyz, const size_t n_samples, T* sph);
     void compute(
@@ -102,8 +100,6 @@ template <typename T> class SphericalHarmonics {
      * `n_samples x 3 x (l_max + 1)^2`. If the pointer is not
      * nullptr, then compute_with_gradients must also be true in order for
      * gradients to be computed.
-     * @param sycl_stream Pointer to a syclStream_t or nullptr. If this is
-     * nullptr, the kernel launch will be performed on the default stream.
      */
     // void compute_with_gradients(
     //     const T* xyz, const size_t n_samples, T* sph, T* dsph );
@@ -144,8 +140,6 @@ template <typename T> class SphericalHarmonics {
      * size `n_samples x 3 x 3 x (l_max + 1)^2`. If the pointer is
      * not nullptr, then compute_with_hessians must also be true in order for
      * gradients to be computed.
-     * @param sycl_stream Pointer to a syclStream_t or nullptr. If this is
-     * nullptr, the kernel launch will be performed on the default stream.
      */
     // void compute_with_hessians(
     //     const T* xyz, const size_t n_samples, T* sph, T* dsph, T* ddsph  );
@@ -180,16 +174,6 @@ template <typename T> class SphericalHarmonics {
         T* dsph,
         T* ddsph
     );
-    // void compute_internal(
-    //     const T* xyz,
-    //     const size_t n_samples,
-    //     bool compute_with_gradients,
-    //     bool compute_with_hessian,
-    //     T* sph,
-    //     T* dsph,
-    //     T* ddsph
-    // );
-    /* @endcond */
 };
 
 /**

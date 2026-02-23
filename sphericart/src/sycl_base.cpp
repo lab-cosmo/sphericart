@@ -31,9 +31,6 @@ void sphericart::sycl::spherical_harmonics_sycl_base(
     scalar_t* dsph,
     scalar_t* ddsph
 ) {
-
-//     scalar_t* _xyz = const_cast<scalar_t*>(xyz);
-//     scalar_t* _prefactors = const_cast<scalar_t*>(prefactors);
     spherical_harmonics_kernel( 
         xyz,
         nedges,
@@ -46,11 +43,6 @@ void sphericart::sycl::spherical_harmonics_sycl_base(
         dsph,
         ddsph
     );
-
-        
-
-
-
 }
 
 template void sphericart::sycl::spherical_harmonics_sycl_base<float>(
@@ -93,29 +85,7 @@ void sphericart::sycl::spherical_harmonics_backward_sycl_base(
     const int ntotal,
     scalar_t* xyz_grad
 ) {
-//     static const char* CUDA_CODE =
-// #include "generated/wrapped_sphericart_impl.cu"
-//         ;
-
-//     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
-
-//     auto& kernel_factory = KernelFactory::instance();
-
-//     dim3 block_dim(4, 32);
-//     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
-//     dim3 grid_dim(find_num_blocks(nedges, 32), 3);
-//     cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-
-//     int _n_total = ntotal;
-//     int _nedges = nedges;
-
-//     std::vector<void*> args = {&dsph, &sph_grad, &_nedges, &_n_total, &xyz_grad};
-
-//     CachedKernel* kernel = kernel_factory.create(
-//         kernel_name, std::string(CUDA_CODE), "wrapped_sphericart_impl.cu", {"--std=c++17"}
-//     );
-
-//     kernel->launch(grid_dim, block_dim, 0, cstream, args);
+	//TODO
 }
 
 template void sphericart::sycl::spherical_harmonics_backward_sycl_base<float>(
@@ -124,7 +94,6 @@ template void sphericart::sycl::spherical_harmonics_backward_sycl_base<float>(
     const int nedges,
     const int ntotal,
     float* xyz_grad
-    // cudaStream_t cuda_stream
 );
 
 template void sphericart::sycl::spherical_harmonics_backward_sycl_base<double>(
@@ -133,5 +102,4 @@ template void sphericart::sycl::spherical_harmonics_backward_sycl_base<double>(
     const int nedges,
     const int ntotal,
     double* xyz_grad
-    // cudaStream_t cuda_stream
 );

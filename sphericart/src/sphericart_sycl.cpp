@@ -10,8 +10,6 @@
 
 #include "sycl_device.hpp"
 
-//using namespace sycl;
-
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
 #include "sphericart.hpp"
@@ -42,8 +40,6 @@ template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max) {
     this->nprefactors = (int)(l_max + 1) * (l_max + 2);
     this->normalized = true; // SphericalHarmonics class
     this->prefactors_cpu = new T[this->nprefactors];
-
-    // CUDART_SAFE_CALL(CUDART_INSTANCE.cudaGetDeviceCount(&this->device_count));
 
     // compute prefactors on host
     compute_sph_prefactors<T>((int)l_max, this->prefactors_cpu);

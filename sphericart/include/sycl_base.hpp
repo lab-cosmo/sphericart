@@ -4,7 +4,6 @@
 #include "sycl_device.hpp"
 
 namespace sphericart {
-
 namespace sycl {
 
 /**
@@ -49,8 +48,6 @@ namespace sycl {
  * @param ddsph
  *        Pointer to a contiguous device-allocated spherical harmonics
  *        second-derivatives array of shape [N * 3 * (L + 1) ** 2].
- * @param sycl_stream
- *        Pointer to a cudaStream_t or nullptr. If this is nullptr, the kernel
  * launch will be performed on the default stream.
  */
 template <typename scalar_t>
@@ -68,7 +65,6 @@ void spherical_harmonics_sycl_base(
     scalar_t* sph,
     scalar_t* dsph,
     scalar_t* ddsph
-    // cudaStream_t sycl_stream
 );
 
 template <typename scalar_t>
@@ -78,7 +74,6 @@ void spherical_harmonics_backward_sycl_base(
     const int nedges,
     const int ntotal,
     scalar_t* xyz_grad
-    // cudaStream_t sycl_stream
 );
 
 /**

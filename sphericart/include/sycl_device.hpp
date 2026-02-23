@@ -1,3 +1,4 @@
+// Authors: abagusetty@github and alvarovm@github CC BY-NC, Argonne UChicago LLC.
 #pragma once
 
 #include <map>
@@ -30,14 +31,8 @@
 #define SYCL_DEVICE_TYPE(x) SYCL_DEVICE_TYPE_CONCAT(x)
 #define SYCL_DEVICE_TYPE_VALUE SYCL_DEVICE_TYPE(SYCL_DEVICE)
 
-// #define CUDA_VERSION 12040
-// #define __maxnreg__(x)
 
-// #define __forceinline__ __attribute__((always_inline))
 #define __global__ __attribute__((always_inline))
-// #define __device__ __attribute__((always_inline))
-// #define __host__ __attribute__((always_inline))
-// #define __constant__ static constexpr
 
 // using cudaStream_t = sycl::queue&;
 namespace syclex = sycl::ext::oneapi;
@@ -74,14 +69,6 @@ namespace compat {
 
     dtype3() = default;
     dtype3(DTYPE x_, DTYPE y_, DTYPE z_) : x(x_), y(y_), z(z_) {}
-
-    // sycl::vec<DTYPE, 3> to_sycl_vec() const {
-    //   return sycl::vec<DTYPE, 3>(x, y, z);
-    // }
-
-    // void from_sycl_vec(const sycl::vec<DTYPE, 3>& v) {
-    //   x = v.x(); y = v.y(); z = v.z();
-    // }
   };
 }
 using dtype3 = compat::dtype3;
@@ -114,25 +101,8 @@ atomicOr(T* addr, const T val) {
     return atom.fetch_or(val);
 }
 
-// #ifdef SYCL_EXT_ONEAPI_DEVICE_GLOBAL
 template <class T>
 using sycl_device_global = sycl::ext::oneapi::experimental::device_global<T>;
-// #else
-// template <class T>
-// using sycl_device_global = sycl::ext::oneapi::experimental::device_global<
-//     T,
-//     decltype(sycl::ext::oneapi::experimental::properties(
-//         sycl::ext::oneapi::experimental::device_image_scope))>;
-// #endif
-
-
-#if defined(__INTEL_LLVM_COMPILER) && __INTEL_LLVM_COMPILER >= 20230200
-#define GPU4PYSCF_IMPL_SYCL_GET_MULTI_PTR(accessor) \
-  accessor.get_multi_ptr<sycl::access::decorated::no>().get()
-#else
-#define GPU4PYSCF_IMPL_SYCL_GET_MULTI_PTR(accessor) accessor.get_pointer()
-#endif
-
 
 auto asyncHandler = [](sycl::exception_list exceptions) {
   for (std::exception_ptr const &e : exceptions) {
@@ -251,6 +221,3 @@ static inline void syclGetDeviceCount(int* id) { *id = dev_mgr::instance().devic
 static inline void cudaMemset(void* ptr, int val, size_t size) {
   sycl_get_queue()->memset(ptr, static_cast<unsigned char>(val), size).wait();
 }
-// static inline void cudaMemcpyToSymbol(const char* symbol, const void* src, size_t count) {
-//   sycl_get_queue()->memcpy(symbol, src, count).wait();
-// }
