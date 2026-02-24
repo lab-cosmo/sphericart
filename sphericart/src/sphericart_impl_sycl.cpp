@@ -627,22 +627,105 @@ template void spherical_harmonics_kernel<double>(
 );
 
 /*
-    SYCL kernel to computes the backwards pass for autograd.
+    SYCL kernel to compute the backwards pass for autograd.
+
+    This is the SYCL port of the CUDA backward_kernel, using nd_range<3> to handle:
+    - Dimension 0: Reduction dimension (work-items that accumulate partial sums)
+    - Dimension 1: Edge/sample dimension (one edge per work-item in Y)
+    - Dimension 2: Spatial dimension (3 groups for x, y, z gradients)
 */
 template <typename scalar_t>
-__global__ void backward_kernel(
-    scalar_t* dsph, scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
+void backward_kernel(
+    const scalar_t* dsph, const scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
 ) {
+    ::sycl::queue& q = *sycl_get_queue();
 
-    //    TODO
+    // Match CUDA configuration: block_dim(4, 32), grid_dim(nedges/32, 3)
+    int GRID_DIM_X = 4;  // Reduction dimension (matches CUDA threadIdx.x)
+    int GRID_DIM_Y = 32; // Edge dimension (matches CUDA threadIdx.y)
+    int GRID_DIM_Z = 1;  // Spatial dimension unit
+
+    ::sycl::range<3> local_range(GRID_DIM_X, GRID_DIM_Y, GRID_DIM_Z);
+
+    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
+    int groups_y = find_num_blocks(nedges, static_cast<int>(local_range[1]));
+    int groups_z = 3; // 3 spatial dimensions (x, y, z)
+
+    ::sycl::range<3> global_range(
+        local_range[0], groups_y * local_range[1], groups_z * local_range[2]
+    );
+
+    // Verify device supports required sub-group size for reduction
+    auto sg_sizes = q.get_device().get_info<::sycl::info::device::sub_group_sizes>();
+    bool supported = false;
+    for (auto size : sg_sizes) {
+        if (size >= static_cast<size_t>(GRID_DIM_X)) {
+            supported = true;
+            break;
+        }
+    }
+    if (!supported) {
+        std::string available_sizes;
+        for (size_t i = 0; i < sg_sizes.size(); ++i) {
+            if (i > 0) {
+                available_sizes += ", ";
+            }
+            available_sizes += std::to_string(sg_sizes[i]);
+        }
+        throw std::runtime_error(
+            "Device does not support required sub-group size for backward_kernel. "
+            "Required: " +
+            std::to_string(GRID_DIM_X) + ", Available: [" + available_sizes + "]"
+        );
+    }
+
+    q.submit([&](::sycl::handler& cgh) {
+         cgh.parallel_for(::sycl::nd_range<3>(global_range, local_range), [=](::sycl::nd_item<3> item) {
+             // Thread indexing (matches CUDA backward_kernel)
+             // edge_idx = blockIdx.x * blockDim.y + threadIdx.y
+             int edge_idx = item.get_group(1) * item.get_local_range(1) + item.get_local_id(1);
+             // spatial = blockIdx.y (0, 1, or 2 for x, y, z)
+             int spatial = item.get_group(2);
+
+             scalar_t sum = 0.0;
+
+             // Accumulation loop (strided by local_range(0) for reduction)
+             // Matches CUDA: for (int j = threadIdx.x; j < n_total; j += blockDim.x)
+             if (edge_idx < nedges) {
+                 for (int j = item.get_local_id(0); j < n_total; j += item.get_local_range(0)) {
+                     // sum += dsph[edge_idx][spatial][j] * sph_grad[edge_idx][j]
+                     sum += dsph[edge_idx * 3 * n_total + spatial * n_total + j] *
+                            sph_grad[edge_idx * n_total + j];
+                 }
+             }
+
+             item.barrier(::sycl::access::fence_space::local_space);
+
+             // Reduction across dimension 0 using sub-group shuffle operations
+             // This is the SYCL equivalent of CUDA's __shfl_down_sync warp reduction
+             auto sg = item.get_sub_group();
+
+             // Perform tree reduction using shuffle operations
+             // Matches CUDA: for (int offset = blockDim.x / 2; offset > 0; offset /= 2)
+             for (int offset = item.get_local_range(0) / 2; offset > 0; offset /= 2) {
+                 sum += ::sycl::shift_group_left(sg, sum, offset);
+             }
+
+             // Write result (only thread 0 in the reduction dimension writes)
+             // Matches CUDA: if (threadIdx.x == 0) xyz_grad[edge_idx * 3 + spatial] = sum
+             if (edge_idx < nedges && item.get_local_id(0) == 0) {
+                 xyz_grad[edge_idx * 3 + spatial] = sum;
+             }
+         });
+     }).wait();
 }
 
-template __global__ void backward_kernel<float>(
-    float* dsph, float* sph_grad, int nedges, int n_total, float* xyz_grad
+template void backward_kernel<float>(
+    const float* dsph, const float* sph_grad, int nedges, int n_total, float* xyz_grad
 );
 
-template __global__ void backward_kernel<double>(
-    double* dsph, double* sph_grad, int nedges, int n_total, double* xyz_grad
+template void backward_kernel<double>(
+    const double* dsph, const double* sph_grad, int nedges, int n_total, double* xyz_grad
 );
 } // namespace sycl
 } // namespace sphericart

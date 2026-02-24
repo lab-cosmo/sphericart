@@ -72,7 +72,7 @@ template <typename scalar_t>
 void sphericart::sycl::spherical_harmonics_backward_sycl_base(
     const scalar_t* dsph, const scalar_t* sph_grad, const int nedges, const int ntotal, scalar_t* xyz_grad
 ) {
-    // TODO
+    backward_kernel(dsph, sph_grad, nedges, ntotal, xyz_grad);
 }
 
 template void sphericart::sycl::spherical_harmonics_backward_sycl_base<float>(
