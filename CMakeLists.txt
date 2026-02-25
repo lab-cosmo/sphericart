@@ -14,10 +14,18 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     endif()
 endif()
 
-add_subdirectory(sphericart)
 
 OPTION(SPHERICART_BUILD_TORCH "Build the torch bindings" OFF)
 OPTION(SPHERICART_BUILD_EXAMPLES "Build and run examples and benchmarks for Sphericart" OFF)
+OPTION(SPHERICART_PRINT_DEBUG "Enable debug print statements" OFF)
+
+
+
+if (SPHERICART_PRINT_DEBUG)
+    add_compile_definitions(PRINT_DEBUG)
+endif()
+
+add_subdirectory(sphericart)
 
 if (SPHERICART_BUILD_EXAMPLES)
     add_subdirectory(examples)
