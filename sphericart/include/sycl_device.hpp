@@ -1,4 +1,4 @@
-// Authors: abagusetty@github and alvarovm@github CC BY-NC, Argonne UChicago LLC.
+// Authors: abagusetty@github and alvarovm@github , Argonne UChicago LLC.
 #pragma once
 
 #include <map>

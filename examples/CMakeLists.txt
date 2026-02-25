@@ -25,7 +25,6 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     add_test(NAME example_cuda COMMAND ./example_cuda)
 endif()
 if (SPHERICART_ENABLE_SYCL)
-    # SYCL_DEVICE and DTYPE are defined in the parent CMakeLists.txt
     add_executable(example_sycl sycl/example.cpp)
     target_link_libraries(example_sycl sphericart)
     #    target_compile_definitions(example_sycl PRIVATE SYCL_DEVICE=${SPHERICART_DEVICE})
@@ -37,7 +36,6 @@ if(Kokkos_FOUND)
     # SYCL_DEVICE is defined in the parent CMakeLists.txt
     add_executable(example_kokkos kokkos/example.cpp)
     target_link_libraries(example_kokkos sphericart Kokkos::kokkos)
-    #target_compile_definitions(example_kokkos PRIVATE DTYPE=${SPHERICART_DTYPE})
     add_test(NAME example_kokkos COMMAND ./example_kokkos)
 endif()
 

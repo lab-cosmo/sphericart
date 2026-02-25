@@ -274,8 +274,6 @@ if (SPHERICART_ENABLE_SYCL AND SYCL_COMPILER_FOUND)
         SYCL_LANGUAGE_VERSION=2020
         # SYCL_DEVICE is defined in the parent CMakeLists.txt
     )
-    # Still display the SYCL DTYPE value from parent scope
-    message(STATUS "SYCL DTYPE set to: ${SPHERICART_SYCL_DTYPE}")
     message(STATUS "SYCL DEVICE set to: ${SPHERICART_SYCL_DEVICE}")
 endif()
 
