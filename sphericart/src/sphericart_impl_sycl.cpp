@@ -680,43 +680,50 @@ void backward_kernel(
     }
 
     q.submit([&](::sycl::handler& cgh) {
-         cgh.parallel_for(::sycl::nd_range<3>(global_range, local_range), [=](::sycl::nd_item<3> item) {
-             // Thread indexing (matches CUDA backward_kernel)
-             // edge_idx = blockIdx.x * blockDim.y + threadIdx.y
-             int edge_idx = item.get_group(1) * item.get_local_range(1) + item.get_local_id(1);
-             // spatial = blockIdx.y (0, 1, or 2 for x, y, z)
-             int spatial = item.get_group(2);
+         cgh.parallel_for(
+             ::sycl::nd_range<3>(global_range, local_range), [=](::sycl::nd_item<3> item) {
+                 // Thread indexing (matches CUDA backward_kernel)
+                 // edge_idx = blockIdx.x * blockDim.y + threadIdx.y
+                 int edge_idx = item.get_group(1) * item.get_local_range(1) + item.get_local_id(1);
+                 // spatial = blockIdx.y (0, 1, or 2 for x, y, z)
+                 int spatial = item.get_group(2);
 
-             scalar_t sum = 0.0;
+                 scalar_t sum = 0.0;
 
-             // Accumulation loop (strided by local_range(0) for reduction)
-             // Matches CUDA: for (int j = threadIdx.x; j < n_total; j += blockDim.x)
-             if (edge_idx < nedges) {
-                 for (int j = item.get_local_id(0); j < n_total; j += item.get_local_range(0)) {
-                     // sum += dsph[edge_idx][spatial][j] * sph_grad[edge_idx][j]
-                     sum += dsph[edge_idx * 3 * n_total + spatial * n_total + j] *
-                            sph_grad[edge_idx * n_total + j];
+                 // Accumulation loop (strided by local_range(0) for reduction)
+                 // Matches CUDA: for (int j = threadIdx.x; j < n_total; j +=
+                 // blockDim.x)
+                 if (edge_idx < nedges) {
+                     for (int j = item.get_local_id(0); j < n_total; j += item.get_local_range(0)) {
+                         // sum += dsph[edge_idx][spatial][j] *
+                         // sph_grad[edge_idx][j]
+                         sum += dsph[edge_idx * 3 * n_total + spatial * n_total + j] *
+                                sph_grad[edge_idx * n_total + j];
+                     }
+                 }
+
+                 item.barrier(::sycl::access::fence_space::local_space);
+
+                 // Reduction across dimension 0 using sub-group shuffle operations
+                 // This is the SYCL equivalent of CUDA's __shfl_down_sync warp
+                 // reduction
+                 auto sg = item.get_sub_group();
+
+                 // Perform tree reduction using shuffle operations
+                 // Matches CUDA: for (int offset = blockDim.x / 2; offset > 0;
+                 // offset /= 2)
+                 for (int offset = item.get_local_range(0) / 2; offset > 0; offset /= 2) {
+                     sum += ::sycl::shift_group_left(sg, sum, offset);
+                 }
+
+                 // Write result (only thread 0 in the reduction dimension writes)
+                 // Matches CUDA: if (threadIdx.x == 0) xyz_grad[edge_idx * 3 +
+                 // spatial] = sum
+                 if (edge_idx < nedges && item.get_local_id(0) == 0) {
+                     xyz_grad[edge_idx * 3 + spatial] = sum;
                  }
              }
-
-             item.barrier(::sycl::access::fence_space::local_space);
-
-             // Reduction across dimension 0 using sub-group shuffle operations
-             // This is the SYCL equivalent of CUDA's __shfl_down_sync warp reduction
-             auto sg = item.get_sub_group();
-
-             // Perform tree reduction using shuffle operations
-             // Matches CUDA: for (int offset = blockDim.x / 2; offset > 0; offset /= 2)
-             for (int offset = item.get_local_range(0) / 2; offset > 0; offset /= 2) {
-                 sum += ::sycl::shift_group_left(sg, sum, offset);
-             }
-
-             // Write result (only thread 0 in the reduction dimension writes)
-             // Matches CUDA: if (threadIdx.x == 0) xyz_grad[edge_idx * 3 + spatial] = sum
-             if (edge_idx < nedges && item.get_local_id(0) == 0) {
-                 xyz_grad[edge_idx * 3 + spatial] = sum;
-             }
-         });
+         );
      }).wait();
 }
 
