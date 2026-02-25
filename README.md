@@ -92,13 +92,14 @@ The support for GPU offload could be controled with the following CMake variable
 
 - `-DSPHERICART_ENABLE_CUDA=ON/OFF`: build with CUDA support also set `CUDA_HOME` environement variable.
 - `-DSPHERICART_ENABLE_SYCL=ON/OFF`: build with SYCL support, configure tool will search for `sycl/sycl.h` header.
-- `-DSPHERICART_SYCL_DEVICE=all/cpu/gpu`: target architecute for SYCL support, check which devices are available with `sycl-ls`, for `all` is possible to control at execution with `export ONEAPI_DEVICE_SELECTOR=opencl:gpu` or `export ONEAPI_DEVICE_SELECTOR=opencl:cpu`.
-- `-DSPHERICART_SYCL_DTYPE=float/double`: control precision of scalar numbers, particularly for configuring `examples` directory.
+- `-DSPHERICART_SYCL_DEVICE=all/cpu/gpu`: target architecute for SYCL support, check which devices are available with `sycl-ls`, for `all` (default) is possible to control at execution with `export ONEAPI_DEVICE_SELECTOR=opencl:gpu` or `export ONEAPI_DEVICE_SELECTOR=opencl:cpu`.
 
 The following flags have been tested with Intel OneAPI 2025.3 for enabling SYCL support:
 - `-DCMAKE_CXX_COMPILER=icpx`
 - `-DCMAKE_C_COMPILER=icx`
 - `-DCMAKE_CXX_FLAGS=" -qopenmp --intel -fsycl  -fsycl-targets=spir64 -Wno-deprecated-declarations -Wno-macro-redefined -Wno-unused-parameter -w"`
+
+**Note**: Only tested in C++, python/JAX/Torch support is in progress.
 
 ### Running tests and documentation
 

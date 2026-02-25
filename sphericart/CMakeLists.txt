@@ -62,7 +62,7 @@ OPTION(SPHERICART_ENABLE_SYCL "Are we building the SYCL backend of Sphericart?" 
 
 if (SPHERICART_ENABLE_SYCL)
 # SYCL device type: "gpu", "cpu", "accelerator", or "all"
-    set(SPHERICART_SYCL_DEVICE "gpu" CACHE STRING "SYCL device type (cpu, gpu, accelerator, all)")
+    set(SPHERICART_SYCL_DEVICE "all" CACHE STRING "SYCL device type (cpu, gpu, accelerator, all)")
     set_property(CACHE SPHERICART_SYCL_DEVICE PROPERTY STRINGS gpu cpu accelerator all)
 # Define SYCL_DEVICE for all targets in this project and its subdirectories
     add_compile_definitions(SYCL_DEVICE=${SPHERICART_SYCL_DEVICE})
