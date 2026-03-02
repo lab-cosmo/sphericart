@@ -32,7 +32,7 @@ jobs:
             # - examples: uses bash-based install.
             # - lint: clang-format + bash scripts
             # - C++ tests/examples use getopt (POSIX-only)
-            tox_envs: "-e tests -e torch-tests -e jax-tests"
+            tox_envs: "-e tests,torch-tests,jax-tests"
     steps:
       - uses: actions/checkout@v3
 
