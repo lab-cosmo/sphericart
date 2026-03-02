@@ -238,17 +238,16 @@ class LibraryFinder(object):
 def _lib_path():
     if sys.platform.startswith("darwin"):
         windows = False
-        name = "libsphericart.dylib"
+        path = os.path.join(_HERE, "lib", "libsphericart.dylib")
     elif sys.platform.startswith("linux"):
         windows = False
-        name = "libsphericart.so"
+        path = os.path.join(_HERE, "lib", "libsphericart.so")
     elif sys.platform.startswith("win"):
         windows = True
-        name = "sphericart.dll"
+        # CMake installs DLLs (RUNTIME artifacts) to bin/, not lib/
+        path = os.path.join(_HERE, "bin", "sphericart.dll")
     else:
         raise ImportError("Unknown platform. Please edit this file")
-
-    path = os.path.join(os.path.join(_HERE, "lib"), name)
 
     if os.path.isfile(path):
         if windows:
