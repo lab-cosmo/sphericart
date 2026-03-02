@@ -267,7 +267,7 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph, torch::
         auto dsph_p = dsph.data_ptr<double>();
 
 #pragma omp parallel for
-        for (size_t i_sample = 0; i_sample < n_samples; i_sample++) {
+        for (int64_t i_sample = 0; i_sample < n_samples; i_sample++) {
             for (size_t spatial = 0; spatial < 3; spatial++) {
                 double accumulated_value = 0.0;
                 for (int i_sph = 0; i_sph < n_sph; i_sph++) {
@@ -283,7 +283,7 @@ static torch::Tensor backward_cpu(torch::Tensor xyz, torch::Tensor dsph, torch::
         auto dsph_p = dsph.data_ptr<float>();
 
 #pragma omp parallel for
-        for (size_t i_sample = 0; i_sample < n_samples; i_sample++) {
+        for (int64_t i_sample = 0; i_sample < n_samples; i_sample++) {
             for (size_t spatial = 0; spatial < 3; spatial++) {
                 float accumulated_value = 0.0f;
                 for (int i_sph = 0; i_sph < n_sph; i_sph++) {
