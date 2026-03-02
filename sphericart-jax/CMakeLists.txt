@@ -61,7 +61,7 @@ target_include_directories(sphericart_jax_cpu PRIVATE
 )
 install(TARGETS sphericart_jax_cpu
     LIBRARY DESTINATION "lib"
-    RUNTIME DESTINATION "lib"
+    RUNTIME DESTINATION "bin"
     ARCHIVE DESTINATION "lib"
 )
 
@@ -77,7 +77,7 @@ if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     )
     install(TARGETS sphericart_jax_cuda
         LIBRARY DESTINATION "lib"
-        RUNTIME DESTINATION "lib"
+        RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"
     )
 endif()
