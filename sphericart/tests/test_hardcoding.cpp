@@ -2,9 +2,6 @@
  *  @brief Checks consistency of generic and hardcoded implementations
  */
 
-#include <sys/time.h>
-#include <unistd.h>
-
 #include <chrono>
 #include <cmath>
 #include <iostream>

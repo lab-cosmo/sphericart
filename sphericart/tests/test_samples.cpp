@@ -2,9 +2,6 @@
  *  @brief Checks consistency of array and sample calls
  */
 
-#include <sys/time.h>
-#include <unistd.h>
-
 #include <chrono>
 #include <cmath>
 #include <iostream>
