@@ -28,7 +28,6 @@ jobs:
             # MSVC uses a multi-config generator, so we must pick a
             # configuration explicitly for both the build and ctest steps.
             cmake_config: "--config Release"
-            ctest_config: "-C Release"
             # We skip the following tox environments:
             # - examples: uses bash-based install.
             # - lint: clang-format + bash scripts
@@ -53,7 +52,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install tox
 
-      - name: run C++ build and tests
+      - name: run C++ build
         shell: bash
         run: |
           mkdir build
@@ -64,7 +63,7 @@ jobs:
       - name: run C++ ctest
         if: runner.os != 'Windows'
         shell: bash
-        run: ctest ${{ matrix.ctest_config }} --test-dir build
+        run: ctest
 
       - name: run Python tests
         run: tox ${{ matrix.tox_envs }}
