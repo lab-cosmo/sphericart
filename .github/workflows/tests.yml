@@ -29,11 +29,11 @@ jobs:
             # configuration explicitly for both the build and ctest steps.
             cmake_config: "--config Release"
             ctest_config: "-C Release"
-            # jax-tests: JAX <0.7.2 has no Windows wheels.
-            # examples: also uses JAX + bash-based install.
-            # lint: clang-format + bash scripts, not needed on every platform.
-            # C++ tests/examples use getopt (POSIX-only), skip on Windows.
-            tox_envs: "-e tests -e torch-tests"
+            # We skip the following tox environments:
+            # - examples: uses bash-based install.
+            # - lint: clang-format + bash scripts
+            # - C++ tests/examples use getopt (POSIX-only)
+            tox_envs: "-e tests -e torch-tests -e jax-tests"
     steps:
       - uses: actions/checkout@v3
 
