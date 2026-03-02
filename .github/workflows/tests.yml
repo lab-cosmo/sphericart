@@ -18,7 +18,18 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
+            tox_envs: ""
           - os: macos-14
+            tox_envs: ""
+          - os: windows-2022
+            # MSVC uses a multi-config generator, so we must pick a
+            # configuration explicitly for both the build and ctest steps.
+            cmake_config: "--config Release"
+            ctest_config: "-C Release"
+            # jax-tests: JAX <0.7.2 has no Windows wheels.
+            # examples: also uses JAX + bash-based install.
+            # lint: clang-format + bash scripts, not needed on every platform.
+            tox_envs: "-e tests -e torch-tests"
     steps:
       - uses: actions/checkout@v3
 
@@ -28,6 +39,7 @@ jobs:
           python-version: "3.12"
 
       - name: setup Julia
+        if: runner.os != 'Windows'
         uses: julia-actions/setup-julia@v2
         with:
           version: '1.11'
@@ -38,20 +50,22 @@ jobs:
           python -m pip install tox
 
       - name: run C++ build and tests
+        shell: bash
         run: |
           mkdir build
           cd build
           cmake -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON ..
-          cmake --build . --parallel
-          ctest
+          cmake --build . --parallel ${{ matrix.cmake_config }}
+          ctest ${{ matrix.ctest_config }}
 
       - name: run Python tests
-        run: tox
+        run: tox ${{ matrix.tox_envs }}
         env:
           # Use the CPU only version of torch when building/running the code
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
       - name: run Julia tests
+        if: runner.os != 'Windows'
         run: |
           cd julia
           julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); Pkg.test();'
