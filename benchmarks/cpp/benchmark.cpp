@@ -5,6 +5,8 @@
  * without normalization
  */
 
+#include <unistd.h>
+
 #include <chrono>
 #include <cmath>
 #include <iostream>

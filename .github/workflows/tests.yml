@@ -18,10 +18,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
+            cmake_extra: "-DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON"
             tox_envs: ""
           - os: macos-14
+            cmake_extra: "-DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON"
             tox_envs: ""
           - os: windows-2022
+            cmake_extra: ""
             # MSVC uses a multi-config generator, so we must pick a
             # configuration explicitly for both the build and ctest steps.
             cmake_config: "--config Release"
@@ -29,6 +32,7 @@ jobs:
             # jax-tests: JAX <0.7.2 has no Windows wheels.
             # examples: also uses JAX + bash-based install.
             # lint: clang-format + bash scripts, not needed on every platform.
+            # C++ tests/examples use getopt (POSIX-only), skip on Windows.
             tox_envs: "-e tests -e torch-tests"
     steps:
       - uses: actions/checkout@v3
@@ -54,9 +58,13 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON ..
+          cmake ${{ matrix.cmake_extra }} ..
           cmake --build . --parallel ${{ matrix.cmake_config }}
-          ctest ${{ matrix.ctest_config }}
+
+      - name: run C++ ctest
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ctest ${{ matrix.ctest_config }} --test-dir build
 
       - name: run Python tests
         run: tox ${{ matrix.tox_envs }}

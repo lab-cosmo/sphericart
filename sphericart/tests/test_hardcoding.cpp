@@ -2,6 +2,8 @@
  *  @brief Checks consistency of generic and hardcoded implementations
  */
 
+#include <unistd.h>
+
 #include <chrono>
 #include <cmath>
 #include <iostream>
