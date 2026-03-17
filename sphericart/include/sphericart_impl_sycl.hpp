@@ -82,6 +82,15 @@ void spherical_harmonics_kernel(
     scalar_t* ddsph
 );
 
+template <typename scalar_t>
+void backward_kernel(
+    const scalar_t* dsph,
+    const scalar_t* sph_grad,
+    const int nedges,
+    const int ntotal,
+    scalar_t* xyz_grad
+);
+
 } // namespace sycl
 } // namespace sphericart
 #endif
