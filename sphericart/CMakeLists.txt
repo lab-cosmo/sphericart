@@ -306,6 +306,8 @@ generate_export_header(sphericart
     EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/include/sphericart/exports.h
 )
 target_compile_definitions(sphericart PRIVATE sphericart_EXPORTS)
+# MSVC does not expose M_PI / M_SQRT1_2 from <cmath> unless this is defined
+target_compile_definitions(sphericart PRIVATE $<$<CXX_COMPILER_ID:MSVC>:_USE_MATH_DEFINES>)
 
 # Handle optimization and OpenMP flags
 include(CheckCXXCompilerFlag)

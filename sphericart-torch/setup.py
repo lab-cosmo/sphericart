@@ -82,6 +82,10 @@ class cmake_ext(build_ext):
             "--target",
             "install",
         ]
+        # On MSVC (multi-config generator) CMAKE_BUILD_TYPE is ignored at
+        # configure time; the configuration must be specified at build time.
+        if sys.platform == "win32":
+            build_command += ["--config", "Release"]
 
         subprocess.run(build_command, check=True)
 

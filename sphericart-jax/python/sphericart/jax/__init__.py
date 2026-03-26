@@ -5,7 +5,6 @@ import re
 import sys
 import warnings
 from collections import namedtuple
-from pathlib import Path
 
 from packaging import version
 
@@ -90,22 +89,20 @@ def get_minimum_cuda_version_for_jax(jax_version_str):
 _LIB_DIR = _get_lib_dir()
 
 
-def _load_shared_library(glob_pattern: str) -> ctypes.CDLL:
+def _lib_path(name: str) -> str:
     if sys.platform.startswith("darwin"):
-        lib_dir = Path(_LIB_DIR) / "lib"
+        path = os.path.join(_LIB_DIR, "lib", f"lib{name}.dylib")
     elif sys.platform.startswith("linux"):
-        lib_dir = Path(_LIB_DIR) / "lib"
+        path = os.path.join(_LIB_DIR, "lib", f"lib{name}.so")
     elif sys.platform.startswith("win"):
-        lib_dir = Path(_LIB_DIR) / "bin"
+        path = os.path.join(_LIB_DIR, "bin", f"{name}.dll")
     else:
         raise ImportError("Unknown platform. Please edit this file")
 
-    matches = sorted(lib_dir.glob(glob_pattern))
-    if not matches:
-        raise ImportError(
-            f"Could not find shared library matching {glob_pattern} in {lib_dir}"
-        )
-    return ctypes.cdll.LoadLibrary(str(matches[0]))
+    if os.path.isfile(path):
+        return path
+    else:
+        raise ImportError(f"Could not find shared library at {path}")
 
 
 def _register_targets(lib: ctypes.CDLL, target_names: list[str], *, platform: str):
@@ -136,7 +133,7 @@ _CPU_TARGETS = [
     "cpu_ddsolid_f64",
 ]
 
-_cpu_lib = _load_shared_library("libsphericart_jax_cpu*")
+_cpu_lib = ctypes.cdll.LoadLibrary(_lib_path("sphericart_jax_cpu"))
 _register_targets(_cpu_lib, _CPU_TARGETS, platform="cpu")
 
 
@@ -161,7 +158,7 @@ _CUDA_TARGETS = [
 ]
 
 try:
-    _cuda_lib = _load_shared_library("libsphericart_jax_cuda*")
+    _cuda_lib = ctypes.cdll.LoadLibrary(_lib_path("sphericart_jax_cuda"))
     has_sphericart_jax_cuda = True
     _register_targets(_cuda_lib, _CUDA_TARGETS, platform="CUDA")
 except Exception:

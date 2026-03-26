@@ -59,9 +59,12 @@ target_include_directories(sphericart_jax_cpu PRIVATE
     ${XLA_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+# On Windows, MSVC only exports explicitly marked symbols; this auto-exports all
+# external-linkage symbols (equivalent to the default behaviour on Linux/macOS).
+set_target_properties(sphericart_jax_cpu PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 install(TARGETS sphericart_jax_cpu
     LIBRARY DESTINATION "lib"
-    RUNTIME DESTINATION "lib"
+    RUNTIME DESTINATION "bin"
     ARCHIVE DESTINATION "lib"
 )
 
@@ -75,9 +78,10 @@ if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     )
+    set_target_properties(sphericart_jax_cuda PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     install(TARGETS sphericart_jax_cuda
         LIBRARY DESTINATION "lib"
-        RUNTIME DESTINATION "lib"
+        RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"
     )
 endif()

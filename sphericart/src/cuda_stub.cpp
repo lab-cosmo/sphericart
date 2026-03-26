@@ -74,7 +74,7 @@ template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(
     const float* sph_grad,
     const int nedges,
     const int ntotal,
-    float* __restrict__ xyz_grad,
+    float* xyz_grad,
     void* cuda_stream
 );
 
@@ -83,6 +83,6 @@ template void sphericart::cuda::spherical_harmonics_backward_cuda_base<double>(
     const double* sph_grad,
     const int nedges,
     const int ntotal,
-    double* __restrict__ xyz_grad,
+    double* xyz_grad,
     void* cuda_stream
 );

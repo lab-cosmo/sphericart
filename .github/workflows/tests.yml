@@ -18,7 +18,21 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
+            cmake_extra: "-DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON"
+            tox_envs: ""
           - os: macos-14
+            cmake_extra: "-DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON"
+            tox_envs: ""
+          - os: windows-2022
+            cmake_extra: ""
+            # MSVC uses a multi-config generator, so we must pick a
+            # configuration explicitly for both the build and ctest steps.
+            cmake_config: "--config Release"
+            # We skip the following tox environments:
+            # - examples: uses bash-based install.
+            # - lint: clang-format + bash scripts
+            # - C++ tests/examples use getopt (POSIX-only)
+            tox_envs: "-e tests,torch-tests,jax-tests"
     steps:
       - uses: actions/checkout@v3
 
@@ -28,6 +42,7 @@ jobs:
           python-version: "3.12"
 
       - name: setup Julia
+        if: runner.os != 'Windows'
         uses: julia-actions/setup-julia@v2
         with:
           version: '1.11'
@@ -37,21 +52,27 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install tox
 
-      - name: run C++ build and tests
+      - name: run C++ build
+        shell: bash
         run: |
           mkdir build
           cd build
-          cmake -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON ..
-          cmake --build . --parallel
-          ctest
+          cmake ${{ matrix.cmake_extra }} ..
+          cmake --build . --parallel ${{ matrix.cmake_config }}
+
+      - name: run C++ ctest
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ctest
 
       - name: run Python tests
-        run: tox
+        run: tox ${{ matrix.tox_envs }}
         env:
           # Use the CPU only version of torch when building/running the code
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
       - name: run Julia tests
+        if: runner.os != 'Windows'
         run: |
           cd julia
           julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); Pkg.test();'
