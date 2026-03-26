@@ -84,11 +84,7 @@ void spherical_harmonics_kernel(
 
 template <typename scalar_t>
 void backward_kernel(
-    const scalar_t* dsph,
-    const scalar_t* sph_grad,
-    const int nedges,
-    const int ntotal,
-    scalar_t* xyz_grad
+    const scalar_t* dsph, const scalar_t* sph_grad, const int nedges, const int ntotal, scalar_t* xyz_grad
 );
 
 } // namespace sycl
