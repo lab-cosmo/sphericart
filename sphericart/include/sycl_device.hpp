@@ -59,10 +59,6 @@ template <typename T> inline void sincos(T x, T* sptr, T* cptr) { *sptr = sycl::
 namespace constants {
 constexpr DTYPE pi = 3.141592653589793238462643383279502884;
 }
-// Only define M_PI if not already defined (to avoid conflict)
-#ifndef M_PI
-#define M_PI constants::pi
-#endif
 
 namespace compat {
 struct dtype3 {
