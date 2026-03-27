@@ -158,7 +158,7 @@ jobs:
           cmake -G Ninja -B build-sycl -S . ^
             -DCMAKE_BUILD_TYPE=Release ^
             -DCMAKE_C_COMPILER=icx ^
-            -DCMAKE_CXX_COMPILER=icpx ^
+            -DCMAKE_CXX_COMPILER=icx ^
             -DSPHERICART_BUILD_TESTS=ON ^
             -DSPHERICART_ENABLE_SYCL=ON ^
             -DSPHERICART_SYCL_DEVICE=cpu
