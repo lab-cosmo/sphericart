@@ -81,6 +81,52 @@ jobs:
           python -m pip install numpy pytest sphericart julia
           python -m pytest .
 
+  sycl-tests:
+    runs-on: ubuntu-22.04
+    name: Test SYCL on ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gpg-agent wget
+
+      - name: setup Intel oneAPI APT repository
+        run: |
+          wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+            | gpg --dearmor \
+            | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+            | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          sudo apt-get update
+
+      - name: install Intel oneAPI DPC++ compiler and SYCL runtime
+        run: |
+          sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp intel-oneapi-runtime-opencl
+
+      - name: configure SYCL build
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          cmake -B build-sycl -S . \
+            -DSPHERICART_BUILD_TESTS=ON \
+            -DSPHERICART_ENABLE_SYCL=ON \
+            -DSPHERICART_SYCL_DEVICE=cpu \
+            -DCMAKE_CXX_COMPILER=icpx
+
+      - name: build SYCL tests
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          cmake --build build-sycl --parallel
+
+      - name: run SYCL ctest
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          ctest --test-dir build-sycl --output-on-failure -R test_derivatives_sycl
+
   # check that we can build Python wheels on any Python version
   python-build:
     runs-on: ubuntu-22.04
