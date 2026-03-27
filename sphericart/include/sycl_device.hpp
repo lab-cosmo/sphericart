@@ -10,9 +10,6 @@
 #include <type_traits>
 // #include <numbers> C++20 feature for value of PI
 
-#include <sys/syscall.h>
-#include <unistd.h>
-
 #include <sycl/sycl.hpp>
 
 // DTYPE can be defined at configuration time via CMake (default: double)
@@ -31,7 +28,13 @@
 #define SYCL_DEVICE_TYPE(x) SYCL_DEVICE_TYPE_CONCAT(x)
 #define SYCL_DEVICE_TYPE_VALUE SYCL_DEVICE_TYPE(SYCL_DEVICE)
 
-#define __global__ __attribute__((always_inline))
+#if defined(_MSC_VER)
+#define __global__ __forceinline
+#elif defined(__clang__) || defined(__GNUC__)
+#define __global__ inline __attribute__((always_inline))
+#else
+#define __global__ inline
+#endif
 
 namespace syclex = sycl::ext::oneapi;
 
@@ -127,7 +130,9 @@ class device_ext : public sycl::device {
     mutable std::mutex m_mutex;
 };
 
-static inline int get_tid() { return syscall(SYS_gettid); }
+using thread_id_t = std::thread::id;
+
+static inline thread_id_t get_tid() { return std::this_thread::get_id(); }
 
 class dev_mgr {
   public:
@@ -199,7 +204,7 @@ class dev_mgr {
     /// for the current thread.
     const int DEFAULT_DEVICE_ID = 0;
     /// thread-id to device-id map.
-    std::map<int, int> _thread2dev_map;
+    std::map<thread_id_t, int> _thread2dev_map;
 };
 
 /// Util function to get the current device (in int).

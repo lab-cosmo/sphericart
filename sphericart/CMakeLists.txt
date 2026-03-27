@@ -106,17 +106,28 @@ if (SPHERICART_ENABLE_SYCL)
     if(NOT DEFINED ONEAPI_ROOT)
         if(DEFINED ENV{ONEAPI_ROOT})
             set(ONEAPI_ROOT $ENV{ONEAPI_ROOT})
+        elseif(WIN32)
+            set(ONEAPI_ROOT "C:/Program Files (x86)/Intel/oneAPI")
         else()
             set(ONEAPI_ROOT "/opt/intel/oneapi")
         endif()
     endif()
 
     # Source Intel oneAPI environment if available
-    if(EXISTS "${ONEAPI_ROOT}/setvars.sh")
+    if(WIN32 AND EXISTS "${ONEAPI_ROOT}/setvars.bat")
+        execute_process(
+            COMMAND cmd /d /c "call \"${ONEAPI_ROOT}/setvars.bat\" >nul 2>&1 && set"
+            OUTPUT_VARIABLE ONEAPI_ENV
+        )
+    elseif(EXISTS "${ONEAPI_ROOT}/setvars.sh")
         execute_process(
             COMMAND bash -c "source ${ONEAPI_ROOT}/setvars.sh > /dev/null 2>&1 && env"
             OUTPUT_VARIABLE ONEAPI_ENV
         )
+    endif()
+
+    if(DEFINED ONEAPI_ENV)
+        string(REPLACE "\r\n" "\n" ONEAPI_ENV "${ONEAPI_ENV}")
         string(REGEX MATCHALL "([^=\n]+)=([^\n]*)" ONEAPI_ENV_MATCHES "${ONEAPI_ENV}")
         foreach(MATCH ${ONEAPI_ENV_MATCHES})
             string(REGEX REPLACE "([^=\n]+)=([^\n]*)" "\\1" KEY "${MATCH}")

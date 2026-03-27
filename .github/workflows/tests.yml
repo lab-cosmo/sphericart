@@ -127,6 +127,54 @@ jobs:
           source /opt/intel/oneapi/setvars.sh
           ctest --test-dir build-sycl --output-on-failure -R test_derivatives_sycl
 
+  sycl-tests-windows:
+    runs-on: windows-2022
+    name: Test SYCL on windows-2022
+    env:
+      WINDOWS_BASEKIT_URL: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/09a8acaf-265f-4460-866c-a3375ed5b4ff/intel-oneapi-base-toolkit-2025.2.0.591_offline.exe
+      WINDOWS_DPCPP_COMPONENTS: intel.oneapi.win.cpp-dpcpp-common
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: install Ninja
+        shell: pwsh
+        run: choco install -y ninja
+
+      - name: install Intel oneAPI DPC++ compiler
+        shell: cmd
+        run: |
+          curl.exe -L --retry 5 --retry-delay 5 -o oneapi-basekit.exe %WINDOWS_BASEKIT_URL%
+          start /b /wait "" oneapi-basekit.exe -s -a --silent --eula accept --components=%WINDOWS_DPCPP_COMPONENTS%
+
+      - name: configure SYCL build
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat" >nul 2>&1
+          cmake -G Ninja -B build-sycl -S . ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            -DCMAKE_C_COMPILER=icx ^
+            -DCMAKE_CXX_COMPILER=icpx ^
+            -DSPHERICART_BUILD_TESTS=ON ^
+            -DSPHERICART_ENABLE_SYCL=ON ^
+            -DSPHERICART_SYCL_DEVICE=cpu
+
+      - name: build SYCL tests
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat" >nul 2>&1
+          cmake --build build-sycl --parallel
+
+      - name: run SYCL ctest
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat" >nul 2>&1
+          ctest --test-dir build-sycl --output-on-failure -R test_derivatives_sycl
+
   # check that we can build Python wheels on any Python version
   python-build:
     runs-on: ubuntu-22.04
