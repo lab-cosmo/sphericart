@@ -22,6 +22,22 @@ class sphericart_solid_harmonics_calculator_f_t(ctypes.c_void_p):
     pass
 
 
+class sphericart_cuda_spherical_harmonics_calculator_t(ctypes.c_void_p):
+    pass
+
+
+class sphericart_cuda_spherical_harmonics_calculator_f_t(ctypes.c_void_p):
+    pass
+
+
+class sphericart_cuda_solid_harmonics_calculator_t(ctypes.c_void_p):
+    pass
+
+
+class sphericart_cuda_solid_harmonics_calculator_f_t(ctypes.c_void_p):
+    pass
+
+
 def setup_functions(lib):
     lib.sphericart_spherical_harmonics_new.restype = (
         sphericart_spherical_harmonics_calculator_t
@@ -219,6 +235,168 @@ def setup_functions(lib):
     lib.sphericart_solid_harmonics_omp_num_threads_f.restype = int
     lib.sphericart_solid_harmonics_omp_num_threads_f.argtypes = [
         sphericart_solid_harmonics_calculator_f_t,
+    ]
+
+    lib.sphericart_cuda_spherical_harmonics_new.restype = (
+        sphericart_cuda_spherical_harmonics_calculator_t
+    )
+    lib.sphericart_cuda_spherical_harmonics_new.argtypes = [ctypes.c_size_t]
+
+    lib.sphericart_cuda_spherical_harmonics_new_f.restype = (
+        sphericart_cuda_spherical_harmonics_calculator_f_t
+    )
+    lib.sphericart_cuda_spherical_harmonics_new_f.argtypes = [ctypes.c_size_t]
+
+    lib.sphericart_cuda_spherical_harmonics_delete.restype = None
+    lib.sphericart_cuda_spherical_harmonics_delete.argtypes = [
+        sphericart_cuda_spherical_harmonics_calculator_t
+    ]
+
+    lib.sphericart_cuda_spherical_harmonics_delete_f.restype = None
+    lib.sphericart_cuda_spherical_harmonics_delete_f.argtypes = [
+        sphericart_cuda_spherical_harmonics_calculator_f_t
+    ]
+
+    lib.sphericart_cuda_spherical_harmonics_compute_array.restype = None
+    lib.sphericart_cuda_spherical_harmonics_compute_array.argtypes = [
+        sphericart_cuda_spherical_harmonics_calculator_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_spherical_harmonics_compute_array_f.restype = None
+    lib.sphericart_cuda_spherical_harmonics_compute_array_f.argtypes = [
+        sphericart_cuda_spherical_harmonics_calculator_f_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_spherical_harmonics_compute_array_with_gradients.restype = None
+    lib.sphericart_cuda_spherical_harmonics_compute_array_with_gradients.argtypes = [
+        sphericart_cuda_spherical_harmonics_calculator_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_spherical_harmonics_compute_array_with_gradients_f.restype = (
+        None
+    )
+    lib.sphericart_cuda_spherical_harmonics_compute_array_with_gradients_f.argtypes = [
+        sphericart_cuda_spherical_harmonics_calculator_f_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_spherical_harmonics_compute_array_with_hessians.restype = None
+    lib.sphericart_cuda_spherical_harmonics_compute_array_with_hessians.argtypes = [
+        sphericart_cuda_spherical_harmonics_calculator_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_spherical_harmonics_compute_array_with_hessians_f.restype = None
+    lib.sphericart_cuda_spherical_harmonics_compute_array_with_hessians_f.argtypes = [
+        sphericart_cuda_spherical_harmonics_calculator_f_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_solid_harmonics_new.restype = (
+        sphericart_cuda_solid_harmonics_calculator_t
+    )
+    lib.sphericart_cuda_solid_harmonics_new.argtypes = [ctypes.c_size_t]
+
+    lib.sphericart_cuda_solid_harmonics_new_f.restype = (
+        sphericart_cuda_solid_harmonics_calculator_f_t
+    )
+    lib.sphericart_cuda_solid_harmonics_new_f.argtypes = [ctypes.c_size_t]
+
+    lib.sphericart_cuda_solid_harmonics_delete.restype = None
+    lib.sphericart_cuda_solid_harmonics_delete.argtypes = [
+        sphericart_cuda_solid_harmonics_calculator_t
+    ]
+
+    lib.sphericart_cuda_solid_harmonics_delete_f.restype = None
+    lib.sphericart_cuda_solid_harmonics_delete_f.argtypes = [
+        sphericart_cuda_solid_harmonics_calculator_f_t
+    ]
+
+    lib.sphericart_cuda_solid_harmonics_compute_array.restype = None
+    lib.sphericart_cuda_solid_harmonics_compute_array.argtypes = [
+        sphericart_cuda_solid_harmonics_calculator_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_solid_harmonics_compute_array_f.restype = None
+    lib.sphericart_cuda_solid_harmonics_compute_array_f.argtypes = [
+        sphericart_cuda_solid_harmonics_calculator_f_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_solid_harmonics_compute_array_with_gradients.restype = None
+    lib.sphericart_cuda_solid_harmonics_compute_array_with_gradients.argtypes = [
+        sphericart_cuda_solid_harmonics_calculator_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_solid_harmonics_compute_array_with_gradients_f.restype = None
+    lib.sphericart_cuda_solid_harmonics_compute_array_with_gradients_f.argtypes = [
+        sphericart_cuda_solid_harmonics_calculator_f_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_solid_harmonics_compute_array_with_hessians.restype = None
+    lib.sphericart_cuda_solid_harmonics_compute_array_with_hessians.argtypes = [
+        sphericart_cuda_solid_harmonics_calculator_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.c_void_p,
+    ]
+
+    lib.sphericart_cuda_solid_harmonics_compute_array_with_hessians_f.restype = None
+    lib.sphericart_cuda_solid_harmonics_compute_array_with_hessians_f.argtypes = [
+        sphericart_cuda_solid_harmonics_calculator_f_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_void_p,
     ]
 
 
