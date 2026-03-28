@@ -11,7 +11,7 @@ The Python package can be installed with pip by simply running
 
     pip install sphericart
 
-This basic package makes use of NumPy. Implementations supporting PyTorch and JAX can be installed with
+This basic package makes use of NumPy and CuPy. Implementations supporting PyTorch and JAX can be installed with
 
 .. code-block:: bash
 
@@ -37,9 +37,10 @@ Before installing the JAX version of ``sphericart``, make sure you already have 
 library installed according to the `official JAX installation instructions
 <https://jax.readthedocs.io/en/latest/installation.html>`_.
 
-In addition, if you want to use the CUDA functionalities of sphericart (either with torch
-or JAX), make sure you have installed the CUDA toolkit and set up the environment variables
-``CUDA_HOME``, ``LD_LIBRARY_FLAGS``, and ``PATH`` accordingly.
+In addition, if you want to use the CUDA functionalities of sphericart (with CuPy,
+torch or JAX), make sure you have installed the CUDA toolkit
+and set up the environment variables ``CUDA_HOME``, ``LD_LIBRARY_FLAGS``, and ``PATH``
+accordingly. In case you want to use CuPy, it should be installed separately.
 
 
 Julia package
