@@ -70,7 +70,7 @@ else()
     endif()
 endif()
 
-find_package(Torch 2.1 REQUIRED)
+find_package(Torch 2.4 REQUIRED)
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERSION = '${Torch_VERSION}'")
 
