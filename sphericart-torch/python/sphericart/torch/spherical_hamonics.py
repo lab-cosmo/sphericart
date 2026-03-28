@@ -74,9 +74,8 @@ class SphericalHarmonics(torch.nn.Module):
         backward_second_derivatives: bool = False,
     ):
         super().__init__()
-        self.calculator = torch.classes.sphericart_torch.SphericalHarmonics(
-            l_max, backward_second_derivatives
-        )
+        self._l_max = l_max
+        self._backward_second_derivatives = backward_second_derivatives
 
     def forward(self, xyz: Tensor) -> Tensor:
         """
@@ -103,11 +102,13 @@ class SphericalHarmonics(torch.nn.Module):
             spherical harmonics with ``(l, m) = (0, 0), (1, -1), (1, 0), (1,
             1), (2, -2), (2, -1), (2, 0), (2, 1), (2, 2)``, in this order.
         """
-        return self.calculator.compute(xyz)
+        return torch.ops.sphericart_torch.spherical_harmonics(
+            xyz, self._l_max, self._backward_second_derivatives
+        )
 
     def compute(self, xyz: Tensor) -> Tensor:
         """Equivalent to ``forward``"""
-        return self.calculator.compute(xyz)
+        return self.forward(xyz)
 
     def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
         """
@@ -139,7 +140,9 @@ class SphericalHarmonics(torch.nn.Module):
               derivatives in the the x, y, and z directions, respectively.
 
         """
-        return self.calculator.compute_with_gradients(xyz)
+        return torch.ops.sphericart_torch.spherical_harmonics_with_gradients(
+            xyz, self._l_max
+        )
 
     def compute_with_hessians(self, xyz: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
         """
@@ -176,15 +179,19 @@ class SphericalHarmonics(torch.nn.Module):
               hessian dimensions.
 
         """
-        return self.calculator.compute_with_hessians(xyz)
+        return torch.ops.sphericart_torch.spherical_harmonics_with_hessians(
+            xyz, self._l_max
+        )
 
     def omp_num_threads(self):
         """Returns the number of threads available for calculations on the CPU."""
-        return self.calculator.omp_num_threads()
+        return torch.ops.sphericart_torch.spherical_harmonics_omp_num_threads(
+            self._l_max
+        )
 
     def l_max(self):
         """Returns the maximum angular momentum setting for this calculator."""
-        return self.calculator.l_max()
+        return self._l_max
 
 
 class SolidHarmonics(torch.nn.Module):
@@ -216,30 +223,35 @@ class SolidHarmonics(torch.nn.Module):
         backward_second_derivatives: bool = False,
     ):
         super().__init__()
-        self.calculator = torch.classes.sphericart_torch.SolidHarmonics(
-            l_max, backward_second_derivatives
-        )
+        self._l_max = l_max
+        self._backward_second_derivatives = backward_second_derivatives
 
     def forward(self, xyz: Tensor) -> Tensor:
         """See :py:meth:`SphericalHarmonics.forward`"""
-        return self.calculator.compute(xyz)
+        return torch.ops.sphericart_torch.solid_harmonics(
+            xyz, self._l_max, self._backward_second_derivatives
+        )
 
     def compute(self, xyz: Tensor) -> Tensor:
         """Equivalent to ``forward``"""
-        return self.calculator.compute(xyz)
+        return self.forward(xyz)
 
     def compute_with_gradients(self, xyz: Tensor) -> Tuple[Tensor, Tensor]:
         """See :py:meth:`SphericalHarmonics.compute_with_gradients`"""
-        return self.calculator.compute_with_gradients(xyz)
+        return torch.ops.sphericart_torch.solid_harmonics_with_gradients(
+            xyz, self._l_max
+        )
 
     def compute_with_hessians(self, xyz: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
         """See :py:meth:`SphericalHarmonics.compute_with_hessians`"""
-        return self.calculator.compute_with_hessians(xyz)
+        return torch.ops.sphericart_torch.solid_harmonics_with_hessians(
+            xyz, self._l_max
+        )
 
     def omp_num_threads(self):
         """Returns the number of threads available for calculations on the CPU."""
-        return self.calculator.omp_num_threads()
+        return torch.ops.sphericart_torch.solid_harmonics_omp_num_threads(self._l_max)
 
     def l_max(self):
         """Returns the maximum angular momentum setting for this calculator."""
-        return self.calculator.l_max()
+        return self._l_max

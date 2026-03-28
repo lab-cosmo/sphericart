@@ -3,8 +3,61 @@
 #include "sphericart/torch.hpp"
 #include "sphericart/autograd.hpp"
 
-using namespace torch;
+#include <map>
+#include <memory>
+#include <mutex>
+#include <tuple>
+
 using namespace sphericart_torch;
+
+namespace {
+
+template <typename Calculator>
+using CacheMap = std::map<std::tuple<int64_t, bool>, std::unique_ptr<Calculator>>;
+
+template <typename Calculator>
+Calculator& get_or_create_calculator(int64_t l_max, bool backward_second_derivatives) {
+    static CacheMap<Calculator> cache;
+    static std::mutex cache_mutex;
+
+    std::lock_guard<std::mutex> lock(cache_mutex);
+    auto key = std::make_tuple(l_max, backward_second_derivatives);
+    auto it = cache.find(key);
+    if (it == cache.end()) {
+        it =
+            cache.insert({key, std::make_unique<Calculator>(l_max, backward_second_derivatives)}).first;
+    }
+    return *(it->second);
+}
+
+template <typename Calculator>
+torch::Tensor compute(torch::Tensor xyz, int64_t l_max, bool backward_second_derivatives) {
+    auto& calculator = get_or_create_calculator<Calculator>(l_max, backward_second_derivatives);
+    return calculator.compute(xyz);
+}
+
+template <typename Calculator>
+std::tuple<torch::Tensor, torch::Tensor> compute_with_gradients(torch::Tensor xyz, int64_t l_max) {
+    auto& calculator = get_or_create_calculator<Calculator>(l_max, false);
+    auto result = calculator.compute_with_gradients(xyz);
+    return {result[0], result[1]};
+}
+
+template <typename Calculator>
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> compute_with_hessians(
+    torch::Tensor xyz, int64_t l_max
+) {
+    auto& calculator = get_or_create_calculator<Calculator>(l_max, false);
+    auto result = calculator.compute_with_hessians(xyz);
+    return {result[0], result[1], result[2]};
+}
+
+template <typename Calculator> int64_t omp_num_threads(int64_t l_max) {
+    auto& calculator = get_or_create_calculator<Calculator>(l_max, false);
+    return calculator.get_omp_num_threads();
+}
+
+} // namespace
 
 SphericalHarmonics::SphericalHarmonics(int64_t l_max, bool backward_second_derivatives)
     : l_max_(l_max), backward_second_derivatives_(backward_second_derivatives),
@@ -59,63 +112,35 @@ std::vector<torch::Tensor> SolidHarmonics::compute_with_hessians(torch::Tensor x
 }
 
 TORCH_LIBRARY(sphericart_torch, m) {
-    m.class_<SphericalHarmonics>("SphericalHarmonics")
-        .def(
-            torch::init<int64_t, bool>(),
-            "",
-            {torch::arg("l_max"), torch::arg("backward_second_derivatives") = false}
-        )
-        .def("compute", &SphericalHarmonics::compute, "", {torch::arg("xyz")})
-        .def(
-            "compute_with_gradients",
-            &SphericalHarmonics::compute_with_gradients,
-            "",
-            {torch::arg("xyz")}
-        )
-        .def(
-            "compute_with_hessians",
-            &SphericalHarmonics::compute_with_hessians,
-            "",
-            {torch::arg("xyz")}
-        )
-        .def("omp_num_threads", &SphericalHarmonics::get_omp_num_threads)
-        .def("l_max", &SphericalHarmonics::get_l_max)
-        .def_pickle(
-            // __getstate__
-            [](const c10::intrusive_ptr<SphericalHarmonics>& self) -> std::tuple<int64_t, bool> {
-                return {self->get_l_max(), self->get_backward_second_derivative_flag()};
-            },
-            // __setstate__
-            [](std::tuple<int64_t, bool> state) -> c10::intrusive_ptr<SphericalHarmonics> {
-                const auto l_max = std::get<0>(state);
-                const auto backward_second_derivatives = std::get<1>(state);
-                return c10::make_intrusive<SphericalHarmonics>(l_max, backward_second_derivatives);
-            }
-        );
+    m.def("spherical_harmonics(Tensor xyz, int l_max, bool backward_second_derivatives=False) -> Tensor");
+    m.def("spherical_harmonics_with_gradients(Tensor xyz, int l_max) -> (Tensor, Tensor)");
+    m.def("spherical_harmonics_with_hessians(Tensor xyz, int l_max) -> (Tensor, Tensor, Tensor)");
+    m.def("solid_harmonics(Tensor xyz, int l_max, bool backward_second_derivatives=False) -> Tensor");
+    m.def("solid_harmonics_with_gradients(Tensor xyz, int l_max) -> (Tensor, Tensor)");
+    m.def("solid_harmonics_with_hessians(Tensor xyz, int l_max) -> (Tensor, Tensor, Tensor)");
+    m.def("spherical_harmonics_omp_num_threads(int l_max) -> int");
+    m.def("solid_harmonics_omp_num_threads(int l_max) -> int");
+}
 
-    m.class_<SolidHarmonics>("SolidHarmonics")
-        .def(
-            torch::init<int64_t, bool>(),
-            "",
-            {torch::arg("l_max"), torch::arg("backward_second_derivatives") = false}
-        )
-        .def("compute", &SolidHarmonics::compute, "", {torch::arg("xyz")})
-        .def(
-            "compute_with_gradients", &SolidHarmonics::compute_with_gradients, "", {torch::arg("xyz")}
-        )
-        .def("compute_with_hessians", &SolidHarmonics::compute_with_hessians, "", {torch::arg("xyz")})
-        .def("omp_num_threads", &SolidHarmonics::get_omp_num_threads)
-        .def("l_max", &SolidHarmonics::get_l_max)
-        .def_pickle(
-            // __getstate__
-            [](const c10::intrusive_ptr<SolidHarmonics>& self) -> std::tuple<int64_t, bool> {
-                return {self->get_l_max(), self->get_backward_second_derivative_flag()};
-            },
-            // __setstate__
-            [](std::tuple<int64_t, bool> state) -> c10::intrusive_ptr<SolidHarmonics> {
-                const auto l_max = std::get<0>(state);
-                const auto backward_second_derivatives = std::get<1>(state);
-                return c10::make_intrusive<SolidHarmonics>(l_max, backward_second_derivatives);
-            }
-        );
+TORCH_LIBRARY_IMPL(sphericart_torch, CPU, m) {
+    m.impl("spherical_harmonics", &compute<SphericalHarmonics>);
+    m.impl("spherical_harmonics_with_gradients", &compute_with_gradients<SphericalHarmonics>);
+    m.impl("spherical_harmonics_with_hessians", &compute_with_hessians<SphericalHarmonics>);
+    m.impl("solid_harmonics", &compute<SolidHarmonics>);
+    m.impl("solid_harmonics_with_gradients", &compute_with_gradients<SolidHarmonics>);
+    m.impl("solid_harmonics_with_hessians", &compute_with_hessians<SolidHarmonics>);
+}
+
+TORCH_LIBRARY_IMPL(sphericart_torch, CUDA, m) {
+    m.impl("spherical_harmonics", &compute<SphericalHarmonics>);
+    m.impl("spherical_harmonics_with_gradients", &compute_with_gradients<SphericalHarmonics>);
+    m.impl("spherical_harmonics_with_hessians", &compute_with_hessians<SphericalHarmonics>);
+    m.impl("solid_harmonics", &compute<SolidHarmonics>);
+    m.impl("solid_harmonics_with_gradients", &compute_with_gradients<SolidHarmonics>);
+    m.impl("solid_harmonics_with_hessians", &compute_with_hessians<SolidHarmonics>);
+}
+
+TORCH_LIBRARY_IMPL(sphericart_torch, CompositeExplicitAutograd, m) {
+    m.impl("spherical_harmonics_omp_num_threads", &omp_num_threads<SphericalHarmonics>);
+    m.impl("solid_harmonics_omp_num_threads", &omp_num_threads<SolidHarmonics>);
 }
