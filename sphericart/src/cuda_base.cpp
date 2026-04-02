@@ -1,7 +1,6 @@
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
 #include <cmath>
-#include <algorithm>
 #include <gpulite/gpulite.hpp>
 #include "cuda_base.hpp"
 

@@ -94,7 +94,7 @@ else()
     FetchContent_Declare(
         gpulite
         GIT_REPOSITORY https://github.com/rubber-duck-debug/gpu-lite.git
-        GIT_TAG 090c241a1db576bed8ad6bcd612c3f3a95c4bffe # v1.0.3
+        GIT_TAG adf0fa286784e1a469f81b572dd1f1dbd6ef6149
         EXCLUDE_FROM_ALL
     )
 endif()
