@@ -3,7 +3,8 @@
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
-#include "dynamic_cuda.hpp"
+#include <algorithm>
+#include <gpulite/gpulite.hpp>
 #include "sphericart.hpp"
 #include "cuda_base.hpp"
 #include "sphericart_cuda.hpp"

@@ -11,10 +11,9 @@
 #include <memory>
 #include <mutex>
 
-#include "dynamic_cuda.hpp"
+#include <algorithm>
+#include <gpulite/gpulite.hpp>
 #include "sphericart_cuda.hpp"
-
-#include <cuda_runtime_api.h>
 
 #include "xla/ffi/api/c_api.h"
 #include "xla/ffi/api/ffi.h"

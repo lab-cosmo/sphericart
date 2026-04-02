@@ -1,6 +1,8 @@
 import os
+import re
 import subprocess
 import sys
+import urllib.request
 import uuid
 
 from setuptools import Extension, setup
@@ -30,6 +32,32 @@ class cmake_ext(build_ext):
     """Build the native library using cmake"""
 
     def run(self):
+        # Download gpulite source if not already present
+        gpulite_dir = os.path.join("sphericart", "external")
+        os.makedirs(gpulite_dir, exist_ok=True)
+        gpulite_archive = os.path.join(gpulite_dir, "gpulite.tar.gz")
+        if not os.path.exists(gpulite_archive):
+            with open(os.path.join("sphericart", "CMakeLists.txt")) as fd:
+                content = fd.read()
+                # FetchContent_Declare(
+                #     gpulite
+                #     ...
+                #     GIT_TAG <hash>
+                match = re.search(
+                    r"FetchContent_Declare\s*\(\s*gpulite.*?GIT_TAG\s+([a-f0-9]+)",
+                    content,
+                    re.DOTALL,
+                )
+                if match is None:
+                    raise Exception("Could not find gpulite GIT_TAG in CMakeLists.txt")
+                commit = match.group(1)
+
+            print("downloading gpulite source code")
+            urllib.request.urlretrieve(
+                f"https://github.com/rubber-duck-debug/gpu-lite/archive/{commit}.tar.gz",
+                gpulite_archive,
+            )
+
         source_dir = os.path.join(ROOT, "sphericart")
         build_dir = os.path.join(ROOT, "build", "cmake-build")
         install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart")

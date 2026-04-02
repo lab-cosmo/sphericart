@@ -82,6 +82,24 @@ set(COMMON_SOURCES
     "include/sphericart.h"
 )
 
+include(FetchContent)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/gpulite.tar.gz)
+    FetchContent_Declare(
+        gpulite
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/external/gpulite.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        EXCLUDE_FROM_ALL
+    )
+else()
+    FetchContent_Declare(
+        gpulite
+        GIT_REPOSITORY https://github.com/rubber-duck-debug/gpu-lite.git
+        GIT_TAG adf0fa286784e1a469f81b572dd1f1dbd6ef6149
+        EXCLUDE_FROM_ALL
+    )
+endif()
+FetchContent_MakeAvailable(gpulite)
+
 # Find CUDA
 include(CheckLanguage)
 check_language(CUDA)
@@ -104,8 +122,6 @@ list(APPEND COMMON_SOURCES "include/cuda_base.hpp")
 list(APPEND COMMON_SOURCES "include/sphericart_cuda.hpp")
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    list(APPEND COMMON_SOURCES "include/dynamic_cuda.hpp")
-    list(APPEND COMMON_SOURCES "include/cuda_cache.hpp")
     list(APPEND COMMON_SOURCES "src/cuda_base.cpp")
     list(APPEND COMMON_SOURCES "src/sphericart_cuda.cpp")
 else()
@@ -118,8 +134,7 @@ add_library(sphericart ${COMMON_SOURCES})
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     #include the build/generated folder for compilation
     target_include_directories(sphericart PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_include_directories(sphericart PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    target_link_libraries(sphericart PRIVATE ${CMAKE_DL_LIBS})
+    target_link_libraries(sphericart PRIVATE gpulite)
 
     set(SPHERICART_CUDA_HEADERS
         "include/sphericart_impl.cuh"

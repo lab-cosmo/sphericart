@@ -5,3 +5,7 @@ dist/
 *.pyc
 .vscode
 Manifest.toml
+
+sphericart/external/
+sphericart-torch/sphericart/external/
+sphericart-jax/sphericart/external/

@@ -1,7 +1,7 @@
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
 #include <cmath>
-#include "cuda_cache.hpp"
+#include <gpulite/gpulite.hpp>
 #include "cuda_base.hpp"
 
 #define HARDCODED_LMAX 1
@@ -110,7 +110,9 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     };
 
     std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
-    auto& kernel_factory = KernelFactory::instance();
+    int device;
+    CUDART_SAFE_CALL(CUDART_INSTANCE.cudaGetDevice(&device));
+    auto& kernel_factory = KernelFactory::instance(device);
 
     CachedKernel* kernel = kernel_factory.create(
         kernel_name, std::string(CUDA_CODE), "wrapped_sphericart_impl.cu", {"--std=c++17"}
@@ -168,7 +170,9 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
 
-    auto& kernel_factory = KernelFactory::instance();
+    int device;
+    CUDART_SAFE_CALL(CUDART_INSTANCE.cudaGetDevice(&device));
+    auto& kernel_factory = KernelFactory::instance(device);
 
     dim3 block_dim(4, 32);
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
