@@ -6,6 +6,6 @@ dist/
 .vscode
 Manifest.toml
 
-lib/external/
-sphericart-torch/lib/external/
-sphericart-jax/lib/external/
+sphericart/external/
+sphericart-torch/sphericart/external/
+sphericart-jax/sphericart/external/

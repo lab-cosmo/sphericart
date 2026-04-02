@@ -32,7 +32,7 @@ class cmake_ext(build_ext):
 
     def run(self):
         # Download gpulite source if not already present
-        gpulite_dir = os.path.join("lib", "external")
+        gpulite_dir = os.path.join("sphericart", "external")
         os.makedirs(gpulite_dir, exist_ok=True)
         gpulite_archive = os.path.join(gpulite_dir, "gpulite.tar.gz")
         if not os.path.exists(gpulite_archive):
