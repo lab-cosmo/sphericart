@@ -1,10 +1,14 @@
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
 #include <cmath>
-#include "cuda_cache.hpp"
+#include <gpulite/gpulite.hpp>
 #include "cuda_base.hpp"
 
 #define HARDCODED_LMAX 1
+
+static const char* CUDA_CODE =
+#include "generated/wrapped_sphericart_impl.cu"
+    ;
 
 /*
     Computes the total amount of shared memory space required by
@@ -71,11 +75,6 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     scalar_t* ddsph,
     void* cuda_stream
 ) {
-
-    static const char* CUDA_CODE =
-#include "generated/wrapped_sphericart_impl.cu"
-        ;
-
     int n_total = (l_max + 1) * (l_max + 1);
     dim3 block_dim(GRID_DIM_X, GRID_DIM_Y);
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
@@ -109,10 +108,12 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
         &ddsph
     };
 
-    std::string kernel_name = getKernelName<scalar_t>("spherical_harmonics_kernel");
-    auto& kernel_factory = KernelFactory::instance();
+    std::string kernel_name = gpulite::getTemplateKernelName<scalar_t>("spherical_harmonics_kernel");
+    int device;
+    GPULITE_CUDART_CALL(cudaGetDevice(&device));
+    auto& kernel_factory = gpulite::KernelFactory::instance(device);
 
-    CachedKernel* kernel = kernel_factory.create(
+    auto* kernel = kernel_factory.create(
         kernel_name, std::string(CUDA_CODE), "wrapped_sphericart_impl.cu", {"--std=c++17"}
     );
 
@@ -162,13 +163,11 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     scalar_t* xyz_grad,
     void* cuda_stream
 ) {
-    static const char* CUDA_CODE =
-#include "generated/wrapped_sphericart_impl.cu"
-        ;
+    std::string kernel_name = gpulite::getTemplateKernelName<scalar_t>("backward_kernel");
 
-    std::string kernel_name = getKernelName<scalar_t>("backward_kernel");
-
-    auto& kernel_factory = KernelFactory::instance();
+    int device;
+    GPULITE_CUDART_CALL(cudaGetDevice(&device));
+    auto& kernel_factory = gpulite::KernelFactory::instance(device);
 
     dim3 block_dim(4, 32);
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
@@ -180,7 +179,7 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
 
     std::vector<void*> args = {&dsph, &sph_grad, &_nedges, &_n_total, &xyz_grad};
 
-    CachedKernel* kernel = kernel_factory.create(
+    auto* kernel = kernel_factory.create(
         kernel_name, std::string(CUDA_CODE), "wrapped_sphericart_impl.cu", {"--std=c++17"}
     );
 

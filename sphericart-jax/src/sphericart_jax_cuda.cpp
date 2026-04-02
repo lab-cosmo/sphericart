@@ -11,10 +11,8 @@
 #include <memory>
 #include <mutex>
 
-#include "dynamic_cuda.hpp"
+#include <gpulite/gpulite.hpp>
 #include "sphericart_cuda.hpp"
-
-#include <cuda_runtime_api.h>
 
 #include "xla/ffi/api/c_api.h"
 #include "xla/ffi/api/ffi.h"
@@ -322,7 +320,7 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
 // ===== Small C ABI helper for Python (ctypes) =====
 extern "C" void sphericart_jax_get_cuda_runtime_version(int* major, int* minor) {
     int ver = 0;
-    CUDART_SAFE_CALL(CUDART_INSTANCE.cudaRuntimeGetVersion(&ver));
+    GPULITE_CUDART_CALL(cudaRuntimeGetVersion(&ver));
     if (major) {
         *major = ver / 1000;
     }
