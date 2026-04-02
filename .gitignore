@@ -6,4 +6,4 @@ dist/
 .vscode
 Manifest.toml
 
-sphericart/external/
+lib/external/
