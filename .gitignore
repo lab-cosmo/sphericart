@@ -7,3 +7,5 @@ dist/
 Manifest.toml
 
 lib/external/
+sphericart-torch/lib/external/
+sphericart-jax/lib/external/
