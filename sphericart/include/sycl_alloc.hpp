@@ -1,4 +1,6 @@
 // Authors: abagusetty@github and alvarovm@github , Argonne UChicago LLC.
+#ifndef SPHERICART_SYCL_ALLOC_HPP
+#define SPHERICART_SYCL_ALLOC_HPP
 #include "sycl_device.hpp"
 
 // Function to check SYCL errors
@@ -41,3 +43,5 @@ void check(T result, char const* const func, const char* const file, int const l
             ->submit([&](::sycl::handler& cgh) { cgh.memcpy(dst, src, sizeof(type) * (size)); })   \
             .wait();                                                                               \
     }
+
+#endif // SPHERICART_SYCL_ALLOC_HPP

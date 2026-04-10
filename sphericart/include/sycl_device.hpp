@@ -103,7 +103,7 @@ static inline typename std::enable_if<std::is_integral<T>::value, T>::type atomi
 
 template <class T> using sycl_device_global = sycl::ext::oneapi::experimental::device_global<T>;
 
-auto asyncHandler = [](sycl::exception_list exceptions) {
+inline auto asyncHandler = [](sycl::exception_list exceptions) {
     for (std::exception_ptr const& e : exceptions) {
         try {
             std::rethrow_exception(e);

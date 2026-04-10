@@ -196,8 +196,6 @@ list(APPEND COMMON_SOURCES "src/sphericart_impl_sycl.cpp")
 
 list(APPEND COMMON_SOURCES "src/sycl_base.cpp")
 list(APPEND COMMON_SOURCES "src/sphericart_sycl.cpp")
-
-list(APPEND COMMON_SOURCES "src/sphericart_cuda_stub.cpp")
 #        else()
 #            message(WARNING "Could not find SYCL include directory. SYCL support will be disabled.")
 #            set(SPHERICART_ENABLE_SYCL OFF)

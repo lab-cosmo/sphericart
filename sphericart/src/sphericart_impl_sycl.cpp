@@ -118,8 +118,7 @@ inline void write_buffers(
                     auto tmp = (tmp_dx * x + tmp_dy * y + tmp_dz * z);
 
                     auto tmpx = x * tmp_dxdx + y * tmp_dydx + z * tmp_dzdx;
-                    auto tmpy =
-                        x * tmp_dxdy + y * tmp_dydy + z * tmp_dzdy; // * tmp_dydz; TODO correct?
+                    auto tmpy = x * tmp_dxdy + y * tmp_dydy + z * tmp_dydz;
                     auto tmpz = x * tmp_dxdz + y * tmp_dydz + z * tmp_dzdz;
                     auto tmp2 = x * x * tmp_dxdx + y * y * tmp_dydy + z * z * tmp_dzdz +
                                 2 * x * y * tmp_dxdy + 2 * x * z * tmp_dxdz + 2 * y * z * tmp_dydz;
@@ -655,72 +654,38 @@ void backward_kernel(
         local_range[0], groups_y * local_range[1], groups_z * local_range[2]
     );
 
-    // Verify device supports required sub-group size for reduction
-    auto sg_sizes = q.get_device().get_info<::sycl::info::device::sub_group_sizes>();
-    bool supported = false;
-    for (auto size : sg_sizes) {
-        if (size >= static_cast<size_t>(GRID_DIM_X)) {
-            supported = true;
-            break;
-        }
-    }
-    if (!supported) {
-        std::string available_sizes;
-        for (size_t i = 0; i < sg_sizes.size(); ++i) {
-            if (i > 0) {
-                available_sizes += ", ";
-            }
-            available_sizes += std::to_string(sg_sizes[i]);
-        }
-        throw std::runtime_error(
-            "Device does not support required sub-group size for backward_kernel. "
-            "Required: " +
-            std::to_string(GRID_DIM_X) + ", Available: [" + available_sizes + "]"
-        );
-    }
-
     q.submit([&](::sycl::handler& cgh) {
+         // Local memory for the partial sums: one slot per work-item in the
+         // work-group (GRID_DIM_X reduction threads × GRID_DIM_Y edge threads).
+         ::sycl::local_accessor<scalar_t, 1> partial(::sycl::range<1>(GRID_DIM_X * GRID_DIM_Y), cgh);
          cgh.parallel_for(
              ::sycl::nd_range<3>(global_range, local_range), [=](::sycl::nd_item<3> item) {
-                 // Thread indexing (matches CUDA backward_kernel)
-                 // edge_idx = blockIdx.x * blockDim.y + threadIdx.y
                  int edge_idx = item.get_group(1) * item.get_local_range(1) + item.get_local_id(1);
-                 // spatial = blockIdx.y (0, 1, or 2 for x, y, z)
                  int spatial = item.get_group(2);
+                 int lid0 = static_cast<int>(item.get_local_id(0)); // reduction lane
+                 int lid1 = static_cast<int>(item.get_local_id(1)); // edge lane
 
+                 // Each reduction lane accumulates a strided subset of the dot
+                 // product dsph[edge, spatial, :] · sph_grad[edge, :]
                  scalar_t sum = 0.0;
-
-                 // Accumulation loop (strided by local_range(0) for reduction)
-                 // Matches CUDA: for (int j = threadIdx.x; j < n_total; j +=
-                 // blockDim.x)
                  if (edge_idx < nedges) {
-                     for (int j = item.get_local_id(0); j < n_total; j += item.get_local_range(0)) {
-                         // sum += dsph[edge_idx][spatial][j] *
-                         // sph_grad[edge_idx][j]
+                     for (int j = lid0; j < n_total; j += GRID_DIM_X) {
                          sum += dsph[edge_idx * 3 * n_total + spatial * n_total + j] *
                                 sph_grad[edge_idx * n_total + j];
                      }
                  }
 
+                 // Store into local memory and synchronise the work-group
+                 partial[lid0 * GRID_DIM_Y + lid1] = sum;
                  item.barrier(::sycl::access::fence_space::local_space);
 
-                 // Reduction across dimension 0 using sub-group shuffle operations
-                 // This is the SYCL equivalent of CUDA's __shfl_down_sync warp
-                 // reduction
-                 auto sg = item.get_sub_group();
-
-                 // Perform tree reduction using shuffle operations
-                 // Matches CUDA: for (int offset = blockDim.x / 2; offset > 0;
-                 // offset /= 2)
-                 for (int offset = item.get_local_range(0) / 2; offset > 0; offset /= 2) {
-                     sum += ::sycl::shift_group_left(sg, sum, offset);
-                 }
-
-                 // Write result (only thread 0 in the reduction dimension writes)
-                 // Matches CUDA: if (threadIdx.x == 0) xyz_grad[edge_idx * 3 +
-                 // spatial] = sum
-                 if (edge_idx < nedges && item.get_local_id(0) == 0) {
-                     xyz_grad[edge_idx * 3 + spatial] = sum;
+                 // Lane 0 sums the GRID_DIM_X partial results for this edge
+                 if (lid0 == 0 && edge_idx < nedges) {
+                     scalar_t total = 0.0;
+                     for (int i = 0; i < GRID_DIM_X; i++) {
+                         total += partial[i * GRID_DIM_Y + lid1];
+                     }
+                     xyz_grad[edge_idx * 3 + spatial] = total;
                  }
              }
          );
