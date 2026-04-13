@@ -3,6 +3,7 @@ API documentation
 
 The core implementation of ``sphericart`` is written in C++ and CUDA. This core library is
 then also made available to different environments (C, Python, PyTorch, JAX).
+A SYCL implementation is also available through the C++ API.
 This section contains a description of the interface of the ``sphericart`` library for the
 different languages and frameworks it supports.
 
