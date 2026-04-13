@@ -8,8 +8,6 @@
 #include <utility>
 #include <vector>
 #include <type_traits>
-// #include <numbers> C++20 feature for value of PI
-
 #include <sycl/sycl.hpp>
 
 // DTYPE can be defined at configuration time via CMake (default: double)
@@ -42,19 +40,6 @@ namespace syclex = sycl::ext::oneapi;
 #define norm3d(d1, d2, d3) (sycl::length(sycl::vec<DTYPE, 3>(d1, d2, d3)))
 #define __syncthreads() (item.barrier(sycl::access::fence_space::local_space))
 #define __shfl_down_sync(mask, val, delta) sycl::shift_group_right(item.get_sub_group(), val, delta)
-
-template <typename T> inline auto sqrtf(T x) { return sycl::sqrt(x); }
-template <typename T> inline auto sqrt(T x) { return sycl::sqrt(x); }
-template <typename T> inline auto min(T x, T y) { return sycl::min(x, y); }
-template <typename T> inline auto max(T x, T y) { return sycl::max(x, y); }
-template <typename T> inline auto exp(T x) { return sycl::exp(x); }
-template <typename T> inline auto fabs(T x) { return sycl::fabs(x); }
-template <typename T> inline auto erf(T x) { return sycl::erf(x); }
-template <typename T> inline auto floor(T x) { return sycl::floor(x); }
-template <typename T> inline auto pow(T x, int n) { return sycl::pown(x, n); }
-template <typename T> inline auto logf(T x) { return sycl::log(x); }
-template <typename T> inline void sincos(T x, T* sptr, T* cptr) { *sptr = sycl::sincos(x, cptr); }
-#define NAN std::numeric_limits<float>::quiet_NaN()
 
 namespace constants {
 constexpr DTYPE pi = 3.141592653589793238462643383279502884;
@@ -182,9 +167,6 @@ class dev_mgr {
             );
             _queues.push_back(q);
         }
-        // sycl::device dev{sycl::gpu_selector_v};
-        // _queues.push_back(new sycl::queue(dev, asyncHandler,
-        // sycl::property_list{sycl::property::queue::in_order{}}));
     }
 
     void check_id(int id) const {

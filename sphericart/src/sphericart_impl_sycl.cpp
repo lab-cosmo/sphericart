@@ -205,14 +205,7 @@ void spherical_harmonics_kernel(
     int ntotal = (l_max + 1) * (l_max + 1);
     int nprefactors = (int)(l_max + 1) * (l_max + 2);
 
-    // Create SYCL queue
-
     ::sycl::queue& q = *sycl_get_queue();
-
-    // std::cout << "Running on device: " <<
-    // sycl_get_queue()->get_device().get_info<::sycl::info::device::name>() << std::endl;
-
-    int GRID_DIM_X = 8, GRID_DIM_Y = 1;
     ::sycl::range<2> local_range(GRID_DIM_X, GRID_DIM_Y);
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
     int groups_y = find_num_blocks(nedges, static_cast<int>(local_range[1]));

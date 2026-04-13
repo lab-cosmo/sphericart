@@ -276,19 +276,33 @@ int main() {
 
         is_passed = check_gradient_call(l_max, calculator_spherical, xyz);
         if (!is_passed) {
-            std::cout << "Forward gradient test failed for l_max=" << l_max << std::endl;
+            std::cout << "SphericalHarmonics gradient test failed for l_max=" << l_max << std::endl;
             return 1;
         }
 
         is_passed = check_hessian_call(l_max, calculator_spherical, xyz);
         if (!is_passed) {
-            std::cout << "Hessian test failed for l_max=" << l_max << std::endl;
+            std::cout << "SphericalHarmonics hessian test failed for l_max=" << l_max << std::endl;
             return 1;
         }
 
         is_passed = check_backward_call(l_max, xyz);
         if (!is_passed) {
-            std::cout << "Backward test failed for l_max=" << l_max << std::endl;
+            std::cout << "SphericalHarmonics backward test failed for l_max=" << l_max << std::endl;
+            return 1;
+        }
+
+        sphericart::sycl::SolidHarmonics<DTYPE> calculator_solid(l_max);
+
+        is_passed = check_gradient_call(l_max, calculator_solid, xyz);
+        if (!is_passed) {
+            std::cout << "SolidHarmonics gradient test failed for l_max=" << l_max << std::endl;
+            return 1;
+        }
+
+        is_passed = check_hessian_call(l_max, calculator_solid, xyz);
+        if (!is_passed) {
+            std::cout << "SolidHarmonics hessian test failed for l_max=" << l_max << std::endl;
             return 1;
         }
     }

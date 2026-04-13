@@ -1,13 +1,6 @@
 #include <iostream>
 #include <stdexcept>
 
-// #if __has_include(<sycl/sycl.hpp>)
-//     #include <sycl/sycl.hpp>
-// #else
-//     #include <CL/sycl.hpp>
-// #endif
-// #include <sycl/sycl.hpp>
-
 #include "sycl_device.hpp"
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
@@ -16,25 +9,15 @@
 #include "sphericart_sycl.hpp"
 #include "templates_core.hpp"
 #include "sycl_base.hpp"
-/**
- * The `sphericart::sycl` namespace contains the SYCL API for `sphericart`.
- */
 
 namespace sphericart {
 namespace sycl {
 
 template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t l_max) {
     /*
-        This is the constructor of the SphericalHarmonics class. It initizlizes
-       buffer space, compute prefactors, and sets the function pointers that are
-       used for the actual calls
-    */
-
-    // Create SYCL queue
-    // sycl::queue q{sycl::cpu_selector_v};
-
-    // std::cout << "Running on device: " << q.get_device().get_info<sycl::info::device::name>() << std::endl;
-
+     * Initializes buffer space, computes prefactors, and sets the function
+     * pointers used for the actual calls.
+     */
     this->l_max = (int)l_max;
     this->nprefactors = (int)(l_max + 1) * (l_max + 2);
     this->normalized = true; // SphericalHarmonics class
@@ -69,8 +52,6 @@ void SphericalHarmonics<T>::compute_internal(
         this->nprefactors,
         this->l_max,
         this->normalized,
-        this->SYCL_GRID_DIM_X_,
-        this->SYCL_GRID_DIM_Y_,
         compute_with_gradients,
         compute_with_hessian,
         sph,

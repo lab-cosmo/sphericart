@@ -184,26 +184,14 @@ if (SPHERICART_ENABLE_SYCL)
             # SYCL_DEVICE is defined in the parent CMakeLists.txt
             
             # Add source files
-            list(APPEND COMMON_SOURCES 
+            list(APPEND COMMON_SOURCES
+                "include/sycl_base.hpp"
                 "include/sphericart_sycl.hpp"
+                "include/sphericart_impl_sycl.hpp"
+                "src/sphericart_impl_sycl.cpp"
+                "src/sycl_base.cpp"
                 "src/sphericart_sycl.cpp"
             )
-list(APPEND COMMON_SOURCES "include/sycl_base.hpp")
-list(APPEND COMMON_SOURCES "include/sphericart_sycl.hpp")
-
-list(APPEND COMMON_SOURCES "include/sphericart_impl_sycl.hpp")
-list(APPEND COMMON_SOURCES "src/sphericart_impl_sycl.cpp")
-
-list(APPEND COMMON_SOURCES "src/sycl_base.cpp")
-list(APPEND COMMON_SOURCES "src/sphericart_sycl.cpp")
-#        else()
-#            message(WARNING "Could not find SYCL include directory. SYCL support will be disabled.")
-#            set(SPHERICART_ENABLE_SYCL OFF)
-#        endif()
-#    else()
-#        message(WARNING "Could not find SYCL compiler. SYCL support will be disabled.")
-#        set(SPHERICART_ENABLE_SYCL OFF)
-#    endif()
 endif()
 if (SPHERICART_ENABLE_CUDA AND NOT CMAKE_CUDA_COMPILER)
     message(FATAL_ERROR "Could not find a CUDA compiler, but SPHERICART_ENABLE_CUDA=ON.")

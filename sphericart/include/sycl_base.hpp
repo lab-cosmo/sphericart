@@ -7,8 +7,8 @@ namespace sphericart {
 namespace sycl {
 
 /**
- * host function which wraps a CUDA kernel to compute spherical harmonics and
- * their derivatives.
+ * Host function which launches the SYCL kernel to compute spherical harmonics
+ * and their derivatives.
  *
  * @param xyz
  *        Pointer to a contiguous device-allocated coordinates array of shape
@@ -26,15 +26,6 @@ namespace sycl {
  *        are evaluated on the unit sphere. In practice, this simply computes
  * the scaled harmonics at the normalized coordinates \f$(x/r, y/r, z/r)\f$, and
  * adapts the derivatives accordingly.
- * @param GRID_DIM_X
- *        The size of the threadblock in the x dimension. Used to parallelize
- *        over the sample dimension
- * @param GRID_DIM_Y
- *        The size of the threadblock in the y dimension. Used only to improve
- *          memory throughput on reads and writes.
- * @param xyz_requires_grad
- *        Boolean representing whether or not the input XYZ requires grad -
- *        required for torch.
  * @param gradients
  *        Perform the computation of the first-order derivatives.
  * @param hessian
@@ -58,8 +49,6 @@ void spherical_harmonics_sycl_base(
     const int nprefactors,
     const int64_t l_max,
     const bool normalize,
-    const int64_t GRID_DIM_X,
-    const int64_t GRID_DIM_Y,
     const bool gradients,
     const bool hessian,
     scalar_t* sph,
@@ -71,29 +60,6 @@ template <typename scalar_t>
 void spherical_harmonics_backward_sycl_base(
     const scalar_t* dsph, const scalar_t* sph_grad, const int nedges, const int ntotal, scalar_t* xyz_grad
 );
-
-/**
- * Host function to ensure the current kernel launch parameters have sufficient
- * shared memory given by the default space provided by the card. Returns the
- * amount of bytes thats in use for shared memory, after attempting to adjust
- * it's size if necessary. Returns -1 if too much shared memory is requested.
- *
- * @param element_size
- *        the number of bytes of the scalar type used in the input/output arrays
- *        (4 or 8).
- * @param l_max
- *        The maximum degree of the spherical harmonics to be calculated.
- * @param GRID_DIM_X
- *        The size of the threadblock in the x dimension.
- * @param GRID_DIM_Y
- *        The size of the threadblock in the y dimension.
- * @param requires_grad
- *        Boolean representing if we need first-order derivatives.
- * @param requires_hessian
- *        Boolean representing if we need second-order derivatives.
- * @param current_shared_mem_alloc
- *        the current size of the shared memory allocation.
- */
 
 } // namespace sycl
 } // namespace sphericart
