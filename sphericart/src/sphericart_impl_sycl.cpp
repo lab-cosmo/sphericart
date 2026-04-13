@@ -206,6 +206,9 @@ void spherical_harmonics_kernel(
     int nprefactors = (int)(l_max + 1) * (l_max + 2);
 
     ::sycl::queue& q = *sycl_get_queue();
+    // Work-group dimensions: hardcoded for now, could be tuned per device.
+    const int GRID_DIM_X = 8; // threads per sample (reduction/L dimension)
+    const int GRID_DIM_Y = 1; // samples per work-group
     ::sycl::range<2> local_range(GRID_DIM_X, GRID_DIM_Y);
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
     int groups_y = find_num_blocks(nedges, static_cast<int>(local_range[1]));
@@ -632,10 +635,10 @@ void backward_kernel(
 ) {
     ::sycl::queue& q = *sycl_get_queue();
 
-    // Match CUDA configuration: block_dim(4, 32), grid_dim(nedges/32, 3)
-    int GRID_DIM_X = 4;  // Reduction dimension (matches CUDA threadIdx.x)
-    int GRID_DIM_Y = 32; // Edge dimension (matches CUDA threadIdx.y)
-    int GRID_DIM_Z = 1;  // Spatial dimension unit
+    // Work-group dimensions: hardcoded for now, could be tuned per device.
+    const int GRID_DIM_X = 4;  // threads per edge (reduction dimension)
+    const int GRID_DIM_Y = 32; // edges per work-group
+    const int GRID_DIM_Z = 1;  // spatial dimension unit (one group per x/y/z)
 
     ::sycl::range<3> local_range(GRID_DIM_X, GRID_DIM_Y, GRID_DIM_Z);
 
