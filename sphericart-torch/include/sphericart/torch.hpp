@@ -3,17 +3,14 @@
 
 #include <torch/torch.h>
 
-#include <mutex>
-
 #include "sphericart.hpp"
 #include "sphericart_cuda.hpp"
 
 namespace sphericart_torch {
 
 class SphericartAutograd;
-class SphericartAutogradBackward;
 
-class SphericalHarmonics : public torch::CustomClassHolder {
+class SphericalHarmonics {
   public:
     SphericalHarmonics(int64_t l_max, bool backward_second_derivatives = false);
 
@@ -22,8 +19,6 @@ class SphericalHarmonics : public torch::CustomClassHolder {
     std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz);
     std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz);
 
-    int64_t get_l_max() const { return this->l_max_; }
-    bool get_backward_second_derivative_flag() const { return this->backward_second_derivatives_; }
     int64_t get_omp_num_threads() const { return this->omp_num_threads_; }
 
   private:
@@ -49,7 +44,7 @@ class SphericalHarmonics : public torch::CustomClassHolder {
     std::unique_ptr<sphericart::cuda::SphericalHarmonics<float>> calculator_cuda_float_ptr;
 };
 
-class SolidHarmonics : public torch::CustomClassHolder {
+class SolidHarmonics {
   public:
     SolidHarmonics(int64_t l_max, bool backward_second_derivatives = false);
 
@@ -58,8 +53,6 @@ class SolidHarmonics : public torch::CustomClassHolder {
     std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz);
     std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz);
 
-    int64_t get_l_max() const { return this->l_max_; }
-    bool get_backward_second_derivative_flag() const { return this->backward_second_derivatives_; }
     int64_t get_omp_num_threads() const { return this->omp_num_threads_; }
 
   private:

@@ -20,8 +20,6 @@ class CUDAStream {
         return instance;
     }
 
-    bool loaded() { return handle != nullptr; }
-
     using get_stream_t = void* (*)(uint8_t);
     get_stream_t get_stream = nullptr;
 
