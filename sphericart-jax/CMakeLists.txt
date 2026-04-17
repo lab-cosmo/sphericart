@@ -71,12 +71,11 @@ install(TARGETS sphericart_jax_cpu
 # --- CUDA shared library ---
 if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     add_library(sphericart_jax_cuda SHARED ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
-    target_link_libraries(sphericart_jax_cuda PRIVATE sphericart)
+    target_link_libraries(sphericart_jax_cuda PRIVATE sphericart gpulite)
     target_compile_features(sphericart_jax_cuda PRIVATE cxx_std_17)
     target_include_directories(sphericart_jax_cuda PRIVATE
         ${XLA_INCLUDE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     )
     set_target_properties(sphericart_jax_cuda PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     install(TARGETS sphericart_jax_cuda

@@ -91,6 +91,16 @@ set(COMMON_SOURCES
     "include/sphericart.h"
 )
 
+include(FetchContent)
+
+FetchContent_Declare(
+    gpulite
+    GIT_REPOSITORY https://github.com/rubber-duck-debug/gpu-lite.git
+    GIT_TAG 7e8e9e929b254c3faefc556fb348068027e73319 # v1.1.1
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(gpulite)
+
 # Find CUDA
 include(CheckLanguage)
 check_language(CUDA)
@@ -153,10 +163,10 @@ if (SPHERICART_ENABLE_SYCL)
 
     #    if(SYCL_COMPILER_FOUND)
         message(STATUS "Found SYCL compiler: ${CMAKE_CXX_COMPILER}")
-        
+
         # Add SYCL include directories
         find_path(SYCL_INCLUDE_DIR
-            NAMES 
+            NAMES
                 "CL/sycl.hpp"
                 "sycl/sycl.hpp"
             PATHS
@@ -168,21 +178,21 @@ if (SPHERICART_ENABLE_SYCL)
             "/usr/local/include"
             ENV CPLUS_INCLUDE_PATH
         )
-        
+
 #       if(SYCL_INCLUDE_DIR)
             message(STATUS "Found SYCL include directory: ${SYCL_INCLUDE_DIR}")
             include_directories(${SYCL_INCLUDE_DIR} ${SYCL_INCLUDE_DIR}/..)
-            
+
             # Set SYCL-specific compiler flags
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
             set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsycl")
-            
+
             # Add compile definitions
             add_definitions(-DSPHERICART_USE_SYCL=1)
             add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
             add_definitions(-DSYCL_LANGUAGE_VERSION=2020)
             # SYCL_DEVICE is defined in the parent CMakeLists.txt
-            
+
             # Add source files
             list(APPEND COMMON_SOURCES
                 "include/sycl_base.hpp"
@@ -206,8 +216,6 @@ list(APPEND COMMON_SOURCES "include/cuda_base.hpp")
 list(APPEND COMMON_SOURCES "include/sphericart_cuda.hpp")
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    list(APPEND COMMON_SOURCES "include/dynamic_cuda.hpp")
-    list(APPEND COMMON_SOURCES "include/cuda_cache.hpp")
     list(APPEND COMMON_SOURCES "src/cuda_base.cpp")
     list(APPEND COMMON_SOURCES "src/sphericart_cuda.cpp")
 else()
@@ -220,8 +228,7 @@ add_library(sphericart ${COMMON_SOURCES})
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     #include the build/generated folder for compilation
     target_include_directories(sphericart PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_include_directories(sphericart PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    target_link_libraries(sphericart PRIVATE ${CMAKE_DL_LIBS})
+    target_link_libraries(sphericart PRIVATE gpulite)
 
     set(SPHERICART_CUDA_HEADERS
         "include/sphericart_impl.cuh"
@@ -251,23 +258,23 @@ endif()
 # Configure SYCL if enabled
 if (SPHERICART_ENABLE_SYCL AND SYCL_COMPILER_FOUND)
     message(STATUS "Configuring SYCL target properties")
-    
+
     # Add target-specific SYCL flags
-    target_compile_options(sphericart PRIVATE 
-        -fsycl 
-        -fsycl-device-code-split=per_kernel
-    )
-    target_link_options(sphericart PRIVATE 
+    target_compile_options(sphericart PRIVATE
         -fsycl
         -fsycl-device-code-split=per_kernel
     )
-    
+    target_link_options(sphericart PRIVATE
+        -fsycl
+        -fsycl-device-code-split=per_kernel
+    )
+
     # Add target-specific include directories
-    target_include_directories(sphericart PRIVATE 
+    target_include_directories(sphericart PRIVATE
         ${SYCL_INCLUDE_DIR}
         ${SYCL_INCLUDE_DIR}/..
     )
-    
+
     # Add target-specific compile definitions
     target_compile_definitions(sphericart PRIVATE
         SPHERICART_USE_SYCL=1
