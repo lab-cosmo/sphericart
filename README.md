@@ -128,3 +128,8 @@ Although sphericart natively calculates real solid and spherical harmonics from
 Cartesian positions, it is easy to manipulate its output it to calculate complex
 spherical harmonics and/or to accept spherical coordinates as inputs. You can see
 examples [here](https://sphericart.readthedocs.io/en/latest/spherical-complex.html).
+
+
+## Maintainers
+
+This project is [maintained](https://github.com/lab-cosmo/.github/blob/main/Maintainers.md) by [@frostedoyster](https://github.com/frostedoyster) and [@Luthaf](https://github.com/Luthaf). The maintainers will reply to issues and pull requests opened on this repository as soon as possible. You can mention them directly if you have not received an answer after a couple of days.
