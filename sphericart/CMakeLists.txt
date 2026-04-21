@@ -95,7 +95,7 @@ include(FetchContent)
 
 FetchContent_Declare(
     gpulite
-    GIT_REPOSITORY https://github.com/rubber-duck-debug/gpu-lite.git
+    GIT_REPOSITORY https://github.com/metatensor/gpu-lite.git
     GIT_TAG 7e8e9e929b254c3faefc556fb348068027e73319 # v1.1.1
     EXCLUDE_FROM_ALL
 )
