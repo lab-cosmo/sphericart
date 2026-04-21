@@ -17,6 +17,7 @@
 #include "templates_core.hpp"
 
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 #ifdef _OPENMP
@@ -64,10 +65,12 @@ template <typename T> void compute_sph_prefactors(int l_max, T* factors) {
     */
 
     auto k = 0; // quick access index
+    constexpr T pi = static_cast<T>(3.141592653589793238462643383279502884L);
+    constexpr T inv_sqrt_two = static_cast<T>(0.707106781186547524400844362104849039L);
     for (int l = 0; l <= l_max; ++l) {
-        T factor = (2 * l + 1) / (2 * static_cast<T>(M_PI));
+        T factor = (2 * l + 1) / (2 * pi);
         // incorporates  the 1/sqrt(2) that goes with the m=0 SPH
-        factors[k] = std::sqrt(factor) * static_cast<T>(M_SQRT1_2);
+        factors[k] = std::sqrt(factor) * inv_sqrt_two;
         for (int m = 1; m <= l; ++m) {
             factor *= static_cast<T>(1.0) / (l * (l + 1) + m * (1 - m));
             if (m % 2 == 0) {
@@ -310,7 +313,7 @@ void hardcoded_sph(
         T* ddsph_i = nullptr;
 
 #pragma omp for
-        for (size_t i_sample = 0; i_sample < n_samples; i_sample++) {
+        for (int64_t i_sample = 0; i_sample < n_samples; i_sample++) {
             // gets pointers to the current sample input and output arrays
             xyz_i = xyz + i_sample * 3;
             sph_i = sph + i_sample * size_y;
@@ -686,7 +689,7 @@ void generic_sph(
         T* ddsph_i = nullptr;
 
 #pragma omp for
-        for (size_t i_sample = 0; i_sample < n_samples; i_sample++) {
+        for (int64_t i_sample = 0; i_sample < n_samples; i_sample++) {
             auto xyz_i = xyz + i_sample * 3;
             // pointer to the segment that should store the i_sample sph
             sph_i = sph + i_sample * size_y;

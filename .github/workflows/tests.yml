@@ -18,7 +18,21 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
+            cmake_extra: "-DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON"
+            tox_envs: ""
           - os: macos-14
+            cmake_extra: "-DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON"
+            tox_envs: ""
+          - os: windows-2022
+            cmake_extra: ""
+            # MSVC uses a multi-config generator, so we must pick a
+            # configuration explicitly for both the build and ctest steps.
+            cmake_config: "--config Release"
+            # We skip the following tox environments:
+            # - examples: uses bash-based install.
+            # - lint: clang-format + bash scripts
+            # - C++ tests/examples use getopt (POSIX-only)
+            tox_envs: "-e tests,torch-tests,jax-tests"
     steps:
       - uses: actions/checkout@v3
 
@@ -28,6 +42,7 @@ jobs:
           python-version: "3.12"
 
       - name: setup Julia
+        if: runner.os != 'Windows'
         uses: julia-actions/setup-julia@v2
         with:
           version: '1.11'
@@ -37,21 +52,27 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install tox
 
-      - name: run C++ build and tests
+      - name: run C++ build
+        shell: bash
         run: |
           mkdir build
           cd build
-          cmake -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON ..
-          cmake --build . --parallel
-          ctest
+          cmake ${{ matrix.cmake_extra }} ..
+          cmake --build . --parallel ${{ matrix.cmake_config }}
+
+      - name: run C++ ctest
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ctest
 
       - name: run Python tests
-        run: tox
+        run: tox ${{ matrix.tox_envs }}
         env:
           # Use the CPU only version of torch when building/running the code
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
       - name: run Julia tests
+        if: runner.os != 'Windows'
         run: |
           cd julia
           julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); Pkg.test();'
@@ -59,6 +80,100 @@ jobs:
           julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.instantiate();'
           python -m pip install numpy pytest sphericart julia
           python -m pytest .
+
+  sycl-tests:
+    runs-on: ubuntu-22.04
+    name: Test SYCL on ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gpg-agent wget
+
+      - name: setup Intel oneAPI APT repository
+        run: |
+          wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+            | gpg --dearmor \
+            | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+            | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          sudo apt-get update
+
+      - name: install Intel oneAPI DPC++ compiler and SYCL runtime
+        run: |
+          sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp intel-oneapi-runtime-opencl
+
+      - name: configure SYCL build
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          cmake -B build-sycl -S . \
+            -DSPHERICART_BUILD_TESTS=ON \
+            -DSPHERICART_ENABLE_SYCL=ON \
+            -DSPHERICART_SYCL_DEVICE=cpu \
+            -DCMAKE_CXX_COMPILER=icpx
+
+      - name: build SYCL tests
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          cmake --build build-sycl --parallel
+
+      - name: run SYCL ctest
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          ctest --test-dir build-sycl --output-on-failure -R test_derivatives_sycl
+
+  sycl-tests-windows:
+    runs-on: windows-2022
+    name: Test SYCL on windows-2022
+    env:
+      WINDOWS_BASEKIT_URL: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/09a8acaf-265f-4460-866c-a3375ed5b4ff/intel-oneapi-base-toolkit-2025.2.0.591_offline.exe
+      WINDOWS_DPCPP_COMPONENTS: intel.oneapi.win.cpp-dpcpp-common
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: install Ninja
+        shell: pwsh
+        run: choco install -y ninja
+
+      - name: install Intel oneAPI DPC++ compiler
+        shell: cmd
+        run: |
+          curl.exe -L --retry 5 --retry-delay 5 -o oneapi-basekit.exe %WINDOWS_BASEKIT_URL%
+          start /b /wait "" oneapi-basekit.exe -s -a --silent --eula accept --components=%WINDOWS_DPCPP_COMPONENTS%
+
+      - name: configure SYCL build
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat" >nul 2>&1
+          cmake -G Ninja -B build-sycl -S . ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            -DCMAKE_C_COMPILER=icx ^
+            -DCMAKE_CXX_COMPILER=icx ^
+            -DSPHERICART_BUILD_TESTS=ON ^
+            -DSPHERICART_ENABLE_SYCL=ON ^
+            -DSPHERICART_SYCL_DEVICE=cpu
+
+      - name: build SYCL tests
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat" >nul 2>&1
+          cmake --build build-sycl --parallel
+
+      - name: run SYCL ctest
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat" >nul 2>&1
+          ctest --test-dir build-sycl --output-on-failure -R test_derivatives_sycl
 
   # check that we can build Python wheels on any Python version
   python-build:

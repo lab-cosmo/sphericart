@@ -1,15 +1,28 @@
 import os
+import shutil
 import subprocess
 import sys
 
 from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
+from setuptools.command.bdist_wheel import bdist_wheel
 from setuptools.command.build_ext import build_ext
-from wheel.bdist_wheel import bdist_wheel
 
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
 SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
+
+
+def _detect_cuda_home():
+    cuda_home = os.environ.get("CUDA_HOME")
+    if cuda_home:
+        return cuda_home
+
+    nvcc = shutil.which("nvcc")
+    if nvcc is None:
+        return None
+
+    return os.path.dirname(os.path.dirname(os.path.realpath(nvcc)))
 
 
 class universal_wheel(bdist_wheel):
@@ -31,7 +44,7 @@ class cmake_ext(build_ext):
     def run(self):
         import jax
 
-        jax_major, jax_minor, jax_patch = jax.__version__.split(".")
+        jax_major, jax_minor, jax_patch, *_ = jax.__version__.split(".")
 
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
@@ -50,12 +63,11 @@ class cmake_ext(build_ext):
             "-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON",
         ]
 
-        CUDA_HOME = os.environ.get("CUDA_HOME")
+        CUDA_HOME = _detect_cuda_home()
         if CUDA_HOME is None:
             cmake_options.append("-DSPHERICART_ENABLE_CUDA=OFF")
         else:
             cmake_options.append("-DSPHERICART_ENABLE_CUDA=ON")
-            cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")
 
         if sys.platform.startswith("darwin"):
             cmake_options.append("-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=11.0")
@@ -76,6 +88,10 @@ class cmake_ext(build_ext):
             "--target",
             "install",
         ]
+        # On MSVC (multi-config generator) CMAKE_BUILD_TYPE is ignored at
+        # configure time; the configuration must be specified at build time.
+        if sys.platform == "win32":
+            build_command += ["--config", "Release"]
 
         subprocess.run(build_command, check=True)
 
@@ -99,8 +115,8 @@ if __name__ == "__main__":
         import jax
 
         # if we have jax, we are building a wheel - requires specific jax version
-        jax_v_major, jax_v_minor, jax_v_patch = jax.__version__.split(".")
-        jax_version = f"== {jax_v_major}.{jax_v_minor}.{jax_v_patch}"
+        jax_v_major, jax_v_minor, jax_v_patch, *_ = jax.__version__.split(".")
+        jax_version = f"== {jax_v_major}.{jax_v_minor}.{jax_v_patch}.*"
     except ImportError:
         # otherwise we are building a sdist
         jax_version = ">=0.6.0"

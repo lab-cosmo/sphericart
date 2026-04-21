@@ -38,7 +38,6 @@ repository = "https://github.com/lab-cosmo/sphericart"
 [build-system]
 requires = [
     "setuptools >=77",
-    "wheel >=0.36",
     "cmake >=3.30",
 ]
 # use a custom build backend to add a dependency on torch/cmake only when

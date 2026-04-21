@@ -14,9 +14,9 @@ spherical harmonics and their derivatives in Cartesian coordinates.
 The theory behind this efficient implementation is detailed in 
 `this paper <https://doi.org/10.1063/5.0156307>`_. 
 
-The core library is implemented in C++ (with OpenMP parallelism) and CUDA.
+The core library is implemented in C++ (with OpenMP parallelism), CUDA and SYCL.
 It also provides APIs for C, Python (NumPy), PyTorch and JAX. The torch and JAX
-implementations provide fast spherical harmonics on GPUs.
+implementations provide fast spherical harmonics on Nvidia GPUs.
 
 A native Julia package is also available, contributed by 
 `Christoph Ortner <https://personal.math.ubc.ca/~ortner/>`_.

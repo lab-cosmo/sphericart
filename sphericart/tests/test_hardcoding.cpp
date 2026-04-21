@@ -2,7 +2,6 @@
  *  @brief Checks consistency of generic and hardcoded implementations
  */
 
-#include <sys/time.h>
 #include <unistd.h>
 
 #include <chrono>
@@ -13,7 +12,9 @@
 #include "sphericart.hpp"
 
 #define _SPH_TOL 1e-6
+#ifndef DTYPE
 #define DTYPE double
+#endif
 using namespace sphericart;
 
 // shorthand for all-past-1 generic sph only
