@@ -118,4 +118,4 @@ examples [here](https://sphericart.readthedocs.io/en/latest/spherical-complex.ht
 
 ## Maintainers
 
-This project is [maintained](https://github.com/lab-cosmo/.github/blob/main/Maintainers.md) by [@cortner](https://github.com/cortner) for the Julia implementation and [@frostedoyster](https://github.com/frostedoyster) and [@Luthaf](https://github.com/Luthaf) for everything else. The maintainers will reply to issues and pull requests opened on this repository as soon as possible. You can mention them directly if you have not received an answer after a couple of days.
+This project is [maintained](https://github.com/lab-cosmo/.github/blob/main/Maintainers.md) by [@frostedoyster](https://github.com/frostedoyster) and [@Luthaf](https://github.com/Luthaf). The maintainers will reply to issues and pull requests opened on this repository as soon as possible. You can mention them directly if you have not received an answer after a couple of days.
