@@ -191,7 +191,6 @@ if (SPHERICART_ENABLE_SYCL)
             add_definitions(-DSPHERICART_USE_SYCL=1)
             add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
             add_definitions(-DSYCL_LANGUAGE_VERSION=2020)
-            # SYCL_DEVICE is defined in the parent CMakeLists.txt
 
             # Add source files
             list(APPEND COMMON_SOURCES
@@ -280,7 +279,6 @@ if (SPHERICART_ENABLE_SYCL AND SYCL_COMPILER_FOUND)
         SPHERICART_USE_SYCL=1
         CL_TARGET_OPENCL_VERSION=300
         SYCL_LANGUAGE_VERSION=2020
-        # SYCL_DEVICE is defined in the parent CMakeLists.txt
     )
     message(STATUS "SYCL DEVICE set to: ${SPHERICART_SYCL_DEVICE}")
 endif()

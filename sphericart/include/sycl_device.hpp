@@ -2,18 +2,11 @@
 #pragma once
 
 #include <map>
-#include <memory>
 #include <mutex>
 #include <thread>
-#include <utility>
 #include <vector>
 #include <type_traits>
 #include <sycl/sycl.hpp>
-
-// DTYPE can be defined at configuration time via CMake (default: double)
-#ifndef DTYPE
-#define DTYPE double
-#endif
 
 // SYCL_DEVICE can be defined at configuration time via CMake (default: gpu)
 // Valid values: cpu, gpu, accelerator, all
@@ -35,25 +28,6 @@
 #endif
 
 namespace syclex = sycl::ext::oneapi;
-
-#define rnorm3d(d1, d2, d3) (1 / sycl::length(sycl::vec<DTYPE, 3>(d1, d2, d3)))
-#define norm3d(d1, d2, d3) (sycl::length(sycl::vec<DTYPE, 3>(d1, d2, d3)))
-#define __syncthreads() (item.barrier(sycl::access::fence_space::local_space))
-#define __shfl_down_sync(mask, val, delta) sycl::shift_group_right(item.get_sub_group(), val, delta)
-
-namespace constants {
-constexpr DTYPE pi = 3.141592653589793238462643383279502884;
-}
-
-namespace compat {
-struct dtype3 {
-    DTYPE x, y, z;
-
-    dtype3() = default;
-    dtype3(DTYPE x_, DTYPE y_, DTYPE z_) : x(x_), y(y_), z(z_) {}
-};
-} // namespace compat
-using dtype3 = compat::dtype3;
 
 template <typename T1, typename T2> static inline T1 atomicAdd(T1* addr, const T2 val) {
     sycl::atomic_ref<
