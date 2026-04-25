@@ -14,9 +14,7 @@ def xyz():
 
 
 def test_autograd_cartesian(xyz):
-    calculator = sphericart.torch.SolidHarmonics(
-        l_max=4, backward_second_derivatives=True
-    )
+    calculator = sphericart.torch.SolidHarmonics(l_max=4)
 
     def compute(xyz_in):
         sph = calculator.compute(xyz=xyz_in)
@@ -33,9 +31,7 @@ def test_autograd_cartesian(xyz):
 
 
 def test_autograd_normalized(xyz):
-    calculator = sphericart.torch.SolidHarmonics(
-        l_max=4, backward_second_derivatives=True
-    )
+    calculator = sphericart.torch.SolidHarmonics(l_max=4)
 
     def compute(xyz_in):
         sph = calculator.compute(xyz=xyz_in)
@@ -53,9 +49,7 @@ def test_autograd_normalized(xyz):
 
 def test_autograd_hessian(xyz):
     # Initialize a calculator with l_max = 1
-    calculator = sphericart.torch.SolidHarmonics(
-        l_max=1, backward_second_derivatives=True
-    )
+    calculator = sphericart.torch.SolidHarmonics(l_max=1)
 
     # Fill a single xyz point with arbitrary numbers
     xyz = torch.tensor(
@@ -91,13 +85,8 @@ def test_autograd_hessian(xyz):
     assert torch.allclose(analytical_hessian, hessian * proportionality_factor)
 
 
-def test_second_derivative_error(xyz):
-    # This is a problematic test, as it tests some potential silent failures
-
-    # Initialize a calculator
-    calculator = sphericart.torch.SphericalHarmonics(
-        l_max=8, backward_second_derivatives=False
-    )
+def test_second_derivative_supported_by_default(xyz):
+    calculator = sphericart.torch.SphericalHarmonics(l_max=8)
 
     # Fill a single xyz point with arbitrary numbers
     xyz = torch.tensor(
@@ -107,8 +96,6 @@ def test_second_derivative_error(xyz):
         requires_grad=True,
     )
 
-    # Compute the spherical harmonics and run backward 2 times.
-    # The second one is supposed to raise an error.
     sph = calculator.compute(xyz)
     l0 = torch.sum(sph)
     d1 = torch.autograd.grad(
@@ -118,55 +105,17 @@ def test_second_derivative_error(xyz):
         create_graph=True,
     )[0]
     l1 = torch.sum(d1)
-
-    # case 1: autograd.grad raises an error
-    # being the first time the second derivatives are requested, and since
-    # `backward_second_derivatives=False`, a warning is also displayed
-    with pytest.warns(
-        UserWarning,
-        match="Second derivatives of the spherical harmonics with respect "
-        "to the Cartesian coordinates were not requested at class creation.",
-    ):
-        with pytest.raises(
-            RuntimeError,
-            match="One of the differentiated Tensors appears to not have "
-            "been used in the graph. Set allow_unused=True if this is the "
-            "desired behavior.",
-        ):
-            torch.autograd.grad(
-                outputs=l1,
-                inputs=xyz,
-                retain_graph=True,
-                create_graph=True,
-            )
-
-    # case 2: autograd.grad with allow_unused=True fails silently
-    torch.autograd.grad(
+    d2 = torch.autograd.grad(
         outputs=l1,
         inputs=xyz,
         retain_graph=True,
         create_graph=True,
-        allow_unused=True,
-    )
-
-    # case 3: backward fails silently
-    l1.backward()
-
-    # case 4: autograd.functional.hessian fails silently
-    def f(xyz):  # dummy function
-        sph = calculator.compute(xyz)[0]  # Discard sample dimension
-        return torch.sum(sph)
-
-    torch.autograd.functional.hessian(f, xyz)[
-        0, :, 0, :
-    ]  # Discard the two sample dimensions
+    )[0]
+    assert d2.shape == xyz.shape
 
 
 def test_third_derivative_error(xyz):
-    # Initialize a calculator
-    calculator = sphericart.torch.SphericalHarmonics(
-        l_max=8, backward_second_derivatives=True
-    )
+    calculator = sphericart.torch.SphericalHarmonics(l_max=8)
 
     # Fill a single xyz point with arbitrary numbers
     xyz = torch.tensor(

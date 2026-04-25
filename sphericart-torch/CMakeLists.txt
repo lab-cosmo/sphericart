@@ -77,8 +77,6 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERS
 add_library(sphericart_torch SHARED
     "include/sphericart/torch_cuda_wrapper.hpp"
     "include/sphericart/torch.hpp"
-    "include/sphericart/autograd.hpp"
-    "src/autograd.cpp"
     "src/torch.cpp"
 )
 

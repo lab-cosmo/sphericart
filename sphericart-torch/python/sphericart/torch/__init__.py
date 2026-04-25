@@ -102,7 +102,7 @@ def _fake_compute_with_hessians(xyz, l_max):
 
 def _setup_fake_impls(prefix):
     @torch.library.register_fake(f"sphericart_torch::{prefix}")
-    def _fake_compute_op(xyz, l_max, backward_second_derivatives=False):
+    def _fake_compute_op(xyz, l_max):
         return _fake_compute(xyz, l_max)
 
     @torch.library.register_fake(f"sphericart_torch::{prefix}_with_gradients")
@@ -115,10 +115,9 @@ def _setup_fake_impls(prefix):
 
 
 def _setup_compute_context(ctx, inputs, output):
-    xyz, l_max, backward_second_derivatives = inputs
+    xyz, l_max = inputs
     ctx.save_for_backward(xyz)
     ctx.l_max = l_max
-    ctx.backward_second_derivatives = backward_second_derivatives
 
 
 def _setup_gradient_context(ctx, inputs, output):
@@ -128,6 +127,15 @@ def _setup_gradient_context(ctx, inputs, output):
     ctx.l_max = l_max
 
 
+def _run_operator_with_cuda_context(op, xyz, l_max):
+    if not xyz.is_cuda:
+        return op(xyz, l_max)
+
+    with torch.cuda.device(xyz.device):
+        torch.cuda.current_stream(xyz.device)
+        return op(xyz, l_max)
+
+
 def _setup_autograd(prefix):
     gradients_op = getattr(torch.ops.sphericart_torch, f"{prefix}_with_gradients")
     hessians_op = getattr(torch.ops.sphericart_torch, f"{prefix}_with_hessians")
@@ -135,15 +143,12 @@ def _setup_autograd(prefix):
     def _compute_backward(ctx, grad_sph):
         (xyz,) = ctx.saved_tensors
         if not ctx.needs_input_grad[0]:
-            return None, None, None
+            return None, None
 
-        grad_context = (
-            torch.enable_grad() if ctx.backward_second_derivatives else torch.no_grad()
-        )
-        with grad_context:
-            _, dsph = gradients_op(xyz, ctx.l_max)
+        with torch.enable_grad():
+            _, dsph = _run_operator_with_cuda_context(gradients_op, xyz, ctx.l_max)
 
-        return _xyz_grad_from_dsph(grad_sph, dsph), None, None
+        return _xyz_grad_from_dsph(grad_sph, dsph), None
 
     def _gradients_backward(ctx, grad_sph, grad_dsph):
         xyz, dsph = ctx.saved_tensors
@@ -156,9 +161,14 @@ def _setup_autograd(prefix):
 
         if grad_dsph is not None:
             with torch.no_grad():
-                _, _, ddsph = hessians_op(xyz, ctx.l_max)
+                _, _, ddsph = _run_operator_with_cuda_context(
+                    hessians_op, xyz, ctx.l_max
+                )
             ddsph_grad = _xyz_grad_from_ddsph(grad_dsph, ddsph)
             xyz_grad = ddsph_grad if xyz_grad is None else xyz_grad + ddsph_grad
+
+        if xyz_grad is not None and grad_dsph is not None and not xyz.is_cuda:
+            xyz_grad = xyz_grad.detach()
 
         return xyz_grad, None
 

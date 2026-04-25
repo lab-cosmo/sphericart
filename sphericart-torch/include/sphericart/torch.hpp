@@ -8,21 +8,11 @@
 
 namespace sphericart_torch {
 
-class SphericartAutograd;
-
 class SphericalHarmonics {
   public:
-    SphericalHarmonics(int64_t l_max, bool backward_second_derivatives = false);
-
-    // Actual calculation, with autograd support
-    torch::Tensor compute(torch::Tensor xyz);
-    std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz);
-    std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz);
+    explicit SphericalHarmonics(int64_t l_max);
 
     int64_t get_omp_num_threads() const { return this->omp_num_threads_; }
-
-  private:
-    friend class SphericartAutograd;
 
     // Raw calculation, without autograd support, running on CPU
     std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients, bool do_hessians);
@@ -33,7 +23,6 @@ class SphericalHarmonics {
 
     int64_t omp_num_threads_;
     int64_t l_max_;
-    bool backward_second_derivatives_;
 
     // CPU implementation
     sphericart::SphericalHarmonics<double> calculator_double_;
@@ -46,17 +35,9 @@ class SphericalHarmonics {
 
 class SolidHarmonics {
   public:
-    SolidHarmonics(int64_t l_max, bool backward_second_derivatives = false);
-
-    // Actual calculation, with autograd support
-    torch::Tensor compute(torch::Tensor xyz);
-    std::vector<torch::Tensor> compute_with_gradients(torch::Tensor xyz);
-    std::vector<torch::Tensor> compute_with_hessians(torch::Tensor xyz);
+    explicit SolidHarmonics(int64_t l_max);
 
     int64_t get_omp_num_threads() const { return this->omp_num_threads_; }
-
-  private:
-    friend class SphericartAutograd;
 
     // Raw calculation, without autograd support, running on CPU
     std::vector<torch::Tensor> compute_raw_cpu(torch::Tensor xyz, bool do_gradients, bool do_hessians);
@@ -67,7 +48,6 @@ class SolidHarmonics {
 
     int64_t omp_num_threads_;
     int64_t l_max_;
-    bool backward_second_derivatives_;
 
     // CPU implementation
     sphericart::SolidHarmonics<double> calculator_double_;
