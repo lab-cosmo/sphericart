@@ -86,6 +86,20 @@ The following cmake configuration options are available:
 - `-DSPHERICART_OPENMP=ON/OFF`: enable OpenMP parallelism
 - `-DCMAKE_INSTALL_PREFIX=<where/you/want/to/install>` set the root path for installation
 
+### GPU Support
+
+The support for GPU offload could be controled with the following CMake variables at configuration:
+
+- `-DSPHERICART_ENABLE_CUDA=ON/OFF`: build with CUDA support also set `CUDA_HOME` environement variable.
+- `-DSPHERICART_ENABLE_SYCL=ON/OFF`: build with SYCL support, configure tool will search for `sycl/sycl.h` header.
+- `-DSPHERICART_SYCL_DEVICE=all/cpu/gpu`: target architecute for SYCL support, check which devices are available with `sycl-ls`, for `all` (default) is possible to control at execution with `export ONEAPI_DEVICE_SELECTOR=opencl:gpu` or `export ONEAPI_DEVICE_SELECTOR=opencl:cpu`.
+
+The following flags have been tested with Intel OneAPI 2025.3 for enabling SYCL support:
+- `-DCMAKE_CXX_COMPILER=icpx`
+- `-DCMAKE_C_COMPILER=icx`
+- `-DCMAKE_CXX_FLAGS=" -qopenmp --intel -fsycl  -fsycl-targets=spir64 -Wno-deprecated-declarations -Wno-macro-redefined -Wno-unused-parameter -w"`
+
+**Note**: Only tested in C++, python/JAX/Torch support is in progress.
 
 ### Running tests and documentation
 
@@ -114,3 +128,8 @@ Although sphericart natively calculates real solid and spherical harmonics from
 Cartesian positions, it is easy to manipulate its output it to calculate complex
 spherical harmonics and/or to accept spherical coordinates as inputs. You can see
 examples [here](https://sphericart.readthedocs.io/en/latest/spherical-complex.html).
+
+
+## Maintainers
+
+This project is [maintained](https://github.com/lab-cosmo/.github/blob/main/Maintainers.md) by [@frostedoyster](https://github.com/frostedoyster) and [@Luthaf](https://github.com/Luthaf). The maintainers will reply to issues and pull requests opened on this repository as soon as possible. You can mention them directly if you have not received an answer after a couple of days.

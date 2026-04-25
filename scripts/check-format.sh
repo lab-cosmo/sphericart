@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -eu
-
+clang-format --version
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)
 cd "$ROOT_DIR"
 
