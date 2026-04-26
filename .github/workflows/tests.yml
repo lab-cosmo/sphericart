@@ -36,6 +36,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: setup MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: setup Python
         uses: actions/setup-python@v4
         with:

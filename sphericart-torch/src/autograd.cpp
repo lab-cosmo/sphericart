@@ -20,8 +20,6 @@ class CUDAStream {
         return instance;
     }
 
-    bool loaded() { return handle != nullptr; }
-
     using get_stream_t = void* (*)(uint8_t);
     get_stream_t get_stream = nullptr;
 
@@ -324,8 +322,7 @@ std::vector<torch::Tensor> SphericartAutograd::forward(
 
     bool requires_grad = do_gradients || xyz.requires_grad();
 
-    bool requires_hessian =
-        do_hessians || (xyz.requires_grad() && calculator.backward_second_derivatives_);
+    bool requires_hessian = do_hessians;
 
     if (xyz.device().is_cpu()) {
         auto results = calculator.compute_raw_cpu(xyz, requires_grad, requires_hessian);
@@ -427,12 +424,8 @@ std::vector<torch::Tensor> SphericartAutogradBackward::backward(
     if (!double_backward) {
         TORCH_WARN_ONCE(
             "Second derivatives of the spherical harmonics with respect to the Cartesian "
-            "coordinates were not requested at class creation. The second derivative of "
-            "the spherical harmonics with respect to the Cartesian coordinates will be "
-            "treated as zero, potentially causing incorrect results. Make sure you either "
-            "do not need (i.e., are not using) these second derivatives, or that you set "
-            "`backward_second_derivatives=True` when creating the SphericalHarmonics or "
-            "SolidHarmonics class."
+            "coordinates were not computed in this legacy autograd path. Use "
+            "`compute_with_hessians` instead."
         );
     }
 

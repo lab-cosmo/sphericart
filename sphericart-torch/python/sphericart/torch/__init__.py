@@ -68,5 +68,122 @@ def _lib_path():
         )
 
 
-# load the C++ operators and custom classes
-torch.classes.load_library(_lib_path())
+# load the C++ operators
+torch.ops.load_library(_lib_path())
+
+
+def _sph_size(xyz, l_max):
+    return (xyz.shape[0], (l_max + 1) ** 2)
+
+
+def _xyz_grad_from_dsph(grad_sph, dsph):
+    return torch.sum(grad_sph.unsqueeze(1) * dsph, dim=2)
+
+
+def _xyz_grad_from_ddsph(grad_dsph, ddsph):
+    return torch.sum(grad_dsph.unsqueeze(2) * ddsph, dim=(1, 3))
+
+
+def _fake_compute(xyz, l_max):
+    return xyz.new_empty(_sph_size(xyz, l_max))
+
+
+def _fake_compute_with_gradients(xyz, l_max):
+    sph = xyz.new_empty(_sph_size(xyz, l_max))
+    dsph = xyz.new_empty((xyz.shape[0], 3, sph.shape[1]))
+    return sph, dsph
+
+
+def _fake_compute_with_hessians(xyz, l_max):
+    sph, dsph = _fake_compute_with_gradients(xyz, l_max)
+    ddsph = xyz.new_empty((xyz.shape[0], 3, 3, sph.shape[1]))
+    return sph, dsph, ddsph
+
+
+def _setup_fake_impls(prefix):
+    @torch.library.register_fake(f"sphericart_torch::{prefix}")
+    def _fake_compute_op(xyz, l_max):
+        return _fake_compute(xyz, l_max)
+
+    @torch.library.register_fake(f"sphericart_torch::{prefix}_with_gradients")
+    def _fake_compute_with_gradients_op(xyz, l_max):
+        return _fake_compute_with_gradients(xyz, l_max)
+
+    @torch.library.register_fake(f"sphericart_torch::{prefix}_with_hessians")
+    def _fake_compute_with_hessians_op(xyz, l_max):
+        return _fake_compute_with_hessians(xyz, l_max)
+
+
+def _setup_compute_context(ctx, inputs, output):
+    xyz, l_max = inputs
+    ctx.save_for_backward(xyz)
+    ctx.l_max = l_max
+
+
+def _setup_gradient_context(ctx, inputs, output):
+    xyz, l_max = inputs
+    _, dsph = output
+    ctx.save_for_backward(xyz, dsph)
+    ctx.l_max = l_max
+
+
+def _run_operator_with_cuda_context(op, xyz, l_max):
+    if not xyz.is_cuda:
+        return op(xyz, l_max)
+
+    with torch.cuda.device(xyz.device):
+        torch.cuda.current_stream(xyz.device)
+        return op(xyz, l_max)
+
+
+def _setup_autograd(prefix):
+    gradients_op = getattr(torch.ops.sphericart_torch, f"{prefix}_with_gradients")
+    hessians_op = getattr(torch.ops.sphericart_torch, f"{prefix}_with_hessians")
+
+    def _compute_backward(ctx, grad_sph):
+        (xyz,) = ctx.saved_tensors
+        if not ctx.needs_input_grad[0]:
+            return None, None
+
+        with torch.enable_grad():
+            _, dsph = _run_operator_with_cuda_context(gradients_op, xyz, ctx.l_max)
+
+        return _xyz_grad_from_dsph(grad_sph, dsph), None
+
+    def _gradients_backward(ctx, grad_sph, grad_dsph):
+        xyz, dsph = ctx.saved_tensors
+        if not ctx.needs_input_grad[0]:
+            return None, None
+
+        xyz_grad = None
+        if grad_sph is not None:
+            xyz_grad = _xyz_grad_from_dsph(grad_sph, dsph)
+
+        if grad_dsph is not None:
+            with torch.no_grad():
+                _, _, ddsph = _run_operator_with_cuda_context(
+                    hessians_op, xyz, ctx.l_max
+                )
+            ddsph_grad = _xyz_grad_from_ddsph(grad_dsph, ddsph)
+            xyz_grad = ddsph_grad if xyz_grad is None else xyz_grad + ddsph_grad
+
+        if xyz_grad is not None and grad_dsph is not None and not xyz.is_cuda:
+            xyz_grad = xyz_grad.detach()
+
+        return xyz_grad, None
+
+    torch.library.register_autograd(
+        f"sphericart_torch::{prefix}",
+        _compute_backward,
+        setup_context=_setup_compute_context,
+    )
+    torch.library.register_autograd(
+        f"sphericart_torch::{prefix}_with_gradients",
+        _gradients_backward,
+        setup_context=_setup_gradient_context,
+    )
+
+
+for _prefix in ("spherical_harmonics", "solid_harmonics"):
+    _setup_fake_impls(_prefix)
+    _setup_autograd(_prefix)

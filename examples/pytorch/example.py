@@ -89,11 +89,8 @@ def sphericart_example(l_max=10, n_samples=10000):
     ) / torch.norm(xyz_ag.grad)
     print(f"Check derivative difference (FW vs BW): {delta}")
 
-    # double derivatives. In order to access them via back-propagation, an additional
-    # flag must be specified at class instantiation:
-    sh_calculator_2 = sphericart.torch.SphericalHarmonics(
-        l_max, backward_second_derivatives=True
-    )
+    # double derivatives are computed on demand during backward-of-backward.
+    sh_calculator_2 = sphericart.torch.SphericalHarmonics(l_max)
 
     # double grad() call:
     xyz_ag2 = xyz[:5].clone().detach().type(torch.float64).to("cpu").requires_grad_()
