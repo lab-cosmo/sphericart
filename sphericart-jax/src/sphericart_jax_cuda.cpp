@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <utility>
 
 #include <gpulite/gpulite.hpp>
 #include "sphericart_cuda.hpp"
@@ -21,18 +22,19 @@ namespace ffi = xla::ffi;
 
 namespace {
 
+// cache one calculator instance per (l_max, device) pair
 template <template <typename> class C, typename T>
-using CacheMapCUDA = std::map<size_t, std::unique_ptr<C<T>>>;
+using CacheMapCUDA = std::map<std::pair<size_t, int>, std::unique_ptr<C<T>>>;
 
 template <template <typename> class C, typename T>
-std::unique_ptr<C<T>>& GetOrCreateCUDA(size_t l_max) {
+std::unique_ptr<C<T>>& GetOrCreateCUDA(size_t l_max, int device) {
     static CacheMapCUDA<C, T> cache;
     static std::mutex cache_mutex;
 
     std::lock_guard<std::mutex> lock(cache_mutex);
-    auto it = cache.find(l_max);
+    auto it = cache.find({l_max, device});
     if (it == cache.end()) {
-        it = cache.insert({l_max, std::make_unique<C<T>>(l_max)}).first;
+        it = cache.emplace(std::make_pair(l_max, device), std::make_unique<C<T>>(l_max)).first;
     }
     return it->second;
 }
@@ -77,7 +79,10 @@ ffi::Error CudaSphImpl(
     const T* xyz_ptr = reinterpret_cast<const T*>(xyz.typed_data());
     T* sph_ptr = reinterpret_cast<T*>(sph->typed_data());
 
-    auto& calculator = GetOrCreateCUDA<C, T>(l_max);
+    cudaPointerAttributes attributes;
+    GPULITE_CUDART_CALL(cudaPointerGetAttributes(&attributes, xyz_ptr));
+
+    auto& calculator = GetOrCreateCUDA<C, T>(l_max, attributes.device);
     calculator->compute(
         xyz_ptr, static_cast<size_t>(n_samples), sph_ptr, reinterpret_cast<void*>(stream)
     );
@@ -118,7 +123,10 @@ ffi::Error CudaSphGradImpl(
     T* sph_ptr = reinterpret_cast<T*>(sph->typed_data());
     T* dsph_ptr = reinterpret_cast<T*>(dsph->typed_data());
 
-    auto& calculator = GetOrCreateCUDA<C, T>(l_max);
+    cudaPointerAttributes attributes;
+    GPULITE_CUDART_CALL(cudaPointerGetAttributes(&attributes, xyz_ptr));
+
+    auto& calculator = GetOrCreateCUDA<C, T>(l_max, attributes.device);
     calculator->compute_with_gradients(
         xyz_ptr, static_cast<size_t>(n_samples), sph_ptr, dsph_ptr, reinterpret_cast<void*>(stream)
     );
@@ -165,7 +173,10 @@ ffi::Error CudaSphHessImpl(
     T* dsph_ptr = reinterpret_cast<T*>(dsph->typed_data());
     T* ddsph_ptr = reinterpret_cast<T*>(ddsph->typed_data());
 
-    auto& calculator = GetOrCreateCUDA<C, T>(l_max);
+    cudaPointerAttributes attributes;
+    GPULITE_CUDART_CALL(cudaPointerGetAttributes(&attributes, xyz_ptr));
+
+    auto& calculator = GetOrCreateCUDA<C, T>(l_max, attributes.device);
     calculator->compute_with_hessians(
         xyz_ptr,
         static_cast<size_t>(n_samples),
