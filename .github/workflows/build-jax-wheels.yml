@@ -51,8 +51,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        jax-version: ["0.6.2", "0.7.0", "0.7.1", "0.7.2", "0.8.0", "0.8.1", "0.8.2", "0.8.3", "0.9.0", "0.9.1", "0.9.2"]
-        os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm]
+        jax-version: ["0.6.2", "0.7.0", "0.7.1", "0.7.2", "0.8.0", "0.8.1", "0.8.2", "0.8.3", "0.9.0", "0.9.1", "0.9.2", "0.10.0"]
+        os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm, windows-2022]
         include:
           - name: x86_64 Linux
             os: ubuntu-22.04
@@ -66,6 +66,10 @@ jobs:
           - name: aarch64 Linux
             os: ubuntu-22.04-arm
             arch: aarch64
+          - name: x86_64 Windows
+            os: windows-2022
+            arch: amd64
+            cibw_arch: AMD64
 
     name: "JAX ${{matrix.jax-version}} ${{matrix.os}} ${{matrix.arch}}"
 
@@ -94,7 +98,7 @@ jobs:
         CIBW_BUILD_VERBOSITY: 1
         CIBW_BUILD: "cp312-*"
         CIBW_SKIP: "*-musllinux*"
-        CIBW_ARCHS: "${{ matrix.arch }}"
+        CIBW_ARCHS: "${{ matrix.cibw_arch || matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux_2_28_x86_64
         CIBW_MANYLINUX_AARCH64_IMAGE: sphericart_manylinux_2_28_aarch64
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
@@ -104,6 +108,8 @@ jobs:
           delocate-wheel --ignore-missing-dependencies \
                          --require-archs {delocate_archs} \
                          -w {dest_dir} -v {wheel}
+        CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
+        CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair -w {dest_dir} {wheel}
         CIBW_ENVIRONMENT: >
           SPHERICART_ARCH_NATIVE=OFF
           SPHERICART_NO_LOCAL_DEPS=1
@@ -130,6 +136,9 @@ jobs:
           - name: aarch64 Linux
             os: ubuntu-22.04-arm
             arch: aarch64
+          - name: x86_64 Windows
+            os: windows-2022
+            arch: amd64
     steps:
       - uses: actions/checkout@v4
 

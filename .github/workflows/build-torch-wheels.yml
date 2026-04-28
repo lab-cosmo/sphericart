@@ -52,7 +52,7 @@ jobs:
     strategy:
       matrix:
         pytorch-version: ["2.6", "2.7", "2.8", "2.9", "2.10", "2.11"]
-        os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm]
+        os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm, windows-2022]
         include:
           - os: ubuntu-22.04
             arch: x86_64
@@ -63,6 +63,10 @@ jobs:
           - os: ubuntu-22.04-arm
             arch: aarch64
             name: aarch64 Linux
+          - os: windows-2022
+            arch: amd64
+            cibw_arch: AMD64
+            name: x86_64 Windows
 
     name: "Torch ${{matrix.pytorch-version}} ${{matrix.os}} ${{matrix.arch}}"
 
@@ -101,7 +105,7 @@ jobs:
         CIBW_BUILD_VERBOSITY: 1
         CIBW_BUILD: "cp312-*"
         CIBW_SKIP: "*-musllinux*"
-        CIBW_ARCHS: "${{ matrix.arch }}"
+        CIBW_ARCHS: "${{ matrix.cibw_arch || matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux_2_28_x86_64
         CIBW_MANYLINUX_AARCH64_IMAGE: sphericart_manylinux_2_28_aarch64
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
@@ -116,6 +120,15 @@ jobs:
           delocate-wheel --ignore-missing-dependencies \
                          --require-archs {delocate_archs} \
                          -w {dest_dir} -v {wheel}
+        CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
+        CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
+          delvewheel repair
+          --no-dll c10.dll
+          --no-dll torch.dll
+          --no-dll torch_cpu.dll
+          --no-dll torch_cuda.dll
+          --no-dll c10_cuda.dll
+          -w {dest_dir} {wheel}
         CIBW_ENVIRONMENT: >
           SPHERICART_ARCH_NATIVE=OFF
           SPHERICART_NO_LOCAL_DEPS=1
@@ -143,6 +156,9 @@ jobs:
           - name: aarch64 Linux
             os: ubuntu-22.04-arm
             arch: aarch64
+          - name: x86_64 Windows
+            os: windows-2022
+            arch: amd64
     steps:
       - uses: actions/checkout@v4
 

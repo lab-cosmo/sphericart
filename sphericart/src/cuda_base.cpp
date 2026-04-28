@@ -1,14 +1,19 @@
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
 #include <cmath>
+#include <string>
 #include <gpulite/gpulite.hpp>
 #include "cuda_base.hpp"
 
 #define HARDCODED_LMAX 1
 
-static const char* CUDA_CODE =
+// The CUDA source is embedded as a byte array with a trailing 0x00 generated
+// by make_includeable in CMakeLists.txt, matching the representation used in
+// vesin.
+static const unsigned char CUDA_CODE_DATA[] = {
 #include "generated/wrapped_sphericart_impl.cu"
-    ;
+};
+static const char* CUDA_CODE = reinterpret_cast<const char*>(CUDA_CODE_DATA);
 
 /*
     Computes the total amount of shared memory space required by

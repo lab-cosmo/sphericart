@@ -65,6 +65,10 @@ jobs:
           - name: aarch64 Linux
             os: ubuntu-22.04-arm
             arch: aarch64
+          - name: x86_64 Windows
+            os: windows-2022
+            arch: amd64
+            cibw_arch: AMD64
 
     steps:
     - name: Checkout code
@@ -91,7 +95,7 @@ jobs:
         CIBW_BUILD_VERBOSITY: 1
         CIBW_BUILD: "cp312-*"
         CIBW_SKIP: "*-musllinux*"
-        CIBW_ARCHS: "${{ matrix.arch }}"
+        CIBW_ARCHS: "${{ matrix.cibw_arch || matrix.arch }}"
         CIBW_MANYLINUX_X86_64_IMAGE: sphericart_manylinux_2_28_x86_64
         CIBW_MANYLINUX_AARCH64_IMAGE: sphericart_manylinux_2_28_aarch64
         CIBW_ENVIRONMENT: >
