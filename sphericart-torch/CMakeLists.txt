@@ -75,16 +75,9 @@ find_package(Torch 2.6 REQUIRED)
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERSION = '${Torch_VERSION}'")
 
 add_library(sphericart_torch SHARED
-    "include/sphericart/torch_cuda_wrapper.hpp"
     "include/sphericart/torch.hpp"
     "src/torch.cpp"
 )
-
-if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    target_sources(sphericart_torch PUBLIC "src/torch_cuda_wrapper.cpp")
-else()
-    target_sources(sphericart_torch PUBLIC "src/torch_cuda_wrapper_stub.cpp")
-endif()
 
 target_link_libraries(sphericart_torch PUBLIC sphericart)
 
