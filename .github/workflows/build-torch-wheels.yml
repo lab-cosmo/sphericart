@@ -96,6 +96,14 @@ jobs:
       with:
         python-version: "3.12"
 
+    - name: Install CUDA toolkit (Windows)
+      if: matrix.os == 'windows-2022'
+      uses: Jimver/cuda-toolkit@v0.2.29
+      with:
+        cuda: '12.6.3'
+        method: 'local'
+        log-file-suffix: 'torch-${{ matrix.pytorch-version }}-${{ matrix.os }}.txt'
+
     - name: Install cibuildwheel
       run: python -m pip install cibuildwheel
 
