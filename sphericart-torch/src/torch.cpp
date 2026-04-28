@@ -6,6 +6,9 @@
 #include <cstdint>
 #ifdef __linux__
 #include <dlfcn.h>
+#elif defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #endif
 #include <map>
 #include <memory>
@@ -41,6 +44,19 @@ class CUDAStream {
             );
         }
         this->get_stream = get_stream;
+#elif defined(_WIN32)
+        handle = LoadLibraryA("sphericart_torch_cuda_stream.dll");
+        if (!handle) {
+            throw std::runtime_error("Failed to load sphericart_torch_cuda_stream.dll");
+        }
+
+        auto get_stream =
+            reinterpret_cast<get_stream_t>(GetProcAddress(handle, "get_current_cuda_stream"));
+        if (!get_stream) {
+            FreeLibrary(handle);
+            throw std::runtime_error("Failed to load get_current_cuda_stream");
+        }
+        this->get_stream = get_stream;
 #else
         throw std::runtime_error("Platform not supported for dynamic loading of CUDA streams");
 #endif
@@ -51,13 +67,21 @@ class CUDAStream {
         if (handle) {
             dlclose(handle);
         }
+#elif defined(_WIN32)
+        if (handle) {
+            FreeLibrary(handle);
+        }
 #endif
     }
 
     CUDAStream(const CUDAStream&) = delete;
     CUDAStream& operator=(const CUDAStream&) = delete;
 
+#ifdef _WIN32
+    HMODULE handle = nullptr;
+#else
     void* handle = nullptr;
+#endif
 };
 
 using CacheKey = std::pair<int64_t, int64_t>; // (l_max, device)

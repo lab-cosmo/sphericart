@@ -113,6 +113,11 @@ if(CMAKE_CUDA_COMPILER)
     target_compile_definitions(sphericart_torch_cuda_stream PRIVATE CUDA_AVAILABLE)
     target_compile_definitions(sphericart_torch_cuda_stream PRIVATE C10_CUDA_NO_CMAKE_CONFIGURE_FILE)
     target_include_directories(sphericart_torch_cuda_stream PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    if (TARGET torch_cuda_library)
+        target_link_libraries(sphericart_torch_cuda_stream PUBLIC torch_cuda_library)
+    elseif(TARGET torch_cuda)
+        target_link_libraries(sphericart_torch_cuda_stream PUBLIC torch_cuda)
+    endif()
 endif()
 
 
