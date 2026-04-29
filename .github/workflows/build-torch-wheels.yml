@@ -142,6 +142,12 @@ jobs:
           SPHERICART_NO_LOCAL_DEPS=1
           TORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0"
           SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.pytorch-version }}.*
+        CIBW_ENVIRONMENT_WINDOWS: >
+          SPHERICART_ARCH_NATIVE=OFF
+          SPHERICART_NO_LOCAL_DEPS=1
+          TORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0"
+          SPHERICART_TORCH_BUILD_WITH_TORCH_VERSION=${{ matrix.pytorch-version }}.*
+          PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cu126
 
     - uses: actions/upload-artifact@v4
       with:
