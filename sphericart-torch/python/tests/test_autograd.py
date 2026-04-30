@@ -161,7 +161,7 @@ def test_compute_with_hessians_stops_at_third_derivatives(normalized):
         RuntimeError,
         match=(
             "Third derivatives of the spherical harmonics with respect to the "
-            "Cartesian coordinates are not supported.",
+            "Cartesian coordinates are not supported."
         ),
     ):
         torch.autograd.grad(ddsph.sum(), xyz)
@@ -173,7 +173,7 @@ def test_compute_with_hessians_stops_at_third_derivatives(normalized):
             RuntimeError,
             match=(
                 "Third derivatives of the spherical harmonics with respect to the "
-                "Cartesian coordinates are not supported.",
+                "Cartesian coordinates are not supported."
             ),
         ):
             torch.autograd.grad(ddsph_cuda.sum(), xyz_cuda)
@@ -241,7 +241,7 @@ def test_third_derivative_error(xyz):
         RuntimeError,
         match=(
             "Third derivatives of the spherical harmonics with respect to the "
-            "Cartesian coordinates are not supported.",
+            "Cartesian coordinates are not supported."
         ),
     ):
         torch.autograd.grad(
