@@ -47,8 +47,10 @@ add_library(sphericart_jax_cpu SHARED ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_j
 target_link_libraries(sphericart_jax_cpu PRIVATE sphericart)
 target_compile_features(sphericart_jax_cpu PRIVATE cxx_std_17)
 target_include_directories(sphericart_jax_cpu PRIVATE
-    ${XLA_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_include_directories(sphericart_jax_cpu SYSTEM PRIVATE
+    ${XLA_INCLUDE_DIR}
 )
 # On Windows, MSVC only exports explicitly marked symbols; this auto-exports all
 # external-linkage symbols (equivalent to the default behaviour on Linux/macOS).
@@ -65,8 +67,10 @@ if(SPHERICART_ENABLE_CUDA)
     target_link_libraries(sphericart_jax_cuda PRIVATE sphericart gpulite)
     target_compile_features(sphericart_jax_cuda PRIVATE cxx_std_17)
     target_include_directories(sphericart_jax_cuda PRIVATE
-        ${XLA_INCLUDE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+    target_include_directories(sphericart_jax_cuda SYSTEM PRIVATE
+        ${XLA_INCLUDE_DIR}
     )
     set_target_properties(sphericart_jax_cuda PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     install(TARGETS sphericart_jax_cuda
