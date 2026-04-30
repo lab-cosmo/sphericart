@@ -79,25 +79,23 @@ def _register_vmap(op, out_dims):
     torch.library.register_vmap(op, rule)
 
 
-def _register_autograd(prefix):
+def _register_value_autograd(prefix):
     gradients = getattr(torch.ops.sphericart_torch, f"{prefix}_with_gradients").default
     hessians = getattr(torch.ops.sphericart_torch, f"{prefix}_with_hessians").default
 
     def setup_context(ctx, inputs, output):
         xyz, ctx.l_max = inputs
-        saved = (xyz,) if isinstance(output, torch.Tensor) else (xyz, output[1])
-        ctx.save_for_backward(*saved)
+        ctx.save_for_backward(xyz)
 
     def backward(ctx, *grad_outputs):
         if not ctx.needs_input_grad[0]:
             return None, None
 
-        saved = ctx.saved_tensors
-        xyz = saved[0]
+        xyz = ctx.saved_tensors[0]
         xyz_grad = None
 
         if grad_outputs[0] is not None:
-            dsph = saved[1] if len(saved) == 2 else gradients(xyz, ctx.l_max)[1]
+            dsph = gradients(xyz, ctx.l_max)[1]
             xyz_grad = torch.sum(grad_outputs[0].unsqueeze(1) * dsph, dim=2)
 
         if len(grad_outputs) > 1 and grad_outputs[1] is not None:
@@ -114,8 +112,64 @@ def _register_autograd(prefix):
         backward,
         setup_context=setup_context,
     )
+
+
+def _register_gradients_autograd(prefix):
+    hessians = getattr(torch.ops.sphericart_torch, f"{prefix}_with_hessians").default
+
+    def setup_context(ctx, inputs, output):
+        xyz, ctx.l_max = inputs
+        ctx.save_for_backward(xyz, output[1])
+
+    def backward(ctx, *grad_outputs):
+        if not ctx.needs_input_grad[0]:
+            return None, None
+
+        xyz, dsph = ctx.saved_tensors
+        xyz_grad = None
+
+        if grad_outputs[0] is not None:
+            xyz_grad = torch.sum(grad_outputs[0].unsqueeze(1) * dsph, dim=2)
+
+        if grad_outputs[1] is not None:
+            ddsph = hessians(xyz, ctx.l_max)[2]
+            extra = torch.sum(grad_outputs[1].unsqueeze(2) * ddsph, dim=(1, 3))
+            xyz_grad = extra if xyz_grad is None else xyz_grad + extra
+
+        return xyz_grad, None
+
     torch.library.register_autograd(
         f"sphericart_torch::{prefix}_with_gradients",
+        backward,
+        setup_context=setup_context,
+    )
+
+
+def _register_hessians_autograd(prefix):
+    def setup_context(ctx, inputs, output):
+        ctx.save_for_backward(output[1], output[2])
+
+    def backward(ctx, *grad_outputs):
+        if grad_outputs[2] is not None:
+            raise RuntimeError(
+                "Third derivatives of the spherical harmonics with respect to "
+                "the Cartesian coordinates are not supported."
+            )
+
+        dsph, ddsph = ctx.saved_tensors
+        xyz_grad = None
+
+        if grad_outputs[0] is not None:
+            xyz_grad = torch.sum(grad_outputs[0].unsqueeze(1) * dsph, dim=2)
+
+        if grad_outputs[1] is not None:
+            extra = torch.sum(grad_outputs[1].unsqueeze(2) * ddsph, dim=(1, 3))
+            xyz_grad = extra if xyz_grad is None else xyz_grad + extra
+
+        return xyz_grad, None
+
+    torch.library.register_autograd(
+        f"sphericart_torch::{prefix}_with_hessians",
         backward,
         setup_context=setup_context,
     )
@@ -131,7 +185,9 @@ def _register(prefix):
     _register_fake(f"sphericart_torch::{prefix}", 1)
     _register_fake(f"sphericart_torch::{prefix}_with_gradients", 2)
     _register_fake(f"sphericart_torch::{prefix}_with_hessians", 3)
-    _register_autograd(prefix)
+    _register_value_autograd(prefix)
+    _register_gradients_autograd(prefix)
+    _register_hessians_autograd(prefix)
     _register_vmap(value, 0)
     _register_vmap(gradients, (0, 0))
     _register_vmap(hessians, (0, 0, 0))

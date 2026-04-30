@@ -70,21 +70,18 @@ else()
     endif()
 endif()
 
+if(CMAKE_CUDA_COMPILER)
+    find_package(CUDAToolkit)
+endif()
+
 find_package(Torch 2.6 REQUIRED)
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_build_torch_version.py "BUILD_TORCH_VERSION = '${Torch_VERSION}'")
 
 add_library(sphericart_torch SHARED
-    "include/sphericart/torch_cuda_wrapper.hpp"
     "include/sphericart/torch.hpp"
     "src/torch.cpp"
 )
-
-if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    target_sources(sphericart_torch PUBLIC "src/torch_cuda_wrapper.cpp")
-else()
-    target_sources(sphericart_torch PUBLIC "src/torch_cuda_wrapper_stub.cpp")
-endif()
 
 target_link_libraries(sphericart_torch PUBLIC sphericart)
 
@@ -120,6 +117,32 @@ if(CMAKE_CUDA_COMPILER)
     target_compile_definitions(sphericart_torch_cuda_stream PRIVATE CUDA_AVAILABLE)
     target_compile_definitions(sphericart_torch_cuda_stream PRIVATE C10_CUDA_NO_CMAKE_CONFIGURE_FILE)
     target_include_directories(sphericart_torch_cuda_stream PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    if(WIN32)
+        find_library(
+            SPHERICART_TORCH_C10_CUDA_LIB
+            c10_cuda
+            PATHS "${TORCH_INSTALL_PREFIX}/lib"
+            NO_DEFAULT_PATH
+        )
+        find_library(
+            SPHERICART_TORCH_TORCH_CUDA_LIB
+            torch_cuda
+            PATHS "${TORCH_INSTALL_PREFIX}/lib"
+            NO_DEFAULT_PATH
+        )
+        if(SPHERICART_TORCH_C10_CUDA_LIB)
+            target_link_libraries(
+                sphericart_torch_cuda_stream PUBLIC "${SPHERICART_TORCH_C10_CUDA_LIB}"
+            )
+        endif()
+        if(SPHERICART_TORCH_TORCH_CUDA_LIB)
+            target_link_libraries(
+                sphericart_torch_cuda_stream PUBLIC "${SPHERICART_TORCH_TORCH_CUDA_LIB}"
+            )
+        endif()
+    else()
+        target_link_libraries(sphericart_torch_cuda_stream PUBLIC ${TORCH_LIBRARIES})
+    endif()
 endif()
 
 

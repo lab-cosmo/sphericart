@@ -1,5 +1,4 @@
 import os
-import shutil
 import subprocess
 import sys
 
@@ -11,18 +10,6 @@ from setuptools.command.build_ext import build_ext
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
 SPHERICART_ARCH_NATIVE = os.environ.get("SPHERICART_ARCH_NATIVE", "ON")
-
-
-def _detect_cuda_home():
-    cuda_home = os.environ.get("CUDA_HOME")
-    if cuda_home:
-        return cuda_home
-
-    nvcc = shutil.which("nvcc")
-    if nvcc is None:
-        return None
-
-    return os.path.dirname(os.path.dirname(os.path.realpath(nvcc)))
 
 
 class universal_wheel(bdist_wheel):
@@ -63,8 +50,10 @@ class cmake_ext(build_ext):
             "-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON",
         ]
 
-        CUDA_HOME = _detect_cuda_home()
-        if CUDA_HOME is None:
+        # CUDA support uses gpulite for dynamic loading: no CUDA toolkit needed
+        # at build time. Disable on macOS (no CUDA) and Windows (JAX has no CUDA
+        # support on Windows).
+        if sys.platform.startswith("darwin") or sys.platform.startswith("win"):
             cmake_options.append("-DSPHERICART_ENABLE_CUDA=OFF")
         else:
             cmake_options.append("-DSPHERICART_ENABLE_CUDA=ON")
@@ -121,7 +110,7 @@ if __name__ == "__main__":
         # otherwise we are building a sdist
         jax_version = ">=0.6.0"
 
-    install_requires = [f"jax {jax_version}", "packaging"]
+    install_requires = [f"jax {jax_version}"]
 
     setup(
         version=open(os.path.join(ROOT, "sphericart", "VERSION")).readline().strip(),

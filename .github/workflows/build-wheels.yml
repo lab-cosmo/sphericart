@@ -65,6 +65,9 @@ jobs:
           - name: aarch64 Linux
             os: ubuntu-22.04-arm
             arch: aarch64
+          - name: x86_64 Windows
+            os: windows-2022
+            arch: AMD64
 
     steps:
     - name: Checkout code

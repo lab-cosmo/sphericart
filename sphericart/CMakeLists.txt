@@ -3,21 +3,55 @@ cmake_minimum_required(VERSION 3.27)
 project(sphericart LANGUAGES C CXX)
 
 #[[
- This function wraps the input file with the appropriate string to allow us to
- static-initialize string variables, for example:
-     static const char* CUDA_CODE =
-#include "generated/wrapped_sphericart_impl.cu"
-        ;
+ This function converts an input file into a C header that can be used as the
+ initializer list of a `const unsigned char[]` array, for example:
+     static const unsigned char CUDA_CODE_DATA[] = {
+ #include "generated/wrapped_sphericart_impl.cu"
+     };
+ The output matches the byte-array embedding used in vesin and appends a final
+ `0x00` so the data can be safely reinterpreted as a C string.
 ]]
 function(make_includeable INPUT_FILE OUTPUT_FILE)
     if(NOT EXISTS ${INPUT_FILE})
         message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
     endif()
-    file(READ ${INPUT_FILE} content)
-    # Format the content to be included as a raw string in C++
-    set(content "R\"======(\n${content}\n)======\"")
-    # Write the formatted content to the output file
-    file(WRITE ${OUTPUT_FILE} "${content}")
+    file(READ "${INPUT_FILE}" hex_content HEX)
+    string(LENGTH "${hex_content}" hex_len)
+    math(EXPR byte_count "${hex_len} / 2")
+
+    set(result "")
+    set(line "")
+    set(line_count 0)
+    if(byte_count GREATER 0)
+        math(EXPR last_idx "${byte_count} - 1")
+        foreach(idx RANGE 0 ${last_idx})
+            math(EXPR pos "${idx} * 2")
+            string(SUBSTRING "${hex_content}" ${pos} 2 byte)
+            string(TOUPPER "${byte}" byte_upper)
+            if(line STREQUAL "")
+                set(line "0x${byte_upper}")
+            else()
+                set(line "${line}, 0x${byte_upper}")
+            endif()
+
+            math(EXPR line_count "${line_count} + 1")
+            math(EXPR mod "${line_count} % 13")
+            if(mod EQUAL 0)
+                string(APPEND result "${line},\n")
+                set(line "")
+            endif()
+        endforeach()
+    endif()
+
+    if(NOT line STREQUAL "")
+        string(APPEND result "${line}, 0x00\n")
+    else()
+        string(APPEND result "0x00\n")
+    endif()
+
+    get_filename_component(basename "${INPUT_FILE}" NAME)
+    file(WRITE "${OUTPUT_FILE}" "/* Generated from ${basename} by make_includeable. Do not edit. */\n")
+    file(APPEND "${OUTPUT_FILE}" "${result}\n")
 endfunction()
 
 #[[
@@ -100,15 +134,6 @@ FetchContent_Declare(
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(gpulite)
-
-# Find CUDA
-include(CheckLanguage)
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
-    find_package(CUDAToolkit REQUIRED)
-    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
-endif()
 
 # Find SYCL
 if (SPHERICART_ENABLE_SYCL)
@@ -202,19 +227,11 @@ if (SPHERICART_ENABLE_SYCL)
                 "src/sphericart_sycl.cpp"
             )
 endif()
-if (SPHERICART_ENABLE_CUDA AND NOT CMAKE_CUDA_COMPILER)
-    message(FATAL_ERROR "Could not find a CUDA compiler, but SPHERICART_ENABLE_CUDA=ON.")
-endif()
-
-if (CMAKE_CUDA_COMPILER AND NOT SPHERICART_ENABLE_CUDA)
-    message(STATUS "Found a CUDA compiler but SPHERICART_ENABLE_CUDA=OFF, set SPHERICART_ENABLE_CUDA=ON in order to compile with CUDA support.")
-endif()
-
 # Append the relevant CUDA files to sources
 list(APPEND COMMON_SOURCES "include/cuda_base.hpp")
 list(APPEND COMMON_SOURCES "include/sphericart_cuda.hpp")
 
-if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+if (SPHERICART_ENABLE_CUDA)
     list(APPEND COMMON_SOURCES "src/cuda_base.cpp")
     list(APPEND COMMON_SOURCES "src/sphericart_cuda.cpp")
 else()
@@ -224,7 +241,7 @@ endif()
 
 add_library(sphericart ${COMMON_SOURCES})
 
-if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+if (SPHERICART_ENABLE_CUDA)
     #include the build/generated folder for compilation
     target_include_directories(sphericart PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_link_libraries(sphericart PRIVATE gpulite)
@@ -303,8 +320,18 @@ set_target_properties(sphericart PROPERTIES
     # hide non-exported symbols by default
     C_VISIBILIY_PRESET hidden
     CXX_VISIBILIY_PRESET hidden
-    CUDA_VISIBILIY_PRESET hidden
 )
+
+if (MSVC)
+    # Prevent windows.h (pulled in by gpulite) from defining min/max macros
+    # that conflict with std::max in cuda_base.cpp.
+    target_compile_definitions(sphericart PRIVATE NOMINMAX)
+    # gpulite.hpp uses assert and std::optional without including the
+    # necessary headers itself under MSVC; force them in via PCH.
+    if (SPHERICART_ENABLE_CUDA)
+        target_precompile_headers(sphericart PRIVATE <cassert> <optional>)
+    endif()
+endif()
 
 include(GenerateExportHeader)
 generate_export_header(sphericart

@@ -123,6 +123,62 @@ def test_noncontiguous_input(normalized):
         check("cuda")
 
 
+@pytest.mark.parametrize("normalized", [True, False])
+def test_compute_with_gradients_output_is_differentiable(normalized):
+    calculator_cls = (
+        sphericart.torch.SphericalHarmonics
+        if normalized
+        else sphericart.torch.SolidHarmonics
+    )
+    calculator = calculator_cls(l_max=4)
+
+    xyz = torch.randn(2, 3, dtype=torch.float64, requires_grad=True)
+    _, dsph = calculator.compute_with_gradients(xyz)
+    grad = torch.autograd.grad(dsph.sum(), xyz, create_graph=True)[0]
+    assert grad.requires_grad
+    assert grad.shape == xyz.shape
+
+    if torch.cuda.is_available():
+        xyz_cuda = xyz.detach().cuda().requires_grad_(True)
+        _, dsph_cuda = calculator.compute_with_gradients(xyz_cuda)
+        grad_cuda = torch.autograd.grad(dsph_cuda.sum(), xyz_cuda, create_graph=True)[0]
+        assert grad_cuda.requires_grad
+        assert grad_cuda.shape == xyz_cuda.shape
+
+
+@pytest.mark.parametrize("normalized", [True, False])
+def test_compute_with_hessians_stops_at_third_derivatives(normalized):
+    calculator_cls = (
+        sphericart.torch.SphericalHarmonics
+        if normalized
+        else sphericart.torch.SolidHarmonics
+    )
+    calculator = calculator_cls(l_max=4)
+
+    xyz = torch.randn(2, 3, dtype=torch.float64, requires_grad=True)
+    _, _, ddsph = calculator.compute_with_hessians(xyz)
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "Third derivatives of the spherical harmonics with respect to the "
+            "Cartesian coordinates are not supported."
+        ),
+    ):
+        torch.autograd.grad(ddsph.sum(), xyz)
+
+    if torch.cuda.is_available():
+        xyz_cuda = xyz.detach().cuda().requires_grad_(True)
+        _, _, ddsph_cuda = calculator.compute_with_hessians(xyz_cuda)
+        with pytest.raises(
+            RuntimeError,
+            match=(
+                "Third derivatives of the spherical harmonics with respect to the "
+                "Cartesian coordinates are not supported."
+            ),
+        ):
+            torch.autograd.grad(ddsph_cuda.sum(), xyz_cuda)
+
+
 def test_second_derivative_supported_by_default(xyz):
     calculator = sphericart.torch.SphericalHarmonics(l_max=8)
 
@@ -183,7 +239,10 @@ def test_third_derivative_error(xyz):
     s2 = torch.sum(d2)
     with pytest.raises(
         RuntimeError,
-        match="element 0 of tensors does not require grad and does not have a grad_fn",
+        match=(
+            "Third derivatives of the spherical harmonics with respect to the "
+            "Cartesian coordinates are not supported."
+        ),
     ):
         torch.autograd.grad(
             outputs=s2,
@@ -193,6 +252,6 @@ def test_third_derivative_error(xyz):
         )
     with pytest.raises(
         RuntimeError,
-        match="element 0 of tensors does not require grad and does not have a grad_fn",
+        match="Trying to backward through the graph a second time",
     ):
         s2.backward()
