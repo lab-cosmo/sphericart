@@ -13,6 +13,9 @@ class SphericalHarmonics(torch.nn.Module):
     This class can be used similarly to :py:class:`sphericart.SphericalHarmonics`
     (its Python/NumPy counterpart).
 
+    >>> import torch
+    >>> import sphericart.torch
+    >>> xyz = torch.rand(size=(10, 3))
     >>> xyz = xyz.detach().clone().requires_grad_()
     >>> sh = sphericart.torch.SphericalHarmonics(l_max=8)
     >>> sh_values = sh(xyz)  # or sh.compute(xyz)
@@ -34,7 +37,8 @@ class SphericalHarmonics(torch.nn.Module):
     >>> sh_grads.shape
     torch.Size([10, 3, 81])
 
-    This class supports TorchScript and ``torch.compile``.
+    This class fully supports TorchScript and ``torch.compile``. Some limitations are
+    present when using backward differentiation with ``torch.func``.
 
     :param l_max:
         the maximum degree of the spherical harmonics to be calculated
