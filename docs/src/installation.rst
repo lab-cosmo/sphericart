@@ -33,14 +33,15 @@ If you need an extra 5-10% of performance on CPU, you should build the code from
     # torch bindings (CPU-only)
     pip install --extra-index-url https://download.pytorch.org/whl/cpu .[torch]
 
-Before installing the JAX version of ``sphericart``, make sure you already have the JAX
+Before installing the JAX version of ``sphericart``, make sure you have the JAX
 library installed according to the `official JAX installation instructions
 <https://jax.readthedocs.io/en/latest/installation.html>`_.
 
-In addition, if you want to use the CUDA functionalities of sphericart (with CuPy,
-torch or JAX), make sure you have installed the CUDA toolkit
-and set up the environment variables ``CUDA_HOME``, ``LD_LIBRARY_FLAGS``, and ``PATH``
-accordingly. In case you want to use CuPy, it should be installed separately.
+In case you want to use sphericart with CuPy, it should also be installed separately
+according to the instructions `here <https://docs.cupy.dev/en/stable/install.html>`_.
+
+When using the CUDA functionalities of sphericart, make sure your
+CUDA driver is compatible with your selected version of CuPy, torch, or JAX.
 
 
 Julia package
