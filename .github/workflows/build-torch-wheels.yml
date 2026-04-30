@@ -171,7 +171,7 @@ jobs:
             arch: aarch64
           - name: x86_64 Windows
             os: windows-2022
-            arch: amd64
+            arch: AMD64
     steps:
       - uses: actions/checkout@v4
 
