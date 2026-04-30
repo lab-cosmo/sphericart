@@ -327,15 +327,3 @@ XLA_FFI_DEFINE_HANDLER_SYMBOL(
         .Ret<ffi::Buffer<ffi::F64>>() // dsph
         .Ret<ffi::Buffer<ffi::F64>>() // ddsph
 );
-
-// ===== Small C ABI helper for Python (ctypes) =====
-extern "C" void sphericart_jax_get_cuda_runtime_version(int* major, int* minor) {
-    int ver = 0;
-    GPULITE_CUDART_CALL(cudaRuntimeGetVersion(&ver));
-    if (major) {
-        *major = ver / 1000;
-    }
-    if (minor) {
-        *minor = (ver % 1000) / 10;
-    }
-}

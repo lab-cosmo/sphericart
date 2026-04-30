@@ -7,15 +7,6 @@ endif()
 
 project(sphericart_jax CXX)
 
-include(CheckLanguage)
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
-    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
-else()
-    message(STATUS "Could not find a CUDA compiler")
-endif()
-
 # Set a default build type if none was specified
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     if("${CMAKE_BUILD_TYPE}" STREQUAL "" AND "${CMAKE_CONFIGURATION_TYPES}" STREQUAL "")
@@ -71,7 +62,7 @@ install(TARGETS sphericart_jax_cpu
 )
 
 # --- CUDA shared library ---
-if(CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+if(SPHERICART_ENABLE_CUDA)
     add_library(sphericart_jax_cuda SHARED ${CMAKE_CURRENT_LIST_DIR}/src/sphericart_jax_cuda.cpp)
     target_link_libraries(sphericart_jax_cuda PRIVATE sphericart gpulite)
     target_compile_features(sphericart_jax_cuda PRIVATE cxx_std_17)
