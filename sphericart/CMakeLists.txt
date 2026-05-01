@@ -129,8 +129,8 @@ include(FetchContent)
 
 FetchContent_Declare(
     gpulite
-    GIT_REPOSITORY https://github.com/metatensor/gpu-lite.git
-    GIT_TAG 7e8e9e929b254c3faefc556fb348068027e73319 # v1.1.1
+    GIT_REPOSITORY https://github.com/Luthaf/gpu-lite.git
+    GIT_TAG 75b30c5f27871b70bdcf4502177198f766df0a56 # v1.1.1
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(gpulite)
