@@ -9,6 +9,7 @@
 #elif defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <filesystem>
 #endif
 #include <map>
 #include <memory>
@@ -45,7 +46,27 @@ class CUDAStream {
         }
         this->get_stream = get_stream;
 #elif defined(_WIN32)
-        handle = LoadLibraryA("sphericart_torch_cuda_stream.dll");
+        HMODULE current_module = nullptr;
+        BOOL got_module = GetModuleHandleExW(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCWSTR>(&CUDAStream::instance),
+            &current_module
+        );
+
+        // load sphericart_torch_cuda_stream.dll from the same directory
+        // as the main DLL
+        if (got_module) {
+            wchar_t module_path[MAX_PATH] = {};
+            DWORD module_path_length = GetModuleFileNameW(current_module, module_path, MAX_PATH);
+
+            if (module_path_length > 0 && module_path_length < MAX_PATH) {
+                auto stream_lib_path = std::filesystem::path(module_path).parent_path() /
+                                       "sphericart_torch_cuda_stream.dll";
+                handle =
+                    LoadLibraryExW(stream_lib_path.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+            }
+        }
+
         if (!handle) {
             throw std::runtime_error("Failed to load sphericart_torch_cuda_stream.dll");
         }
