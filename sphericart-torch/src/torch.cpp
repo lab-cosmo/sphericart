@@ -38,10 +38,11 @@ class CUDAStream {
             );
         }
 
-        auto get_stream = reinterpret_cast<get_stream_t>(dlsym(handle, "get_current_cuda_stream"));
+        auto get_stream =
+            reinterpret_cast<get_stream_t>(dlsym(handle, "sphericart_get_current_cuda_stream"));
         if (!get_stream) {
             throw std::runtime_error(
-                std::string("Failed to load get_current_cuda_stream: ") + dlerror()
+                std::string("Failed to load sphericart_get_current_cuda_stream: ") + dlerror()
             );
         }
         this->get_stream = get_stream;
@@ -71,11 +72,15 @@ class CUDAStream {
             throw std::runtime_error("Failed to load sphericart_torch_cuda_stream.dll");
         }
 
-        auto get_stream =
-            reinterpret_cast<get_stream_t>(GetProcAddress(handle, "get_current_cuda_stream"));
+        auto get_stream = reinterpret_cast<get_stream_t>(
+            GetProcAddress(handle, "sphericart_get_current_cuda_stream")
+        );
         if (!get_stream) {
             FreeLibrary(handle);
-            throw std::runtime_error("Failed to load get_current_cuda_stream");
+            throw std::runtime_error(
+                "Failed to load sphericart_get_current_cuda_stream from "
+                "sphericart_torch_cuda_stream.dll"
+            );
         }
         this->get_stream = get_stream;
 #else
