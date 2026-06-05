@@ -1,3 +1,7 @@
+#include "sphericart_impl.cuh"
+
+#include "macros.hpp"
+#include "templates_core.hpp"
 
 #define HARDCODED_LMAX 1
 
@@ -202,9 +206,9 @@ __device__ inline void write_buffers(
 */
 template <typename scalar_t>
 __global__ void spherical_harmonics_kernel(
-    scalar_t* xyz,
+    const scalar_t* xyz,
     int nedges,
-    scalar_t* prefactors,
+    const scalar_t* prefactors,
     int nprefactors,
     int lmax,
     int ntotal,
@@ -311,7 +315,7 @@ __global__ void spherical_harmonics_kernel(
 
     if (normalize) {
         if (edge_idx < nedges) {
-            auto ir2 = 1.0 / (x2 + y2 + z2);
+            auto ir2 = static_cast<scalar_t>(1.0) / (x2 + y2 + z2);
             ir = sqrt(ir2);
             x *= ir;
             y *= ir;
@@ -611,9 +615,9 @@ __global__ void spherical_harmonics_kernel(
 }
 
 template __global__ void spherical_harmonics_kernel<float>(
-    float* xyz,
+    const float* xyz,
     int nedges,
-    float* prefactors,
+    const float* prefactors,
     int nprefactors,
     int lmax,
     int ntotal,
@@ -626,9 +630,9 @@ template __global__ void spherical_harmonics_kernel<float>(
 );
 
 template __global__ void spherical_harmonics_kernel<double>(
-    double* xyz,
+    const double* xyz,
     int nedges,
-    double* prefactors,
+    const double* prefactors,
     int nprefactors,
     int lmax,
     int ntotal,
@@ -645,7 +649,7 @@ template __global__ void spherical_harmonics_kernel<double>(
 */
 template <typename scalar_t>
 __global__ void backward_kernel(
-    scalar_t* dsph, scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
+    const scalar_t* dsph, const scalar_t* sph_grad, int nedges, int n_total, scalar_t* xyz_grad
 ) {
 
     int edge_idx = blockIdx.x * blockDim.y + threadIdx.y;
@@ -680,9 +684,9 @@ __global__ void backward_kernel(
 }
 
 template __global__ void backward_kernel<float>(
-    float* dsph, float* sph_grad, int nedges, int n_total, float* xyz_grad
+    const float* dsph, const float* sph_grad, int nedges, int n_total, float* xyz_grad
 );
 
 template __global__ void backward_kernel<double>(
-    double* dsph, double* sph_grad, int nedges, int n_total, double* xyz_grad
+    const double* dsph, const double* sph_grad, int nedges, int n_total, double* xyz_grad
 );
