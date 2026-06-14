@@ -2,9 +2,6 @@
  *  @brief Checks consistency of array and sample calls
  */
 
-#include <sys/time.h>
-#include <unistd.h>
-
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -13,7 +10,9 @@
 #include "sphericart.hpp"
 
 #define _SPH_TOL 1e-9
+#ifndef DTYPE
 #define DTYPE double
+#endif
 using namespace sphericart;
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {

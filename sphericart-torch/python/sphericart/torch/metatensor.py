@@ -21,17 +21,11 @@ class SphericalHarmonics:
     :py:meth:`sphericart.torch.SphericalHarmonics` class.
 
     See :py:class:`sphericart.metatensor.SphericalHarmonics` for more details.
-    ``backward_second_derivatives`` has the same meaning as in
-    :py:class:`sphericart.torch.SphericalHarmonics`.
     """
 
-    def __init__(
-        self,
-        l_max: int,
-        backward_second_derivatives: bool = False,
-    ):
+    def __init__(self, l_max: int):
         self.l_max = l_max
-        self.raw_calculator = RawSphericalHarmonics(l_max, backward_second_derivatives)
+        self.raw_calculator = RawSphericalHarmonics(l_max)
 
         # precompute some labels
         self.precomputed_keys = Labels(
@@ -138,17 +132,11 @@ class SolidHarmonics:
     :py:meth:`sphericart.torch.SolidHarmonics` class.
 
     See :py:class:`sphericart.metatensor.SphericalHarmonics` for more details.
-    ``backward_second_derivatives`` has the same meaning as in
-    :py:class:`sphericart.torch.SphericalHarmonics`.
     """
 
-    def __init__(
-        self,
-        l_max: int,
-        backward_second_derivatives: bool = False,
-    ):
+    def __init__(self, l_max: int):
         self.l_max = l_max
-        self.raw_calculator = RawSolidHarmonics(l_max, backward_second_derivatives)
+        self.raw_calculator = RawSolidHarmonics(l_max)
 
         # precompute some labels
         self.precomputed_keys = Labels(

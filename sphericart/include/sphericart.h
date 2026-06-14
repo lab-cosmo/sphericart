@@ -23,11 +23,18 @@
 #ifdef __cplusplus
 
 #include "sphericart.hpp"
+#include "sphericart_cuda.hpp"
 
 using sphericart_spherical_harmonics_calculator_t = sphericart::SphericalHarmonics<double>;
 using sphericart_spherical_harmonics_calculator_f_t = sphericart::SphericalHarmonics<float>;
 using sphericart_solid_harmonics_calculator_t = sphericart::SolidHarmonics<double>;
 using sphericart_solid_harmonics_calculator_f_t = sphericart::SolidHarmonics<float>;
+using sphericart_cuda_spherical_harmonics_calculator_t =
+    sphericart::cuda::SphericalHarmonics<double>;
+using sphericart_cuda_spherical_harmonics_calculator_f_t =
+    sphericart::cuda::SphericalHarmonics<float>;
+using sphericart_cuda_solid_harmonics_calculator_t = sphericart::cuda::SolidHarmonics<double>;
+using sphericart_cuda_solid_harmonics_calculator_f_t = sphericart::cuda::SolidHarmonics<float>;
 
 extern "C" {
 
@@ -80,6 +87,21 @@ struct sphericart_solid_harmonics_calculator_f_t;
  * A type referring to the `sphericart_solid_harmonics_calculator_f_t` struct.
  */
 typedef struct sphericart_solid_harmonics_calculator_f_t sphericart_solid_harmonics_calculator_f_t;
+
+struct sphericart_cuda_spherical_harmonics_calculator_t;
+typedef struct sphericart_cuda_spherical_harmonics_calculator_t
+    sphericart_cuda_spherical_harmonics_calculator_t;
+
+struct sphericart_cuda_spherical_harmonics_calculator_f_t;
+typedef struct sphericart_cuda_spherical_harmonics_calculator_f_t
+    sphericart_cuda_spherical_harmonics_calculator_f_t;
+
+struct sphericart_cuda_solid_harmonics_calculator_t;
+typedef struct sphericart_cuda_solid_harmonics_calculator_t sphericart_cuda_solid_harmonics_calculator_t;
+
+struct sphericart_cuda_solid_harmonics_calculator_f_t;
+typedef struct sphericart_cuda_solid_harmonics_calculator_f_t
+    sphericart_cuda_solid_harmonics_calculator_f_t;
 #endif
 
 /**
@@ -614,6 +636,146 @@ SPHERICART_EXPORT int sphericart_solid_harmonics_omp_num_threads(
  */
 SPHERICART_EXPORT int sphericart_solid_harmonics_omp_num_threads_f(
     sphericart_solid_harmonics_calculator_f_t* calculator
+);
+
+SPHERICART_EXPORT sphericart_cuda_spherical_harmonics_calculator_t* sphericart_cuda_spherical_harmonics_new(
+    size_t l_max
+);
+
+SPHERICART_EXPORT sphericart_cuda_spherical_harmonics_calculator_f_t* sphericart_cuda_spherical_harmonics_new_f(
+    size_t l_max
+);
+
+SPHERICART_EXPORT void sphericart_cuda_spherical_harmonics_delete(
+    sphericart_cuda_spherical_harmonics_calculator_t* calculator
+);
+
+SPHERICART_EXPORT void sphericart_cuda_spherical_harmonics_delete_f(
+    sphericart_cuda_spherical_harmonics_calculator_f_t* calculator
+);
+
+SPHERICART_EXPORT void sphericart_cuda_spherical_harmonics_compute_array(
+    sphericart_cuda_spherical_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_spherical_harmonics_compute_array_f(
+    sphericart_cuda_spherical_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_spherical_harmonics_compute_array_with_gradients(
+    sphericart_cuda_spherical_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    double* dsph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_spherical_harmonics_compute_array_with_gradients_f(
+    sphericart_cuda_spherical_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    float* dsph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_spherical_harmonics_compute_array_with_hessians(
+    sphericart_cuda_spherical_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    double* dsph,
+    double* ddsph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_spherical_harmonics_compute_array_with_hessians_f(
+    sphericart_cuda_spherical_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    float* dsph,
+    float* ddsph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT sphericart_cuda_solid_harmonics_calculator_t* sphericart_cuda_solid_harmonics_new(
+    size_t l_max
+);
+
+SPHERICART_EXPORT sphericart_cuda_solid_harmonics_calculator_f_t* sphericart_cuda_solid_harmonics_new_f(
+    size_t l_max
+);
+
+SPHERICART_EXPORT void sphericart_cuda_solid_harmonics_delete(
+    sphericart_cuda_solid_harmonics_calculator_t* calculator
+);
+
+SPHERICART_EXPORT void sphericart_cuda_solid_harmonics_delete_f(
+    sphericart_cuda_solid_harmonics_calculator_f_t* calculator
+);
+
+SPHERICART_EXPORT void sphericart_cuda_solid_harmonics_compute_array(
+    sphericart_cuda_solid_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_solid_harmonics_compute_array_f(
+    sphericart_cuda_solid_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_solid_harmonics_compute_array_with_gradients(
+    sphericart_cuda_solid_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    double* dsph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_solid_harmonics_compute_array_with_gradients_f(
+    sphericart_cuda_solid_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    float* dsph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_solid_harmonics_compute_array_with_hessians(
+    sphericart_cuda_solid_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    double* dsph,
+    double* ddsph,
+    void* cuda_stream
+);
+
+SPHERICART_EXPORT void sphericart_cuda_solid_harmonics_compute_array_with_hessians_f(
+    sphericart_cuda_solid_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    float* dsph,
+    float* ddsph,
+    void* cuda_stream
 );
 
 #ifdef __cplusplus

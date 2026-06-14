@@ -1,9 +1,9 @@
 PyTorch API
 ===========
 
-The classes for computing spherical harmonics using a
-``torch``-compatible framework follow a similar syntax to
-the Python versions :py:class:`sphericart.SphericalHarmonics`
+The classes for computing spherical harmonics with ``torch``
+follow a similar syntax to
+their Python counterparts :py:class:`sphericart.SphericalHarmonics`
 and :py:class:`sphericart.SolidHarmonics`, while inheriting
 from ``torch.nn.Module``.
 Depending on the ``device`` the tensor is

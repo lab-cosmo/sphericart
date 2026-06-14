@@ -8,3 +8,8 @@ difference that, in line with pythonic mores, the
 
 .. literalinclude:: ../../examples/python/example.py
     :language: python
+
+The same calculators also accept CuPy arrays:
+
+.. literalinclude:: ../../examples/python/cupy.py
+    :language: python

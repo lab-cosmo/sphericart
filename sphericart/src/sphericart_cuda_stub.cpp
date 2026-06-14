@@ -4,7 +4,9 @@
 
 using namespace sphericart::cuda;
 
-template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t /*l_max*/) {}
+template <typename T> SphericalHarmonics<T>::SphericalHarmonics(size_t /*l_max*/) {
+    throw std::runtime_error("sphericart was not compiled with CUDA support");
+}
 
 template <typename T> SphericalHarmonics<T>::~SphericalHarmonics() {}
 

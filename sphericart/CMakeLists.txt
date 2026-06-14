@@ -3,21 +3,55 @@ cmake_minimum_required(VERSION 3.27)
 project(sphericart LANGUAGES C CXX)
 
 #[[
- This function wraps the input file with the appropriate string to allow us to
- static-initialize string variables, for example:
-     static const char* CUDA_CODE =
-#include "generated/wrapped_sphericart_impl.cu"
-        ;
+ This function converts an input file into a C header that can be used as the
+ initializer list of a `const unsigned char[]` array, for example:
+     static const unsigned char CUDA_CODE_DATA[] = {
+ #include "generated/wrapped_sphericart_impl.cu"
+     };
+ The output matches the byte-array embedding used in vesin and appends a final
+ `0x00` so the data can be safely reinterpreted as a C string.
 ]]
 function(make_includeable INPUT_FILE OUTPUT_FILE)
     if(NOT EXISTS ${INPUT_FILE})
         message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
     endif()
-    file(READ ${INPUT_FILE} content)
-    # Format the content to be included as a raw string in C++
-    set(content "R\"======(\n${content}\n)======\"")
-    # Write the formatted content to the output file
-    file(WRITE ${OUTPUT_FILE} "${content}")
+    file(READ "${INPUT_FILE}" hex_content HEX)
+    string(LENGTH "${hex_content}" hex_len)
+    math(EXPR byte_count "${hex_len} / 2")
+
+    set(result "")
+    set(line "")
+    set(line_count 0)
+    if(byte_count GREATER 0)
+        math(EXPR last_idx "${byte_count} - 1")
+        foreach(idx RANGE 0 ${last_idx})
+            math(EXPR pos "${idx} * 2")
+            string(SUBSTRING "${hex_content}" ${pos} 2 byte)
+            string(TOUPPER "${byte}" byte_upper)
+            if(line STREQUAL "")
+                set(line "0x${byte_upper}")
+            else()
+                set(line "${line}, 0x${byte_upper}")
+            endif()
+
+            math(EXPR line_count "${line_count} + 1")
+            math(EXPR mod "${line_count} % 13")
+            if(mod EQUAL 0)
+                string(APPEND result "${line},\n")
+                set(line "")
+            endif()
+        endforeach()
+    endif()
+
+    if(NOT line STREQUAL "")
+        string(APPEND result "${line}, 0x00\n")
+    else()
+        string(APPEND result "0x00\n")
+    endif()
+
+    get_filename_component(basename "${INPUT_FILE}" NAME)
+    file(WRITE "${OUTPUT_FILE}" "/* Generated from ${basename} by make_includeable. Do not edit. */\n")
+    file(APPEND "${OUTPUT_FILE}" "${result}\n")
 endfunction()
 
 #[[
@@ -57,7 +91,16 @@ OPTION(BUILD_SHARED_LIBS "Build shared libraries instead of static ones" OFF)
 OPTION(SPHERICART_BUILD_TESTS "Build and run tests for Sphericart" OFF)
 OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 OPTION(SPHERICART_ARCH_NATIVE "Try to use -march=native when compiling Sphericart" ON)
-OPTION(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" ON)
+OPTION(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" OFF)
+OPTION(SPHERICART_ENABLE_SYCL "Are we building the SYCL backend of Sphericart?" OFF)
+
+if (SPHERICART_ENABLE_SYCL)
+# SYCL device type: "gpu", "cpu", "accelerator", or "all"
+    set(SPHERICART_SYCL_DEVICE "all" CACHE STRING "SYCL device type (cpu, gpu, accelerator, all)")
+    set_property(CACHE SPHERICART_SYCL_DEVICE PROPERTY STRINGS gpu cpu accelerator all)
+# Define SYCL_DEVICE for all targets in this project and its subdirectories
+    add_compile_definitions(SYCL_DEVICE=${SPHERICART_SYCL_DEVICE})
+endif()
 
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install DLL/binaries")
@@ -82,28 +125,113 @@ set(COMMON_SOURCES
     "include/sphericart.h"
 )
 
-# Find CUDA
-include(CheckLanguage)
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
-    find_package(CUDAToolkit REQUIRED)
-    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE BOOL "" FORCE)
-else()
-    message(STATUS "Could not find a CUDA compiler")
-endif()
+include(FetchContent)
 
-if (CMAKE_CUDA_COMPILER AND NOT SPHERICART_ENABLE_CUDA)
-    message(STATUS "Found a CUDA compiler but SPHERICART_ENABLE_CUDA=OFF, set SPHERICART_ENABLE_CUDA=ON in order to compile with CUDA support.")
-endif()
+FetchContent_Declare(
+    gpulite
+    GIT_REPOSITORY https://github.com/metatensor/gpu-lite.git
+    GIT_TAG 7e8e9e929b254c3faefc556fb348068027e73319 # v1.1.1
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(gpulite)
 
+# Find SYCL
+if (SPHERICART_ENABLE_SYCL)
+    # Find Intel oneAPI Base Toolkit
+    if(NOT DEFINED ONEAPI_ROOT)
+        if(DEFINED ENV{ONEAPI_ROOT})
+            set(ONEAPI_ROOT $ENV{ONEAPI_ROOT})
+        elseif(WIN32)
+            set(ONEAPI_ROOT "C:/Program Files (x86)/Intel/oneAPI")
+        else()
+            set(ONEAPI_ROOT "/opt/intel/oneapi")
+        endif()
+    endif()
+
+    # Source Intel oneAPI environment if available
+    if(WIN32 AND EXISTS "${ONEAPI_ROOT}/setvars.bat")
+        execute_process(
+            COMMAND cmd /d /c "call \"${ONEAPI_ROOT}/setvars.bat\" >nul 2>&1 && set"
+            OUTPUT_VARIABLE ONEAPI_ENV
+        )
+    elseif(EXISTS "${ONEAPI_ROOT}/setvars.sh")
+        execute_process(
+            COMMAND bash -c "source ${ONEAPI_ROOT}/setvars.sh > /dev/null 2>&1 && env"
+            OUTPUT_VARIABLE ONEAPI_ENV
+        )
+    endif()
+
+    if(DEFINED ONEAPI_ENV)
+        string(REPLACE "\r\n" "\n" ONEAPI_ENV "${ONEAPI_ENV}")
+        string(REGEX MATCHALL "([^=\n]+)=([^\n]*)" ONEAPI_ENV_MATCHES "${ONEAPI_ENV}")
+        foreach(MATCH ${ONEAPI_ENV_MATCHES})
+            string(REGEX REPLACE "([^=\n]+)=([^\n]*)" "\\1" KEY "${MATCH}")
+            string(REGEX REPLACE "([^=\n]+)=([^\n]*)" "\\2" VALUE "${MATCH}")
+            set(ENV{${KEY}} ${VALUE})
+        endforeach()
+    endif()
+
+    # Check for Intel SYCL compiler
+    if(CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+        set(SYCL_COMPILER_FOUND TRUE)
+    else()
+        if(WIN32)
+            find_program(SYCL_COMPILER NAMES icx icx-cl)
+        else()
+            find_program(SYCL_COMPILER icpx)
+        endif()
+        if(SYCL_COMPILER)
+            set(SYCL_COMPILER_FOUND TRUE)
+            set(CMAKE_CXX_COMPILER ${SYCL_COMPILER})
+        endif()
+    endif()
+
+    #    if(SYCL_COMPILER_FOUND)
+        message(STATUS "Found SYCL compiler: ${CMAKE_CXX_COMPILER}")
+
+        # Add SYCL include directories
+        find_path(SYCL_INCLUDE_DIR
+            NAMES
+                "CL/sycl.hpp"
+                "sycl/sycl.hpp"
+            PATHS
+            "${ONEAPI_ROOT}/compiler/latest/linux/include"
+            "${ONEAPI_ROOT}/compiler/latest/include"
+            "/opt/intel/oneapi/compiler/latest/linux/include"
+            "/opt/intel/oneapi/compiler/latest/include"
+            "/usr/include"
+            "/usr/local/include"
+            ENV CPLUS_INCLUDE_PATH
+        )
+
+#       if(SYCL_INCLUDE_DIR)
+            message(STATUS "Found SYCL include directory: ${SYCL_INCLUDE_DIR}")
+            include_directories(${SYCL_INCLUDE_DIR} ${SYCL_INCLUDE_DIR}/..)
+
+            # Set SYCL-specific compiler flags
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsycl")
+
+            # Add compile definitions
+            add_definitions(-DSPHERICART_USE_SYCL=1)
+            add_definitions(-DCL_TARGET_OPENCL_VERSION=300)
+            add_definitions(-DSYCL_LANGUAGE_VERSION=2020)
+
+            # Add source files
+            list(APPEND COMMON_SOURCES
+                "include/sycl_base.hpp"
+                "include/sphericart_sycl.hpp"
+                "include/sphericart_impl_sycl.hpp"
+                "src/sphericart_impl_sycl.cpp"
+                "src/sycl_base.cpp"
+                "src/sphericart_sycl.cpp"
+            )
+endif()
 # Append the relevant CUDA files to sources
 list(APPEND COMMON_SOURCES "include/cuda_base.hpp")
 list(APPEND COMMON_SOURCES "include/sphericart_cuda.hpp")
 
-if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
-    list(APPEND COMMON_SOURCES "include/dynamic_cuda.hpp")
-    list(APPEND COMMON_SOURCES "include/cuda_cache.hpp")
+if (SPHERICART_ENABLE_CUDA)
     list(APPEND COMMON_SOURCES "src/cuda_base.cpp")
     list(APPEND COMMON_SOURCES "src/sphericart_cuda.cpp")
 else()
@@ -113,11 +241,10 @@ endif()
 
 add_library(sphericart ${COMMON_SOURCES})
 
-if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
+if (SPHERICART_ENABLE_CUDA)
     #include the build/generated folder for compilation
     target_include_directories(sphericart PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_include_directories(sphericart PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    target_link_libraries(sphericart PRIVATE ${CMAKE_DL_LIBS})
+    target_link_libraries(sphericart PRIVATE gpulite)
 
     set(SPHERICART_CUDA_HEADERS
         "include/sphericart_impl.cuh"
@@ -141,6 +268,38 @@ if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cuh")
 endif()
 
+if (SYCL_COMPILER_FOUND AND NOT SPHERICART_ENABLE_SYCL)
+	message(STATUS "Found a SYCL compiler but SPHERICART_ENABLE_SYCL=OFF, set SPHERICART_ENABLE_SYCL=ON in order to compile with CUDA support.")
+endif()
+# Configure SYCL if enabled
+if (SPHERICART_ENABLE_SYCL AND SYCL_COMPILER_FOUND)
+    message(STATUS "Configuring SYCL target properties")
+
+    # Add target-specific SYCL flags
+    target_compile_options(sphericart PRIVATE
+        -fsycl
+        -fsycl-device-code-split=per_kernel
+    )
+    target_link_options(sphericart PRIVATE
+        -fsycl
+        -fsycl-device-code-split=per_kernel
+    )
+
+    # Add target-specific include directories
+    target_include_directories(sphericart PRIVATE
+        ${SYCL_INCLUDE_DIR}
+        ${SYCL_INCLUDE_DIR}/..
+    )
+
+    # Add target-specific compile definitions
+    target_compile_definitions(sphericart PRIVATE
+        SPHERICART_USE_SYCL=1
+        CL_TARGET_OPENCL_VERSION=300
+        SYCL_LANGUAGE_VERSION=2020
+    )
+    message(STATUS "SYCL DEVICE set to: ${SPHERICART_SYCL_DEVICE}")
+endif()
+
 set_target_properties(sphericart PROPERTIES
     VERSION ${SPHERICART_VERSION}
     SOVERSION ${SPHERICART_VERSION_MAJOR}.${SPHERICART_VERSION_MINOR}
@@ -161,8 +320,18 @@ set_target_properties(sphericart PROPERTIES
     # hide non-exported symbols by default
     C_VISIBILIY_PRESET hidden
     CXX_VISIBILIY_PRESET hidden
-    CUDA_VISIBILIY_PRESET hidden
 )
+
+if (MSVC)
+    # Prevent windows.h (pulled in by gpulite) from defining min/max macros
+    # that conflict with std::max in cuda_base.cpp.
+    target_compile_definitions(sphericart PRIVATE NOMINMAX)
+    # gpulite.hpp uses assert and std::optional without including the
+    # necessary headers itself under MSVC; force them in via PCH.
+    if (SPHERICART_ENABLE_CUDA)
+        target_precompile_headers(sphericart PRIVATE <cassert> <optional>)
+    endif()
+endif()
 
 include(GenerateExportHeader)
 generate_export_header(sphericart
@@ -174,6 +343,11 @@ target_compile_definitions(sphericart PRIVATE sphericart_EXPORTS)
 # Handle optimization and OpenMP flags
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-Wunknown-pragmas" COMPILER_SUPPORTS_WPRAGMAS)
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Find OpenMP
 if (SPHERICART_OPENMP)
     find_package(OpenMP)
     if(OpenMP_CXX_FOUND)

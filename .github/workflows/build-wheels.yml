@@ -57,7 +57,7 @@ jobs:
             os: ubuntu-22.04
             arch: x86_64
           - name: x86_64 macOS
-            os: macos-13
+            os: macos-14
             arch: x86_64
           - name: arm64 macOS
             os: macos-14
@@ -65,6 +65,9 @@ jobs:
           - name: aarch64 Linux
             os: ubuntu-22.04-arm
             arch: aarch64
+          - name: x86_64 Windows
+            os: windows-2022
+            arch: AMD64
 
     steps:
     - name: Checkout code

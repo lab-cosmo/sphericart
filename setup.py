@@ -5,8 +5,8 @@ import uuid
 
 from setuptools import Extension, setup
 from setuptools.command.bdist_egg import bdist_egg
+from setuptools.command.bdist_wheel import bdist_wheel
 from setuptools.command.build_ext import build_ext
-from wheel.bdist_wheel import bdist_wheel
 
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
@@ -46,10 +46,11 @@ class cmake_ext(build_ext):
             "-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON",
         ]
 
-        CUDA_HOME = os.environ.get("CUDA_HOME")
-
-        if CUDA_HOME is not None:
-            cmake_options.append(f"-DCUDA_TOOLKIT_ROOT_DIR={CUDA_HOME}")
+        # CUDA support uses gpulite for dynamic loading: no CUDA toolkit needed
+        # at build time. Disable only on macOS where CUDA is unsupported.
+        if sys.platform.startswith("darwin"):
+            cmake_options.append("-DSPHERICART_ENABLE_CUDA=OFF")
+        else:
             cmake_options.append("-DSPHERICART_ENABLE_CUDA=ON")
 
         if sys.platform.startswith("darwin"):
@@ -77,6 +78,10 @@ class cmake_ext(build_ext):
             "--target",
             "install",
         ]
+        # On MSVC (multi-config generator) CMAKE_BUILD_TYPE is ignored at
+        # configure time; the configuration must be specified at build time.
+        if sys.platform == "win32":
+            build_command += ["--config", "Release"]
 
         subprocess.run(build_command, check=True)
 

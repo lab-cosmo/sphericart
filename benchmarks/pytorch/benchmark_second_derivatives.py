@@ -47,13 +47,9 @@ def sphericart_benchmark(
 ):
     xyz = torch.randn((n_samples, 3), dtype=dtype, device=device, requires_grad=True)
     if normalized:
-        sh_calculator = sphericart.torch.SphericalHarmonics(
-            l_max, backward_second_derivatives=True
-        )
+        sh_calculator = sphericart.torch.SphericalHarmonics(l_max)
     else:
-        sh_calculator = sphericart.torch.SolidHarmonics(
-            l_max, backward_second_derivatives=True
-        )
+        sh_calculator = sphericart.torch.SolidHarmonics(l_max)
     omp_threads = sh_calculator.omp_num_threads()
     print(
         f"**** Timings for l_max={l_max}, n_samples={n_samples}, n_tries={n_tries}, "

@@ -632,3 +632,244 @@ extern "C" int sphericart_solid_harmonics_omp_num_threads_f(
 ) {
     return calculator->get_omp_num_threads();
 }
+
+template <typename Calculator> static Calculator* sphericart_cuda_new(size_t l_max) {
+    try {
+        return new Calculator(l_max);
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+template <typename Calculator> static void sphericart_cuda_delete(Calculator* calculator) {
+    try {
+        delete calculator;
+    } catch (...) {
+        // nothing to do
+    }
+}
+
+template <typename Calculator, typename T>
+static void sphericart_cuda_compute(
+    Calculator* calculator, const T* xyz, size_t n_samples, T* sph, void* cuda_stream
+) {
+    try {
+        calculator->compute(xyz, n_samples, sph, cuda_stream);
+    } catch (const std::exception& e) {
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
+template <typename Calculator, typename T>
+static void sphericart_cuda_compute_with_gradients(
+    Calculator* calculator, const T* xyz, size_t n_samples, T* sph, T* dsph, void* cuda_stream
+) {
+    try {
+        calculator->compute_with_gradients(xyz, n_samples, sph, dsph, cuda_stream);
+    } catch (const std::exception& e) {
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
+template <typename Calculator, typename T>
+static void sphericart_cuda_compute_with_hessians(
+    Calculator* calculator, const T* xyz, size_t n_samples, T* sph, T* dsph, T* ddsph, void* cuda_stream
+) {
+    try {
+        calculator->compute_with_hessians(xyz, n_samples, sph, dsph, ddsph, cuda_stream);
+    } catch (const std::exception& e) {
+        printf("fatal error: %s\n", e.what());
+        abort();
+    } catch (...) {
+        printf("fatal error: unknown exception type\n");
+        abort();
+    }
+}
+
+extern "C" sphericart_cuda_spherical_harmonics_calculator_t* sphericart_cuda_spherical_harmonics_new(
+    size_t l_max
+) {
+    return sphericart_cuda_new<sphericart_cuda_spherical_harmonics_calculator_t>(l_max);
+}
+
+extern "C" sphericart_cuda_spherical_harmonics_calculator_f_t* sphericart_cuda_spherical_harmonics_new_f(
+    size_t l_max
+) {
+    return sphericart_cuda_new<sphericart_cuda_spherical_harmonics_calculator_f_t>(l_max);
+}
+
+extern "C" void sphericart_cuda_spherical_harmonics_delete(
+    sphericart_cuda_spherical_harmonics_calculator_t* calculator
+) {
+    sphericart_cuda_delete(calculator);
+}
+
+extern "C" void sphericart_cuda_spherical_harmonics_delete_f(
+    sphericart_cuda_spherical_harmonics_calculator_f_t* calculator
+) {
+    sphericart_cuda_delete(calculator);
+}
+
+extern "C" void sphericart_cuda_spherical_harmonics_compute_array(
+    sphericart_cuda_spherical_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute(calculator, xyz, n_samples, sph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_spherical_harmonics_compute_array_f(
+    sphericart_cuda_spherical_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute(calculator, xyz, n_samples, sph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_spherical_harmonics_compute_array_with_gradients(
+    sphericart_cuda_spherical_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    double* dsph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute_with_gradients(calculator, xyz, n_samples, sph, dsph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_spherical_harmonics_compute_array_with_gradients_f(
+    sphericart_cuda_spherical_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    float* dsph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute_with_gradients(calculator, xyz, n_samples, sph, dsph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_spherical_harmonics_compute_array_with_hessians(
+    sphericart_cuda_spherical_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    double* dsph,
+    double* ddsph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute_with_hessians(calculator, xyz, n_samples, sph, dsph, ddsph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_spherical_harmonics_compute_array_with_hessians_f(
+    sphericart_cuda_spherical_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    float* dsph,
+    float* ddsph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute_with_hessians(calculator, xyz, n_samples, sph, dsph, ddsph, cuda_stream);
+}
+
+extern "C" sphericart_cuda_solid_harmonics_calculator_t* sphericart_cuda_solid_harmonics_new(
+    size_t l_max
+) {
+    return sphericart_cuda_new<sphericart_cuda_solid_harmonics_calculator_t>(l_max);
+}
+
+extern "C" sphericart_cuda_solid_harmonics_calculator_f_t* sphericart_cuda_solid_harmonics_new_f(
+    size_t l_max
+) {
+    return sphericart_cuda_new<sphericart_cuda_solid_harmonics_calculator_f_t>(l_max);
+}
+
+extern "C" void sphericart_cuda_solid_harmonics_delete(
+    sphericart_cuda_solid_harmonics_calculator_t* calculator
+) {
+    sphericart_cuda_delete(calculator);
+}
+
+extern "C" void sphericart_cuda_solid_harmonics_delete_f(
+    sphericart_cuda_solid_harmonics_calculator_f_t* calculator
+) {
+    sphericart_cuda_delete(calculator);
+}
+
+extern "C" void sphericart_cuda_solid_harmonics_compute_array(
+    sphericart_cuda_solid_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute(calculator, xyz, n_samples, sph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_solid_harmonics_compute_array_f(
+    sphericart_cuda_solid_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute(calculator, xyz, n_samples, sph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_solid_harmonics_compute_array_with_gradients(
+    sphericart_cuda_solid_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    double* dsph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute_with_gradients(calculator, xyz, n_samples, sph, dsph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_solid_harmonics_compute_array_with_gradients_f(
+    sphericart_cuda_solid_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    float* dsph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute_with_gradients(calculator, xyz, n_samples, sph, dsph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_solid_harmonics_compute_array_with_hessians(
+    sphericart_cuda_solid_harmonics_calculator_t* calculator,
+    const double* xyz,
+    size_t n_samples,
+    double* sph,
+    double* dsph,
+    double* ddsph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute_with_hessians(calculator, xyz, n_samples, sph, dsph, ddsph, cuda_stream);
+}
+
+extern "C" void sphericart_cuda_solid_harmonics_compute_array_with_hessians_f(
+    sphericart_cuda_solid_harmonics_calculator_f_t* calculator,
+    const float* xyz,
+    size_t n_samples,
+    float* sph,
+    float* dsph,
+    float* ddsph,
+    void* cuda_stream
+) {
+    sphericart_cuda_compute_with_hessians(calculator, xyz, n_samples, sph, dsph, ddsph, cuda_stream);
+}
