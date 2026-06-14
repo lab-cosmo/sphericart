@@ -1,0 +1,47 @@
+name: Julia Tests
+
+on:
+  push:
+    branches: [main, julia]
+    tags: ['*']
+    paths:
+      - 'julia/**'
+      - '.github/workflows/julia-tests.yml'
+  pull_request:
+    paths:
+      - 'julia/**'
+      - '.github/workflows/julia-tests.yml'
+
+concurrency:
+  group: julia-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/julia' }}
+
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1.10'
+          - '1.11'
+          - '1.12'
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/cache@v2
+      # the Julia package lives in the `julia/` subdirectory of the monorepo
+      - uses: julia-actions/julia-buildpkg@v1
+        with:
+          project: julia
+      - uses: julia-actions/julia-runtest@v1
+        with:
+          project: julia
