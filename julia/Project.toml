@@ -31,15 +31,15 @@ julia = "1.10.0, 1.11.0"
 
 [extras]
 ACEbase = "14bae519-eb20-449c-a949-9c58ed33163e"
-AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
-CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Quadmath = "be4d8f0f-7fa4-5f49-b795-2f01399ab2dd"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
+# GPU backends (CUDA / Metal / AMDGPU / oneAPI) are installed on demand by
+# test/utils_gpu.jl only when a GPU is detected, so they are not listed here.
+
 [targets]
-test = ["Test", "ACEbase", "LinearAlgebra", "Random", "Printf", "Quadmath", "GPUArrays", "Metal", "CUDA", "AMDGPU"]
+test = ["Test", "ACEbase", "LinearAlgebra", "Random", "Printf", "Quadmath", "Pkg"]

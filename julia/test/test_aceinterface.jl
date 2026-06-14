@@ -43,8 +43,8 @@ function cY_from_rY(Yr, LMAX)
    return Yc
 end
 
-rand_sphere() = ( u = (@SVector randn(3)); u ./ norm(u) )
-function rand_angles()
+_rand_sphere() = ( u = (@SVector randn(3)); u ./ norm(u) )
+function _rand_angles()
    θ = rand() * π; φ = (rand()-0.5) * 2*π
    return SVector(sin(θ)*cos(φ), sin(θ)*sin(φ), cos(θ)), θ, φ
 end
@@ -56,7 +56,7 @@ end
    c_spher = ComplexSphericalHarmonics(3)
    c_solid = ComplexSolidHarmonics(3)
    for ntest = 1:30
-      𝐫, θ, φ = rand_angles()
+      𝐫, θ, φ = _rand_angles()
       Yref = explicit_shs(θ, φ)
       Yc1 = cY_from_rY(r_spher(𝐫), 3)
       @test Yc1 ≈ Yref
@@ -82,8 +82,8 @@ end
    bases = [ SolidHarmonics(5), SphericalHarmonics(5),
              ComplexSolidHarmonics(5), ComplexSphericalHarmonics(5) ]
    for basis in bases
-      𝐫 = rand_sphere()
-      R = [ rand_sphere() for _ = 1:13 ]
+      𝐫 = _rand_sphere()
+      R = [ _rand_sphere() for _ = 1:13 ]
       @test evaluate(basis, 𝐫) == compute(basis, 𝐫)
       @test evaluate(basis, R) == compute(basis, R)
       @test evaluate(basis, R, nothing, nothing) == compute(basis, R)
@@ -113,10 +113,10 @@ end
    bases = [ SolidHarmonics(8), SphericalHarmonics(8),
              ComplexSolidHarmonics(7), ComplexSphericalHarmonics(7) ]
    for basis in bases
-      𝐫 = rand_sphere() * (0.5 + rand())
+      𝐫 = _rand_sphere() * (0.5 + rand())
       Y, ∇Y = evaluate_ed(basis, 𝐫)
       @test Y ≈ evaluate(basis, 𝐫)
-      u = rand_sphere()
+      u = _rand_sphere()
       errs = Float64[]
       for p = 2:10
          h = 0.1^p
