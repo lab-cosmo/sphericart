@@ -62,9 +62,9 @@ end
 
 
 @inline function compute(basis::SolidHarmonics{L, NORM, true}, 𝐫::SVector{3}
-                 ) where {L, NORM} 
-   return static_solid_harmonics(Val{L}(), 𝐫, Val{NORM}())
-end 
+                 ) where {L, NORM}
+   return static_solid_harmonics(Val{L}(), 𝐫, basis.Flm)
+end
 
 function compute(basis::SolidHarmonics{L, NORM, false}, 𝐫::SVector{3, T}
          ) where {L, NORM, T}
@@ -109,11 +109,11 @@ function compute_with_gradients(basis::SolidHarmonics{L, NORM, false},
    return Z, dZ 
 end 
 
-function compute_with_gradients(basis::SolidHarmonics{L, NORM, true}, 
+function compute_with_gradients(basis::SolidHarmonics{L, NORM, true},
                                 𝐫::SVector{3, T}
                                ) where {L, NORM, T}
-   return static_solid_harmonics_with_grads(Val{L}(), 𝐫, Val{NORM}())
-end 
+   return static_solid_harmonics_with_grads(Val{L}(), 𝐫, basis.Flm)
+end
 
 
 function compute_with_gradients(basis::SolidHarmonics{L, NORM, STATIC}, 

@@ -47,19 +47,24 @@ println()
 
 @info("test Float32 type stability (no silent Float64 promotion)")
 
-using SpheriCart: static_solid_harmonics, static_solid_harmonics_with_grads
+using SpheriCart: static_solid_harmonics, static_solid_harmonics_with_grads,
+                  generate_Flms
 
-# the generated single-point kernels must produce Float32 with no Float64 in
-# the typed code (a Float64 leak would be fatal on Float64-less GPUs e.g. Metal)
+# the generated single-point kernels read `Flm` and must produce Float32 with no
+# Float64 in the typed code (a Float64 leak would be fatal on Float64-less GPUs
+# e.g. Metal). We test the `Flm`-reading method directly (the convenience method
+# that builds `Flm` pulls in `generate_Flms`, whose setup arithmetic is Float64).
 let L = 6
    𝐫 = SVector{3, Float32}(randn(3)...)
-   Z = @inferred static_solid_harmonics(Val(L), 𝐫)
+   Flm = SMatrix{L+1, L+1}(generate_Flms(L; T = Float32))
+   Z = @inferred static_solid_harmonics(Val(L), 𝐫, Flm)
    @test eltype(Z) == Float32
-   Zg, dZg = @inferred static_solid_harmonics_with_grads(Val(L), 𝐫)
+   Zg, dZg = @inferred static_solid_harmonics_with_grads(Val(L), 𝐫, Flm)
    @test eltype(Zg) == Float32 && eltype(eltype(dZg)) == Float32
 
-   ct  = code_typed(static_solid_harmonics, (Val{L}, Float32, Float32, Float32, Val{:sphericart}); optimize=false)[1][1]
-   ctg = code_typed(static_solid_harmonics_with_grads, (Val{L}, Float32, Float32, Float32, Val{:sphericart}); optimize=false)[1][1]
+   FT = typeof(Flm)
+   ct  = code_typed(static_solid_harmonics, (Val{L}, Float32, Float32, Float32, FT); optimize=false)[1][1]
+   ctg = code_typed(static_solid_harmonics_with_grads, (Val{L}, Float32, Float32, Float32, FT); optimize=false)[1][1]
    @test count("Float64", string(ct))  == 0
    @test count("Float64", string(ctg)) == 0
 end
