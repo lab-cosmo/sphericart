@@ -15,10 +15,10 @@
 */
 
 #include "templates_core.hpp"
+#include "macros.hpp"
 
 #include <cmath>
 #include <cstdint>
-#include <vector>
 
 #ifdef _OPENMP
 

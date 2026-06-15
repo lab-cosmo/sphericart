@@ -1,13 +1,11 @@
-#include <iostream>
 #include <stdexcept>
 
 #include "sycl_device.hpp"
 
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
-#include "sphericart.hpp"
 #include "sphericart_sycl.hpp"
-#include "templates_core.hpp"
+#include "templates.hpp"
 #include "sycl_base.hpp"
 
 namespace sphericart {

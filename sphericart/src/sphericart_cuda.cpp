@@ -1,11 +1,12 @@
 #include <stdexcept>
 
+#include <gpulite/gpulite.hpp>
+
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
-#include <gpulite/gpulite.hpp>
-#include "sphericart.hpp"
 #include "cuda_base.hpp"
 #include "sphericart_cuda.hpp"
+#include "templates.hpp"
 
 using namespace sphericart::cuda;
 

@@ -1,9 +1,10 @@
 #define _SPHERICART_INTERNAL_IMPLEMENTATION
 
 #include <cmath>
+#include <algorithm>
+
 #include "sycl_base.hpp"
 #include "sphericart_impl_sycl.hpp"
-#include <algorithm>
 
 #define HARDCODED_LMAX 1
 
