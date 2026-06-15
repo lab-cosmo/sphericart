@@ -1,38 +1,52 @@
-##
+# Benchmark the KernelAbstractions batched code path (CPU + GPU).
+#
+# Run, e.g., from this folder in an environment that has `BenchmarkTools`
+# (and, for the GPU section, `CUDA` loadable + a functional device):
+#
+#   julia --project=.. -O3 ka_benchmark.jl
+#
+# The same kernel serves CPU and GPU; the CPU backend auto-multithreads, so set
+# `JULIA_NUM_THREADS` accordingly. Timings are reported per input point (ns/pt).
 
-# move this over to benchmarks asap...
-# @info("Hand-coded (single-threaded)")
-# @btime compute!(Z1, basis, Rs)
-# @info("KA-Metal-32")
-# # @btime SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu, 32)
-# @info("KA-Metal-16")
-# @btime SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu, 16)
-# @info("KA-Metal-8")
-# @btime SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu, 8)
-# @info("KA-CPU")
-# @btime SpheriCart.ka_solid_harmonics!(Z3, nothing, Val{L}(), Rs, Flm_cpu)
+using SpheriCart, StaticArrays, BenchmarkTools, LinearAlgebra, Printf
 
-##
+# optional GPU backend (CUDA); falls back to CPU-only if unavailable
+const HAVE_GPU = try
+   @eval using CUDA
+   CUDA.functional()
+catch
+   false
+end
+to_gpu(x) = HAVE_GPU ? CUDA.cu(x) : x
 
-# using ForwardDiff
-# using ForwardDiff: Dual
+@info "KA batched benchmark" threads=Threads.nthreads() gpu=(HAVE_GPU ? "CUDA" : "none")
 
-# _part3(TV, i) = ForwardDiff.Partials(ntuple(j -> one(TV) * (i==j), 3))
-# _dual(𝐫::SVector{N, T}) where {N, T} = 
-#             SVector{N}( ntuple(j -> Dual(𝐫[j], _part3(T, j)), N)... )
+const T  = Float32          # Float32 is the realistic GPU element type
+const NX = 32_000
 
-# Rsd = MtlArray(_dual.(Rs))
-# TD = eltype(Rsd)
-# Zd = MtlArray(zeros(TD, size(Z1)))
+function bench_case(L, nX)
+   basis = SolidHarmonics(L; T = T)
+   Rs = [ (𝐫 = @SVector randn(T, 3); 𝐫 / norm(𝐫)) for _ = 1:nX ]
+   Z  = compute(basis, Rs)
+   dZ = similar(Z, SVector{3, T})
 
-# Z4 = MtlArray(zeros(Float32, size(Z1)))
-# ∇Z4 = MtlArray(zeros(SVector{3, Float32}, size(Z1)))
+   tc  = @belapsed compute!($Z, $basis, $Rs)
+   tcg = @belapsed compute_with_gradients!($Z, $dZ, $basis, $Rs)
+   @printf("  L=%2d  CPU  val %7.2f ns/pt   grad %7.2f ns/pt\n",
+           L, tc/nX*1e9, tcg/nX*1e9)
 
-# # evaluate with duals
-# SpheriCart.solid_harmonics!(Zd, Val(L), Rsd, Flm_gpu, 16)
+   if HAVE_GPU
+      Rg  = to_gpu(Rs)
+      Zg  = compute(basis, Rg)
+      dZg = similar(Zg, SVector{3, T})
+      tg  = @belapsed CUDA.@sync compute!($Zg, $basis, $Rg)
+      tgg = @belapsed CUDA.@sync compute_with_gradients!($Zg, $dZg, $basis, $Rg)
+      @printf("        GPU  val %7.3f ns/pt   grad %7.3f ns/pt\n",
+              tg/nX*1e9, tgg/nX*1e9)
+   end
+end
 
-
-##
-
-# @btime SpheriCart.solid_harmonics!(Z2, Val(L), Rs_gpu, Flm_gpu, 16)
-# @btime SpheriCart.solid_harmonics!(Zd_gpu, Val(L), Rsd_gpu, Flm_gpu, 16)
+@info "Solid harmonics, T=$T, nX=$NX"
+for L in (3, 6, 9, 12)
+   bench_case(L, NX)
+end

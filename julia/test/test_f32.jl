@@ -43,46 +43,38 @@ for L = 4:4:20
 end
 println()
 
-## 
-
-function compute_Q(L, Rs::Vector{SVector{3, T}}) where {T} 
-   basis = SolidHarmonics(L; static=false, T = T)
-   nX = length(Rs)
-   len = SpheriCart.sizeY(L)
-   Z = zeros(T, nX, len)
-   
-   # allocate temporary arrays from an array cache 
-   temps = (x = zeros(T, nX), 
-            y = zeros(T, nX),
-            z = zeros(T, nX), 
-           r² = zeros(T, nX),
-            s = zeros(T, nX, L+1), 
-            c = zeros(T, nX, L+1),
-            Q = zeros(T, nX, SpheriCart.sizeY(L)),
-          Flm = basis.Flm )
-
-   SpheriCart.solid_harmonics!(Z, Val{L}(), Rs, temps)          
-             
-   return temps.Q 
-end
-
-
 ##
 
-# Relative errors for Q 
+@info("test Float32 type stability (no silent Float64 promotion)")
 
-# @printf("  L   |Q32-Q64|  |Q64-Q128| \n")
-# @printf("----------------------------\n")
-# for L = 4:4:20
-#    Q_32  = compute_Q(L, Rs_32)
-#    Q_64  = compute_Q(L, Rs_64)
-#    Q_128 = compute_Q(L, Rs_128)
+using SpheriCart: static_solid_harmonics, static_solid_harmonics_with_grads,
+                  generate_Flms
 
-#    err_32 = norm(Q_32 - Q_64, Inf) / (1+norm(Q_64, Inf))
-#    err_64 = norm(Q_64 - Q_128, Inf) / (1+norm(Q_128, Inf))
+# the generated single-point kernels read `Flm` and must produce Float32 with no
+# Float64 in the typed code (a Float64 leak would be fatal on Float64-less GPUs
+# e.g. Metal). We test the `Flm`-reading method directly (the convenience method
+# that builds `Flm` pulls in `generate_Flms`, whose setup arithmetic is Float64).
+let L = 6
+   𝐫 = SVector{3, Float32}(randn(3)...)
+   Flm = SMatrix{L+1, L+1}(generate_Flms(L; T = Float32))
+   Z = @inferred static_solid_harmonics(Val(L), 𝐫, Flm)
+   @test eltype(Z) == Float32
+   Zg, dZg = @inferred static_solid_harmonics_with_grads(Val(L), 𝐫, Flm)
+   @test eltype(Zg) == Float32 && eltype(eltype(dZg)) == Float32
 
-#    @printf(" %2d   %.2e   %.2e \n",  L, err_32, err_64)
+   FT = typeof(Flm)
+   ct  = code_typed(static_solid_harmonics, (Val{L}, Float32, Float32, Float32, FT); optimize=false)[1][1]
+   ctg = code_typed(static_solid_harmonics_with_grads, (Val{L}, Float32, Float32, Float32, FT); optimize=false)[1][1]
+   @test count("Float64", string(ct))  == 0
+   @test count("Float64", string(ctg)) == 0
+end
 
-#    # @test err_32 / L^2 < tol_32
-#    # @test err_64 / L^2 < tol_64
-# end
+# the batched (KernelAbstractions) path must also be Float32-clean and type stable
+let L = 8
+   basis = SolidHarmonics(L; T = Float32)
+   Rs = [ SVector{3, Float32}(randn(3)...) for _ = 1:16 ]
+   Z = compute(basis, Rs)
+   @test eltype(Z) == Float32
+   Zg, dZg = compute_with_gradients(basis, Rs)
+   @test eltype(Zg) == Float32 && eltype(eltype(dZg)) == Float32
+end
