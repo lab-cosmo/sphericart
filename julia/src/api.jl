@@ -79,33 +79,15 @@ function compute(basis::SolidHarmonics{L, NORM, STATIC},
 end
 
 
-function compute!(Z::AbstractMatrix, 
-                  basis::SolidHarmonics{L, NORM, STATIC}, 
-                  Rs::AbstractVector{SVector{3, T}}
-                  ) where {L, NORM, STATIC, T}
-
-   nX = length(Rs)
-
-   @no_escape begin 
-
-      # allocate temporary arrays from an array cache 
-      temps = (x = @alloc(T, nX), 
-               y = @alloc(T, nX),
-               z = @alloc(T, nX), 
-              r² = @alloc(T, nX),
-               s = @alloc(T, nX, L+1), 
-               c = @alloc(T, nX, L+1),
-               Q = @alloc(T, nX, sizeY(L)),
-             Flm = basis.Flm )
-
-      # the actual evaluation kernel 
-      solid_harmonics!(Z, Val{L}(), Rs, temps)
-
-      nothing
-   end # @no_escape 
-
-   return Z 
-end 
+function compute!(Z::AbstractMatrix,
+                  basis::SolidHarmonics{L, NORM, STATIC},
+                  Rs::AbstractVector{<: SVector{3}}
+                  ) where {L, NORM, STATIC}
+   # single batched path for all backends: KernelAbstractions, one point per
+   # work-item; the CPU backend auto-multithreads across the batch.
+   ka_solid_harmonics!(Z, nothing, Val{L}(), Rs, basis.Flm)
+   return Z
+end
 
 
 # ---------- gradients 
@@ -140,30 +122,11 @@ end
 
 
 function compute_with_gradients!(
-            Z::AbstractMatrix, 
+            Z::AbstractMatrix,
             dZ::AbstractMatrix,
-            basis::SolidHarmonics{L, NORM, STATIC}, 
-            Rs::AbstractVector{SVector{3, T}}
-            ) where {L, NORM, STATIC, T}
-
-   nX = length(Rs)
-
-   @no_escape begin 
-
-      # allocate temporary arrays from an array cache 
-      temps = (x = @alloc(T, nX),    
-               y = @alloc(T, nX),    
-               z = @alloc(T, nX),    
-              r² = @alloc(T, nX),    
-               s = @alloc(T, nX, L+1), 
-               c = @alloc(T, nX, L+1), 
-               Q = @alloc(T, nX, sizeY(L)), 
-             Flm = basis.Flm )
-
-      # the actual evaluation kernel 
-      solid_harmonics_with_grad!(Z, dZ, Val{L}(), Rs, temps)
-      nothing
-   end
-
-   return Z 
-end 
+            basis::SolidHarmonics{L, NORM, STATIC},
+            Rs::AbstractVector{<: SVector{3}}
+            ) where {L, NORM, STATIC}
+   ka_solid_harmonics!(Z, dZ, Val{L}(), Rs, basis.Flm)
+   return Z, dZ
+end
