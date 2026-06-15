@@ -14,8 +14,10 @@ basis = SphericalHarmonics(L::Integer; kwargs...)
 ### Keyword arguments:
 * `normalisation = :L2` : choose the normalisation of the basis, default is to 
    make it orthonoormal on the unit sphere. 
-* `static = (L<=15)` : decide whether to use a generated code that outputs an 
-`SVector` but has a larger compiler and stack footprint
+* `static = (L <= 6)` : decide whether single-point evaluation uses fully
+unrolled generated code that outputs an `SVector` (faster for a single input,
+larger compile/stack footprint), or reuses the batched kernel. See
+`SolidHarmonics` for details.
 * `T = Float64` : datatype in which basis parameters are stored. The output type 
 is inferred at runtime, but the rule of thumb is to use `T = FloatX` for 
 `FloatX` output.
