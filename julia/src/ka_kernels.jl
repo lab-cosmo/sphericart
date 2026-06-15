@@ -1,5 +1,10 @@
 using KernelAbstractions, GPUArraysCore
-using StaticArrays: SMatrix 
+using StaticArrays: SMatrix, SA, SVector
+using LinearAlgebra: dot
+
+# benchmarking switch: :auto dispatches on L <= UNROLL_LMAX, :looped and
+# :unrolled force the respective kernel regardless of L. See ka_unrolled.jl.
+const KA_KERNEL_MODE = Ref(:auto)
 
 
 function compute!(Z::AbstractGPUMatrix, 
@@ -108,15 +113,28 @@ function ka_solid_harmonics!(Z, dZ, ::Val{L},
       @assert size(dZ, 2) >= len
    end
 
-   backend = KernelAbstractions.get_backend(Z)  # assume same for dZ 
-   solidh_main! = _ka_solidh_main_withgrad!(backend, (GRPSZ,))
-
-   # call the kernels 
+   backend = KernelAbstractions.get_backend(Z)  # assume same for dZ
    nRs = length(Rs)
-   solidh_main!(Z, dZ, Val{L}(), Rs, Flm; ndrange = (nRs,))
+
+   # decide which kernel to use: unrolled (small L) vs looped (large L).
+   # KA_KERNEL_MODE allows forcing either kernel for benchmarking.
+   mode = KA_KERNEL_MODE[]
+   use_unrolled = (mode == :unrolled) ||
+                  (mode == :auto && L <= UNROLL_LMAX)
+   if mode == :looped
+      use_unrolled = false
+   end
+
+   if use_unrolled
+      unrolled! = _ka_solidh_unrolled!(backend, (GRPSZ,))
+      unrolled!(Z, dZ, Val{L}(), Val{false}(), Rs, Flm; ndrange = (nRs,))
+   else
+      solidh_main! = _ka_solidh_main_withgrad!(backend, (GRPSZ,))
+      solidh_main!(Z, dZ, Val{L}(), Rs, Flm; ndrange = (nRs,))
+   end
    synchronize(backend)
 
-   nothing               
+   nothing
 end
 
 

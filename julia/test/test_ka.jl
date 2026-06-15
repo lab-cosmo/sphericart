@@ -93,3 +93,37 @@ SpheriCart.ka_solid_harmonics!(Z5, ∇Z5, Val{L}(), Rs, basis.Flm)
 @show norm(∇Z1 - Array(∇Z5), Inf) / L^3
 @test norm(Z1 - Array(Z5), Inf) / L^2 < 1e-7
 @test norm(∇Z1 - Array(∇Z5), Inf) / L^3 < 1e-7
+
+##
+
+# --- unrolled (small-L @generated) KA kernel ---
+# Force the unrolled kernel and check it matches the reference on both
+# CPU and GPU, values and gradients, for L = 1 .. UNROLL_LMAX.
+
+@info("test unrolled small-L KA kernel (CPU + GPU, val + grad)")
+using SpheriCart: KA_KERNEL_MODE
+for Lu = 1:SpheriCart.UNROLL_LMAX
+   basis_u = SolidHarmonics(Lu; T = Float32)
+   Rs_u = [ 𝐫 / norm(𝐫) for 𝐫 in [ @SVector randn(Float32, 3) for _=1:2000 ] ]
+   Zr, ∇Zr = compute_with_gradients(basis_u, Rs_u)
+
+   KA_KERNEL_MODE[] = :unrolled
+   try
+      # CPU
+      Zc = zeros(Float32, size(Zr)); ∇Zc = zeros(SVector{3,Float32}, size(Zr))
+      SpheriCart.ka_solid_harmonics!(Zc, Val{Lu}(), Rs_u, basis_u.Flm)
+      SpheriCart.ka_solid_harmonics_with_grad!(Zc, ∇Zc, Val{Lu}(), Rs_u, basis_u.Flm)
+      @test norm(Zr - Zc, Inf) / Lu^2 < 1e-5
+      @test norm(∇Zr - ∇Zc, Inf) / Lu^3 < 1e-5
+
+      # GPU
+      Rsg = gpu(Rs_u)
+      Zg = gpu(zeros(Float32, size(Zr))); ∇Zg = gpu(zeros(SVector{3,Float32}, size(Zr)))
+      SpheriCart.ka_solid_harmonics!(Zg, Val{Lu}(), Rsg, basis_u.Flm, GRPSIZE)
+      SpheriCart.ka_solid_harmonics_with_grad!(Zg, ∇Zg, Val{Lu}(), Rsg, basis_u.Flm, GRPSIZE)
+      @test norm(Zr - Array(Zg), Inf) / Lu^2 < 1e-5
+      @test norm(∇Zr - Array(∇Zg), Inf) / Lu^3 < 1e-5
+   finally
+      KA_KERNEL_MODE[] = :auto
+   end
+end
