@@ -91,6 +91,26 @@ grows with `L`) or falls back to the batched kernel. Batched evaluation always
 uses the KernelAbstractions kernel regardless of this flag. Raise the threshold
 if you evaluate single inputs at larger `L` in a hot loop.
 
+## Alternative interface (ACEbase / ACEsuit)
+
+Loading `ACEbase` alongside `SpheriCart` activates a package extension that
+exposes the harmonics through the standard ACEsuit evaluation interface — the
+same `evaluate` / `evaluate_ed` / `evaluate!` / `evaluate_ed!` / `natural_indices`
+API used across the ACE ecosystem (including Polynomials4ML), but with no
+Polynomials4ML dependency. The methods simply forward to the native `compute`
+API, so they take the same single and batched inputs.
+
+```julia
+using SpheriCart, ACEbase, StaticArrays
+
+basis = SolidHarmonics(5)     # or SphericalHarmonics / the Complex* variants
+𝐫 = @SVector randn(3)
+
+Y      = evaluate(basis, 𝐫)        # ≡ compute(basis, 𝐫)
+Y, ∇Y  = evaluate_ed(basis, 𝐫)     # ≡ compute_with_gradients(basis, 𝐫)
+spec   = natural_indices(basis)    # the (l, m) label of each basis function
+```
+
 <!-- ## Advanced Usage
 
 TODO:  
