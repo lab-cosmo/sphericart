@@ -1,6 +1,8 @@
 #ifndef SPHERICART_CUDA_BASE_HPP
 #define SPHERICART_CUDA_BASE_HPP
 
+#include <cstdint>
+
 namespace sphericart {
 
 namespace cuda {
@@ -57,7 +59,7 @@ void spherical_harmonics_cuda_base(
     const int nedges,
     const scalar_t* prefactors,
     const int nprefactors,
-    const int64_t l_max,
+    const int l_max,
     const bool normalize,
     const int64_t GRID_DIM_X,
     const int64_t GRID_DIM_Y,

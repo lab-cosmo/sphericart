@@ -11,7 +11,6 @@
 #define SPHERICART_HPP
 
 #include <cstddef>
-#include <tuple>
 #include <vector>
 
 #ifdef _SPHERICART_INTERNAL_IMPLEMENTATION

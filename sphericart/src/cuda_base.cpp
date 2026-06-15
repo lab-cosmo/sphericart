@@ -2,7 +2,10 @@
 
 #include <cmath>
 #include <string>
+
 #include <gpulite/gpulite.hpp>
+#include "sphericart_impl.cuh"
+
 #include "cuda_base.hpp"
 
 #define HARDCODED_LMAX 1
@@ -69,7 +72,7 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     const int nedges,
     const scalar_t* prefactors,
     const int nprefactors,
-    const int64_t l_max,
+    const int l_max,
     const bool normalize,
     const int64_t GRID_DIM_X,
     const int64_t GRID_DIM_Y,
@@ -81,48 +84,39 @@ void sphericart::cuda::spherical_harmonics_cuda_base(
     void* cuda_stream
 ) {
     int n_total = (l_max + 1) * (l_max + 1);
-    dim3 block_dim(GRID_DIM_X, GRID_DIM_Y);
     auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
-    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
-    dim3 grid_dim(find_num_blocks(nedges, GRID_DIM_Y));
 
-    size_t smem_size = total_buffer_size(l_max, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
+    auto config = gpulite::LaunchConfig();
+    config.gridDim = find_num_blocks(nedges, GRID_DIM_Y);
+    config.blockDim = dim3(GRID_DIM_X, GRID_DIM_Y);
+    config.dynamicSmemBytes =
+        total_buffer_size(l_max, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian);
+    config.stream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    scalar_t* _xyz = const_cast<scalar_t*>(xyz);
-    scalar_t* _prefactors = const_cast<scalar_t*>(prefactors);
-    int _nprefactors = nprefactors;
-    int _lmax = l_max;
-    int _n_total = n_total;
-    int _nedges = nedges;
-    bool _gradients = gradients;
-    bool _hessian = hessian;
-    bool _normalize = normalize;
-
-    std::vector<void*> args = {
-        &_xyz,
-        &_nedges,
-        &_prefactors,
-        &_nprefactors,
-        &_lmax,
-        &_n_total,
-        &_gradients,
-        &_hessian,
-        &_normalize,
-        &sph,
-        &dsph,
-        &ddsph
-    };
-
-    std::string kernel_name = gpulite::getTemplateKernelName<scalar_t>("spherical_harmonics_kernel");
     int device;
     GPULITE_CUDART_CALL(cudaGetDevice(&device));
     auto& kernel_factory = gpulite::KernelFactory::instance(device);
 
-    auto* kernel = kernel_factory.create(
+    auto kernel_name = gpulite::getTemplateKernelName<scalar_t>("spherical_harmonics_kernel");
+    auto* kernel = kernel_factory.create<decltype(spherical_harmonics_kernel<scalar_t>)>(
         kernel_name, std::string(CUDA_CODE), "wrapped_sphericart_impl.cu", {"--std=c++17"}
     );
 
-    kernel->launch(grid_dim, block_dim, smem_size, cstream, args);
+    kernel->launch(
+        config,
+        xyz,
+        nedges,
+        prefactors,
+        nprefactors,
+        l_max,
+        n_total,
+        gradients,
+        hessian,
+        normalize,
+        sph,
+        dsph,
+        ddsph
+    );
 }
 
 template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
@@ -130,7 +124,7 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<float>(
     const int nedges,
     const float* prefactors,
     const int nprefactors,
-    const int64_t l_max,
+    const int l_max,
     const bool normalize,
     const int64_t GRID_DIM_X,
     const int64_t GRID_DIM_Y,
@@ -147,7 +141,7 @@ template void sphericart::cuda::spherical_harmonics_cuda_base<double>(
     const int nedges,
     const double* prefactors,
     const int nprefactors,
-    const int64_t l_max,
+    const int l_max,
     const bool normalize,
     const int64_t GRID_DIM_X,
     const int64_t GRID_DIM_Y,
@@ -168,27 +162,24 @@ void sphericart::cuda::spherical_harmonics_backward_cuda_base(
     scalar_t* xyz_grad,
     void* cuda_stream
 ) {
-    std::string kernel_name = gpulite::getTemplateKernelName<scalar_t>("backward_kernel");
+    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
 
     int device;
     GPULITE_CUDART_CALL(cudaGetDevice(&device));
     auto& kernel_factory = gpulite::KernelFactory::instance(device);
 
-    dim3 block_dim(4, 32);
-    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
-    dim3 grid_dim(find_num_blocks(nedges, 32), 3);
-    cudaStream_t cstream = reinterpret_cast<cudaStream_t>(cuda_stream);
+    auto config = gpulite::LaunchConfig();
+    config.blockDim = dim3(4, 32);
+    config.gridDim = dim3(find_num_blocks(nedges, 32), 3);
+    config.stream = reinterpret_cast<cudaStream_t>(cuda_stream);
 
-    int _n_total = ntotal;
-    int _nedges = nedges;
+    auto kernel_name = gpulite::getTemplateKernelName<scalar_t>("backward_kernel");
 
-    std::vector<void*> args = {&dsph, &sph_grad, &_nedges, &_n_total, &xyz_grad};
-
-    auto* kernel = kernel_factory.create(
+    auto* kernel = kernel_factory.create<decltype(backward_kernel<scalar_t>)>(
         kernel_name, std::string(CUDA_CODE), "wrapped_sphericart_impl.cu", {"--std=c++17"}
     );
 
-    kernel->launch(grid_dim, block_dim, 0, cstream, args);
+    kernel->launch(config, dsph, sph_grad, nedges, ntotal, xyz_grad);
 }
 
 template void sphericart::cuda::spherical_harmonics_backward_cuda_base<float>(

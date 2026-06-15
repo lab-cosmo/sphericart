@@ -148,10 +148,14 @@ endif()
 
 install(TARGETS sphericart_torch
     LIBRARY DESTINATION "lib"
+    RUNTIME DESTINATION "bin"
+    ARCHIVE DESTINATION "lib"
 )
 
 install(TARGETS sphericart_torch_cuda_stream
     LIBRARY DESTINATION "lib"
+    RUNTIME DESTINATION "bin"
+    ARCHIVE DESTINATION "lib"
 )
 
 if (SPHERICART_TORCH_BUILD_FOR_PYTHON)
