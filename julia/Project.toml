@@ -15,14 +15,18 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [weakdeps]
 ACEbase = "14bae519-eb20-449c-a949-9c58ed33163e"
+ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 
 [extensions]
 ACEbaseExt = "ACEbase"
+ChainRulesCoreExt = "ChainRulesCore"
 
 [compat]
 ACEbase = "0.4.7"
 BenchmarkTools = "1.6.0"
 Bumper = "0.7.0"
+ChainRulesCore = "1"
+ChainRulesTestUtils = "1"
 ForwardDiff = "0.10, 1.0.1"
 GPUArraysCore = "0.2.0"
 KernelAbstractions = "0.9.34"
@@ -34,6 +38,8 @@ julia = "1.10.0, 1.11.0"
 
 [extras]
 ACEbase = "14bae519-eb20-449c-a949-9c58ed33163e"
+ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+ChainRulesTestUtils = "cdddcdb0-9152-4a09-a978-84456f9df70a"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
@@ -41,4 +47,4 @@ Quadmath = "be4d8f0f-7fa4-5f49-b795-2f01399ab2dd"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "ACEbase", "LinearAlgebra", "Printf", "Quadmath", "Pkg"]
+test = ["Test", "ACEbase", "ChainRulesCore", "ChainRulesTestUtils", "LinearAlgebra", "Printf", "Quadmath", "Pkg"]
