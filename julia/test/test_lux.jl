@@ -1,7 +1,7 @@
 using SpheriCart, StaticArrays, LinearAlgebra, Test, Random
 using LuxCore
 using SpheriCart: SolidHarmonics, SphericalHarmonics,
-                  ComplexSolidHarmonics, ComplexSphericalHarmonics, _basis_Flm
+                  ComplexSolidHarmonics, ComplexSphericalHarmonics
 
 @info("============= Testset Lux layers =============")
 
@@ -25,8 +25,12 @@ for basis in (SolidHarmonics(L), SphericalHarmonics(L),
    ps, st = LuxCore.setup(rng, basis)
    @test ps == NamedTuple()
    @test keys(st) == (:Flm,)
-   @test st.Flm == _basis_Flm(basis)
+   @test st.Flm == basis.Flm
    @test LuxCore.parameterlength(basis) == 0
+
+   # the optional `st` argument of `compute` reproduces the default
+   @test compute(basis, 𝐫, st) ≈ compute(basis, 𝐫)
+   @test compute(basis, Rs, st) ≈ compute(basis, Rs)
 
    # forward pass reproduces `compute`, single and batched, state unchanged
    y1, st1 = basis(𝐫, ps, st)

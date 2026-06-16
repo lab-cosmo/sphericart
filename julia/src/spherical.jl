@@ -54,50 +54,47 @@ Base.getproperty(basis::SphericalHarmonics, prop::Symbol) = (
 
 @inline (basis::SphericalHarmonics)(args...) = compute(basis, args...)
 
-@inline function compute(basis::SphericalHarmonics, 𝐫::SVector{3})
-   𝐫̂ = 𝐫 / norm(𝐫)                        
-   return compute(basis.solids, 𝐫̂)
-end 
+@inline function compute(basis::SphericalHarmonics, 𝐫::SVector{3},
+                         st = (; Flm = basis.Flm))
+   𝐫̂ = 𝐫 / norm(𝐫)
+   return compute(basis.solids, 𝐫̂, st)
+end
 
-@inline function compute_with_gradients(basis::SphericalHarmonics, 𝐫::SVector{3})
+@inline function compute_with_gradients(basis::SphericalHarmonics, 𝐫::SVector{3},
+                                        st = (; Flm = basis.Flm))
    r = norm(𝐫)
    𝐫̂ = 𝐫 / r
-   Y, ∇Z = compute_with_gradients(basis.solids, 𝐫̂)
+   Y, ∇Z = compute_with_gradients(basis.solids, 𝐫̂, st)
 
    ∇Y = map(dZ -> (dz = dZ / r; dz - dot(𝐫̂, dz) * 𝐫̂), ∇Z)
 
-   # @inbounds @simd ivdep for i = 1:length(Y)
-   #    dz = ∇Y[i] / r
-   #    ∇Y[i] = dz - dot(𝐫̂, dz) * 𝐫̂
-   # end
-
    return Y, ∇Y
-end 
+end
 
-# --------------------- 
-#  batched api 
+# ---------------------
+#  batched api
 
 
-function compute(basis::SphericalHarmonics{L}, 
-                  Rs::AbstractVector{<: SVector{3, T1}}
-                  ) where {L, T1}  
+function compute(basis::SphericalHarmonics{L},
+                  Rs::AbstractVector{<: SVector{3, T1}},
+                  st = (; Flm = basis.Flm)) where {L, T1}
    Y = similar(Rs, T1, (length(Rs), sizeY(L)))
-   compute!(Y, basis, Rs)
+   compute!(Y, basis, Rs, st)
    return Y
 end
 
-function compute_with_gradients(basis::SphericalHarmonics{L}, 
-                  Rs::AbstractVector{<: SVector{3, T1}}
-                  ) where {L, T1} 
+function compute_with_gradients(basis::SphericalHarmonics{L},
+                  Rs::AbstractVector{<: SVector{3, T1}},
+                  st = (; Flm = basis.Flm)) where {L, T1}
    Y = similar(Rs, T1, (length(Rs), sizeY(L)))
-   ∇Y = similar(Rs, SVector{3, T1}, (length(Rs), sizeY(L)))                  
-   compute_with_gradients!(Y, ∇Y, basis, Rs)
+   ∇Y = similar(Rs, SVector{3, T1}, (length(Rs), sizeY(L)))
+   compute_with_gradients!(Y, ∇Y, basis, Rs, st)
    return Y, ∇Y
-end 
+end
 
 
 
-function _normalise_Rs!(rs, Rs_norm, 
+function _normalise_Rs!(rs, Rs_norm,
                         basis::SphericalHarmonics, 
                         Rs::AbstractVector{SVector{3, T1}}) where {T1}
    nX = length(Rs) 
@@ -123,36 +120,36 @@ end
 
 
 
-function compute!(Y, basis::SphericalHarmonics, 
-                  Rs::AbstractVector{<: SVector{3, T1}}
-                  ) where {T1}
-   @no_escape begin       
-      nX = length(Rs)            
+function compute!(Y, basis::SphericalHarmonics,
+                  Rs::AbstractVector{<: SVector{3, T1}},
+                  st = (; Flm = basis.Flm)) where {T1}
+   @no_escape begin
+      nX = length(Rs)
       rs = @alloc(T1, nX)
       Rs_norm = @alloc(SVector{3, T1}, nX)
       _normalise_Rs!(rs, Rs_norm, basis, Rs)
-      compute!(Y, basis.solids, Rs_norm)
-      nothing 
+      compute!(Y, basis.solids, Rs_norm, st)
+      nothing
    end
    return Y
 end
 
 
 
-function compute_with_gradients!(Y, ∇Y, basis::SphericalHarmonics, 
-                        Rs::AbstractVector{<: SVector{3, T1}}
-                        ) where {T1}
-   @no_escape begin      
-      nX = length(Rs)             
+function compute_with_gradients!(Y, ∇Y, basis::SphericalHarmonics,
+                        Rs::AbstractVector{<: SVector{3, T1}},
+                        st = (; Flm = basis.Flm)) where {T1}
+   @no_escape begin
+      nX = length(Rs)
       rs = @alloc(T1, nX)
       Rs_norm = @alloc(SVector{3, T1}, nX)
       _normalise_Rs!(rs, Rs_norm, basis, Rs)
-      compute_with_gradients!(Y, ∇Y, basis.solids, Rs_norm)
+      compute_with_gradients!(Y, ∇Y, basis.solids, Rs_norm, st)
       _rescale_∇Z2∇Y!(∇Y, Rs_norm, rs)
-      nothing 
-   end 
+      nothing
+   end
    return Y, ∇Y
-end 
+end
 
 
 # ------------------------------------------
@@ -162,23 +159,23 @@ using KernelAbstractions
 using GPUArraysCore: AbstractGPUVector, AbstractGPUMatrix
 
 
-function compute!(Y::AbstractGPUMatrix, 
-                  basis::SphericalHarmonics{L}, 
-                  Rs::AbstractGPUVector{<: SVector{3, T1}}
-                  ) where {L, T1}
-   # note the Val{true}() means that inputs Rs will be rescaled to unit 
+function compute!(Y::AbstractGPUMatrix,
+                  basis::SphericalHarmonics{L},
+                  Rs::AbstractGPUVector{<: SVector{3, T1}},
+                  st = (; Flm = basis.Flm)) where {L, T1}
+   # note the Val{true}() means that inputs Rs will be rescaled to unit
    # length, and the gradient corrected accordingly
-   ka_solid_harmonics!(Y, nothing, Val{L}(), Val{true}(), 
-                       Rs, basis.Flm)
+   ka_solid_harmonics!(Y, nothing, Val{L}(), Val{true}(),
+                       Rs, st.Flm)
    return Y
 end
 
 
-function compute_with_gradients!(Y, ∇Y, 
-                  basis::SphericalHarmonics{L}, 
-                  Rs::AbstractGPUVector{<: SVector{3, T1}}
-                  ) where {L, T1} 
-   ka_solid_harmonics!(Y, ∇Y, Val{L}(), Val{true}(), 
-                       Rs, basis.Flm)
+function compute_with_gradients!(Y, ∇Y,
+                  basis::SphericalHarmonics{L},
+                  Rs::AbstractGPUVector{<: SVector{3, T1}},
+                  st = (; Flm = basis.Flm)) where {L, T1}
+   ka_solid_harmonics!(Y, ∇Y, Val{L}(), Val{true}(),
+                       Rs, st.Flm)
    return Y, ∇Y
-end 
+end

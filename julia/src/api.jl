@@ -61,68 +61,72 @@ end
 @inline (basis::SolidHarmonics)(args...) = compute(basis, args...)
 
 
-@inline function compute(basis::SolidHarmonics{L, NORM, true}, 𝐫::SVector{3}
-                 ) where {L, NORM}
-   return static_solid_harmonics(Val{L}(), 𝐫, basis.Flm)
+# The optional `st` argument carries the normalisation prefactors as
+# `st.Flm`; by default they are taken from the basis. Passing a state lets the
+# caller supply `Flm` in any element type / device (used by the Lux interface).
+
+@inline function compute(basis::SolidHarmonics{L, NORM, true}, 𝐫::SVector{3},
+                         st = (; Flm = basis.Flm)) where {L, NORM}
+   return static_solid_harmonics(Val{L}(), 𝐫, st.Flm)
 end
 
-function compute(basis::SolidHarmonics{L, NORM, false}, 𝐫::SVector{3, T}
-         ) where {L, NORM, T}
+function compute(basis::SolidHarmonics{L, NORM, false}, 𝐫::SVector{3, T},
+                 st = (; Flm = basis.Flm)) where {L, NORM, T}
    Z = zeros(T, sizeY(L))
    Zmat = reshape(Z, 1, :)   # this is a view, not a copy!
-   compute!(Zmat, basis, SA[𝐫,])
-   return Z 
-end 
+   compute!(Zmat, basis, SA[𝐫,], st)
+   return Z
+end
 
-function compute(basis::SolidHarmonics{L, NORM, STATIC}, 
-                  Rs::AbstractVector{SVector{3, T}}
-                  ) where {L, NORM, STATIC, T}
-   # note here we are NOT using the type of the Flm. If the Flm type  is 
-   # different from the Rs type then there will be an implicit conversion 
-   Z = similar(Rs, T, (length(Rs), sizeY(L))) # we could make this cached as well 
-   compute!(Z, basis, Rs)
+function compute(basis::SolidHarmonics{L, NORM, STATIC},
+                  Rs::AbstractVector{SVector{3, T}},
+                  st = (; Flm = basis.Flm)) where {L, NORM, STATIC, T}
+   # note here we are NOT using the type of the Flm. If the Flm type  is
+   # different from the Rs type then there will be an implicit conversion
+   Z = similar(Rs, T, (length(Rs), sizeY(L))) # we could make this cached as well
+   compute!(Z, basis, Rs, st)
    return Z
 end
 
 
 function compute!(Z::AbstractMatrix,
                   basis::SolidHarmonics{L, NORM, STATIC},
-                  Rs::AbstractVector{<: SVector{3}}
-                  ) where {L, NORM, STATIC}
+                  Rs::AbstractVector{<: SVector{3}},
+                  st = (; Flm = basis.Flm)) where {L, NORM, STATIC}
    # single batched path for all backends: KernelAbstractions, one point per
    # work-item; the CPU backend auto-multithreads across the batch.
-   ka_solid_harmonics!(Z, nothing, Val{L}(), Rs, basis.Flm)
+   ka_solid_harmonics!(Z, nothing, Val{L}(), Rs, st.Flm)
    return Z
 end
 
 
-# ---------- gradients 
+# ---------- gradients
 
-function compute_with_gradients(basis::SolidHarmonics{L, NORM, false}, 
-                                𝐫::SVector{3, T}
-                               ) where {L, NORM, T}
+function compute_with_gradients(basis::SolidHarmonics{L, NORM, false},
+                                𝐫::SVector{3, T},
+                                st = (; Flm = basis.Flm)) where {L, NORM, T}
    Z = zeros(T, sizeY(L))
    dZ = zeros(SVector{3, T}, sizeY(L))
    Zmat = reshape(Z, 1, :)   # this is a view, not a copy!
    dZmat = reshape(dZ, 1, :)
-   compute_with_gradients!(Zmat, dZmat, basis, SA[𝐫,])
-   return Z, dZ 
-end 
+   compute_with_gradients!(Zmat, dZmat, basis, SA[𝐫,], st)
+   return Z, dZ
+end
 
 function compute_with_gradients(basis::SolidHarmonics{L, NORM, true},
-                                𝐫::SVector{3, T}
-                               ) where {L, NORM, T}
-   return static_solid_harmonics_with_grads(Val{L}(), 𝐫, basis.Flm)
+                                𝐫::SVector{3, T},
+                                st = (; Flm = basis.Flm)) where {L, NORM, T}
+   return static_solid_harmonics_with_grads(Val{L}(), 𝐫, st.Flm)
 end
 
 
-function compute_with_gradients(basis::SolidHarmonics{L, NORM, STATIC}, 
-                                Rs::AbstractVector{SVector{3, T}}
-                                ) where {L, NORM, STATIC, T}
-   Z = similar(Rs, T, (length(Rs), sizeY(L))) # we could make this cached as well 
-   dZ = similar(Rs, SVector{3, T}, (length(Rs), sizeY(L))) 
-   compute_with_gradients!(Z, dZ, basis, Rs)
-   return Z, dZ 
+function compute_with_gradients(basis::SolidHarmonics{L, NORM, STATIC},
+                                Rs::AbstractVector{SVector{3, T}},
+                                st = (; Flm = basis.Flm)) where {L, NORM, STATIC, T}
+   Z = similar(Rs, T, (length(Rs), sizeY(L))) # we could make this cached as well
+   dZ = similar(Rs, SVector{3, T}, (length(Rs), sizeY(L)))
+   compute_with_gradients!(Z, dZ, basis, Rs, st)
+   return Z, dZ
 end
 
 
@@ -131,8 +135,8 @@ function compute_with_gradients!(
             Z::AbstractMatrix,
             dZ::AbstractMatrix,
             basis::SolidHarmonics{L, NORM, STATIC},
-            Rs::AbstractVector{<: SVector{3}}
-            ) where {L, NORM, STATIC}
-   ka_solid_harmonics!(Z, dZ, Val{L}(), Rs, basis.Flm)
+            Rs::AbstractVector{<: SVector{3}},
+            st = (; Flm = basis.Flm)) where {L, NORM, STATIC}
+   ka_solid_harmonics!(Z, dZ, Val{L}(), Rs, st.Flm)
    return Z, dZ
 end
