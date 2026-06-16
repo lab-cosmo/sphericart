@@ -11,7 +11,7 @@ export ComplexSolidHarmonics, ComplexSphericalHarmonics
 `SolidHarmonics` basis of the same degree. See `SolidHarmonics` for the
 constructor keyword arguments.
 """
-struct ComplexSolidHarmonics{L, NORM, STATIC, TF}
+struct ComplexSolidHarmonics{L, NORM, STATIC, TF} <: AbstractLuxLayer
    realbasis::SolidHarmonics{L, NORM, STATIC, TF}
 end
 
@@ -19,7 +19,7 @@ end
 `struct ComplexSphericalHarmonics` : complex spherical harmonics basis, wrapping
 a real `SphericalHarmonics` basis of the same degree.
 """
-struct ComplexSphericalHarmonics{L, NORM, STATIC, TF}
+struct ComplexSphericalHarmonics{L, NORM, STATIC, TF} <: AbstractLuxLayer
    realbasis::SphericalHarmonics{L, NORM, STATIC, TF}
 end
 

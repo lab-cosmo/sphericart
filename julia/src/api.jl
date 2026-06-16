@@ -41,7 +41,7 @@ Z, ∇Z = compute_with_gradients(basis, 𝐫) # or Rs
 ```
 See documentation for more details.
 """
-struct SolidHarmonics{L, NORM, STATIC, TF}
+struct SolidHarmonics{L, NORM, STATIC, TF} <: AbstractLuxLayer
    Flm::TF
 end
 

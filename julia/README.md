@@ -111,6 +111,22 @@ Y, ∇Y  = evaluate_ed(basis, 𝐫)     # ≡ compute_with_gradients(basis, 𝐫
 spec   = natural_indices(basis)    # the (l, m) label of each basis function
 ```
 
+## Lux layers
+
+All harmonics bases (`SolidHarmonics`, `SphericalHarmonics`, and the `Complex*`
+variants) are [LuxCore](https://github.com/LuxDL/Lux.jl) layers. They are
+parameter-free; the normalisation prefactors `Flm` are carried as the layer
+**state**, so the usual Lux device / element-type transforms (`gpu`, `cpu`,
+`f32`, ...) move and convert them.
+
+```julia
+using SpheriCart, LuxCore, Random
+
+basis = SolidHarmonics(4)
+ps, st = LuxCore.setup(Random.default_rng(), basis)   # ps == (;),  st == (; Flm = ...)
+Y, st  = basis(𝐫, ps, st)                              # ≡ compute(basis, 𝐫)
+```
+
 <!-- ## Advanced Usage
 
 TODO:  

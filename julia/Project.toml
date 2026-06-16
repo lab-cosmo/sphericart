@@ -1,7 +1,7 @@
 name = "SpheriCart"
 uuid = "5caf2b29-02d9-47a3-9434-5931c85ba645"
-authors = ["Christoph Ortner <christophortner@gmail.com> and contributors"]
 version = "0.3.0"
+authors = ["Christoph Ortner <christophortner@gmail.com> and contributors"]
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
@@ -10,6 +10,8 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 GPUArraysCore = "46192b85-c4d5-4398-a991-12ede77f4527"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LuxCore = "bb33d45b-7691-41d6-9220-0943567d0623"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [weakdeps]
@@ -26,6 +28,8 @@ ForwardDiff = "0.10, 1.0.1"
 GPUArraysCore = "0.2.0"
 KernelAbstractions = "0.9.34"
 LinearAlgebra = "1.10"
+LuxCore = "1"
+Random = "1.10, 1.11"
 StaticArrays = "1.9"
 julia = "1.10.0, 1.11.0"
 
@@ -35,11 +39,7 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Quadmath = "be4d8f0f-7fa4-5f49-b795-2f01399ab2dd"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
-# GPU backends (CUDA / Metal / AMDGPU / oneAPI) are installed on demand by
-# test/utils_gpu.jl only when a GPU is detected, so they are not listed here.
-
 [targets]
-test = ["Test", "ACEbase", "LinearAlgebra", "Random", "Printf", "Quadmath", "Pkg"]
+test = ["Test", "ACEbase", "LinearAlgebra", "Printf", "Quadmath", "Pkg"]

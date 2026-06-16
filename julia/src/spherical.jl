@@ -41,7 +41,7 @@ Z = compute(basis, Rs)
 ```
 See documentation for more details.
 """
-struct SphericalHarmonics{L, NORM, STATIC, TF}
+struct SphericalHarmonics{L, NORM, STATIC, TF} <: AbstractLuxLayer
    solids::SolidHarmonics{L, NORM, STATIC, TF}
 end
 
