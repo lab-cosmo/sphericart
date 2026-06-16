@@ -8,4 +8,5 @@ using Test
    @testset "KernelAbstractions" begin include("test_ka.jl"); end
    @testset "ACEbase interface" begin include("test_aceinterface.jl"); end
    @testset "Lux layers" begin include("test_lux.jl"); end
+   @testset "ChainRules" begin include("test_chainrules.jl"); end
 end
