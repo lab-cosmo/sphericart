@@ -1,6 +1,6 @@
 module SpheriCart
 
-using StaticArrays, Bumper
+using StaticArrays
 
 import LuxCore
 using LuxCore: AbstractLuxLayer

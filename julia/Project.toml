@@ -1,10 +1,9 @@
 name = "SpheriCart"
 uuid = "5caf2b29-02d9-47a3-9434-5931c85ba645"
-version = "0.3.0"
+version = "0.3.1"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 GPUArraysCore = "46192b85-c4d5-4398-a991-12ede77f4527"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
@@ -24,7 +23,6 @@ ChainRulesCoreExt = "ChainRulesCore"
 [compat]
 ACEbase = "0.4.7"
 BenchmarkTools = "1.6.0"
-Bumper = "0.7.0"
 ChainRulesCore = "1"
 ChainRulesTestUtils = "1"
 ForwardDiff = "0.10, 1.0.1"
