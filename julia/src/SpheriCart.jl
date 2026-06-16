@@ -2,6 +2,10 @@ module SpheriCart
 
 using StaticArrays, Bumper
 
+import LuxCore
+using LuxCore: AbstractLuxLayer
+using Random: AbstractRNG
+
 export SolidHarmonics,
        compute,
        compute!,
@@ -15,5 +19,6 @@ include("generated_kernels.jl")
 include("ka_kernels.jl")
 include("spherical.jl")
 include("complex.jl")
+include("luxcore.jl")
 
 end

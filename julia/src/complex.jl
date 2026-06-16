@@ -11,7 +11,7 @@ export ComplexSolidHarmonics, ComplexSphericalHarmonics
 `SolidHarmonics` basis of the same degree. See `SolidHarmonics` for the
 constructor keyword arguments.
 """
-struct ComplexSolidHarmonics{L, NORM, STATIC, TF}
+struct ComplexSolidHarmonics{L, NORM, STATIC, TF} <: AbstractLuxLayer
    realbasis::SolidHarmonics{L, NORM, STATIC, TF}
 end
 
@@ -19,7 +19,7 @@ end
 `struct ComplexSphericalHarmonics` : complex spherical harmonics basis, wrapping
 a real `SphericalHarmonics` basis of the same degree.
 """
-struct ComplexSphericalHarmonics{L, NORM, STATIC, TF}
+struct ComplexSphericalHarmonics{L, NORM, STATIC, TF} <: AbstractLuxLayer
    realbasis::SphericalHarmonics{L, NORM, STATIC, TF}
 end
 
@@ -31,6 +31,14 @@ ComplexSphericalHarmonics(L::Integer; kwargs...) =
 
 const ComplexHarmonics{L} =
       Union{ComplexSolidHarmonics{L}, ComplexSphericalHarmonics{L}}
+
+# forward property access to the wrapped real basis, so that e.g. `basis.Flm`
+# works uniformly across all harmonics bases (as it does for SphericalHarmonics).
+function Base.getproperty(b::Union{ComplexSolidHarmonics, ComplexSphericalHarmonics},
+                          prop::Symbol)
+   prop === :realbasis && return getfield(b, :realbasis)
+   return getproperty(getfield(b, :realbasis), prop)
+end
 
 @inline (basis::ComplexHarmonics)(args...) = compute(basis, args...)
 
@@ -65,32 +73,36 @@ end
 # ---------------------- batched api
 
 function compute(basis::ComplexHarmonics{L},
-                 Rs::AbstractVector{<: SVector{3, T}}) where {L, T}
+                 Rs::AbstractVector{<: SVector{3, T}},
+                 st = (; Flm = basis.Flm)) where {L, T}
    Z = similar(Rs, Complex{T}, (length(Rs), sizeY(L)))
-   compute!(Z, basis, Rs)
+   compute!(Z, basis, Rs, st)
    return Z
 end
 
 function compute_with_gradients(basis::ComplexHarmonics{L},
-                 Rs::AbstractVector{<: SVector{3, T}}) where {L, T}
+                 Rs::AbstractVector{<: SVector{3, T}},
+                 st = (; Flm = basis.Flm)) where {L, T}
    Z = similar(Rs, Complex{T}, (length(Rs), sizeY(L)))
    dZ = similar(Rs, SVector{3, Complex{T}}, (length(Rs), sizeY(L)))
-   compute_with_gradients!(Z, dZ, basis, Rs)
+   compute_with_gradients!(Z, dZ, basis, Rs, st)
    return Z, dZ
 end
 
 function compute!(Z::AbstractMatrix, basis::ComplexHarmonics{L},
-                  Rs::AbstractVector{<: SVector{3}}) where {L}
+                  Rs::AbstractVector{<: SVector{3}},
+                  st = (; Flm = basis.Flm)) where {L}
    # the real kernel writes real values into the complex array Z
-   compute!(Z, basis.realbasis, Rs)
+   compute!(Z, basis.realbasis, Rs, st)
    _convert_R2C!(Z, L)
    return Z
 end
 
 function compute_with_gradients!(Z::AbstractMatrix, dZ::AbstractMatrix,
                   basis::ComplexHarmonics{L},
-                  Rs::AbstractVector{<: SVector{3}}) where {L}
-   compute_with_gradients!(Z, dZ, basis.realbasis, Rs)
+                  Rs::AbstractVector{<: SVector{3}},
+                  st = (; Flm = basis.Flm)) where {L}
+   compute_with_gradients!(Z, dZ, basis.realbasis, Rs, st)
    _convert_R2C!(Z, L)
    _convert_R2C!(dZ, L)
    return Z, dZ
@@ -99,19 +111,21 @@ end
 # ---------------------- single-input api
 #  routed through the batched (matrix) kernel, as in the original P4ML wrapper
 
-function compute(basis::ComplexHarmonics{L}, 𝐫::SVector{3, T}) where {L, T}
+function compute(basis::ComplexHarmonics{L}, 𝐫::SVector{3, T},
+                 st = (; Flm = basis.Flm)) where {L, T}
    Z = zeros(Complex{T}, sizeY(L))
    Zmat = reshape(Z, 1, :)   # a view, not a copy
-   compute!(Zmat, basis, SA[𝐫,])
+   compute!(Zmat, basis, SA[𝐫,], st)
    return Z
 end
 
 function compute_with_gradients(basis::ComplexHarmonics{L},
-                                𝐫::SVector{3, T}) where {L, T}
+                                𝐫::SVector{3, T},
+                                st = (; Flm = basis.Flm)) where {L, T}
    Z = zeros(Complex{T}, sizeY(L))
    dZ = zeros(SVector{3, Complex{T}}, sizeY(L))
    Zmat = reshape(Z, 1, :)
    dZmat = reshape(dZ, 1, :)
-   compute_with_gradients!(Zmat, dZmat, basis, SA[𝐫,])
+   compute_with_gradients!(Zmat, dZmat, basis, SA[𝐫,], st)
    return Z, dZ
 end
