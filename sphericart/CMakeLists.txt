@@ -54,30 +54,32 @@ function(make_includeable INPUT_FILE OUTPUT_FILE)
     file(APPEND "${OUTPUT_FILE}" "${result}\n")
 endfunction()
 
-#[[
- This function wraps prepends a list of headers to an input file. Used as a preprocessing
- step to prepare the sphericart_impl.cu file for NVRTC JIT compilation.
-]]
-function(prepend_headers_to_source INPUT_FILE OUTPUT_FILE HEADERS)
-    # Read the current content of the source file
+# Replace #include directives in a source file with the actual contents of
+# the header files. This is a minimal preprocessing step to allow headers
+# to be included in the cuda implementation, and only search for headers
+# in the `./include` directory.
+function(include_headers INPUT_FILE OUTPUT_FILE)
     if(NOT EXISTS ${INPUT_FILE})
         message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
     endif()
-    file(READ ${INPUT_FILE} CONTENTS)
-    # Initialize a variable to hold the accumulated headers
-    set(HEADER_CONTENTS "")
-    # Loop through each header and append its contents to HEADER_CONTENTS
-    foreach(HEADER IN LISTS HEADERS)
-        if(NOT EXISTS ${INPUT_FILE})
-            message(FATAL_ERROR "Error: The input file '${INPUT_FILE}' does not exist.")
+    file(READ "${INPUT_FILE}" content)
+
+    string(REPLACE "\n" ";" content_lines "${content}")
+    set(processed_content "${content}")
+    foreach(line IN LISTS content_lines)
+        string(REGEX MATCH "#include \"([^\"]+)\"" _ "${line}")
+        if(NOT "${CMAKE_MATCH_1}" STREQUAL "")
+            set(header_path "${CMAKE_CURRENT_SOURCE_DIR}/include/${CMAKE_MATCH_1}")
+            if(EXISTS "${header_path}")
+                file(READ "${header_path}" header_content)
+                string(REPLACE "${line}" "${header_content}" processed_content "${processed_content}")
+            else()
+                message(FATAL_ERROR "Error: Included header '${CMAKE_MATCH_1}' not found at '${header_path}'.")
+            endif()
         endif()
-        file(READ ${HEADER} SINGLE_HEADER_CONTENT)
-        set(HEADER_CONTENTS "${HEADER_CONTENTS}\n${SINGLE_HEADER_CONTENT}")
     endforeach()
-    # Prepend the accumulated headers to the original source file content
-    set(NEW_CONTENTS "${HEADER_CONTENTS}\n${CONTENTS}")
-    # Write the new contents back to the source file
-    file(WRITE ${OUTPUT_FILE} "${NEW_CONTENTS}")
+
+    file(WRITE "${OUTPUT_FILE}" "${processed_content}")
 endfunction()
 
 file(READ ${PROJECT_SOURCE_DIR}/VERSION SPHERICART_VERSION)
@@ -130,7 +132,7 @@ include(FetchContent)
 FetchContent_Declare(
     gpulite
     GIT_REPOSITORY https://github.com/metatensor/gpu-lite.git
-    GIT_TAG 7e8e9e929b254c3faefc556fb348068027e73319 # v1.1.1
+    GIT_TAG ceb0934e2294b680ebce37242b2e4f26921152e6 # tag 'mts-v1.2.0'
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(gpulite)
@@ -246,18 +248,10 @@ if (SPHERICART_ENABLE_CUDA)
     target_include_directories(sphericart PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_link_libraries(sphericart PRIVATE gpulite)
 
-    set(SPHERICART_CUDA_HEADERS
-        "include/sphericart_impl.cuh"
-        "include/templates_core.hpp"
-        "include/macros.hpp"
-    )
-
-    # Prepend headers to the source file
-    prepend_headers_to_source(
+    include_headers(
         "${CMAKE_CURRENT_SOURCE_DIR}/src/sphericart_impl.cu"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cu"
-        "${SPHERICART_CUDA_HEADERS}"
-        )
+    )
 
     # Make the source file includeable by converting it to a string literal
     make_includeable(
