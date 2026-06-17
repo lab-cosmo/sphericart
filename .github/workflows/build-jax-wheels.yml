@@ -64,6 +64,7 @@ jobs:
           - "0.9.1"
           - "0.9.2"
           - "0.10.0"
+          - "0.10.1"
         os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm, windows-2022]
         include:
           - name: x86_64 Linux
