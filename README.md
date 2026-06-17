@@ -63,6 +63,9 @@ A native Julia implementation of `sphericart` is provided, called `SpheriCart`.
 Install the package by opening a REPL, switch to the package manager by
 typing `]` and then `add SpheriCart`.
 See [julia/README.md](julia/README.md) for usage.
+`SpheriCart.jl` is compatible with [`ChainRules.jl`](https://github.com/JuliaDiff/ChainRules.jl) 
+and [`Lux.jl`](https://github.com/LuxDL/Lux.jl) and provides GPU kernels 
+via [`KernelAbstractions.jl`](https://github.com/JuliaGPU/KernelAbstractions.jl).
 
 
 ### C and C++
