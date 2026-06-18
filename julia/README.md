@@ -15,12 +15,22 @@ Install the package by opening a REPL, switch to the package manager by typing `
 
 ## Basic Usage
 
-There are currently three implementations of real solid harmonics and real spherical harmonics
-- a generated  implementation for a single `𝐫::SVector{3, T}` input, returning the spherical harmonics as an `SVector{T}`. 
-- a generic implementation that is optimized for evaluating over batches of inputs, exploiting SIMD vectorization. 
-- an experimental implementation based on KernelAbstractions, which should run on CPU, as well as NVIDIA, AMD, Apple or Intel GPU devices. Since this is still experimental, it is not properly documented and not entirely consistent with the API; see `test/test_ka.jl` for usage.
+Real solid and spherical harmonics are evaluated through a single interface
+(`compute`, `compute!`, `compute_with_gradients`, `compute_with_gradients!`),
+backed by two implementations:
+- a fully unrolled, **generated** implementation for a single `𝐫::SVector{3, T}`
+  input, returning the harmonics as an `SVector`. This is the fastest option for
+  single inputs and is used by default for small `L` (see the `static` keyword).
+- a [KernelAbstractions](https://github.com/JuliaGPU/KernelAbstractions.jl)
+  **batched** implementation for collections of inputs. The same kernel runs on
+  the CPU (multi-threaded across the batch when Julia is started with several
+  threads) and on CUDA, AMD, Apple and Intel GPU devices — just pass a GPU array
+  of inputs to `compute` / `compute!`. It works for any real element type
+  (`Float32`, `Float64`, `Float128`, ...).
 
-For large enough batches (system dependent) the second implementation is comparable to or faster than broadcasting over the generated implementation. For single inputs, the generated implementation is far superior in performance. 
+For single inputs the generated implementation is far superior in performance;
+for batches use the batched path, which is what `compute(basis, Rs)` and the
+in-place `compute!` call.
 
 
 ```julia
@@ -56,6 +66,66 @@ compute_with_gradients!(Z, ∇Z, basis, Rs)
 ```
 
 Note that Julia uses column-major indexing, which means that for batched output the loop over inputs is contiguous in memory. 
+
+### GPU evaluation
+
+Batched evaluation runs on the GPU through the same functions — move the inputs
+to the device and call `compute` / `compute!` as usual:
+
+```julia
+using CUDA   # or AMDGPU / Metal / oneAPI
+
+Rs_gpu = CuArray(Rs)
+Z_gpu = compute(basis, Rs_gpu)              # returns a GPU array
+Z_gpu, ∇Z_gpu = compute_with_gradients(basis, Rs_gpu)
+```
+
+`SphericalHarmonics` is supported on the GPU as well.
+
+### The `static` keyword
+
+`SolidHarmonics(L; static = (L <= 6))` (likewise `SphericalHarmonics`) selects
+whether **single-input** evaluation uses the unrolled generated code (an
+`SVector` output, fastest for small `L`, with a compile/stack footprint that
+grows with `L`) or falls back to the batched kernel. Batched evaluation always
+uses the KernelAbstractions kernel regardless of this flag. Raise the threshold
+if you evaluate single inputs at larger `L` in a hot loop.
+
+## Alternative interface (ACEbase / ACEsuit)
+
+Loading `ACEbase` alongside `SpheriCart` activates a package extension that
+exposes the harmonics through the standard ACEsuit evaluation interface — the
+same `evaluate` / `evaluate_ed` / `evaluate!` / `evaluate_ed!` / `natural_indices`
+API used across the ACE ecosystem (including Polynomials4ML), but with no
+Polynomials4ML dependency. The methods simply forward to the native `compute`
+API, so they take the same single and batched inputs.
+
+```julia
+using SpheriCart, ACEbase, StaticArrays
+
+basis = SolidHarmonics(5)     # or SphericalHarmonics / the Complex* variants
+𝐫 = @SVector randn(3)
+
+Y      = evaluate(basis, 𝐫)        # ≡ compute(basis, 𝐫)
+Y, ∇Y  = evaluate_ed(basis, 𝐫)     # ≡ compute_with_gradients(basis, 𝐫)
+spec   = natural_indices(basis)    # the (l, m) label of each basis function
+```
+
+## Lux layers
+
+All harmonics bases (`SolidHarmonics`, `SphericalHarmonics`, and the `Complex*`
+variants) are [LuxCore](https://github.com/LuxDL/Lux.jl) layers. They are
+parameter-free; the normalisation prefactors `Flm` are carried as the layer
+**state**, so the usual Lux device / element-type transforms (`gpu`, `cpu`,
+`f32`, ...) move and convert them.
+
+```julia
+using SpheriCart, LuxCore, Random
+
+basis = SolidHarmonics(4)
+ps, st = LuxCore.setup(Random.default_rng(), basis)   # ps == (;),  st == (; Flm = ...)
+Y, st  = basis(𝐫, ps, st)                              # ≡ compute(basis, 𝐫)
+```
 
 <!-- ## Advanced Usage
 
