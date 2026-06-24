@@ -84,15 +84,35 @@ end
    for basis in bases
       𝐫 = _rand_sphere()
       R = [ _rand_sphere() for _ = 1:13 ]
+      st = (; Flm = basis.Flm)        # the ACEsuit (parameters, state) convention
+      # 2-arg form
       @test evaluate(basis, 𝐫) == compute(basis, 𝐫)
       @test evaluate(basis, R) == compute(basis, R)
-      @test evaluate(basis, R, nothing, nothing) == compute(basis, R)
       Yc, dYc = compute_with_gradients(basis, R)
       Ye, dYe = evaluate_ed(basis, R)
       @test Yc == Ye && dYc == dYe
-      # in-place
-      Y = similar(compute(basis, R))
+      # `(ps, st)` form forwards the state to `compute`
+      @test evaluate(basis, 𝐫, nothing, st) == compute(basis, 𝐫, st)
+      @test evaluate(basis, R, nothing, st) == compute(basis, R, st)
+      Ye2, dYe2 = evaluate_ed(basis, R, nothing, st)
+      @test Ye2 == Yc && dYe2 == dYc
+      # in-place, both arities
+      Y = similar(compute(basis, R)); dY = similar(dYc)
       @test evaluate!(Y, basis, R) == compute(basis, R)
+      @test evaluate!(Y, basis, R, nothing, st) == compute(basis, R)
+      @test evaluate_ed!(Y, dY, basis, R, nothing, st) == (Yc, dYc)
+   end
+end
+
+@testset "ACEbase interface honours the state" begin
+   # a `Float32` state must produce a `Float32` evaluation through the ACEbase
+   # path (this is exactly what the old `args...` methods silently dropped).
+   for basis in (SolidHarmonics(5), ComplexSolidHarmonics(5))
+      st32 = (; Flm = Float32.(basis.Flm))
+      R32 = [ SVector{3, Float32}(_rand_sphere()...) for _ = 1:13 ]
+      Y32 = evaluate(basis, R32, nothing, st32)
+      @test real(eltype(Y32)) == Float32
+      @test Y32 ≈ compute(basis, R32)  rtol = 1e-4
    end
 end
 
