@@ -2,9 +2,10 @@
 using SpheriCart, GPUArraysCore, StaticArrays,
       LinearAlgebra, KernelAbstractions, Test
 
-# auto-detects a GPU backend; resolves to CPU (dev = identity) on a plain
-# runner and installs no GPU package. (Mechanism adapted from EquivariantTensors.)
-include(joinpath(@__DIR__, "utils_gpu.jl"))
+# auto-detects a GPU backend; resolves to CPU (gpu = identity) on a plain
+# runner and installs no GPU package.
+using ACETestUtils: gpu_test_backend
+(; gpu, gpu_backend) = gpu_test_backend()
 
 @info("============= Testset KernelAbstractions =============")
 

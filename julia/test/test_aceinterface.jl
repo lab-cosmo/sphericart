@@ -3,6 +3,8 @@ using SpheriCart: SolidHarmonics, SphericalHarmonics,
                   ComplexSolidHarmonics, ComplexSphericalHarmonics,
                   compute, compute_with_gradients, lm2idx, sizeY
 using ACEbase: evaluate, evaluate_ed, evaluate!, evaluate_ed!, natural_indices
+using ACETestUtils: dirfwdtest
+using ForwardDiff   # explicit trigger for ACETestUtilsForwardDiffExt
 
 ##
 
@@ -129,7 +131,7 @@ end
 
 ##
 
-@testset "finite-difference gradients" begin
+@testset "directional-derivative consistency" begin
    bases = [ SolidHarmonics(8), SphericalHarmonics(8),
              ComplexSolidHarmonics(7), ComplexSphericalHarmonics(7) ]
    for basis in bases
@@ -137,14 +139,10 @@ end
       Y, ∇Y = evaluate_ed(basis, 𝐫)
       @test Y ≈ evaluate(basis, 𝐫)
       u = _rand_sphere()
-      errs = Float64[]
-      for p = 2:10
-         h = 0.1^p
-         dh = (evaluate(basis, 𝐫 + h*u) .- evaluate(basis, 𝐫 - h*u)) ./ (2h)
-         # note: plain (non-conjugating) contraction, since Y may be complex
-         da = [ sum(∇Y[i] .* u) for i = 1:length(Y) ]
-         push!(errs, norm(dh .- da, Inf))
-      end
-      @test minimum(errs) < 1e-6
+      F  = x -> evaluate(basis, x)
+      # gradient covectors via `transpose`, so that the `dF(x) .* Ref(u)`
+      # contraction does not conjugate (Y may be complex)
+      dF = x -> transpose.(evaluate_ed(basis, x)[2])
+      @test dirfwdtest(F, dF, 𝐫, u; verbose = false)
    end
 end
