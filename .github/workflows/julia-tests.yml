@@ -23,8 +23,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # 1.10 is still declared in the package compat but not tested here:
+        # the test-only ACETestUtils dependency requires Julia >= 1.11.
         version:
-          - '1.10'
           - '1.11'
           - '1.12'
         os:
