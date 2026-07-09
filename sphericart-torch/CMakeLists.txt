@@ -95,7 +95,12 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(sphericart_torch PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
-target_compile_features(sphericart_torch PUBLIC cxx_std_17)
+if (${Torch_VERSION} VERSION_GREATER_EQUAL 2.13)
+    # torch 2.13+ requires c++20
+    target_compile_features(sphericart_torch PUBLIC cxx_std_20)
+else()
+    target_compile_features(sphericart_torch PUBLIC cxx_std_17)
+endif()
 
 target_include_directories(sphericart_torch PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -111,7 +116,12 @@ add_library(sphericart_torch_cuda_stream SHARED
     "src/streams.cpp"
 )
 target_link_libraries(sphericart_torch_cuda_stream PUBLIC torch)
-target_compile_features(sphericart_torch_cuda_stream PUBLIC cxx_std_17)
+if (${Torch_VERSION} VERSION_GREATER_EQUAL 2.13)
+    # torch 2.13+ requires c++20
+    target_compile_features(sphericart_torch_cuda_stream PUBLIC cxx_std_20)
+else()
+    target_compile_features(sphericart_torch_cuda_stream PUBLIC cxx_std_17)
+endif()
 
 if(CMAKE_CUDA_COMPILER)
     target_compile_definitions(sphericart_torch_cuda_stream PRIVATE CUDA_AVAILABLE)
