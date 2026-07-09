@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JAX &mdash; sphericart  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="What sphericart computes" href="maths.html" />
+    <link rel="prev" title="PyTorch" href="pytorch-examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            sphericart
+              <img src="_static/sphericart_icon.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API documentation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="examples.html">Usage and examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cpp-examples.html">C++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c-examples.html">C</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python-examples.html">Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch-examples.html">PyTorch</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">JAX</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="maths.html">What sphericart computes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sphericart</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="examples.html">Usage and examples</a></li>
+      <li class="breadcrumb-item active">JAX</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/jax-examples.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="jax">
+<h1>JAX<a class="headerlink" href="#jax" title="Link to this heading"></a></h1>
+<p>The <cite>JAX</cite> implementation consists of the <code class="docutils literal notranslate"><span class="pre">sphericart.jax.spherical_harmonics()</span></code>
+function, which fits within idiomatic JAX code much better than the
+corresponding <cite>Python</cite> or <cite>PyTorch</cite> classes.
+The example shows how to compute spherical harmonics with the aforementioned
+function, as well as how to transform it with standard JAX transformations
+such as <code class="docutils literal notranslate"><span class="pre">jax.vmap()</span></code>, <code class="docutils literal notranslate"><span class="pre">jax.grad()</span></code>, <code class="docutils literal notranslate"><span class="pre">jax.jit()</span></code> and others.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">import</span> <span class="nn">sphericart.jax</span>
+
+
+<span class="c1"># Create a random array of Cartesian positions:</span>
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">xyz</span> <span class="o">=</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">l_max</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># set l_max to 3</span>
+<span class="n">normalized</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># in this example, we always compute normalized spherical harmonics</span>
+
+<span class="c1"># calculate the spherical harmonics with the corresponding function</span>
+<span class="n">sph</span> <span class="o">=</span> <span class="n">sphericart</span><span class="o">.</span><span class="n">jax</span><span class="o">.</span><span class="n">spherical_harmonics</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">)</span>
+
+<span class="c1"># jit the function with jax.jit()</span>
+<span class="c1"># the l_max argument (position 1 in the signature) must be static</span>
+<span class="n">jitted_sph_function</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">sphericart</span><span class="o">.</span><span class="n">jax</span><span class="o">.</span><span class="n">spherical_harmonics</span><span class="p">,</span> <span class="n">static_argnums</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># compute the spherical harmonics with the jitted function and check their values</span>
+<span class="c1"># against the non-jitted version</span>
+<span class="n">jitted_sph</span> <span class="o">=</span> <span class="n">jitted_sph_function</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">jax</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">sph</span><span class="p">,</span> <span class="n">jitted_sph</span><span class="p">)</span>
+
+
+<span class="c1"># calculate a scalar function of the spherical harmonics and take its gradient</span>
+<span class="c1"># with respect to the input Cartesian coordinates, as well as its hessian</span>
+<span class="k">def</span> <span class="nf">scalar_output</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sphericart</span><span class="o">.</span><span class="n">jax</span><span class="o">.</span><span class="n">spherical_harmonics</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">))</span>
+
+
+<span class="n">grad</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">scalar_output</span><span class="p">)(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">)</span>
+
+<span class="c1"># NB: this computes a (n_samples,3,n_samples,3) hessian, i.e. includes cross terms</span>
+<span class="c1"># between samples.</span>
+<span class="n">hessian</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">hessian</span><span class="p">(</span><span class="n">scalar_output</span><span class="p">)(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">)</span>
+
+<span class="c1"># usually you want a (n_samples,3,3), taking derivatives wrt the coordinates</span>
+<span class="c1"># of the same sample. one way to achieve this is as follows</span>
+
+
+<span class="k">def</span> <span class="nf">single_scalar_output</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sphericart</span><span class="o">.</span><span class="n">jax</span><span class="o">.</span><span class="n">spherical_harmonics</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">))</span>
+
+
+<span class="c1"># Compute the Hessian for a single (3,) input</span>
+<span class="n">single_hessian</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">hessian</span><span class="p">(</span><span class="n">single_scalar_output</span><span class="p">)</span>
+
+<span class="c1"># Use vmap to vectorize the Hessian computation over the first axis</span>
+<span class="n">sh_hess</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">single_hessian</span><span class="p">,</span> <span class="n">in_axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+
+
+<span class="c1"># calculate a function of the spherical harmonics that returns an array</span>
+<span class="c1"># and take its jacobian with respect to the input Cartesian coordinates,</span>
+<span class="c1"># both in forward mode and in reverse mode</span>
+<span class="k">def</span> <span class="nf">array_output</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+        <span class="n">sphericart</span><span class="o">.</span><span class="n">jax</span><span class="o">.</span><span class="n">spherical_harmonics</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">)</span>
+
+
+<span class="n">jacfwd</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jacfwd</span><span class="p">(</span><span class="n">array_output</span><span class="p">)(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">)</span>
+<span class="n">jacrev</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jacrev</span><span class="p">(</span><span class="n">array_output</span><span class="p">)(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">jax</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">jacfwd</span><span class="p">,</span> <span class="n">jacrev</span><span class="p">)</span>  <span class="c1"># check that the two are the same</span>
+
+<span class="c1"># use vmap and compare the result with the original result:</span>
+<span class="n">vmapped_sph</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">sphericart</span><span class="o">.</span><span class="n">jax</span><span class="o">.</span><span class="n">spherical_harmonics</span><span class="p">,</span> <span class="n">in_axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))(</span>
+    <span class="n">xyz</span><span class="p">,</span> <span class="n">l_max</span><span class="p">,</span> <span class="n">normalized</span>
+<span class="p">)</span>
+<span class="k">assert</span> <span class="n">jax</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">sph</span><span class="p">,</span> <span class="n">vmapped_sph</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pytorch-examples.html" class="btn btn-neutral float-left" title="PyTorch" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="maths.html" class="btn btn-neutral float-right" title="What sphericart computes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, sphericart developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

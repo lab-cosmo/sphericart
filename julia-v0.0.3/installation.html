@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; sphericart  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API documentation" href="api.html" />
+    <link rel="prev" title="sphericart documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            sphericart
+              <img src="_static/sphericart_icon.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#python-package">Python package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#julia-package">Julia package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-c-library">C/C++ library</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Usage and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maths.html">What sphericart computes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sphericart</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<section id="python-package">
+<h2>Python package<a class="headerlink" href="#python-package" title="Link to this heading"></a></h2>
+<p>The Python package can be installed with pip by simply running</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>sphericart
+</pre></div>
+</div>
+<p>This basic package makes use of NumPy. A PyTorch-based implementation can be installed with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>sphericart<span class="o">[</span>torch<span class="o">]</span>
+</pre></div>
+</div>
+<p>This pre-built version available on PyPI sacrifices some performance to ensure it
+can run on all systems, and it does not include GPU support.
+If you need an extra 5-10% of performance or you want to evaluate the spherical harmonics on GPUs,
+you should build the code from source:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/lab-cosmo/sphericart
+pip<span class="w"> </span>install<span class="w"> </span>.
+
+<span class="c1"># if you also want the torch bindings (CPU and GPU)</span>
+pip<span class="w"> </span>install<span class="w"> </span>.<span class="o">[</span>torch<span class="o">]</span>
+<span class="c1"># if you also want the jax bindings</span>
+pip<span class="w"> </span>install<span class="w"> </span>.<span class="o">[</span>jax<span class="o">]</span>
+
+<span class="c1"># torch bindings (CPU-only)</span>
+pip<span class="w"> </span>install<span class="w"> </span>--extra-index-url<span class="w"> </span>https://download.pytorch.org/whl/cpu<span class="w"> </span>.<span class="o">[</span>torch<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="julia-package">
+<h2>Julia package<a class="headerlink" href="#julia-package" title="Link to this heading"></a></h2>
+<p>The native Julia package can be installed by opening a REPL,
+switching to the package manager by typing <code class="docutils literal notranslate"><span class="pre">]</span></code> and then <code class="docutils literal notranslate"><span class="pre">add</span> <span class="pre">SpheriCart</span></code>.</p>
+</section>
+<section id="c-c-library">
+<h2>C/C++ library<a class="headerlink" href="#c-c-library" title="Link to this heading"></a></h2>
+<p>First, you should clone the repository with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/lab-cosmo/sphericart
+</pre></div>
+</div>
+<p>After that, you can install the C/C++ library as</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>sphericart/
+mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build/
+cmake<span class="w"> </span>..<span class="w">  </span><span class="c1"># possibly include cmake configuration options here</span>
+make<span class="w"> </span>install
+</pre></div>
+</div>
+<p>(A C++17 compiler is required.)</p>
+<p>The following cmake configuration options are available:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-DSPHERICART_BUILD_TORCH=ON/OFF</span></code>: build the torch bindings in addition to the main library (OFF by default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-DSPHERICART_BUILD_TESTS=ON/OFF</span></code>: build C++ unit tests (OFF by default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-DSPHERICART_BUILD_EXAMPLES=ON/OFF</span></code>: build C++ examples and benchmarks (OFF by default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-DSPHERICART_OPENMP=ON/OFF</span></code>: enable OpenMP parallelism (ON by default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-DCMAKE_INSTALL_PREFIX=where/you/want/to/install</span></code>: set the root path for installation (<code class="docutils literal notranslate"><span class="pre">/usr/local</span></code> by default)</p></li>
+</ul>
+<p>Without specifying any options, the commands above will attempt to install
+a static library inside the <code class="docutils literal notranslate"><span class="pre">/usr/local/lib/</span></code> folder, which might cause a
+permission error. In that case you can change the destination folder. For example,
+<code class="docutils literal notranslate"><span class="pre">cmake</span> <span class="pre">..</span> <span class="pre">-DCMAKE_INSTALL_PREFIX=$HOME/.local</span></code> will be appropriate in the majority of cases.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="sphericart documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="API documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, sphericart developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
