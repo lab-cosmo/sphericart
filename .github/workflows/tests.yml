@@ -18,10 +18,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-            cmake_extra: "-DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON"
             tox_envs: ""
           - os: macos-14
-            cmake_extra: "-DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON"
             tox_envs: ""
           - os: windows-2022
             cmake_extra: ""
@@ -63,13 +61,13 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ${{ matrix.cmake_extra }} ..
+          cmake -DSPHERICART_BUILD_EXAMPLES=ON -DSPHERICART_BUILD_TESTS=ON ..
           cmake --build . --parallel ${{ matrix.cmake_config }}
 
       - name: run C++ ctest
         if: runner.os != 'Windows'
         shell: bash
-        run: ctest
+        run: ctest --test-dir build
 
       - name: run Python tests
         run: tox ${{ matrix.tox_envs }}
