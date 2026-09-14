@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JAX API &mdash; sphericart  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Usage and examples" href="examples.html" />
+    <link rel="prev" title="PyTorch API" href="pytorch-api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            sphericart
+              <img src="_static/sphericart_icon.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">API documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="cpp-api.html">C++ API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="c-api.html">C API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python-api.html">Python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch-api.html">PyTorch API</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">JAX API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sphericart.jax.spherical_harmonics"><code class="docutils literal notranslate"><span class="pre">spherical_harmonics()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Usage and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maths.html">What sphericart computes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sphericart</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="api.html">API documentation</a></li>
+      <li class="breadcrumb-item active">JAX API</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/jax-api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="jax-api">
+<h1>JAX API<a class="headerlink" href="#jax-api" title="Link to this heading"></a></h1>
+<p>The main class for computing spherical harmonics using a
+<cite>JAX</cite>-compatible framework does not follow the same syntax as
+the Python version <a class="reference internal" href="python-api.html#sphericart.SphericalHarmonics" title="sphericart.SphericalHarmonics"><code class="xref py py-class docutils literal notranslate"><span class="pre">sphericart.SphericalHarmonics</span></code></a> but provides an API
+compatible with the main JAX primitives, e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">jax.grad</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">jax.jit</span></code>.</p>
+<p>Depending on the device the array is
+stored on, and its <cite>dtype</cite>, the calculations will be performed
+using 32- or 64- bits floating point arythmetics, and
+using the CPU implementation.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="sphericart.jax.spherical_harmonics">
+<span class="sig-prename descclassname"><span class="pre">sphericart.jax.</span></span><span class="sig-name descname"><span class="pre">spherical_harmonics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xyz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sphericart.jax.spherical_harmonics" title="Link to this definition"></a></dt>
+<dd><p>Computes the Spherical harmonics and their derivatives within
+the JAX framework. See <a class="reference internal" href="python-api.html#sphericart.SphericalHarmonics" title="sphericart.SphericalHarmonics"><code class="xref py py-class docutils literal notranslate"><span class="pre">sphericart.SphericalHarmonics</span></code></a> for more details.
+This function supports <code class="docutils literal notranslate"><span class="pre">jit</span></code>, <code class="docutils literal notranslate"><span class="pre">vmap</span></code>, and up to two rounds of forward and/or
+backward automatic differentiation (<code class="docutils literal notranslate"><span class="pre">grad</span></code>, <code class="docutils literal notranslate"><span class="pre">jacfwd</span></code>, <code class="docutils literal notranslate"><span class="pre">jacrev</span></code>, <code class="docutils literal notranslate"><span class="pre">hessian</span></code>, …).
+It does not support <code class="docutils literal notranslate"><span class="pre">pmap</span></code>.</p>
+<p>Note that the l_max argument (position 1 in the signature) should be tagged as static
+when jit-ing the function:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">jax</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sphericart.jax</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">jitted_sph_function</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">sphericart</span><span class="o">.</span><span class="n">jax</span><span class="o">.</span><span class="n">spherical_harmonics</span><span class="p">,</span> <span class="n">static_argnums</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>xyz<span class="classifier">jax array […, 3]</span></dt><dd><p>single vector or set of vectors in 3D. All dimensions are optional except for the last</p>
+</dd>
+<dt>l_max<span class="classifier">int</span></dt><dd><p>maximum order of the spherical harmonics (included)</p>
+</dd>
+<dt>normalized<span class="classifier">bool</span></dt><dd><p>whether the function computes Cartesian solid harmonics (<code class="docutils literal notranslate"><span class="pre">normalized=False</span></code>, default)
+or normalized spherical harmonicsi (<code class="docutils literal notranslate"><span class="pre">normalized=True</span></code>)</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h2>Returns<a class="headerlink" href="#returns" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>jax array […, (l_max+1)**2]</dt><dd><p>Spherical harmonics expansion of <cite>xyz</cite></p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pytorch-api.html" class="btn btn-neutral float-left" title="PyTorch API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Usage and examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, sphericart developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
