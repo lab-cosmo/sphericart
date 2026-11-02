@@ -179,6 +179,40 @@ jobs:
           call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat" >nul 2>&1
           ctest --test-dir build-sycl --output-on-failure -R test_derivatives_sycl
 
+  hip-tests:
+    runs-on: ubuntu-22.04
+    container:
+      image: rocm/dev-ubuntu-24.04:7.2
+    name: Test HIP on ubuntu-22.04 (ROCm container)
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install build tools
+        run: |
+          apt-get update
+          apt-get install -y cmake build-essential
+
+      - name: record ROCm inventory
+        run: |
+          hipcc --version || true
+          rocminfo || true
+
+      - name: configure HIP build
+        run: |
+          cmake -B build-hip -S . \
+            -DSPHERICART_BUILD_TESTS=ON \
+            -DSPHERICART_ENABLE_HIP=ON \
+            -DCMAKE_PREFIX_PATH=/opt/rocm
+
+      - name: build HIP tests
+        run: cmake --build build-hip --parallel
+
+      # GitHub-hosted runners have no AMD GPU: the test compiles here and
+      # skips its device checks; full execution runs on self-hosted HIP
+      # runners (e.g. the gfx1151 qualification host used by symmetrix-xl)
+      - name: run HIP ctest
+        run: ctest --test-dir build-hip --output-on-failure -R test_derivatives_hip
+
   # check that we can build Python wheels on any Python version
   python-build:
     runs-on: ubuntu-22.04

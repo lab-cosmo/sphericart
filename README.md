@@ -96,6 +96,7 @@ The support for GPU offload could be controled with the following CMake variable
 - `-DSPHERICART_ENABLE_CUDA=ON/OFF`: build with CUDA support also set `CUDA_HOME` environement variable.
 - `-DSPHERICART_ENABLE_SYCL=ON/OFF`: build with SYCL support, configure tool will search for `sycl/sycl.h` header.
 - `-DSPHERICART_SYCL_DEVICE=all/cpu/gpu`: target architecute for SYCL support, check which devices are available with `sycl-ls`, for `all` (default) is possible to control at execution with `export ONEAPI_DEVICE_SELECTOR=opencl:gpu` or `export ONEAPI_DEVICE_SELECTOR=opencl:cpu`.
+- `-DSPHERICART_ENABLE_HIP=ON/OFF`: build with HIP (AMD ROCm) support, the configure tool will search for the HIP runtime (e.g. `-DCMAKE_PREFIX_PATH=/opt/rocm`). The kernels are compiled at runtime with hipRTC, targeting the GCN architecture of the installed GPU, so no HIP compiler is needed at build time. The HIP backend is mutually exclusive with the CUDA and SYCL backends - build each backend in its own build directory.
 
 The following flags have been tested with Intel OneAPI 2025.3 for enabling SYCL support:
 - `-DCMAKE_CXX_COMPILER=icpx`
