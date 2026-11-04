@@ -234,10 +234,11 @@ void sphericart::hip::spherical_harmonics_hip_base(
     scalar_t* sph,
     scalar_t* dsph,
     scalar_t* ddsph,
-    void* hip_stream
+    void* hip_stream,
+    bool synchronize
 ) {
     int n_total = (l_max + 1) * (l_max + 1);
-    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
+    auto find_num_blocks = [](int x, int bdim) { return x / bdim + (x % bdim != 0); };
 
     int device;
     check_hip(hipGetDevice(&device), "hipGetDevice");
@@ -277,6 +278,11 @@ void sphericart::hip::spherical_harmonics_hip_base(
             parameters,
             nullptr),
         "hipModuleLaunchKernel(spherical_harmonics_kernel)");
+    if (synchronize) {
+        check_hip(
+            hipStreamSynchronize(reinterpret_cast<hipStream_t>(hip_stream)),
+            "hipStreamSynchronize");
+    }
 }
 
 template void sphericart::hip::spherical_harmonics_hip_base<float>(
@@ -293,7 +299,8 @@ template void sphericart::hip::spherical_harmonics_hip_base<float>(
     float* sph,
     float* dsph,
     float* ddsph,
-    void* hip_stream
+    void* hip_stream,
+    bool synchronize
 );
 
 template void sphericart::hip::spherical_harmonics_hip_base<double>(
@@ -310,7 +317,8 @@ template void sphericart::hip::spherical_harmonics_hip_base<double>(
     double* sph,
     double* dsph,
     double* ddsph,
-    void* hip_stream
+    void* hip_stream,
+    bool synchronize
 );
 
 template <typename scalar_t>
@@ -322,7 +330,7 @@ void sphericart::hip::spherical_harmonics_backward_hip_base(
     scalar_t* xyz_grad,
     void* hip_stream
 ) {
-    auto find_num_blocks = [](int x, int bdim) { return (x + bdim - 1) / bdim; };
+    auto find_num_blocks = [](int x, int bdim) { return x / bdim + (x % bdim != 0); };
 
     int device;
     check_hip(hipGetDevice(&device), "hipGetDevice");

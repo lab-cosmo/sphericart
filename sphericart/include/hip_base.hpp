@@ -72,7 +72,8 @@ void spherical_harmonics_hip_base(
     scalar_t* sph,
     scalar_t* dsph,
     scalar_t* ddsph,
-    void* hip_stream = nullptr
+    void* hip_stream = nullptr,
+    bool synchronize = true
 );
 
 template <typename scalar_t>

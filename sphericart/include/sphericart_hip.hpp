@@ -99,6 +99,19 @@ template <typename T> class SphericalHarmonics {
         const T* xyz, const size_t n_samples, T* sph, T* dsph, void* hip_stream = nullptr
     );
 
+    /** Enqueues spherical harmonics and first derivatives without synchronizing.
+     * The caller owns stream synchronization and must keep all buffers alive
+     * until the work completes.
+     */
+    void compute_with_gradients_async(
+        const T* xyz, const size_t n_samples, T* sph, T* dsph, void* hip_stream = nullptr
+    );
+
+    /** Releases lazily allocated device resources. The operation is idempotent.
+     * The caller must ensure that all work using this calculator has completed.
+     */
+    void release_device_resources();
+
     /** Computes the spherical harmonics and their first and second derivatives
      *  for one or more 3D points, using pre-allocated device-side pointers
      *
@@ -141,6 +154,7 @@ template <typename T> class SphericalHarmonics {
     bool normalized;             // should we normalize the input vectors?
     T* prefactors_cpu = nullptr; // host prefactors buffer
     T* prefactors_hip = nullptr; // storage space for prefactors
+    int bound_device = -1;
     int device_count = 0;        // number of visible GPU devices
     int64_t HIP_GRID_DIM_X_ = 8;
     int64_t HIP_GRID_DIM_Y_ = 8;
@@ -153,7 +167,8 @@ template <typename T> class SphericalHarmonics {
         T* sph,
         T* dsph,
         T* ddsph,
-        void* hip_stream
+        void* hip_stream,
+        bool synchronize
     );
     /* @endcond */
 };

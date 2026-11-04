@@ -93,7 +93,8 @@ void SphericalHarmonics<T>::compute_internal(
     T* sph,
     T* dsph,
     T* ddsph,
-    void* hip_stream
+    void* hip_stream,
+    bool synchronize
 ) {
     if (n_samples == 0) {
         // nothing to compute; we return here because some libraries (e.g. torch)
@@ -145,6 +146,12 @@ void SphericalHarmonics<T>::compute_internal(
         );
     }
 
+    if (this->bound_device >= 0 && this->bound_device != attributes.device) {
+        throw std::runtime_error(
+            "sphericart HIP calculator device migration is unsupported; the calculator is bound "
+            "to its first device"
+        );
+    }
     if (current_device != attributes.device) {
         status = hipSetDevice(attributes.device);
         if (status != hipSuccess) {
@@ -161,6 +168,7 @@ void SphericalHarmonics<T>::compute_internal(
                 std::string("hipMalloc failed: ") + hipGetErrorString(status)
             );
         }
+        this->bound_device = attributes.device;
 
         status = hipMemcpy(
             this->prefactors_hip,
@@ -189,7 +197,8 @@ void SphericalHarmonics<T>::compute_internal(
         sph,
         dsph,
         ddsph,
-        hip_stream
+        hip_stream,
+        synchronize
     );
 
     if (current_device != attributes.device) {
@@ -201,10 +210,11 @@ void SphericalHarmonics<T>::compute_internal(
         }
     }
 }
+
 template <typename T>
 void SphericalHarmonics<T>::compute(const T* xyz, const size_t n_samples, T* sph, void* hip_stream) {
     SphericalHarmonics<T>::compute_internal(
-        xyz, n_samples, false, false, sph, nullptr, nullptr, hip_stream
+        xyz, n_samples, false, false, sph, nullptr, nullptr, hip_stream, true
     );
 }
 
@@ -213,8 +223,64 @@ void SphericalHarmonics<T>::compute_with_gradients(
     const T* xyz, const size_t n_samples, T* sph, T* dsph, void* hip_stream
 ) {
     SphericalHarmonics<T>::compute_internal(
-        xyz, n_samples, true, false, sph, dsph, nullptr, hip_stream
+        xyz, n_samples, true, false, sph, dsph, nullptr, hip_stream, true
     );
+}
+
+template <typename T>
+void SphericalHarmonics<T>::compute_with_gradients_async(
+    const T* xyz, const size_t n_samples, T* sph, T* dsph, void* hip_stream
+) {
+    SphericalHarmonics<T>::compute_internal(
+        xyz, n_samples, true, false, sph, dsph, nullptr, hip_stream, false
+    );
+}
+
+template <typename T> void SphericalHarmonics<T>::release_device_resources() {
+    if (this->prefactors_hip == nullptr) {
+        return;
+    }
+
+    if (this->bound_device < 0) {
+        throw std::runtime_error("sphericart HIP calculator has no bound device");
+    }
+
+    int current_device;
+    hipError_t status = hipGetDevice(&current_device);
+    if (status != hipSuccess) {
+        throw std::runtime_error(
+            std::string("hipGetDevice failed: ") + hipGetErrorString(status)
+        );
+    }
+
+    const bool restore_device = current_device != this->bound_device;
+    if (restore_device) {
+        status = hipSetDevice(this->bound_device);
+        if (status != hipSuccess) {
+            throw std::runtime_error(
+                std::string("hipSetDevice failed: ") + hipGetErrorString(status)
+            );
+        }
+    }
+
+    const hipError_t free_status = hipFree(this->prefactors_hip);
+    if (free_status == hipSuccess) {
+        this->prefactors_hip = nullptr;
+    }
+    hipError_t restore_status = hipSuccess;
+    if (restore_device) {
+        restore_status = hipSetDevice(current_device);
+    }
+    if (free_status != hipSuccess) {
+        throw std::runtime_error(
+            std::string("hipFree failed: ") + hipGetErrorString(free_status)
+        );
+    }
+    if (restore_status != hipSuccess) {
+        throw std::runtime_error(
+            std::string("hipSetDevice failed: ") + hipGetErrorString(restore_status)
+        );
+    }
 }
 
 template <typename T>
@@ -222,7 +288,7 @@ void SphericalHarmonics<T>::compute_with_hessians(
     const T* xyz, const size_t n_samples, T* sph, T* dsph, T* ddsph, void* hip_stream
 ) {
     SphericalHarmonics<T>::compute_internal(
-        xyz, n_samples, true, true, sph, dsph, ddsph, hip_stream
+        xyz, n_samples, true, true, sph, dsph, ddsph, hip_stream, true
     );
 }
 
