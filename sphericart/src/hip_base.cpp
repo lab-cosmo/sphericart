@@ -193,6 +193,13 @@ static void ensure_shared_memory(int device, hipFunction_t function, unsigned in
         return;
     }
 
+    if (shared_bytes > static_cast<unsigned int>(entry.optin_shared_memory_per_block)) {
+        throw std::runtime_error(
+            "sphericart HIP kernel requires " + std::to_string(shared_bytes) +
+            " bytes of shared memory, more than the device opt-in limit of " +
+            std::to_string(entry.optin_shared_memory_per_block) + " bytes");
+    }
+
     auto& opted_in = entry.shared_memory_opted_in[function];
     if (opted_in) {
         return;
