@@ -190,7 +190,7 @@ jobs:
       - name: install build tools
         run: |
           apt-get update
-          apt-get install -y cmake build-essential
+          apt-get install -y cmake build-essential git
 
       - name: record ROCm inventory
         run: |

@@ -81,17 +81,33 @@ int main() {
         CHECK_HIP(hipMemcpy(
             reference_dsph.data(), device_dsph, dsph_size * sizeof(double), hipMemcpyDeviceToHost));
 
-        // a burst of async launches must enqueue without synchronizing
-        const auto start = std::chrono::steady_clock::now();
+        // a burst of async launches must enqueue without synchronizing: it has
+        // to return well before the GPU could have processed the whole queue
+        const auto enqueue_start = std::chrono::steady_clock::now();
         for (int launch = 0; launch < n_launches; ++launch) {
             calculator.compute_with_gradients_async(
                 device_xyz, n_samples, device_sph, device_dsph, static_cast<void*>(stream)
             );
         }
-        const auto enqueue_elapsed =
-            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+        const auto enqueue_elapsed = std::chrono::steady_clock::now() - enqueue_start;
 
+        const auto drain_start = std::chrono::steady_clock::now();
         CHECK_HIP(hipStreamSynchronize(stream));
+        const auto drain_elapsed = std::chrono::steady_clock::now() - drain_start;
+
+        if (enqueue_elapsed >= drain_elapsed / 4) {
+            throw std::runtime_error(
+                "async HIP launches seem to wait for the stream (enqueued " +
+                std::to_string(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(enqueue_elapsed).count()
+                ) +
+                " ms vs drained " +
+                std::to_string(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(drain_elapsed).count()
+                ) +
+                " ms)");
+        }
+
         CHECK_HIP(hipMemcpy(
             async_sph.data(), device_sph, sph_size * sizeof(double), hipMemcpyDeviceToHost));
         CHECK_HIP(hipMemcpy(
@@ -101,24 +117,6 @@ int main() {
         if (!std::equal(async_sph.begin(), async_sph.end(), reference_sph.begin()) ||
             !std::equal(async_dsph.begin(), async_dsph.end(), reference_dsph.begin())) {
             throw std::runtime_error("async HIP results do not match the synchronous path");
-        }
-
-        // enqueueing 64 launches must be faster than running them: if every
-        // call had synchronized, this loop would have taken at least the
-        // total kernel execution time.
-        const auto reference_run = std::chrono::steady_clock::now();
-        for (int launch = 0; launch < n_launches; ++launch) {
-            calculator.compute_with_gradients(
-                device_xyz, n_samples, device_sph, device_dsph, static_cast<void*>(stream)
-            );
-        }
-        const auto sync_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - reference_run);
-        if (enqueue_elapsed >= sync_elapsed) {
-            throw std::runtime_error(
-                "async HIP launches did not return before the stream drained "
-                "(enqueue " + std::to_string(enqueue_elapsed.count()) + "ms vs sync " +
-                std::to_string(sync_elapsed.count()) + "ms)");
         }
 
         // release_device_resources must be idempotent and transparently
