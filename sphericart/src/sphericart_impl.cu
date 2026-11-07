@@ -5,8 +5,13 @@
 
 #define HARDCODED_LMAX 1
 
-/* MASK used for warp reductions */
+/* MASK used for warp reductions. HIP shuffles require the mask to be a 64-bit
+   integer, while CUDA uses a 32-bit one. */
+#ifdef __HIP_PLATFORM_AMD__
+#define FULL_MASK 0xffffffffffffffffULL
+#else
 #define FULL_MASK 0xffffffff
+#endif
 
 /*
     Computes the index for buffer values which are shared across GRID_DIM_Y

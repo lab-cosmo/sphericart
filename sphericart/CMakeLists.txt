@@ -95,6 +95,22 @@ OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 OPTION(SPHERICART_ARCH_NATIVE "Try to use -march=native when compiling Sphericart" ON)
 OPTION(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" OFF)
 OPTION(SPHERICART_ENABLE_SYCL "Are we building the SYCL backend of Sphericart?" OFF)
+OPTION(SPHERICART_ENABLE_HIP "Are we building the HIP (AMD ROCm) backend of Sphericart?" OFF)
+
+# The device backends select mutually exclusive runtime APIs and kernel
+# compilation paths (gpu-lite/NVRTC for CUDA, hipRTC for HIP, icpx for SYCL);
+# build each accelerator backend in its own build tree, mirroring the
+# device-backend policy of symmetrix-xl.
+if (SPHERICART_ENABLE_HIP AND SPHERICART_ENABLE_CUDA)
+    message(FATAL_ERROR
+        "SPHERICART_ENABLE_HIP=ON and SPHERICART_ENABLE_CUDA=ON are mutually "
+        "exclusive. Build separate CPU, CUDA, HIP, and SYCL backend trees.")
+endif()
+if (SPHERICART_ENABLE_HIP AND SPHERICART_ENABLE_SYCL)
+    message(FATAL_ERROR
+        "SPHERICART_ENABLE_HIP=ON and SPHERICART_ENABLE_SYCL=ON are mutually "
+        "exclusive. Build separate CPU, CUDA, HIP, and SYCL backend trees.")
+endif()
 
 if (SPHERICART_ENABLE_SYCL)
 # SYCL device type: "gpu", "cpu", "accelerator", or "all"
@@ -135,7 +151,11 @@ FetchContent_Declare(
     GIT_TAG ceb0934e2294b680ebce37242b2e4f26921152e6 # tag 'mts-v1.2.0'
     EXCLUDE_FROM_ALL
 )
-FetchContent_MakeAvailable(gpulite)
+if (NOT SPHERICART_ENABLE_HIP)
+    # gpu-lite is the dynamic CUDA loader used by the CUDA backend; the HIP
+    # backend resolves the HIP runtime and hipRTC on its own.
+    FetchContent_MakeAvailable(gpulite)
+endif()
 
 # Find SYCL
 if (SPHERICART_ENABLE_SYCL)
@@ -241,25 +261,81 @@ else()
     list(APPEND COMMON_SOURCES "src/sphericart_cuda_stub.cpp")
 endif()
 
+# Find HIP / ROCm. Kernels are compiled at runtime with hipRTC (a dlopen'd
+# library), so the backend only needs the HIP runtime headers and library at
+# build time - no HIP compiler is required, mirroring how the CUDA backend
+# avoids a CUDA toolkit dependency through gpu-lite.
+if (SPHERICART_ENABLE_HIP)
+    if (WIN32)
+        message(FATAL_ERROR "The HIP backend of Sphericart is only supported on Linux")
+    endif()
+
+    find_path(ROCM_HIP_INCLUDE_DIR
+        NAMES hip/hip_runtime.h
+        PATHS
+            "${ROCM_ROOT}/include"
+            "$ENV{ROCM_ROOT}/include"
+            "${HIP_PATH}/include"
+            "$ENV{HIP_PATH}/include"
+            /opt/rocm/include
+    )
+    find_library(ROCM_HIP_LIBRARY
+        NAMES amdhip64
+        PATHS
+            "${ROCM_ROOT}/lib"
+            "$ENV{ROCM_ROOT}/lib"
+            "${HIP_PATH}/lib"
+            "$ENV{HIP_PATH}/lib"
+            /opt/rocm/lib
+    )
+    if (NOT ROCM_HIP_INCLUDE_DIR OR NOT ROCM_HIP_LIBRARY)
+        message(FATAL_ERROR
+            "SPHERICART_ENABLE_HIP=ON but the ROCm HIP runtime was not found. "
+            "Point CMake at your ROCm installation, e.g. "
+            "-DCMAKE_PREFIX_PATH=/opt/rocm")
+    endif()
+    message(STATUS "Found HIP runtime: ${ROCM_HIP_LIBRARY}")
+
+    list(APPEND COMMON_SOURCES "include/hip_base.hpp")
+    list(APPEND COMMON_SOURCES "include/sphericart_hip.hpp")
+    list(APPEND COMMON_SOURCES "src/hiprtc_lite.cpp")
+    list(APPEND COMMON_SOURCES "src/hip_base.cpp")
+    list(APPEND COMMON_SOURCES "src/sphericart_hip.cpp")
+endif()
+
 add_library(sphericart ${COMMON_SOURCES})
 
-if (SPHERICART_ENABLE_CUDA)
+if (SPHERICART_ENABLE_CUDA OR SPHERICART_ENABLE_HIP)
     #include the build/generated folder for compilation
     target_include_directories(sphericart PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_link_libraries(sphericart PRIVATE gpulite)
 
     include_headers(
         "${CMAKE_CURRENT_SOURCE_DIR}/src/sphericart_impl.cu"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cu"
     )
 
-    # Make the source file includeable by converting it to a string literal
+    # Make the source file includeable by converting it to a string literal.
+    # The same CUDA-dialect kernel source is embedded for the CUDA (NVRTC) and
+    # HIP (hipRTC) backends.
     make_includeable(
         "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cu"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/wrapped_sphericart_impl.cu"
     )
 
     file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/generated/tmp.cuh")
+endif()
+
+if (SPHERICART_ENABLE_CUDA)
+    target_link_libraries(sphericart PRIVATE gpulite)
+endif()
+
+if (SPHERICART_ENABLE_HIP)
+    # __HIP_PLATFORM_AMD__ selects the AMD flavor of the HIP headers; hipcc
+    # defines it implicitly, this backend compiles with the host compiler
+    target_compile_definitions(sphericart PRIVATE SPHERICART_USE_HIP=1 __HIP_PLATFORM_AMD__=1)
+    target_include_directories(sphericart PRIVATE ${ROCM_HIP_INCLUDE_DIR})
+    # ${CMAKE_DL_LIBS} is needed to dlopen libhiprtc at runtime
+    target_link_libraries(sphericart PRIVATE ${ROCM_HIP_LIBRARY} ${CMAKE_DL_LIBS})
 endif()
 
 if (SYCL_COMPILER_FOUND AND NOT SPHERICART_ENABLE_SYCL)
