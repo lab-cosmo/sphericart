@@ -95,22 +95,7 @@ OPTION(SPHERICART_OPENMP "Try to use OpenMP when compiling Sphericart" ON)
 OPTION(SPHERICART_ARCH_NATIVE "Try to use -march=native when compiling Sphericart" ON)
 OPTION(SPHERICART_ENABLE_CUDA "Are we building the CUDA backend of Sphericart?" OFF)
 OPTION(SPHERICART_ENABLE_SYCL "Are we building the SYCL backend of Sphericart?" OFF)
-OPTION(SPHERICART_ENABLE_HIP "Are we building the HIP (AMD ROCm) backend of Sphericart?" OFF)
-
-# The device backends select mutually exclusive runtime APIs and kernel
-# compilation paths (gpu-lite/NVRTC for CUDA, hipRTC for HIP, icpx for SYCL);
-# build each accelerator backend in its own build tree, mirroring the
-# device-backend policy of symmetrix-xl.
-if (SPHERICART_ENABLE_HIP AND SPHERICART_ENABLE_CUDA)
-    message(FATAL_ERROR
-        "SPHERICART_ENABLE_HIP=ON and SPHERICART_ENABLE_CUDA=ON are mutually "
-        "exclusive. Build separate CPU, CUDA, HIP, and SYCL backend trees.")
-endif()
-if (SPHERICART_ENABLE_HIP AND SPHERICART_ENABLE_SYCL)
-    message(FATAL_ERROR
-        "SPHERICART_ENABLE_HIP=ON and SPHERICART_ENABLE_SYCL=ON are mutually "
-        "exclusive. Build separate CPU, CUDA, HIP, and SYCL backend trees.")
-endif()
+OPTION(SPHERICART_ENABLE_HIP "Are we building the HIP backend with AMD ROCm?" OFF)
 
 if (SPHERICART_ENABLE_SYCL)
 # SYCL device type: "gpu", "cpu", "accelerator", or "all"
@@ -151,11 +136,7 @@ FetchContent_Declare(
     GIT_TAG ceb0934e2294b680ebce37242b2e4f26921152e6 # tag 'mts-v1.2.0'
     EXCLUDE_FROM_ALL
 )
-if (NOT SPHERICART_ENABLE_HIP)
-    # gpu-lite is the dynamic CUDA loader used by the CUDA backend; the HIP
-    # backend resolves the HIP runtime and hipRTC on its own.
-    FetchContent_MakeAvailable(gpulite)
-endif()
+FetchContent_MakeAvailable(gpulite)
 
 # Find SYCL
 if (SPHERICART_ENABLE_SYCL)
@@ -266,7 +247,7 @@ endif()
 # build time - no HIP compiler is required, mirroring how the CUDA backend
 # avoids a CUDA toolkit dependency through gpu-lite.
 if (SPHERICART_ENABLE_HIP)
-    if (WIN32)
+    if (WIN32 OR APPLE)
         message(FATAL_ERROR "The HIP backend of Sphericart is only supported on Linux")
     endif()
 
