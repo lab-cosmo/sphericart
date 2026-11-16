@@ -15,17 +15,17 @@
 
 #include "sphericart.hpp"
 
-#define CHECK_HIP(call)                                                       \
-    do {                                                                      \
-        hipError_t status_ = (call);                                          \
-        if (status_ != hipSuccess) {                                          \
-            std::cout << "HIP error at " << __FILE__ << ":" << __LINE__       \
-                      << ": " << hipGetErrorString(status_) << std::endl;     \
-            return 1;                                                         \
-        }                                                                     \
+#define CHECK_HIP(call)                                                                            \
+    do {                                                                                           \
+        hipError_t status_ = (call);                                                               \
+        if (status_ != hipSuccess) {                                                               \
+            std::cout << "HIP error at " << __FILE__ << ":" << __LINE__ << ": "                    \
+                      << hipGetErrorString(status_) << std::endl;                                  \
+            return 1;                                                                              \
+        }                                                                                          \
     } while (0)
 
- #define TOLERANCE 1e-4 // High tolerance: finite differences are inaccurate for second
+#define TOLERANCE 1e-4 // High tolerance: finite differences are inaccurate for second
 
 int main() {
     /* ===== set up the calculation ===== */
@@ -70,7 +70,9 @@ int main() {
     calculator_hip.compute(xyz_device, n_samples, sph_device);
 
     // Get results from device to host
-    CHECK_HIP(hipMemcpy(sph_f.data(), sph_device, sph_f.size() * sizeof(DTYPE), hipMemcpyDeviceToHost));
+    CHECK_HIP(
+        hipMemcpy(sph_f.data(), sph_device, sph_f.size() * sizeof(DTYPE), hipMemcpyDeviceToHost)
+    );
 
     /* ===== check results ===== */
     DTYPE sph_error = 0.0, sph_norm = 0.0, sph_error_max = 0.0;
@@ -94,8 +96,12 @@ int main() {
     calculator.compute_with_gradients(xyz, sph, dsph);
     calculator_hip.compute_with_gradients(xyz_device, n_samples, sph_device, dsph_device);
 
-    CHECK_HIP(hipMemcpy(sph_f.data(), sph_device, sph_f.size() * sizeof(DTYPE), hipMemcpyDeviceToHost));
-    CHECK_HIP(hipMemcpy(dsph_f.data(), dsph_device, dsph_f.size() * sizeof(DTYPE), hipMemcpyDeviceToHost));
+    CHECK_HIP(
+        hipMemcpy(sph_f.data(), sph_device, sph_f.size() * sizeof(DTYPE), hipMemcpyDeviceToHost)
+    );
+    CHECK_HIP(
+        hipMemcpy(dsph_f.data(), dsph_device, dsph_f.size() * sizeof(DTYPE), hipMemcpyDeviceToHost)
+    );
 
     /* ===== check results ===== */
     sph_error = 0.0, sph_norm = 0.0, sph_error_max = 0.0;

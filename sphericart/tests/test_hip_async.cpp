@@ -16,14 +16,15 @@
 
 #include "sphericart_hip.hpp"
 
-#define CHECK_HIP(call)                                                       \
-    do {                                                                      \
-        hipError_t status_ = (call);                                          \
-        if (status_ != hipSuccess) {                                          \
-            throw std::runtime_error(                                         \
-                std::string(__FILE__) + ":" + std::to_string(__LINE__)        \
-                + ": " + hipGetErrorString(status_));                         \
-        }                                                                     \
+#define CHECK_HIP(call)                                                                            \
+    do {                                                                                           \
+        hipError_t status_ = (call);                                                               \
+        if (status_ != hipSuccess) {                                                               \
+            throw std::runtime_error(                                                              \
+                std::string(__FILE__) + ":" + std::to_string(__LINE__) + ": " +                    \
+                hipGetErrorString(status_)                                                         \
+            );                                                                                     \
+        }                                                                                          \
     } while (0)
 
 int main() {
@@ -65,7 +66,8 @@ int main() {
         CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&device_sph), sph_size * sizeof(double)));
         CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&device_dsph), dsph_size * sizeof(double)));
         CHECK_HIP(
-            hipMemcpy(device_xyz, xyz.data(), xyz_size * sizeof(double), hipMemcpyHostToDevice));
+            hipMemcpy(device_xyz, xyz.data(), xyz_size * sizeof(double), hipMemcpyHostToDevice)
+        );
 
         using Calculator = sphericart::hip::SphericalHarmonics<double>;
         Calculator calculator(l_max);
@@ -77,9 +79,11 @@ int main() {
         );
         CHECK_HIP(hipStreamSynchronize(stream));
         CHECK_HIP(hipMemcpy(
-            reference_sph.data(), device_sph, sph_size * sizeof(double), hipMemcpyDeviceToHost));
+            reference_sph.data(), device_sph, sph_size * sizeof(double), hipMemcpyDeviceToHost
+        ));
         CHECK_HIP(hipMemcpy(
-            reference_dsph.data(), device_dsph, dsph_size * sizeof(double), hipMemcpyDeviceToHost));
+            reference_dsph.data(), device_dsph, dsph_size * sizeof(double), hipMemcpyDeviceToHost
+        ));
 
         // a burst of async launches must enqueue without synchronizing: it has
         // to return well before the GPU could have processed the whole queue
@@ -105,13 +109,16 @@ int main() {
                 std::to_string(
                     std::chrono::duration_cast<std::chrono::milliseconds>(drain_elapsed).count()
                 ) +
-                " ms)");
+                " ms)"
+            );
         }
 
+        CHECK_HIP(
+            hipMemcpy(async_sph.data(), device_sph, sph_size * sizeof(double), hipMemcpyDeviceToHost)
+        );
         CHECK_HIP(hipMemcpy(
-            async_sph.data(), device_sph, sph_size * sizeof(double), hipMemcpyDeviceToHost));
-        CHECK_HIP(hipMemcpy(
-            async_dsph.data(), device_dsph, dsph_size * sizeof(double), hipMemcpyDeviceToHost));
+            async_dsph.data(), device_dsph, dsph_size * sizeof(double), hipMemcpyDeviceToHost
+        ));
 
         // async results must match the synchronous path bit-for-bit
         if (!std::equal(async_sph.begin(), async_sph.end(), reference_sph.begin()) ||
@@ -127,11 +134,13 @@ int main() {
             device_xyz, n_samples, device_sph, device_dsph, static_cast<void*>(stream)
         );
         CHECK_HIP(hipStreamSynchronize(stream));
-        CHECK_HIP(hipMemcpy(
-            async_sph.data(), device_sph, sph_size * sizeof(double), hipMemcpyDeviceToHost));
+        CHECK_HIP(
+            hipMemcpy(async_sph.data(), device_sph, sph_size * sizeof(double), hipMemcpyDeviceToHost)
+        );
         if (!std::equal(async_sph.begin(), async_sph.end(), reference_sph.begin())) {
             throw std::runtime_error(
-                "results changed after release_device_resources and re-allocation");
+                "results changed after release_device_resources and re-allocation"
+            );
         }
     } catch (const std::exception& error) {
         std::cout << "async HIP API test failed: " << error.what() << std::endl;

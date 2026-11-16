@@ -28,9 +28,7 @@ static const char* HIP_CODE = reinterpret_cast<const char*>(HIP_CODE_DATA);
 
 static void check_hip(hipError_t status, const std::string& what) {
     if (status != hipSuccess) {
-        throw std::runtime_error(
-            what + " failed: " + hipGetErrorString(status)
-        );
+        throw std::runtime_error(what + " failed: " + hipGetErrorString(status));
     }
 }
 
@@ -66,16 +64,13 @@ static size_t total_buffer_size(
 // Name expression for the template kernels, e.g.
 // "spherical_harmonics_kernel<float>". The explicit float/double
 // instantiations live at the bottom of sphericart_impl.cu.
-template <typename scalar_t>
-static std::string template_kernel_name(const std::string& fn_name) {
+template <typename scalar_t> static std::string template_kernel_name(const std::string& fn_name) {
     if constexpr (std::is_same<scalar_t, float>::value) {
         return fn_name + "<float>";
     } else if constexpr (std::is_same<scalar_t, double>::value) {
         return fn_name + "<double>";
     } else {
-        static_assert(
-            sizeof(scalar_t) == 0, "sphericart HIP kernels only support float and double"
-        );
+        static_assert(sizeof(scalar_t) == 0, "sphericart HIP kernels only support float and double");
     }
 }
 
@@ -175,14 +170,12 @@ static void ensure_shared_memory(int device, hipFunction_t function, unsigned in
     if (entry.default_shared_memory_per_block < 0) {
         int default_smem = 0;
         check_hip(
-            hipDeviceGetAttribute(
-                &default_smem, hipDeviceAttributeMaxSharedMemoryPerBlock, device),
+            hipDeviceGetAttribute(&default_smem, hipDeviceAttributeMaxSharedMemoryPerBlock, device),
             "hipDeviceGetAttribute(MaxSharedMemoryPerBlock)"
         );
         int optin_smem = 0;
         check_hip(
-            hipDeviceGetAttribute(
-                &optin_smem, hipDeviceAttributeSharedMemPerBlockOptin, device),
+            hipDeviceGetAttribute(&optin_smem, hipDeviceAttributeSharedMemPerBlockOptin, device),
             "hipDeviceGetAttribute(SharedMemPerBlockOptin)"
         );
         entry.default_shared_memory_per_block = default_smem;
@@ -197,7 +190,8 @@ static void ensure_shared_memory(int device, hipFunction_t function, unsigned in
         throw std::runtime_error(
             "sphericart HIP kernel requires " + std::to_string(shared_bytes) +
             " bytes of shared memory, more than the device opt-in limit of " +
-            std::to_string(entry.optin_shared_memory_per_block) + " bytes");
+            std::to_string(entry.optin_shared_memory_per_block) + " bytes"
+        );
     }
 
     auto& opted_in = entry.shared_memory_opted_in[function];
@@ -207,8 +201,8 @@ static void ensure_shared_memory(int device, hipFunction_t function, unsigned in
 
     check_hip(
         hipFuncSetAttribute(
-            function, hipFuncAttributeMaxDynamicSharedMemorySize,
-            entry.optin_shared_memory_per_block),
+            function, hipFuncAttributeMaxDynamicSharedMemorySize, entry.optin_shared_memory_per_block
+        ),
         "hipFuncSetAttribute(MaxDynamicSharedMemorySize)"
     );
     opted_in = true;
@@ -253,7 +247,8 @@ void sphericart::hip::spherical_harmonics_hip_base(
         get_hip_kernel(device, template_kernel_name<scalar_t>("spherical_harmonics_kernel"));
 
     unsigned int shared_bytes = static_cast<unsigned int>(
-        total_buffer_size(l_max, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian));
+        total_buffer_size(l_max, GRID_DIM_Y, sizeof(scalar_t), gradients, hessian)
+    );
     ensure_shared_memory(device, function, shared_bytes);
 
     void* parameters[] = {
@@ -283,12 +278,14 @@ void sphericart::hip::spherical_harmonics_hip_base(
             shared_bytes,
             reinterpret_cast<hipStream_t>(hip_stream),
             parameters,
-            nullptr),
-        "hipModuleLaunchKernel(spherical_harmonics_kernel)");
+            nullptr
+        ),
+        "hipModuleLaunchKernel(spherical_harmonics_kernel)"
+    );
     if (synchronize) {
         check_hip(
-            hipStreamSynchronize(reinterpret_cast<hipStream_t>(hip_stream)),
-            "hipStreamSynchronize");
+            hipStreamSynchronize(reinterpret_cast<hipStream_t>(hip_stream)), "hipStreamSynchronize"
+        );
     }
 }
 
@@ -364,8 +361,10 @@ void sphericart::hip::spherical_harmonics_backward_hip_base(
             0,
             reinterpret_cast<hipStream_t>(hip_stream),
             parameters,
-            nullptr),
-        "hipModuleLaunchKernel(backward_kernel)");
+            nullptr
+        ),
+        "hipModuleLaunchKernel(backward_kernel)"
+    );
 }
 
 template void sphericart::hip::spherical_harmonics_backward_hip_base<float>(

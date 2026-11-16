@@ -40,7 +40,8 @@ static void checkHip() {
             "sphericart's HIP kernels at runtime. Set SPHERICART_HIPRTC_LIBRARY "
             "to the full path of libhiprtc.so, or append the directory "
             "containing this library (e.g. /opt/rocm/lib) to your "
-            "$LD_LIBRARY_PATH environment variable. (" + hiprtc.reason + ")"
+            "$LD_LIBRARY_PATH environment variable. (" +
+            hiprtc.reason + ")"
         );
     }
 }
@@ -131,9 +132,11 @@ void SphericalHarmonics<T>::compute_internal(
     hipError_t status = hipPointerGetAttributes(&attributes, xyz);
     if (status != hipSuccess) {
         throw std::runtime_error(
-            std::string("sphericart::hip::SphericalHarmonics::compute could not "
-                        "resolve the device of the input pointer: ")
-            + hipGetErrorString(status)
+            std::string(
+                "sphericart::hip::SphericalHarmonics::compute could not "
+                "resolve the device of the input pointer: "
+            ) +
+            hipGetErrorString(status)
         );
     }
 
@@ -141,9 +144,7 @@ void SphericalHarmonics<T>::compute_internal(
 
     status = hipGetDevice(&current_device);
     if (status != hipSuccess) {
-        throw std::runtime_error(
-            std::string("hipGetDevice failed: ") + hipGetErrorString(status)
-        );
+        throw std::runtime_error(std::string("hipGetDevice failed: ") + hipGetErrorString(status));
     }
 
     if (this->bound_device >= 0 && this->bound_device != attributes.device) {
@@ -164,9 +165,7 @@ void SphericalHarmonics<T>::compute_internal(
     if (!this->prefactors_hip) {
         status = hipMalloc((void**)&this->prefactors_hip, this->nprefactors * sizeof(T));
         if (status != hipSuccess) {
-            throw std::runtime_error(
-                std::string("hipMalloc failed: ") + hipGetErrorString(status)
-            );
+            throw std::runtime_error(std::string("hipMalloc failed: ") + hipGetErrorString(status));
         }
         this->bound_device = attributes.device;
 
@@ -177,9 +176,7 @@ void SphericalHarmonics<T>::compute_internal(
             hipMemcpyHostToDevice
         );
         if (status != hipSuccess) {
-            throw std::runtime_error(
-                std::string("hipMemcpy failed: ") + hipGetErrorString(status)
-            );
+            throw std::runtime_error(std::string("hipMemcpy failed: ") + hipGetErrorString(status));
         }
     }
 
@@ -248,9 +245,7 @@ template <typename T> void SphericalHarmonics<T>::release_device_resources() {
     int current_device;
     hipError_t status = hipGetDevice(&current_device);
     if (status != hipSuccess) {
-        throw std::runtime_error(
-            std::string("hipGetDevice failed: ") + hipGetErrorString(status)
-        );
+        throw std::runtime_error(std::string("hipGetDevice failed: ") + hipGetErrorString(status));
     }
 
     const bool restore_device = current_device != this->bound_device;
@@ -272,9 +267,7 @@ template <typename T> void SphericalHarmonics<T>::release_device_resources() {
         restore_status = hipSetDevice(current_device);
     }
     if (free_status != hipSuccess) {
-        throw std::runtime_error(
-            std::string("hipFree failed: ") + hipGetErrorString(free_status)
-        );
+        throw std::runtime_error(std::string("hipFree failed: ") + hipGetErrorString(free_status));
     }
     if (restore_status != hipSuccess) {
         throw std::runtime_error(

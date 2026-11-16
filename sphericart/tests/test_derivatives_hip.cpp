@@ -19,14 +19,14 @@
 
 #include "sphericart.hpp"
 
-#define CHECK_HIP(call)                                                       \
-    do {                                                                      \
-        hipError_t status_ = (call);                                          \
-        if (status_ != hipSuccess) {                                          \
-            std::cout << "HIP error at " << __FILE__ << ":" << __LINE__       \
-                      << ": " << hipGetErrorString(status_) << std::endl;     \
-            std::exit(1);                                                     \
-        }                                                                     \
+#define CHECK_HIP(call)                                                                            \
+    do {                                                                                           \
+        hipError_t status_ = (call);                                                               \
+        if (status_ != hipSuccess) {                                                               \
+            std::cout << "HIP error at " << __FILE__ << ":" << __LINE__ << ": "                    \
+                      << hipGetErrorString(status_) << std::endl;                                  \
+            std::exit(1);                                                                          \
+        }                                                                                          \
     } while (0)
 
 template <typename T> T* hip_malloc(size_t count) {
@@ -35,13 +35,11 @@ template <typename T> T* hip_malloc(size_t count) {
     return ptr;
 }
 
-template <typename T>
-void hip_copy_to_device(T* dst, const T* src, size_t count) {
+template <typename T> void hip_copy_to_device(T* dst, const T* src, size_t count) {
     CHECK_HIP(hipMemcpy(dst, src, count * sizeof(T), hipMemcpyHostToDevice));
 }
 
-template <typename T>
-void hip_copy_to_host(T* dst, const T* src, size_t count) {
+template <typename T> void hip_copy_to_host(T* dst, const T* src, size_t count) {
     CHECK_HIP(hipMemcpy(dst, src, count * sizeof(T), hipMemcpyDeviceToHost));
 }
 
