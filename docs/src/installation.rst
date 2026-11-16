@@ -82,6 +82,7 @@ The following cmake configuration options are available:
 - ``-DSPHERICART_ENABLE_CUDA=ON/OFF``: build the CUDA backend (OFF by default)
 - ``-DSPHERICART_ENABLE_SYCL=ON/OFF``: build the SYCL backend (OFF by default)
 - ``-DSPHERICART_SYCL_DEVICE=all/cpu/gpu/accelerator``: select the device type used by the SYCL backend (``all`` by default)
+- ``-DSPHERICART_ENABLE_HIP=ON/OFF``: build the HIP backend with AMD ROCm (OFF by default). The backend requires a ROCm installation (e.g. ``-DCMAKE_PREFIX_PATH=/opt/rocm``); kernels are compiled at runtime with hipRTC, so no HIP compiler is needed at build time. HIP can be enabled alongside the CUDA and SYCL backends.
 - ``-DCMAKE_INSTALL_PREFIX=where/you/want/to/install``: set the root path for installation (``/usr/local`` by default)
 
 Without specifying any options, the commands above will attempt to install 
