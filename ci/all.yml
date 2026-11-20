@@ -1,0 +1,3 @@
+include:
+  - local: 'ci/cuda.yml'
+  - local: 'ci/rocm.yml'
