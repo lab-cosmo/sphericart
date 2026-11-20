@@ -19,6 +19,8 @@ build rocm:
       dotenv: build.env
   variables:
     DOCKERFILE: ci/containers/Containerfile.rocm
+    KUBERNETES_MEMORY_REQUEST: '64Gi'
+    KUBERNETES_MEMORY_LIMIT: '64Gi'
 
 test cpp rocm:
   stage: test
