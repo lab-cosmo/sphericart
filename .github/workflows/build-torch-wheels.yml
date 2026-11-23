@@ -24,7 +24,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v7
       with:
-        python-version: "3.12"
+        python-version: "3.15"
 
     - name: Install dependencies
       run: python -m pip install build
@@ -93,7 +93,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v7
       with:
-        python-version: "3.12"
+        python-version: "3.15"
 
     - name: Install CUDA toolkit (Windows)
       if: matrix.os == 'windows-2022'
@@ -186,7 +186,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.15"
 
       - name: install dependencies
         run: python -m pip install twine wheel
