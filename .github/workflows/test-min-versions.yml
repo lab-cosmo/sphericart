@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Test minimum torch version
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: "3.10"
 
@@ -36,10 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Test minimum jax version
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: "3.10"
 

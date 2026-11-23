@@ -13,16 +13,16 @@ concurrency:
 
 jobs:
   build-jax-sdist:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: sdist
     env:
       SPHERICART_NO_LOCAL_DEPS: 1
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: "3.12"
 
@@ -32,14 +32,14 @@ jobs:
     - name: Build jax sdist
       run: python -m build --sdist ./sphericart-jax --outdir ./dist
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: "sphericart-jax-sdist"
         path: ./dist/*.tar.gz
 
     - name: upload to GitHub release
       if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: |
           ./dist/*.tar.gz
@@ -65,19 +65,19 @@ jobs:
           - "0.9.2"
           - "0.10.0"
           - "0.10.1"
-        os: [ubuntu-22.04, macos-14, ubuntu-22.04-arm, windows-2022]
+        os: [ubuntu-24.04, macos-15, ubuntu-24.04-arm, windows-2022]
         include:
           - name: x86_64 Linux
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             arch: x86_64
           - name: x86_64 macOS
-            os: macos-14
+            os: macos-15
             arch: x86_64
           - name: arm64 macOS
-            os: macos-14
+            os: macos-15
             arch: arm64
           - name: aarch64 Linux
-            os: ubuntu-22.04-arm
+            os: ubuntu-24.04-arm
             arch: aarch64
           - name: x86_64 Windows
             os: windows-2022
@@ -87,7 +87,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Build custom manylinux Docker Image with CUDA
       if: startsWith(matrix.os, 'ubuntu-')
@@ -97,7 +97,7 @@ jobs:
             scripts/manylinux_2_28_"${{ matrix.arch }}"
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: "3.12"
 
@@ -127,42 +127,42 @@ jobs:
           SPHERICART_NO_LOCAL_DEPS=1
           SPHERICART_JAX_BUILD_WITH_JAX_VERSION=${{ matrix.jax-version }}.*
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: jax-single-version-wheel-${{ matrix.os }}-${{ matrix.arch }}-jax-${{ matrix.jax-version }}
         path: ./wheelhouse/*.whl
 
   merge-jax-wheels:
     needs: build-jax-wheels
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: merge wheels for ${{ matrix.name }}
     strategy:
       matrix:
         include:
           - name: x86_64 Linux
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             arch: x86_64
           - name: arm64 macOS
-            os: macos-14
+            os: macos-15
             arch: arm64
           - name: aarch64 Linux
-            os: ubuntu-22.04-arm
+            os: ubuntu-24.04-arm
             arch: aarch64
           - name: x86_64 Windows
             os: windows-2022
             arch: AMD64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download wheels
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: jax-single-version-wheel-${{ matrix.os }}-${{ matrix.arch }}-*
           merge-multiple: false
           path: dist
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -201,14 +201,14 @@ jobs:
       - name: check wheels with twine
         run: twine check wheelhouse/*
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sphericart-jax-wheel-${{ matrix.os }}-${{ matrix.arch }}
           path: ./wheelhouse/*.whl
 
       - name: upload to GitHub release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ./wheelhouse/*.whl
