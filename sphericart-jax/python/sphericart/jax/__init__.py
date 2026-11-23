@@ -1,69 +1,22 @@
 import ctypes
-import glob
 import os
-import re
 import sys
-from collections import namedtuple
 
 import jax
 
 from .spherical_harmonics import solid_harmonics, spherical_harmonics  # noqa: F401
 
 
-Version = namedtuple("Version", ["major", "minor", "patch"])
-
-
-def parse_version(version_string):
-    match = re.match(r"(\d+)\.(\d+)\.(\d+).*", version_string)
-    if match:
-        return Version(*map(int, match.groups()))
-    else:
-        raise ValueError(f"Invalid version string format: {version_string}")
-
-
 _HERE = os.path.realpath(os.path.dirname(__file__))
-
-
-def _get_lib_dir():
-    jax_version = parse_version(jax.__version__)
-    expected_prefix = os.path.join(
-        _HERE, f"jax-{jax_version.major}.{jax_version.minor}.{jax_version.patch}"
-    )
-    if os.path.exists(expected_prefix):
-        return expected_prefix
-
-    # gather which jax version(s) the current install was built
-    # with to create the error message
-    existing_versions = []
-    for prefix in glob.glob(os.path.join(_HERE, "jax-*")):
-        existing_versions.append(os.path.basename(prefix)[4:])
-
-    if len(existing_versions) == 1:
-        raise ImportError(
-            f"Trying to load sphericart-jax with jax v{jax.__version__}, "
-            f"but it was compiled against jax v{existing_versions[0]}, which "
-            "is not ABI compatible"
-        )
-    else:
-        all_versions = ", ".join(map(lambda v: f"v{v}", existing_versions))
-        raise ImportError(
-            f"Trying to load sphericart-jax with jax v{jax.__version__}, "
-            f"we found builds for jax {all_versions}; which are not ABI compatible.\n"
-            "You can try to re-install from source with "
-            "`pip install sphericart-jax --no-binary=sphericart-jax`"
-        )
-
-
-_LIB_DIR = _get_lib_dir()
 
 
 def _lib_path(name: str) -> str:
     if sys.platform.startswith("darwin"):
-        path = os.path.join(_LIB_DIR, "lib", f"lib{name}.dylib")
+        path = os.path.join(_HERE, "lib", f"lib{name}.dylib")
     elif sys.platform.startswith("linux"):
-        path = os.path.join(_LIB_DIR, "lib", f"lib{name}.so")
+        path = os.path.join(_HERE, "lib", f"lib{name}.so")
     elif sys.platform.startswith("win"):
-        path = os.path.join(_LIB_DIR, "bin", f"{name}.dll")
+        path = os.path.join(_HERE, "bin", f"{name}.dll")
     else:
         raise ImportError("Unknown platform. Please edit this file")
 
