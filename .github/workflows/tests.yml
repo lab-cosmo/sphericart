@@ -80,10 +80,8 @@ jobs:
         run: |
           cd julia
           julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); Pkg.test();'
-          cd test/python/
-          julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.instantiate();'
-          python -m pip install numpy pytest sphericart julia
-          python -m pytest .
+          python -m pip install ..
+          julia --project=. test/python/consistency.jl
 
   sycl-tests:
     runs-on: ubuntu-22.04
