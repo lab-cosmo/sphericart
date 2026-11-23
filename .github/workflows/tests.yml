@@ -43,7 +43,9 @@ jobs:
       - name: setup Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          # we need pytorch 2.15 to run on Python 3.15, and this requires a
+          # release of metatensor-torch compatible with pyTorch 2.15 first.
+          python-version: "3.14"
 
       - name: setup Julia
         if: runner.os != 'Windows'
@@ -183,7 +185,7 @@ jobs:
     name: check Python build
     strategy:
       matrix:
-        python-version: ['3.9', '3.12']
+        python-version: ['3.11', '3.15']
     steps:
       - uses: actions/checkout@v7
 
