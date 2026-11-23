@@ -29,16 +29,9 @@ class cmake_ext(build_ext):
     """Build the native libraries using cmake"""
 
     def run(self):
-        import jax
-
-        jax_major, jax_minor, jax_patch, *_ = jax.__version__.split(".")
-
         source_dir = ROOT
         build_dir = os.path.join(ROOT, "build", "cmake-build")
-        install_dir = os.path.join(
-            os.path.realpath(self.build_lib),
-            f"sphericart/jax/jax-{jax_major}.{jax_minor}.{jax_patch}",
-        )
+        install_dir = os.path.join(os.path.realpath(self.build_lib), "sphericart/jax")
 
         os.makedirs(build_dir, exist_ok=True)
 
@@ -100,17 +93,14 @@ class bdist_egg_disabled(bdist_egg):
 
 
 if __name__ == "__main__":
-    try:
-        import jax
-
-        # if we have jax, we are building a wheel - requires specific jax version
-        jax_v_major, jax_v_minor, jax_v_patch, *_ = jax.__version__.split(".")
-        jax_version = f"== {jax_v_major}.{jax_v_minor}.{jax_v_patch}.*"
-    except ImportError:
-        # otherwise we are building a sdist
-        jax_version = ">=0.6.0"
-
-    install_requires = [f"jax {jax_version}"]
+    # The wheels are built against the oldest supported jaxlib, and the XLA FFI ABI is
+    # stable across versions, so the same wheel works with all the versions in this
+    # range. The upper bound should be updated after checking that new versions of JAX
+    # work, even if the wheel is built with the oldest version.
+    install_requires = [
+        "jax >=0.10,<0.13",
+        "jaxlib >=0.10,<0.13",
+    ]
 
     setup(
         version=open(os.path.join(ROOT, "sphericart", "VERSION")).readline().strip(),
