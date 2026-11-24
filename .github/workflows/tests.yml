@@ -17,9 +17,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             tox_envs: ""
-          - os: macos-14
+          - os: macos-15
             tox_envs: ""
           - os: windows-2022
             cmake_extra: ""
@@ -32,7 +32,7 @@ jobs:
             # - C++ tests/examples use getopt (POSIX-only)
             tox_envs: "-e tests,torch-tests,jax-tests"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: setup MSVC environment
         if: runner.os == 'Windows'
@@ -41,13 +41,15 @@ jobs:
           arch: x64
 
       - name: setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          # we need pytorch 2.15 to run on Python 3.15, and this requires a
+          # release of metatensor-torch compatible with pyTorch 2.15 first.
+          python-version: "3.14"
 
       - name: setup Julia
         if: runner.os != 'Windows'
-        uses: julia-actions/setup-julia@v2
+        uses: julia-actions/setup-julia@v3
         with:
           version: '1.11'
 
@@ -80,16 +82,14 @@ jobs:
         run: |
           cd julia
           julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); Pkg.test();'
-          cd test/python/
-          julia -e 'using Pkg; Pkg.add("PyCall"); Pkg.instantiate();'
-          python -m pip install numpy pytest sphericart julia
-          python -m pytest .
+          python -m pip install ..
+          julia --project=. test/python/consistency.jl
 
   sycl-tests:
-    runs-on: ubuntu-22.04
-    name: Test SYCL on ubuntu-22.04
+    runs-on: ubuntu-24.04
+    name: Test SYCL on Linux
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: install system dependencies
         run: |
@@ -133,12 +133,12 @@ jobs:
 
   sycl-tests-windows:
     runs-on: windows-2022
-    name: Test SYCL on windows-2022
+    name: Test SYCL on Windows
     env:
       WINDOWS_BASEKIT_URL: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/09a8acaf-265f-4460-866c-a3375ed5b4ff/intel-oneapi-base-toolkit-2025.2.0.591_offline.exe
       WINDOWS_DPCPP_COMPONENTS: intel.oneapi.win.cpp-dpcpp-common
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: setup MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
@@ -217,16 +217,16 @@ jobs:
 
   # check that we can build Python wheels on any Python version
   python-build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: check Python build
     strategy:
       matrix:
-        python-version: ['3.9', '3.12']
+        python-version: ['3.11', '3.15']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
 

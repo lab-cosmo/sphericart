@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.22)
 
 if (CMAKE_CUDA_COMPILER AND SPHERICART_ENABLE_CUDA)
     project(sphericart_examples LANGUAGES C CXX CUDA)
@@ -44,4 +44,3 @@ if(Kokkos_FOUND)
     target_link_libraries(example_kokkos sphericart Kokkos::kokkos)
     add_test(NAME example_kokkos COMMAND ./example_kokkos)
 endif()
-

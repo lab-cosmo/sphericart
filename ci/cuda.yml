@@ -5,7 +5,7 @@ stages:
   - build
   - test
 
-build:
+build cuda:
   stage: build
   extends: .container-builder-cscs-gh200
   before_script:
@@ -18,9 +18,9 @@ build:
     reports:
       dotenv: build.env
   variables:
-    DOCKERFILE: ci/containers/Containerfile
+    DOCKERFILE: ci/containers/Containerfile.cuda
 
-test tox:
+test tox cuda:
   stage: test
   extends: .container-runner-daint-gh200
   image: $BASE_IMAGE
@@ -38,7 +38,7 @@ test tox:
     SLURM_TIMELIMIT: '00:30:00'
     GIT_STRATEGY: fetch
 
-test cpp:
+test cpp cuda:
   stage: test
   extends: .container-runner-daint-gh200
   image: $BASE_IMAGE

@@ -1,6 +1,6 @@
 [project]
 name = "sphericart-torch"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dynamic = ["version", "dependencies"]
 
 readme = "README.md"

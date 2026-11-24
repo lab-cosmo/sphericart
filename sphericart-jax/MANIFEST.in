@@ -9,3 +9,5 @@ recursive-include include *
 
 include pyproject.toml
 include README.md
+
+recursive-include build-backend *.py

@@ -71,7 +71,7 @@ def test_metatensor(xyz, device):
             # check values
             assert torch.allclose(
                 spherical_block.values.squeeze(-1),
-                sphericart.torch.SphericalHarmonics(single_l).compute(
+                sphericart.torch.SphericalHarmonics(l).compute(
                     xyz.block().values.squeeze(-1)
                 )[:, single_l**2 : (single_l + 1) ** 2],
             )
