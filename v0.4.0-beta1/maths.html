@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>What sphericart computes &mdash; sphericart  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="JAX" href="jax-examples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            sphericart
+              <img src="_static/sphericart_icon.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Usage and examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">What sphericart computes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sphericart</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">What sphericart computes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/maths.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="what-sphericart-computes">
+<h1>What sphericart computes<a class="headerlink" href="#what-sphericart-computes" title="Link to this heading"></a></h1>
+<p>In the most basic form, spherical harmonics are defined as complex-valued functions of
+the polar coordinates <span class="math notranslate nohighlight">\((\theta,\phi)\)</span></p>
+<div class="math notranslate nohighlight">
+\[Y^m_l(\theta,\phi) \propto P^m_l(\cos \theta) e^{\mathrm{i} m \phi}\]</div>
+<p>where <span class="math notranslate nohighlight">\(P^m_l(x)\)</span> are the associated Legendre polynomials.
+There are multiple conventions for choosing normalization and phases, and it is
+possible to reformulate the spherical harmonics in a real-valued form, which leads
+to even further ambiguity in the definitions.</p>
+<p>Within <cite>sphericart</cite> we take an opinionated stance: we compute only real-valued
+harmonics, we express them as a function of the full Cartesian coordinates of a
+point in three dimensions <span class="math notranslate nohighlight">\((x,y,z)\)</span> and compute by default “scaled”
+versions <span class="math notranslate nohighlight">\(\tilde{Y}^m_l(x, y, z)\)</span> which correspond to homogeneous polynomials
+of the Cartesian coordinates:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\tilde{Y}_l^m(x, y, z) = r^l\,{Y}_l^m(x, y, z) = F_l^{|m|} Q_l^{|m|}(z, r) \times
+\begin{cases}
+  s_{|m|}(x, y) &amp; \text{if $m &lt; 0$}\\
+  1/\sqrt{2} &amp; \text{if $m = 0$}\\
+  c_m(x, y) &amp; \text{if $m &gt; 0$}
+\end{cases}\end{split}\]</div>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}r =&amp; \, \sqrt{x^2+y^2+z^2}, \quad
+r_{xy} = \sqrt{x^2+y^2}, \quad \\
+s_m =&amp; \, r_{xy}^m \, \sin{(m \arctan(x/r,y/r))}, \quad \\
+c_m = &amp; \, r_{xy}^m \, \cos{(m\arctan(x/r,y/r))},\label{eq:define-q}\quad \\
+Q_l^m(z,r) =&amp;\, r^l r_{xy}^{-m} \, P_l^m(z/r), \quad \\
+F_l^m = &amp;\, (-1)^m \sqrt{\frac{2l+1}{2\pi}\frac{(l-m)!}{(l+m)!}}.\end{split}\]</div>
+<p>If we neglect some constant normalization factors, these correspond to the
+<a class="reference external" href="https://en.wikipedia.org/wiki/Solid_harmonics">regular solid harmonics</a>.
+See also the <a class="reference external" href="https://arxiv.org/abs/2302.08381">reference paper</a> for further
+implementation details.</p>
+<p>The radially normalized version of the spherical harmonics can also be computed by providing
+the appropriate flag when creating the <cite>sphericart</cite> calculators. These correspond to
+the real spherical harmonics as defined in the corresponding
+<a class="reference external" href="https://en.wikipedia.org/wiki/Spherical_harmonics">Wikipedia article</a>.
+However, we recommend using the scaled versions, which are slightly faster and
+provide a more natural scaling if used together with a radial expansion.</p>
+<p>The <span class="math notranslate nohighlight">\(\tilde{Y}^m_l(x)\)</span> are stored contiguously in memory, e.g. as
+<span class="math notranslate nohighlight">\(\{ (l,m)=(0,0), (1,-1), (1,0), (1,1), (2,-2), \ldots \}\)</span>.
+With zero-based indexing of the arrays, the <code class="docutils literal notranslate"><span class="pre">(l,m)</span></code> term is stored at
+position <code class="docutils literal notranslate"><span class="pre">l(l+1)+m</span></code>.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="jax-examples.html" class="btn btn-neutral float-left" title="JAX" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, sphericart developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
